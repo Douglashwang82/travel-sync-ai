@@ -6,6 +6,7 @@ import { searchPlaces } from "./places";
 import { buildVoteCarousel, buildWinnerMessage } from "./flex";
 import { getVoteTally } from "@/services/vote";
 import type { ItemType } from "@/lib/types";
+import { inferItemType } from "@/bot/commands/add";
 
 const VOTE_DURATION_HOURS = 24;
 
@@ -41,7 +42,13 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     return;
   }
 
-  console.log(`[decisions] Starting flow for "${item.title}" (type: ${item.item_type}) in group ${lineGroupId}`);
+  // If item was created before type inference was in place, fall back to inferring from title
+  const resolvedType: ItemType =
+    item.item_type && item.item_type !== "other"
+      ? (item.item_type as ItemType)
+      : inferItemType(item.title);
+
+  console.log(`[decisions] Starting flow for "${item.title}" (type: ${resolvedType}) in group ${lineGroupId}`);
 
   if (item.stage !== "todo") {
     await pushText(
@@ -53,7 +60,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
 
   // Fetch place candidates
   console.log(`[decisions] Searching for candidates in ${destination}...`);
-  const candidates = await searchPlaces(destination, item.item_type as ItemType);
+  const candidates = await searchPlaces(destination, resolvedType);
 
   if (candidates.length === 0) {
     console.log(`[decisions] No candidates found — falling back to manual notification`);
@@ -117,7 +124,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     groupId,
     properties: {
       item_id: itemId,
-      item_type: item.item_type,
+      item_type: resolvedType,
       options_count: insertedOptions.length,
     },
   });
