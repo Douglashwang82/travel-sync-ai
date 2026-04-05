@@ -12,6 +12,10 @@ const HELP_TEXT = `TravelSync AI — Commands
 /add [item]
   Add a To-Do item. Example: /add Book travel insurance
 
+/share [url]
+  Share a hotel, flight, restaurant, or activity link. I'll extract the details and add it to the board as a voteable option.
+  Example: /share https://booking.com/hotel/xyz
+
 /nudge
   Remind group members with pending votes or open items.
 
