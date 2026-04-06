@@ -180,7 +180,8 @@ class QueryBuilder {
     if (this._op === "update") {
       const toUpdate = applyFilters(table, this._filters);
       if (toUpdate.length === 0 && this._single) {
-        return { data: null, error: { message: "No rows found" } };
+        // Mirror the real Supabase PostgREST error code for 0-row single queries
+        return { data: null, error: { message: "No rows found", code: "PGRST116" } };
       }
       const updatedIds = new Set(toUpdate.map((r) => r.id));
       const updatedRows = toUpdate.map((r) => ({ ...r, ...this._updatePatch! }));

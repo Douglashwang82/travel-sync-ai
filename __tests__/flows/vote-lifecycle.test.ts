@@ -17,7 +17,7 @@ vi.mock("@/lib/db");
 vi.mock("@/lib/analytics", () => ({ track: vi.fn().mockResolvedValue(undefined) }));
 
 import { createAdminClient } from "@/lib/db";
-import { startVote, confirmItem } from "@/services/trip-state";
+import { startVote, confirmItem, reopenItem } from "@/services/trip-state";
 import { castVote, closeVote } from "@/services/vote";
 import { GET as getBoardGET } from "@/app/api/liff/board/route";
 
@@ -49,11 +49,12 @@ function seedDb() {
         source: "command",
         deadline_at: null,
         confirmed_option_id: null,
+        tie_extension_count: 0,
       },
     ],
     trip_item_options: [
-      { id: OPTION_A, trip_item_id: ITEM_ID, title: "Park Hyatt Tokyo" },
-      { id: OPTION_B, trip_item_id: ITEM_ID, title: "Shinjuku Granbell Hotel" },
+      { id: OPTION_A, trip_item_id: ITEM_ID, name: "Park Hyatt Tokyo" },
+      { id: OPTION_B, trip_item_id: ITEM_ID, name: "Shinjuku Granbell Hotel" },
     ],
     votes: [],
     group_members: [
@@ -102,7 +103,8 @@ describe("Vote lifecycle flow", () => {
     expect(vote3.majority.winningOptionId).toBe(OPTION_A);
 
     // ── Step 3: Close vote (pending → confirmed) ────────────────────────────
-    await closeVote(ITEM_ID, OPTION_A, GROUP_ID);
+    const closeResult = await closeVote(ITEM_ID, OPTION_A, GROUP_ID, vote3.totalVotes);
+    expect(closeResult.closed).toBe(true);
 
     // ── Step 4: Verify LIFF board shows confirmed item ──────────────────────
     const req = new NextRequest(`http://localhost/api/liff/board?tripId=${TRIP_ID}`);
@@ -116,6 +118,28 @@ describe("Vote lifecycle flow", () => {
 
     expect(board.pending).toHaveLength(0);
     expect(board.todo).toHaveLength(0);
+  });
+
+  it("concurrent close: second closeVote returns closed:false and does not re-confirm", async () => {
+    const db = seedDb();
+    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
+
+    const deadline = new Date(Date.now() + 86400_000).toISOString();
+    await startVote(ITEM_ID, deadline);
+
+    // First close — should succeed
+    const first = await closeVote(ITEM_ID, OPTION_A, GROUP_ID, 3);
+    expect(first.closed).toBe(true);
+
+    // Second close — simulates concurrent request arriving after first already committed
+    const second = await closeVote(ITEM_ID, OPTION_A, GROUP_ID, 3);
+    expect(second.closed).toBe(false);
+
+    // Item still confirmed with the correct option (not double-written)
+    const items = db._tables.get("trip_items") ?? [];
+    const item = items.find((r) => r.id === ITEM_ID);
+    expect(item?.stage).toBe("confirmed");
+    expect(item?.confirmed_option_id).toBe(OPTION_A);
   });
 
   it("user can change their vote before majority", async () => {
@@ -150,11 +174,11 @@ describe("Vote lifecycle flow", () => {
         item_type: "hotel",
         confirmed_option_id: OPTION_A,
         deadline_at: null,
+        tie_extension_count: 0,
       },
     ]);
     vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
 
-    const { reopenItem } = await import("@/services/trip-state");
     const result = await reopenItem(ITEM_ID);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -167,5 +191,28 @@ describe("Vote lifecycle flow", () => {
     const board = await res.json();
     expect(board.todo).toHaveLength(1);
     expect(board.confirmed).toHaveLength(0);
+  });
+
+  it("reopen after tied vote resets tie_extension_count so next vote starts fresh", async () => {
+    const db = seedDb();
+    db._tables.set("trip_items", [
+      {
+        id: ITEM_ID,
+        trip_id: TRIP_ID,
+        title: "Choose hotel",
+        stage: "pending",
+        item_type: "hotel",
+        confirmed_option_id: null,
+        deadline_at: "2026-04-06T00:00:00Z",
+        tie_extension_count: 2, // was extended twice
+      },
+    ]);
+    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
+
+    const result = await reopenItem(ITEM_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.item.tie_extension_count).toBe(0);
+    expect(result.item.deadline_at).toBeNull();
   });
 });

@@ -84,6 +84,7 @@ export interface TripItem {
   status_reason: string | null;
   confirmed_option_id: string | null;
   deadline_at: string | null;
+  tie_extension_count: number;
   created_at: string;
   updated_at: string;
 }

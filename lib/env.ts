@@ -23,6 +23,7 @@ const SERVER_ENV_VARS: EnvVar[] = [
   { key: "GEMINI_API_KEY",                required: true,  description: "Google Gemini API key for LLM parsing" },
   { key: "GOOGLE_PLACES_API_KEY",         required: false, description: "Google Places API key (optional — vote options fall back to manual if missing)" },
   { key: "NEXT_PUBLIC_LIFF_ID",           required: false, description: "LINE LIFF app ID (required for LIFF pages to work)" },
+  { key: "LIFF_CHANNEL_ID",              required: false, description: "LINE channel ID for LIFF ID token verification (required for LIFF API routes)" },
   { key: "CRON_SECRET",                   required: false, description: "Secret for Vercel cron route auth (required in production)" },
 ];
 

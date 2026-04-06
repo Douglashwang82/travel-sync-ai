@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
+import { pushText } from "@/lib/line";
 import { startDecision } from "@/services/decisions";
 import type { CommandContext } from "../router";
 
@@ -30,14 +31,13 @@ export async function handleVote(
     return;
   }
 
-  // Fetch all todo items for the active trip
+  // Fetch todo AND pending items so we can give accurate feedback
   const { data: items } = await db
     .from("trip_items")
     .select("id, title, stage")
     .eq("trip_id", trip.id)
-    .eq("stage", "todo");
+    .in("stage", ["todo", "pending"]);
 
-  // Find the best matching todo item with fuzzy-ish name normalization
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   const normalizedQuery = normalize(itemQuery);
 
@@ -57,17 +57,33 @@ export async function handleVote(
     return;
   }
 
-  // Acknowledge immediately — option fetching may take a moment
+  if (match.stage === "pending") {
+    await reply(
+      `Voting is already open for "${match.title}". Check the carousel above to cast your vote.`
+    );
+    return;
+  }
+
+  // Acknowledge immediately — place search may take a moment
   await reply(`Starting vote for "${match.title}"... I'll post the options shortly!`);
 
-  // Run the full decision flow asynchronously (don't await — reply token already used)
+  // Fire-and-forget: HTTP 200 is sent as soon as this handler returns.
+  // On failure, push an error message to the group so nobody is left waiting silently.
   startDecision({
     itemId: match.id,
     tripId: trip.id,
     groupId: ctx.dbGroupId,
     lineGroupId: ctx.lineGroupId,
     destination: trip.destination_name,
-  }).catch((err) => {
+  }).catch(async (err) => {
     console.error("[vote command] startDecision error", err);
+    try {
+      await pushText(
+        ctx.lineGroupId!,
+        `Sorry, something went wrong starting the vote for "${match.title}". Please try /vote again.`
+      );
+    } catch {
+      // ignore secondary failure
+    }
   });
 }

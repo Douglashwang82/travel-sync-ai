@@ -173,9 +173,11 @@ async function handlePostback(
     }
 
     if (result.majority.reached && result.majority.winningOptionId) {
-      // Close the vote and announce
-      await closeVote(itemId, result.majority.winningOptionId, ctx.dbGroupId);
-      await announceWinner(itemId, result.majority.winningOptionId, ctx.dbGroupId, ctx.lineGroupId);
+      // Close the vote and announce (guard against double-fire on concurrent postbacks)
+      const { closed } = await closeVote(itemId, result.majority.winningOptionId, ctx.dbGroupId, result.totalVotes);
+      if (closed) {
+        await announceWinner(itemId, result.majority.winningOptionId, ctx.lineGroupId, result.majority.winningCount, result.totalVotes);
+      }
     } else {
       // Refresh the carousel with updated vote counts
       await refreshVoteCarousel(itemId, ctx.lineGroupId);

@@ -47,6 +47,43 @@ export async function castVote(input: CastVoteInput): Promise<VoteResult> {
     };
   }
 
+  // Verify optionId belongs to this item (prevents cross-item vote injection)
+  const { data: option } = await db
+    .from("trip_item_options")
+    .select("id")
+    .eq("id", input.optionId)
+    .eq("trip_item_id", input.tripItemId)
+    .single();
+
+  if (!option) {
+    return {
+      accepted: false,
+      error: "Invalid option for this item",
+      tally: new Map(),
+      totalVotes: 0,
+      majority: { reached: false, winningOptionId: null, winningCount: 0 },
+    };
+  }
+
+  // Verify the voter is an active member of the group
+  const { data: membership } = await db
+    .from("group_members")
+    .select("id")
+    .eq("group_id", input.groupId)
+    .eq("line_user_id", input.lineUserId)
+    .is("left_at", null)
+    .single();
+
+  if (!membership) {
+    return {
+      accepted: false,
+      error: "You are not a member of this group",
+      tally: new Map(),
+      totalVotes: 0,
+      majority: { reached: false, winningOptionId: null, winningCount: 0 },
+    };
+  }
+
   // Upsert vote — replaces any prior vote by this user for this item
   const { error } = await db.from("votes").upsert(
     {
@@ -98,33 +135,37 @@ export async function castVote(input: CastVoteInput): Promise<VoteResult> {
 
 /**
  * Close a vote by confirming the winning option.
- * Called when majority is reached after castVote.
+ * Returns { closed: true } if this call performed the close, or
+ * { closed: false } if the item was already confirmed by a concurrent request.
  */
 export async function closeVote(
   tripItemId: string,
   winningOptionId: string,
-  groupId: string
-): Promise<void> {
+  groupId: string,
+  totalVotes: number
+): Promise<{ closed: boolean }> {
   const result = await confirmItem(tripItemId, winningOptionId);
-  if (!result.ok) {
-    console.error("[vote] closeVote: confirmItem failed", result);
-    return;
+
+  if (result.ok === false && result.code === "ALREADY_CONFIRMED") {
+    // Another concurrent request already closed this vote — skip analytics/announce
+    return { closed: false };
   }
 
-  const db = createAdminClient();
-  const { data: allVotes } = await db
-    .from("votes")
-    .select("option_id")
-    .eq("trip_item_id", tripItemId);
+  if (!result.ok) {
+    console.error("[vote] closeVote: confirmItem failed", result);
+    return { closed: false };
+  }
 
   await track("vote_completed", {
     groupId,
     properties: {
       item_id: tripItemId,
       winning_option_id: winningOptionId,
-      total_votes: allVotes?.length ?? 0,
+      total_votes: totalVotes,
     },
   });
+
+  return { closed: true };
 }
 
 /**
