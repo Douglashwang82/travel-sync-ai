@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
+import { pushText } from "@/lib/line";
 import { extractUrlMetadata } from "@/services/share/extractor";
 import type { CommandContext } from "../router";
 
@@ -17,8 +18,8 @@ export async function handleShare(
     return;
   }
 
-  const url = args[0];
-  if (!URL_RE.test(url)) {
+  const url = args.find((a) => URL_RE.test(a));
+  if (!url) {
     await reply("Please provide a valid URL starting with http:// or https://");
     return;
   }
@@ -93,7 +94,7 @@ export async function handleShare(
     console.error("[share] failed to insert trip_item_option", optionError);
   }
 
-  await reply(buildConfirmMessage(metadata));
+  await pushText(ctx.lineGroupId, buildConfirmMessage(metadata));
 }
 
 function buildConfirmMessage(m: Awaited<ReturnType<typeof extractUrlMetadata>>): string {
