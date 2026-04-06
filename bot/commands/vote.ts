@@ -60,14 +60,13 @@ export async function handleVote(
   // Acknowledge immediately — option fetching may take a moment
   await reply(`Starting vote for "${match.title}"... I'll post the options shortly!`);
 
-  // Run the full decision flow asynchronously (don't await — reply token already used)
-  startDecision({
+  // Await the full decision flow — startDecision uses the Push API (no reply token needed),
+  // and must be awaited so the serverless runtime doesn't terminate the process mid-flight.
+  await startDecision({
     itemId: match.id,
     tripId: trip.id,
     groupId: ctx.dbGroupId,
     lineGroupId: ctx.lineGroupId,
     destination: trip.destination_name,
-  }).catch((err) => {
-    console.error("[vote command] startDecision error", err);
   });
 }

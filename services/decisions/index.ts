@@ -111,10 +111,11 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     return;
   }
 
-  // Build carousel with current (zero) vote counts
-  const voteOptions = insertedOptions.map((opt, i) => ({
+  // Build carousel with current (zero) vote counts.
+  // Join by name rather than index to guard against DB returning rows in a different order.
+  const voteOptions = insertedOptions.map((opt) => ({
     optionId: opt.id,
-    candidate: candidates[i],
+    candidate: candidates.find((c) => c.name === opt.name) ?? candidates[0],
     voteCount: 0,
   }));
 
