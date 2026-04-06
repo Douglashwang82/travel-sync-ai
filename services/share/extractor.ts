@@ -152,15 +152,14 @@ function extractTag(html: string, tag: string): string | null {
 
 function extractMeta(html: string, property: string): string | null {
   // Matches both property= and name= variants
-  const escaped = property.replace(":", ":");
   const m = html.match(
     new RegExp(
-      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']*)["']`,
+      `<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']*)["']`,
       "i"
     )
   ) ?? html.match(
     new RegExp(
-      `<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${escaped}["']`,
+      `<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${property}["']`,
       "i"
     )
   );

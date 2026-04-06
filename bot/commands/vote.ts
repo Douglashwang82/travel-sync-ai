@@ -34,7 +34,7 @@ export async function handleVote(
   // Fetch todo AND pending items so we can give accurate feedback
   const { data: items } = await db
     .from("trip_items")
-    .select("id, title, stage")
+    .select("id, title, item_type, stage")
     .eq("trip_id", trip.id)
     .in("stage", ["todo", "pending"]);
 
@@ -45,7 +45,8 @@ export async function handleVote(
     const normalizedTitle = normalize(i.title);
     return (
       normalizedTitle.includes(normalizedQuery) ||
-      normalizedQuery.includes(normalizedTitle)
+      normalizedQuery.includes(normalizedTitle) ||
+      normalize(i.item_type ?? "") === normalizedQuery
     );
   });
 
