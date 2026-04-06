@@ -60,19 +60,27 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
 
   // Fetch place candidates
   console.log(`[decisions] Searching for candidates in ${destination}...`);
-  const candidates = await searchPlaces(destination, resolvedType);
+  const { candidates, errorKind } = await searchPlaces(destination, resolvedType);
 
   if (candidates.length === 0) {
-    console.log(`[decisions] No candidates found — falling back to manual notification`);
-    // No places found — still start the vote with a message asking organizer to add options manually
-    const deadline = new Date(Date.now() + VOTE_DURATION_HOURS * 60 * 60 * 1000).toISOString();
-    await startVote(itemId, deadline);
-    await pushText(
-      lineGroupId,
-      `📋 Started vote for "${item.title}".\n\n` +
-        `I couldn't find place options automatically. ` +
-        `Please add options via the dashboard or type /add to suggest alternatives.`
-    );
+    console.log(`[decisions] No candidates found (errorKind: ${errorKind}) — item stays in todo`);
+
+    // Do NOT move the item to pending — a vote with zero options is unvoteable.
+    // Item remains in todo so the user can retry immediately.
+    if (errorKind === "no_results") {
+      await pushText(
+        lineGroupId,
+        `❌ No places found for "${item.title}" in ${destination}.\n\n` +
+          `Add options via the trip dashboard, then start the vote again:\n  /vote ${item.title}`
+      );
+    } else {
+      // network_error — likely transient
+      await pushText(
+        lineGroupId,
+        `❌ Couldn't reach the places search for "${item.title}".\n\n` +
+          `This is usually temporary. Try again in a few minutes:\n  /vote ${item.title}`
+      );
+    }
     return;
   }
 
@@ -182,44 +190,30 @@ export async function refreshVoteCarousel(
 }
 
 /**
- * Announce the vote winner and confirm the item.
+ * Announce the vote winner.
+ * Callers must pass the pre-computed vote counts — no re-fetch needed.
  */
 export async function announceWinner(
   itemId: string,
   winningOptionId: string,
-  groupId: string,
-  lineGroupId: string
+  lineGroupId: string,
+  winnerVotes: number,
+  totalVotes: number
 ): Promise<void> {
   const db = createAdminClient();
 
-  const { data: option } = await db
-    .from("trip_item_options")
-    .select("name")
-    .eq("id", winningOptionId)
-    .single();
-
-  const { data: item } = await db
-    .from("trip_items")
-    .select("title")
-    .eq("id", itemId)
-    .single();
-
-  const { data: allVotes } = await db
-    .from("votes")
-    .select("option_id")
-    .eq("trip_item_id", itemId);
-
-  const tally = new Map<string, number>();
-  for (const v of allVotes ?? []) {
-    tally.set(v.option_id, (tally.get(v.option_id) ?? 0) + 1);
-  }
-
-  const winnerName = option?.name ?? "Selected option";
-  const winnerVotes = tally.get(winningOptionId) ?? 0;
-  const totalVotes = allVotes?.length ?? 0;
+  const [{ data: option }, { data: item }] = await Promise.all([
+    db.from("trip_item_options").select("name").eq("id", winningOptionId).single(),
+    db.from("trip_items").select("title").eq("id", itemId).single(),
+  ]);
 
   await pushText(
     lineGroupId,
-    buildWinnerMessage(item?.title ?? "Item", winnerName, winnerVotes, totalVotes)
+    buildWinnerMessage(
+      item?.title ?? "Item",
+      option?.name ?? "Selected option",
+      winnerVotes,
+      totalVotes
+    )
   );
 }
