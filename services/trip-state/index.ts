@@ -129,26 +129,14 @@ export async function startVote(
 
 /**
  * Confirm an item with a winning option.
- * Atomically: sets stage=confirmed, attaches confirmed_option_id, clears deadline.
+ * Atomic: the UPDATE only matches rows where stage is not already confirmed,
+ * so concurrent calls cannot double-fire — the second caller gets ALREADY_CONFIRMED.
  */
 export async function confirmItem(
   itemId: string,
   confirmedOptionId: string
 ): Promise<TransitionResult> {
   const db = createAdminClient();
-
-  const { data: item } = await db
-    .from("trip_items")
-    .select("id, stage")
-    .eq("id", itemId)
-    .single();
-
-  if (!item) {
-    return { ok: false, error: "Item not found", code: "NOT_FOUND" };
-  }
-  if (item.stage === "confirmed") {
-    return { ok: false, error: "Item is already confirmed", code: "INVALID_TRANSITION" };
-  }
 
   const { data, error } = await db
     .from("trip_items")
@@ -158,8 +146,20 @@ export async function confirmItem(
       deadline_at: null,
     })
     .eq("id", itemId)
+    .in("stage", ["todo", "pending"] as ItemStage[])
     .select("*")
     .single();
+
+  // PGRST116 = 0 rows returned — either not found or already confirmed
+  if (error?.code === "PGRST116") {
+    const { data: existing } = await db
+      .from("trip_items")
+      .select("id, stage")
+      .eq("id", itemId)
+      .single();
+    if (!existing) return { ok: false, error: "Item not found", code: "NOT_FOUND" };
+    return { ok: false, error: "Item is already confirmed", code: "ALREADY_CONFIRMED" };
+  }
 
   if (error || !data) {
     return { ok: false, error: "Failed to confirm item", code: "DB_ERROR" };
@@ -181,6 +181,7 @@ export async function reopenItem(itemId: string): Promise<TransitionResult> {
       confirmed_option_id: null,
       deadline_at: null,
       status_reason: null,
+      tie_extension_count: 0,
     })
     .eq("id", itemId)
     .select("*")

@@ -179,7 +179,7 @@ describe("confirmItem", () => {
     expect(result.item.deadline_at).toBeNull();
   });
 
-  it("returns INVALID_TRANSITION for already-confirmed item", async () => {
+  it("returns ALREADY_CONFIRMED for already-confirmed item (atomic race guard)", async () => {
     const db = makeDb({
       trip_items: [{ id: "item-already", stage: "confirmed", trip_id: TRIP_ID, title: "Done" }],
     });
@@ -188,7 +188,7 @@ describe("confirmItem", () => {
     const result = await confirmItem("item-already", "opt-x");
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.code).toBe("INVALID_TRANSITION");
+    expect(result.code).toBe("ALREADY_CONFIRMED");
   });
 
   it("also confirms a todo item (no stage guard)", async () => {
@@ -228,6 +228,29 @@ describe("reopenItem", () => {
     expect(result.item.stage).toBe("todo");
     expect(result.item.confirmed_option_id).toBeNull();
     expect(result.item.deadline_at).toBeNull();
+  });
+
+  it("resets tie_extension_count to 0 on reopen", async () => {
+    const db = makeDb({
+      trip_items: [
+        {
+          id: "item-tied",
+          stage: "pending",
+          confirmed_option_id: null,
+          deadline_at: "2026-04-06T00:00:00Z",
+          tie_extension_count: 2,
+          trip_id: TRIP_ID,
+          title: "Hotel",
+        },
+      ],
+    });
+    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
+
+    const result = await reopenItem("item-tied");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.item.tie_extension_count).toBe(0);
+    expect(result.item.stage).toBe("todo");
   });
 });
 

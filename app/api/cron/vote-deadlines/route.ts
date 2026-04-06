@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
-import { confirmItem } from "@/services/trip-state";
+import { closeVote } from "@/services/vote";
+import { announceWinner } from "@/services/decisions";
 import { pushText } from "@/lib/line";
-import { track } from "@/lib/analytics";
 
 const TIE_EXTENSION_HOURS = 12;
+const MAX_TIE_EXTENSIONS = 2;
 
 /**
  * GET /api/cron/vote-deadlines
@@ -13,8 +14,10 @@ const TIE_EXTENSION_HOURS = 12;
  * Runs every 5 minutes. Closes expired votes by:
  * 1. Finding pending items past their deadline.
  * 2. Tallying votes and picking the winner.
- * 3. If tied: extend by 12 hours and notify organizer.
- * 4. If majority: confirm the item with the winning option.
+ * 3. If tied and under extension cap: extend by 12 hours and notify group.
+ * 4. If tied and cap reached: revert to todo, notify organizer to decide manually.
+ * 5. If no votes: revert to todo.
+ * 6. Otherwise: close with the winning option.
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
@@ -26,7 +29,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Find expired pending items
   const { data: expiredItems } = await db
     .from("trip_items")
-    .select("id, title, trip_id")
+    .select("id, title, trip_id, tie_extension_count")
     .eq("stage", "pending")
     .lte("deadline_at", now)
     .limit(50);
@@ -47,7 +50,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const votes = votesData ?? [];
 
     if (votes.length === 0) {
-      // No votes — revert to todo and notify
+      // No votes — revert to todo
       await db
         .from("trip_items")
         .update({ stage: "todo", deadline_at: null, status_reason: "No votes received" })
@@ -83,47 +86,83 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       : null;
 
     if (isTied) {
-      // Extend by 12 hours
-      const newDeadline = new Date(Date.now() + TIE_EXTENSION_HOURS * 60 * 60 * 1000).toISOString();
-      await db
-        .from("trip_items")
-        .update({ deadline_at: newDeadline, status_reason: "Tied vote — extended" })
-        .eq("id", item.id);
-
-      if (lineGroupId) {
-        await pushText(
-          lineGroupId,
-          `🤝 The vote for "${item.title}" is tied!\n\nVoting has been extended by ${TIE_EXTENSION_HOURS} hours. If it's still tied, the organizer will decide.`
-        );
-      }
-    } else {
-      // Confirm with the winner
-      const result = await confirmItem(item.id, topOptionId);
-      if (result.ok) {
-        closed++;
-
-        await track("vote_completed", {
-          groupId: trip?.group_id,
-          properties: {
-            item_id: item.id,
-            winning_option_id: topOptionId,
-            vote_count: votes.length,
-            participation_rate: topCount / votes.length,
-          },
-        });
+      if (item.tie_extension_count >= MAX_TIE_EXTENSIONS) {
+        // Cap reached — revert to todo and ask organizer to decide
+        await db
+          .from("trip_items")
+          .update({
+            stage: "todo",
+            deadline_at: null,
+            tie_extension_count: 0,
+            status_reason: "Tie unresolved — organizer decision required",
+          })
+          .eq("id", item.id);
 
         if (lineGroupId) {
-          const { data: option } = await db
-            .from("trip_item_options")
-            .select("name")
-            .eq("id", topOptionId)
-            .single();
-
           await pushText(
             lineGroupId,
-            `✅ Decision made! "${item.title}" → ${option?.name ?? "Selected option"}\n\nView the updated board in the dashboard.`
+            `⚠️ The vote for "${item.title}" is still tied after ${MAX_TIE_EXTENSIONS} extensions.\n\nThe item has been moved back to the To-Do board. The organizer needs to make a final call.`
           );
         }
+      } else {
+        // Extend deadline
+        const newDeadline = new Date(
+          Date.now() + TIE_EXTENSION_HOURS * 60 * 60 * 1000
+        ).toISOString();
+        await db
+          .from("trip_items")
+          .update({
+            deadline_at: newDeadline,
+            tie_extension_count: item.tie_extension_count + 1,
+            status_reason: "Tied vote — extended",
+          })
+          .eq("id", item.id);
+
+        if (lineGroupId) {
+          await pushText(
+            lineGroupId,
+            `🤝 The vote for "${item.title}" is tied!\n\nVoting has been extended by ${TIE_EXTENSION_HOURS} hours (extension ${item.tie_extension_count + 1}/${MAX_TIE_EXTENSIONS}).`
+          );
+        }
+      }
+    } else {
+      // Clear winner — close the vote through the shared closeVote path
+      // (handles confirmItem + analytics in one place)
+      const { count: memberCount } = await db
+        .from("group_members")
+        .select("*", { count: "exact", head: true })
+        .eq("group_id", trip?.group_id ?? "")
+        .is("left_at", null);
+
+      const { closed: didClose } = await closeVote(
+        item.id,
+        topOptionId,
+        trip?.group_id ?? "",
+        votes.length
+      );
+
+      if (didClose) {
+        closed++;
+
+        if (lineGroupId) {
+          await announceWinner(
+            item.id,
+            topOptionId,
+            lineGroupId,
+            topCount,
+            votes.length
+          );
+        }
+
+        // Log participation rate separately (votes cast vs eligible members)
+        const participationRate =
+          memberCount && memberCount > 0 ? votes.length / memberCount : null;
+        console.info(
+          `[cron/vote-deadlines] closed "${item.title}" — winner votes: ${topCount}/${votes.length}` +
+            (participationRate != null
+              ? `, participation: ${(participationRate * 100).toFixed(0)}%`
+              : "")
+        );
       }
     }
   }
