@@ -2,7 +2,6 @@ import { createAdminClient } from "@/lib/db";
 import { pushFlex, pushText } from "@/lib/line";
 import { startVote } from "@/services/trip-state";
 import { track } from "@/lib/analytics";
-import { searchPlaces } from "./places";
 import { buildVoteCarousel, buildWinnerMessage } from "./flex";
 import { getVoteTally } from "@/services/vote";
 import type { ItemType } from "@/lib/types";
@@ -20,16 +19,17 @@ export interface StartDecisionInput {
 
 /**
  * Orchestrates the full /vote flow:
- *   1. Fetch place candidates from Google Places
- *   2. Persist as trip_item_options
- *   3. Move item to pending (startVote)
+ *   1. Collect shared options from all same-type trip_items in the trip
+ *   2. Copy any "sibling" options into the anchor item so downstream vote mechanics
+ *      (refresh carousel, tally, close vote) can read from a single trip_item_id
+ *   3. Move anchor item to pending (startVote)
  *   4. Build and push Flex Message carousel
  */
 export async function startDecision(input: StartDecisionInput): Promise<void> {
-  const { itemId, tripId, groupId, lineGroupId, destination } = input;
+  const { itemId, tripId, groupId, lineGroupId } = input;
   const db = createAdminClient();
 
-  // Fetch item details
+  // Fetch anchor item details
   const { data: item } = await db
     .from("trip_items")
     .select("id, title, item_type, stage")
@@ -42,13 +42,12 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     return;
   }
 
-  // If item was created before type inference was in place, fall back to inferring from title
   const resolvedType: ItemType =
     item.item_type && item.item_type !== "other"
       ? (item.item_type as ItemType)
       : inferItemType(item.title);
 
-  console.log(`[decisions] Starting flow for "${item.title}" (type: ${resolvedType}) in group ${lineGroupId}`);
+  console.log(`[decisions] Starting vote for "${item.title}" (type: ${resolvedType}) in group ${lineGroupId}`);
 
   if (item.stage !== "todo") {
     await pushText(
@@ -58,60 +57,69 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     return;
   }
 
-  // Fetch place candidates
-  console.log(`[decisions] Searching for candidates in ${destination}...`);
-  const { candidates, errorKind } = await searchPlaces(destination, resolvedType);
+  // Collect options shared by group members across all same-type trip_items in this trip.
+  // Each /share creates its own trip_item + option, so we aggregate them here.
+  const { data: siblingItems } = await db
+    .from("trip_items")
+    .select("id")
+    .eq("trip_id", tripId)
+    .eq("item_type", resolvedType)
+    .neq("id", itemId);
 
-  if (candidates.length === 0) {
-    console.log(`[decisions] No candidates found (errorKind: ${errorKind}) — item stays in todo`);
+  const siblingItemIds = (siblingItems ?? []).map((r) => r.id);
 
-    // Do NOT move the item to pending — a vote with zero options is unvoteable.
-    // Item remains in todo so the user can retry immediately.
-    if (errorKind === "no_results") {
-      await pushText(
-        lineGroupId,
-        `❌ No places found for "${item.title}" in ${destination}.\n\n` +
-          `Add options via the trip dashboard, then start the vote again:\n  /vote ${item.title}`
-      );
-    } else {
-      // network_error — likely transient
-      await pushText(
-        lineGroupId,
-        `❌ Couldn't reach the places search for "${item.title}".\n\n` +
-          `This is usually temporary. Try again in a few minutes:\n  /vote ${item.title}`
-      );
-    }
-    return;
-  }
+  const { data: siblingOptions } = siblingItemIds.length
+    ? await db
+        .from("trip_item_options")
+        .select("name, image_url, rating, price_level, address, booking_url, metadata_json")
+        .in("trip_item_id", siblingItemIds)
+    : { data: [] };
 
-  console.log(`[decisions] Found ${candidates.length} candidates. Persisting options...`);
-
-  // Persist options
-  const { data: insertedOptions, error: optionsError } = await db
+  // Check if anchor already has options (re-vote scenario)
+  const { data: existingOptions } = await db
     .from("trip_item_options")
-    .insert(
-      candidates.map((c) => ({
-        trip_item_id: itemId,
-        provider: "google_places" as const,
-        external_ref: c.placeId,
-        name: c.name,
-        image_url: c.photoUrl,
-        rating: c.rating,
-        price_level: c.priceLevel,
-        address: c.address,
-        booking_url: c.bookingUrl,
-        metadata_json: { place_id: c.placeId },
-      }))
-    )
-    .select("id, name");
+    .select("id")
+    .eq("trip_item_id", itemId);
 
-  if (optionsError || !insertedOptions?.length) {
-    console.error("[decisions] failed to insert options", optionsError);
-    await pushText(lineGroupId, `Something went wrong creating vote options. Please try again.`);
+  // Import sibling options into the anchor item so all downstream logic reads from one item
+  if (siblingOptions?.length && !existingOptions?.length) {
+    const { error: importError } = await db.from("trip_item_options").insert(
+      siblingOptions.map((o) => ({
+        trip_item_id: itemId,
+        provider: "manual" as const,
+        name: o.name,
+        image_url: o.image_url,
+        rating: o.rating,
+        price_level: o.price_level,
+        address: o.address,
+        booking_url: o.booking_url,
+        metadata_json: o.metadata_json,
+      }))
+    );
+    if (importError) {
+      console.error("[decisions] failed to import sibling options", importError);
+    }
+  }
+
+  // Fetch all options now on the anchor item (its own + imported siblings)
+  const { data: allOptions } = await db
+    .from("trip_item_options")
+    .select("id, name, image_url, rating, price_level, address, booking_url")
+    .eq("trip_item_id", itemId);
+
+  if (!allOptions?.length) {
+    console.log(`[decisions] No shared options found for "${item.title}" — item stays in todo`);
+    await pushText(
+      lineGroupId,
+      `🗳️ No voting options yet for "${item.title}".\n\n` +
+        `Ask group members to /share some links, then try again!`
+    );
     return;
   }
 
-  // Move item to pending
+  console.log(`[decisions] Found ${allOptions.length} option(s). Starting vote...`);
+
+  // Move anchor item to pending
   const deadline = new Date(Date.now() + VOTE_DURATION_HOURS * 60 * 60 * 1000).toISOString();
   const transition = await startVote(itemId, deadline);
   if (!transition.ok) {
@@ -119,11 +127,17 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     return;
   }
 
-  // Build carousel with current (zero) vote counts.
-  // Join by name rather than index to guard against DB returning rows in a different order.
-  const voteOptions = insertedOptions.map((opt) => ({
+  const voteOptions = allOptions.map((opt) => ({
     optionId: opt.id,
-    candidate: candidates.find((c) => c.name === opt.name) ?? candidates[0],
+    candidate: {
+      name: opt.name,
+      address: opt.address,
+      rating: opt.rating,
+      priceLevel: opt.price_level,
+      photoUrl: opt.image_url,
+      placeId: "",
+      bookingUrl: opt.booking_url,
+    },
     voteCount: 0,
   }));
 
@@ -134,7 +148,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
     properties: {
       item_id: itemId,
       item_type: resolvedType,
-      options_count: insertedOptions.length,
+      options_count: allOptions.length,
     },
   });
 
