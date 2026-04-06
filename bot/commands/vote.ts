@@ -66,10 +66,8 @@ export async function handleVote(
 
   // Acknowledge immediately — place search may take a moment
   await reply(`Starting vote for "${match.title}"... I'll post the options shortly!`);
-
-  // Fire-and-forget: HTTP 200 is sent as soon as this handler returns.
-  // On failure, push an error message to the group so nobody is left waiting silently.
-  startDecision({
+  
+  await startDecision({
     itemId: match.id,
     tripId: trip.id,
     groupId: ctx.dbGroupId,
