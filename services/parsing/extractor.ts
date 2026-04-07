@@ -15,6 +15,7 @@ const EntitySchema = z.object({
     "budget",
     "constraint",
     "conflict",
+    "availability",
   ]),
   canonicalValue: z.string(),
   displayValue: z.string(),
@@ -27,12 +28,15 @@ const SuggestedActionSchema = z.object({
     "update_trip_core",
     "create_todo_item",
     "flag_conflict",
+    "add_option",
   ]),
   field: z.string().optional(),
   itemTitle: z.string().optional(),
   itemType: z
     .enum(["hotel", "restaurant", "activity", "transport", "insurance", "flight", "other"])
     .optional(),
+  optionName: z.string().optional(),
+  deadline: z.string().optional(),
 });
 
 const ConflictSchema = z.object({
@@ -89,7 +93,9 @@ Your task:
 
 Entity types to extract:
 - date: a single date (e.g. 7月15日, July 15)
-- date_range: a range of dates (e.g. 7/15-7/20, 7月15日到20日)
+- date_range: a range of dates that represents the TRIP's collective dates
+- availability: a specific person's available date range (e.g. "I'm free 12/20–12/30", "我12/20到12/30有空")
+  → canonicalValue: ISO 8601 range "YYYY-MM-DD/YYYY-MM-DD"
 - location: destination, city, area, landmark, hotel name, restaurant name
 - flight: flight number or carrier mention
 - hotel: explicit hotel name or preference
@@ -100,8 +106,22 @@ Entity types to extract:
 
 Suggested action types:
 - update_trip_core: update the trip's destination, start_date, or end_date (field: "destination" | "start_date" | "end_date" | "date_range")
-- create_todo_item: a new planning item should be added to the board (provide itemTitle and itemType)
+- create_todo_item: an abstract planning task to add to the board (e.g. "we need travel insurance", "book a rental car")
+  → provide itemTitle, itemType, and optionally deadline (ISO 8601 date) if a hard deadline is stated
+  → do NOT use for specific venue/place/restaurant suggestions — use add_option instead
+- add_option: a specific venue, restaurant, or place that a user is suggesting as a vote candidate
+  → provide optionName (the venue name) and itemType
+  → use this for ANY concrete place suggestion — never use create_todo_item for venue suggestions
 - flag_conflict: there is a contradiction that needs organizer resolution
+
+Examples:
+- "I am available 12/20–12/30" → entity: availability, canonicalValue: "2026-12-20/2026-12-30"
+  (NOT update_trip_core — this is one person's availability, not the group's trip dates)
+- "lets go to UTT restaurant" → action: add_option, optionName: "UTT restaurant", itemType: "restaurant"
+  (NOT create_todo_item — this is a specific venue suggestion)
+- "VISA is required before 9/1" → action: create_todo_item, itemTitle: "Apply for VISA", itemType: "other", deadline: "2026-09-01"
+- "我們需要訂飯店" (we need to book a hotel) → action: create_todo_item, itemTitle: "Book hotel", itemType: "hotel"
+  (abstract task with no specific venue → create_todo_item, not add_option)
 
 Rules:
 - Set relevant: false for stickers, greetings, reactions, off-topic chat, and messages with no travel signal.
@@ -110,12 +130,16 @@ Rules:
 - canonicalValue for dates must be ISO 8601 (YYYY-MM-DD or YYYY-MM-DD/YYYY-MM-DD for ranges).
 - canonicalValue for locations must be the standard English name (e.g. "Osaka" not "大阪").
 - Return displayValue as the original text the user typed.
+- NEVER use update_trip_core for a single person's availability statement. Trip dates must be decided
+  collectively by the group, not inferred from one person's schedule.
+- When a message suggests a specific venue, emit add_option — do not also emit create_todo_item for
+  the same itemType in the same message.
 
 Return ONLY valid JSON matching this schema:
 {
   "relevant": boolean,
   "entities": [{ "type", "canonicalValue", "displayValue", "confidence", "attributes"? }],
-  "suggestedActions": [{ "action", "field"?, "itemTitle"?, "itemType"? }],
+  "suggestedActions": [{ "action", "field"?, "itemTitle"?, "itemType"?, "optionName"?, "deadline"? }],
   "conflicts": [{ "field", "existingValue", "newValue", "description" }]
 }`;
 }

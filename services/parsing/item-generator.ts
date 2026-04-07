@@ -12,7 +12,8 @@ export async function applyParseResult(
   groupId: string,
   lineEventId: string,
   entities: ParsedEntity[],
-  suggestedActions: SuggestedAction[]
+  suggestedActions: SuggestedAction[],
+  lineUserId?: string
 ): Promise<void> {
   if (entities.length === 0 && suggestedActions.length === 0) return;
 
@@ -29,7 +30,12 @@ export async function applyParseResult(
         canonical_value: e.canonicalValue,
         display_value: e.displayValue,
         confidence_score: e.confidence,
-        attributes_json: e.attributes ?? {},
+        // Inject the sender's line_user_id into availability entities so they can
+        // be queried per-person later (e.g. for the daily digest).
+        attributes_json:
+          e.type === "availability" && lineUserId
+            ? { ...(e.attributes ?? {}), line_user_id: lineUserId }
+            : (e.attributes ?? {}),
       }))
     );
   }
@@ -43,7 +49,13 @@ export async function applyParseResult(
 
       case "create_todo_item":
         if (action.itemTitle) {
-          await createTodoIfAbsent(tripId, action.itemTitle, action.itemType);
+          await createTodoIfAbsent(tripId, action.itemTitle, action.itemType, action.deadline);
+        }
+        break;
+
+      case "add_option":
+        if (action.optionName && action.itemType) {
+          await addOptionToItem(tripId, action.optionName, action.itemType);
         }
         break;
 
@@ -92,7 +104,8 @@ async function applyTripCoreUpdate(
 async function createTodoIfAbsent(
   tripId: string,
   title: string,
-  itemType: string | undefined
+  itemType: string | undefined,
+  deadline?: string
 ): Promise<void> {
   const db = createAdminClient();
 
@@ -112,5 +125,64 @@ async function createTodoIfAbsent(
     title,
     itemType: (itemType as ItemType) ?? "other",
     source: "ai",
+    deadlineAt: deadline,
+  });
+}
+
+/**
+ * Add a named option to the latest non-confirmed trip item of the given type.
+ * If no suitable item exists, creates one first.
+ */
+async function addOptionToItem(
+  tripId: string,
+  optionName: string,
+  itemType: string
+): Promise<void> {
+  const db = createAdminClient();
+
+  // Find the most recently created non-confirmed item of this type
+  const { data: item } = await db
+    .from("trip_items")
+    .select("id")
+    .eq("trip_id", tripId)
+    .eq("item_type", itemType)
+    .neq("stage", "confirmed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  let itemId: string;
+
+  if (item) {
+    itemId = item.id;
+  } else {
+    // No suitable item exists — create one so the option has somewhere to live
+    const result = await createItem({
+      tripId,
+      title: `Choose ${itemType}`,
+      itemType: itemType as ItemType,
+      source: "ai",
+    });
+    if (!result.ok) return;
+    itemId = result.item.id;
+  }
+
+  // Dedup: skip if the same name already exists for this item (case-insensitive)
+  const { data: existingOption } = await db
+    .from("trip_item_options")
+    .select("id")
+    .eq("trip_item_id", itemId)
+    .ilike("name", optionName)
+    .limit(1)
+    .single();
+
+  if (existingOption) return;
+
+  await db.from("trip_item_options").insert({
+    trip_item_id: itemId,
+    provider: "manual",
+    name: optionName,
+    external_ref: null,
+    metadata_json: {},
   });
 }
