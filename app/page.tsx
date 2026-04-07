@@ -56,7 +56,7 @@ const COMMANDS = [
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-white dark:bg-[#0a0a0a]">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-[#0a0a0a]">
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
@@ -149,6 +149,22 @@ export default function HomePage() {
             </ChatBubble>
           </div>
         </section>
+
+        {/* Stats bar */}
+        <div className="border-y border-[var(--border)] bg-[var(--secondary)] dark:bg-[#111] py-4 px-5">
+          <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-6 sm:gap-12 text-center">
+            {[
+              { value: "LINE-native", label: "No extra apps" },
+              { value: "AI-powered", label: "Auto-parses chats" },
+              { value: "Free", label: "Always" },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="font-bold text-sm text-[var(--foreground)]">{s.value}</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Features */}
         <section id="features" className="py-20 px-5 bg-white dark:bg-[#0a0a0a]">
@@ -252,7 +268,7 @@ export default function HomePage() {
       <footer className="border-t border-[var(--border)] py-8 px-5">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-[var(--muted-foreground)]">
           <span className="font-medium text-[var(--foreground)]">✈️ TravelSync AI</span>
-          <span>© {new Date().getFullYear()} TravelSync AI. Built for travelers.</span>
+          <span>© 2026 TravelSync AI. Built for travelers.</span>
           <nav className="flex gap-4">
             <Link href="/liff/help" className="hover:text-[var(--foreground)] transition-colors">
               Help

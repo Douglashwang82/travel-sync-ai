@@ -2,6 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLiff } from "@/components/liff-provider";
+import {
+  LoadingSpinner,
+  ListSkeleton,
+  ErrorScreen,
+  EmptyState,
+} from "@/components/liff/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +28,7 @@ export default function VotesPage() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [castingFor, setCastingFor] = useState<string | null>(null); // optionId being cast
+  const [voteError, setVoteError]   = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!profile || !lineGroupId) return;
@@ -68,16 +75,17 @@ export default function VotesPage() {
       const liff = (await import("@line/liff")).default;
       idToken = liff.getIDToken();
     } catch {
-      alert("Unable to get auth token. Please reopen in LINE.");
+      setVoteError("Unable to get auth token. Please reopen in LINE.");
       return;
     }
 
     if (!idToken) {
-      alert("Not authenticated. Please reopen in LINE.");
+      setVoteError("Not authenticated. Please reopen in LINE.");
       return;
     }
 
     setCastingFor(optionId);
+    setVoteError(null);
     try {
       const res = await fetch("/api/liff/votes", {
         method: "POST",
@@ -101,7 +109,7 @@ export default function VotesPage() {
       // Refresh votes to reflect the new tally
       await load();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error casting vote");
+      setVoteError(err instanceof Error ? err.message : "Error casting vote");
     } finally {
       setCastingFor(null);
     }
@@ -109,16 +117,16 @@ export default function VotesPage() {
 
   // ── Render states ─────────────────────────────────────────────────────────
 
-  if (!isReady) return <LoadingScreen />;
-  if (error) return <ErrorScreen message={error} />;
-  if (!isLoggedIn) return <LoadingScreen />;
-  if (loading) return <LoadingScreen />;
-  if (loadError) return <ErrorScreen message={loadError} onRetry={load} />;
+  if (!isReady)    return <LoadingSpinner message="Initializing…" />;
+  if (error)       return <ErrorScreen message={error} />;
+  if (!isLoggedIn) return <LoadingSpinner message="Logging in…" />;
+  if (loading)     return <ListSkeleton rows={3} />;
+  if (loadError)   return <ErrorScreen message={loadError} onRetry={load} />;
 
   return (
     <div className="max-w-md mx-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[var(--background)] border-b border-[var(--border)] px-4 py-3">
+      <div className="sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-sm border-b border-[var(--border)] px-4 py-3">
         <h1 className="font-bold text-base">🗳️ Active Votes</h1>
         {session?.activeTrip && (
           <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
@@ -127,8 +135,23 @@ export default function VotesPage() {
         )}
       </div>
 
+      {voteError && (
+        <div className="mx-4 mt-3 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs">
+          {voteError}
+        </div>
+      )}
+
       {votes.length === 0 ? (
-        <EmptyState />
+        <EmptyState
+          emoji="🗳️"
+          title="No active votes"
+          description={
+            <>
+              Type <code className="font-mono text-xs">/vote [item]</code> in
+              chat to start a vote on a board item.
+            </>
+          }
+        />
       ) : (
         <div className="px-4 pt-4 space-y-5 pb-4">
           {votes.map((vote) => (
@@ -295,46 +318,3 @@ function OptionRow({
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-[var(--secondary)] flex items-center justify-center text-3xl">
-        🗳️
-      </div>
-      <div>
-        <p className="font-semibold text-sm">No active votes</p>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Type{" "}
-          <code className="font-mono text-xs">/vote [item]</code> in chat to
-          start a vote on a board item.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function LoadingScreen() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3">
-      <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-[var(--muted-foreground)]">Loading votes...</p>
-    </div>
-  );
-}
-
-function ErrorScreen({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-3">
-      <p className="text-3xl">⚠️</p>
-      <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-sm text-[var(--primary)] underline underline-offset-2"
-        >
-          Tap to retry
-        </button>
-      )}
-    </div>
-  );
-}

@@ -2,8 +2,24 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLiff } from "@/components/liff-provider";
+import {
+  BoardSkeleton,
+  LoadingSpinner,
+  ErrorScreen,
+  EmptyState,
+  InlineError,
+} from "@/components/liff/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,55 +41,67 @@ import type { BoardData, TripItem, ItemType } from "@/lib/types";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ITEM_TYPE_EMOJI: Record<ItemType, string> = {
-  hotel: "🏨",
+  hotel:      "🏨",
   restaurant: "🍽️",
-  activity: "🎯",
-  transport: "🚌",
-  flight: "✈️",
-  insurance: "🛡️",
-  other: "📌",
+  activity:   "🎯",
+  transport:  "🚌",
+  flight:     "✈️",
+  insurance:  "🛡️",
+  other:      "📌",
 };
 
 const ITEM_TYPES: { value: ItemType; label: string }[] = [
-  { value: "hotel", label: "🏨 Hotel" },
+  { value: "hotel",      label: "🏨 Hotel" },
   { value: "restaurant", label: "🍽️ Restaurant" },
-  { value: "activity", label: "🎯 Activity" },
-  { value: "transport", label: "🚌 Transport" },
-  { value: "flight", label: "✈️ Flight" },
-  { value: "insurance", label: "🛡️ Insurance" },
-  { value: "other", label: "📌 Other" },
+  { value: "activity",   label: "🎯 Activity" },
+  { value: "transport",  label: "🚌 Transport" },
+  { value: "flight",     label: "✈️ Flight" },
+  { value: "insurance",  label: "🛡️ Insurance" },
+  { value: "other",      label: "📌 Other" },
 ];
 
 type SessionData = {
   group: { id: string; lineGroupId: string; name: string | null };
   member: { lineUserId: string; role: string };
-  activeTrip: { id: string; destination_name: string; start_date: string | null; end_date: string | null } | null;
+  activeTrip: {
+    id: string;
+    destination_name: string;
+    start_date: string | null;
+    end_date: string | null;
+  } | null;
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { isReady, isLoggedIn, profile, lineGroupId, error } = useLiff();
-  const [session, setSession] = useState<SessionData | null>(null);
-  const [board, setBoard] = useState<BoardData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [session, setSession]     = useState<SessionData | null>(null);
+  const [board, setBoard]         = useState<BoardData | null>(null);
+  const [loading, setLoading]     = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Add-item sheet
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newType, setNewType] = useState<ItemType>("other");
-  const [adding, setAdding] = useState(false);
+  const [newTitle, setNewTitle]         = useState("");
+  const [newType, setNewType]           = useState<ItemType>("other");
+  const [adding, setAdding]             = useState(false);
+  const [addError, setAddError]         = useState<string | null>(null);
 
   // Item detail sheet
-  const [selectedItem, setSelectedItem] = useState<TripItem | null>(null);
+  const [selectedItem, setSelectedItem]   = useState<TripItem | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-  const [actioning, setActioning] = useState(false);
+  const [actioning, setActioning]         = useState(false);
+
+  // Delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete]         = useState<TripItem | null>(null);
 
   const loadBoard = useCallback(async () => {
     if (!profile || !lineGroupId) return;
     setLoading(true);
     setLoadError(null);
+    setActionError(null);
     try {
       const sessionRes = await fetch(
         `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
@@ -104,6 +132,7 @@ export default function DashboardPage() {
   async function handleAddItem() {
     if (!newTitle.trim() || !session?.activeTrip) return;
     setAdding(true);
+    setAddError(null);
     try {
       const res = await fetch("/api/liff/items", {
         method: "POST",
@@ -121,7 +150,7 @@ export default function DashboardPage() {
       setAddSheetOpen(false);
       await loadBoard();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error adding item");
+      setAddError(err instanceof Error ? err.message : "Error adding item");
     } finally {
       setAdding(false);
     }
@@ -129,6 +158,7 @@ export default function DashboardPage() {
 
   async function handleReopen(itemId: string) {
     setActioning(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/liff/items", {
         method: "POST",
@@ -139,26 +169,35 @@ export default function DashboardPage() {
       setDetailSheetOpen(false);
       await loadBoard();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error");
+      setActionError(err instanceof Error ? err.message : "Failed to reopen");
     } finally {
       setActioning(false);
     }
   }
 
-  async function handleDelete(itemId: string) {
-    if (!confirm("Delete this item?")) return;
+  function openDeleteDialog(item: TripItem) {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
     setActioning(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/liff/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", itemId }),
+        body: JSON.stringify({ action: "delete", itemId: itemToDelete.id }),
       });
       if (!res.ok && res.status !== 204) throw new Error("Failed to delete");
+      setDeleteDialogOpen(false);
       setDetailSheetOpen(false);
+      setItemToDelete(null);
       await loadBoard();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error");
+      setActionError(err instanceof Error ? err.message : "Failed to delete");
+      setDeleteDialogOpen(false);
     } finally {
       setActioning(false);
     }
@@ -166,29 +205,27 @@ export default function DashboardPage() {
 
   // ── Render states ─────────────────────────────────────────────────────────
 
-  if (!isReady) return <LoadingScreen message="Initializing..." />;
-  if (error) return <ErrorScreen message={error} />;
-  if (!isLoggedIn) return <LoadingScreen message="Logging in..." />;
-  if (loading) return <LoadingScreen message="Loading trip board..." />;
-  if (loadError) return <ErrorScreen message={loadError} onRetry={loadBoard} />;
+  if (!isReady)    return <LoadingSpinner message="Initializing…" />;
+  if (error)       return <ErrorScreen message={error} />;
+  if (!isLoggedIn) return <LoadingSpinner message="Logging in…" />;
+  if (loading)     return <BoardSkeleton />;
+  if (loadError)   return <ErrorScreen message={loadError} onRetry={loadBoard} />;
 
   if (!board || !session?.activeTrip) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#dcfce7] dark:bg-[#14532d] flex items-center justify-center text-3xl">
-          ✈️
-        </div>
-        <div>
-          <h2 className="text-base font-semibold">No active trip</h2>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1 max-w-xs">
+      <EmptyState
+        emoji="✈️"
+        title="No active trip"
+        description={
+          <>
             Type{" "}
             <code className="font-mono bg-[var(--secondary)] px-1 py-0.5 rounded text-xs">
               /start [destination] [dates]
             </code>{" "}
             in the group chat to begin planning.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
     );
   }
 
@@ -197,28 +234,24 @@ export default function DashboardPage() {
     board.todo.length + board.pending.length + board.confirmed.length;
 
   return (
-    <div className="max-w-md mx-auto pb-4">
-      {/* Sticky trip header */}
-      <div className="sticky top-0 z-10 bg-[var(--background)] border-b border-[var(--border)] px-4 py-3">
+    <div className="max-w-md mx-auto">
+      {/* ── Sticky header ── */}
+      <div className="sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-sm border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <h1 className="font-bold text-base truncate">
               ✈️ {board.trip.destination_name}
             </h1>
-            {board.trip.start_date && board.trip.end_date ? (
-              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                {board.trip.start_date} → {board.trip.end_date}
-              </p>
-            ) : (
-              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                {totalItems} items total
-              </p>
-            )}
+            <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+              {board.trip.start_date && board.trip.end_date
+                ? `${board.trip.start_date} → ${board.trip.end_date}`
+                : `${totalItems} item${totalItems !== 1 ? "s" : ""} total`}
+            </p>
           </div>
           {isOrganizer && (
             <Button
               size="sm"
-              onClick={() => setAddSheetOpen(true)}
+              onClick={() => { setAddError(null); setAddSheetOpen(true); }}
               className="shrink-0 ml-3"
             >
               + Add
@@ -228,31 +261,30 @@ export default function DashboardPage() {
 
         {/* Progress bar */}
         {totalItems > 0 && (
-          <div className="mt-2 flex gap-0.5 h-1 rounded-full overflow-hidden">
+          <div className="mt-2.5 flex h-1 rounded-full overflow-hidden bg-[var(--border)]">
             {board.confirmed.length > 0 && (
               <div
-                className="bg-[var(--primary)] rounded-full"
+                className="bg-[var(--primary)] transition-all duration-500"
                 style={{ width: `${(board.confirmed.length / totalItems) * 100}%` }}
               />
             )}
             {board.pending.length > 0 && (
               <div
-                className="bg-amber-400 rounded-full"
+                className="bg-amber-400 transition-all duration-500"
                 style={{ width: `${(board.pending.length / totalItems) * 100}%` }}
-              />
-            )}
-            {board.todo.length > 0 && (
-              <div
-                className="bg-[var(--border)] rounded-full"
-                style={{ width: `${(board.todo.length / totalItems) * 100}%` }}
               />
             )}
           </div>
         )}
       </div>
 
-      {/* Board columns */}
-      <div className="px-4 pt-4 space-y-3">
+      {/* ── Action error banner ── */}
+      {actionError && (
+        <InlineError message={actionError} onDismiss={() => setActionError(null)} />
+      )}
+
+      {/* ── Board columns ── */}
+      <div className="px-4 pt-4 space-y-3 pb-4">
         <BoardColumn
           title="To-Do"
           emoji="📌"
@@ -282,8 +314,11 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Add-item sheet */}
-      <Sheet open={addSheetOpen} onOpenChange={setAddSheetOpen}>
+      {/* ── Add-item sheet ── */}
+      <Sheet
+        open={addSheetOpen}
+        onOpenChange={(open) => { setAddSheetOpen(open); if (!open) setAddError(null); }}
+      >
         <SheetContent side="bottom" className="rounded-t-2xl">
           <SheetHeader className="mb-4">
             <SheetTitle>Add to-do item</SheetTitle>
@@ -315,28 +350,35 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
             </div>
+            {addError && (
+              <p className="text-xs text-destructive">{addError}</p>
+            )}
             <Button
               className="w-full"
               onClick={handleAddItem}
               disabled={adding || !newTitle.trim()}
             >
-              {adding ? "Adding..." : "Add item"}
+              {adding ? "Adding…" : "Add item"}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Item detail sheet */}
+      {/* ── Item detail sheet ── */}
       {selectedItem && (
         <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
           <SheetContent side="bottom" className="rounded-t-2xl">
             <SheetHeader className="mb-4">
-              <SheetTitle className="flex items-center gap-2 text-left">
-                <span className="text-xl">{ITEM_TYPE_EMOJI[selectedItem.item_type]}</span>
+              <SheetTitle className="flex items-center gap-2.5 text-left pr-6">
+                <span className="text-2xl leading-none shrink-0">
+                  {ITEM_TYPE_EMOJI[selectedItem.item_type]}
+                </span>
                 <span className="leading-snug">{selectedItem.title}</span>
               </SheetTitle>
             </SheetHeader>
+
             <div className="space-y-4">
+              {/* Status badges */}
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary" className="capitalize">
                   {selectedItem.item_type}
@@ -355,14 +397,16 @@ export default function DashboardPage() {
                 </Badge>
               </div>
 
+              {/* Description */}
               {selectedItem.description && (
                 <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
                   {selectedItem.description}
                 </p>
               )}
 
+              {/* Deadline */}
               {selectedItem.deadline_at && (
-                <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+                <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] bg-[var(--secondary)] rounded-xl px-3 py-2">
                   <span>🕒</span>
                   <span>
                     Deadline:{" "}
@@ -374,20 +418,22 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {/* Organizer actions */}
               {isOrganizer && (
                 <div className="flex flex-col gap-2 pt-1">
-                  {(selectedItem.stage === "confirmed" || selectedItem.stage === "pending") && (
+                  {(selectedItem.stage === "confirmed" ||
+                    selectedItem.stage === "pending") && (
                     <Button
                       variant="outline"
                       onClick={() => handleReopen(selectedItem.id)}
                       disabled={actioning}
                     >
-                      Reopen (move to To-Do)
+                      {actioning ? "Moving…" : "Reopen (move to To-Do)"}
                     </Button>
                   )}
                   <Button
                     variant="destructive"
-                    onClick={() => handleDelete(selectedItem.id)}
+                    onClick={() => openDeleteDialog(selectedItem)}
                     disabled={actioning}
                   >
                     Delete item
@@ -398,6 +444,33 @@ export default function DashboardPage() {
           </SheetContent>
         </Sheet>
       )}
+
+      {/* ── Delete confirmation dialog ── */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="mx-4 max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Delete item?</DialogTitle>
+            <DialogDescription>
+              &ldquo;{itemToDelete?.title}&rdquo; will be permanently removed
+              from the trip board.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={actioning}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={actioning}
+            >
+              {actioning ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -423,7 +496,7 @@ function BoardColumn({
 }) {
   return (
     <div className="rounded-2xl border border-[var(--border)] overflow-hidden">
-      {/* Column header */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--secondary)] dark:bg-[#111]">
         <div className={cn("flex items-center gap-1.5 text-sm font-semibold", colorClass)}>
           <span>{emoji}</span>
@@ -437,7 +510,7 @@ function BoardColumn({
       {/* Items */}
       <div className="divide-y divide-[var(--border)]">
         {items.length === 0 ? (
-          <p className="px-4 py-3 text-xs text-[var(--muted-foreground)] italic">
+          <p className="px-4 py-3.5 text-xs text-[var(--muted-foreground)] italic">
             {emptyMessage}
           </p>
         ) : (
@@ -447,10 +520,12 @@ function BoardColumn({
               onClick={() => onItemClick(item)}
               className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--secondary)] active:bg-[var(--secondary)] transition-colors"
             >
-              <span className="text-base shrink-0">{ITEM_TYPE_EMOJI[item.item_type]}</span>
+              <span className="text-base leading-none shrink-0">
+                {ITEM_TYPE_EMOJI[item.item_type]}
+              </span>
               <span className="flex-1 text-sm font-medium truncate">{item.title}</span>
               {item.deadline_at && (
-                <span className="text-[10px] text-[var(--muted-foreground)] shrink-0">
+                <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">
                   {new Date(item.deadline_at).toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
@@ -462,32 +537,6 @@ function BoardColumn({
           ))
         )}
       </div>
-    </div>
-  );
-}
-
-function LoadingScreen({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3">
-      <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
-    </div>
-  );
-}
-
-function ErrorScreen({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-3">
-      <p className="text-3xl">⚠️</p>
-      <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-sm text-[var(--primary)] underline underline-offset-2"
-        >
-          Tap to retry
-        </button>
-      )}
     </div>
   );
 }

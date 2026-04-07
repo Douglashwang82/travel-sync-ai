@@ -2,6 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLiff } from "@/components/liff-provider";
+import {
+  LoadingSpinner,
+  ListSkeleton,
+  ErrorScreen,
+  EmptyState,
+} from "@/components/liff/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,16 +116,16 @@ export default function ExpensesPage() {
 
   // ── Render states ─────────────────────────────────────────────────────────
 
-  if (!isReady) return <LoadingScreen />;
-  if (error) return <ErrorScreen message={error} />;
-  if (!isLoggedIn) return <LoadingScreen />;
-  if (loading) return <LoadingScreen />;
-  if (loadError) return <ErrorScreen message={loadError} onRetry={load} />;
+  if (!isReady)    return <LoadingSpinner message="Initializing…" />;
+  if (error)       return <ErrorScreen message={error} />;
+  if (!isLoggedIn) return <LoadingSpinner message="Logging in…" />;
+  if (loading)     return <ListSkeleton rows={4} />;
+  if (loadError)   return <ErrorScreen message={loadError} onRetry={load} />;
 
   return (
     <div className="max-w-md mx-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[var(--background)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-sm border-b border-[var(--border)] px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="font-bold text-base">💰 Expenses</h1>
           {session?.activeTrip && (
@@ -134,7 +140,16 @@ export default function ExpensesPage() {
       </div>
 
       {!data || data.expenses.length === 0 ? (
-        <EmptyState onAdd={() => setAddOpen(true)} />
+        <EmptyState
+          emoji="💸"
+          title="No expenses logged"
+          description="Log shared costs as you go and track who owes whom."
+          action={
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              Log first expense
+            </Button>
+          }
+        />
       ) : (
         <div className="px-4 pt-4 space-y-4 pb-4">
           {/* Total card */}
@@ -212,7 +227,7 @@ export default function ExpensesPage() {
               />
             </div>
             {submitError && (
-              <p className="text-xs text-destructive">{submitError}</p>
+              <p className="text-xs text-[var(--destructive)]">{submitError}</p>
             )}
             <p className="text-xs text-[var(--muted-foreground)]">
               Split equally among all group members.
@@ -313,47 +328,3 @@ function ExpenseRowItem({ expense }: { expense: ExpenseRow }) {
   );
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-[var(--secondary)] flex items-center justify-center text-3xl">
-        💸
-      </div>
-      <div>
-        <p className="font-semibold text-sm">No expenses logged</p>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Log shared costs and track who owes whom.
-        </p>
-      </div>
-      <Button size="sm" onClick={onAdd}>
-        Log first expense
-      </Button>
-    </div>
-  );
-}
-
-function LoadingScreen() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3">
-      <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-[var(--muted-foreground)]">Loading expenses...</p>
-    </div>
-  );
-}
-
-function ErrorScreen({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-3">
-      <p className="text-3xl">⚠️</p>
-      <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-sm text-[var(--primary)] underline underline-offset-2"
-        >
-          Tap to retry
-        </button>
-      )}
-    </div>
-  );
-}

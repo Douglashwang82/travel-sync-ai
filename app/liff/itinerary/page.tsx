@@ -2,6 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLiff } from "@/components/liff-provider";
+import {
+  LoadingSpinner,
+  TimelineSkeleton,
+  ErrorScreen,
+  EmptyState,
+} from "@/components/liff/shared";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ItineraryItem } from "@/app/api/liff/itinerary/route";
@@ -65,29 +71,27 @@ export default function ItineraryPage() {
     if (isReady && isLoggedIn) loadItinerary();
   }, [isReady, isLoggedIn, loadItinerary]);
 
-  if (!isReady) return <LoadingScreen />;
-  if (error) return <ErrorScreen message={error} />;
-  if (!isLoggedIn) return <LoadingScreen />;
-  if (loading) return <LoadingScreen />;
-  if (loadError) return <ErrorScreen message={loadError} onRetry={loadItinerary} />;
+  if (!isReady)      return <LoadingSpinner message="Initializing…" />;
+  if (error)         return <ErrorScreen message={error} />;
+  if (!isLoggedIn)   return <LoadingSpinner message="Logging in…" />;
+  if (loading)       return <TimelineSkeleton />;
+  if (loadError)     return <ErrorScreen message={loadError} onRetry={loadItinerary} />;
 
   if (!trip) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#dcfce7] dark:bg-[#14532d] flex items-center justify-center text-3xl">
-          🗺️
-        </div>
-        <div>
-          <h2 className="text-base font-semibold">No active trip</h2>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+      <EmptyState
+        emoji="🗺️"
+        title="No active trip"
+        description={
+          <>
             Type{" "}
             <code className="font-mono bg-[var(--secondary)] px-1 py-0.5 rounded text-xs">
               /start
             </code>{" "}
             in the group chat to begin.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
     );
   }
 
@@ -95,19 +99,16 @@ export default function ItineraryPage() {
     return (
       <div className="max-w-md mx-auto">
         <TripHeader trip={trip} />
-        <div className="flex flex-col items-center py-16 text-center px-6 gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--secondary)] flex items-center justify-center text-3xl">
-            ⏳
-          </div>
-          <div>
-            <p className="font-semibold text-sm">No confirmed items yet</p>
-            <p className="text-sm text-[var(--muted-foreground)] mt-1">
-              Use{" "}
-              <code className="font-mono text-xs">/vote</code> in chat to start
-              deciding. Confirmed items appear here.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          emoji="⏳"
+          title="No confirmed items yet"
+          description={
+            <>
+              Use <code className="font-mono text-xs">/vote</code> in chat to
+              start deciding. Confirmed items will appear here.
+            </>
+          }
+        />
       </div>
     );
   }
@@ -254,28 +255,3 @@ function ItineraryCard({ item }: { item: ItineraryItem }) {
   );
 }
 
-function LoadingScreen() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3">
-      <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-[var(--muted-foreground)]">Loading itinerary...</p>
-    </div>
-  );
-}
-
-function ErrorScreen({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-3">
-      <p className="text-3xl">⚠️</p>
-      <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-sm text-[var(--primary)] underline underline-offset-2"
-        >
-          Tap to retry
-        </button>
-      )}
-    </div>
-  );
-}
