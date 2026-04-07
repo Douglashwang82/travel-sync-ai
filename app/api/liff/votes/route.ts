@@ -6,22 +6,170 @@ import { announceWinner, refreshVoteCarousel } from "@/services/decisions";
 import { verifyLiffToken, extractBearerToken } from "@/lib/liff-auth";
 import type { ApiError } from "@/lib/types";
 
+// ─── GET /api/liff/votes ──────────────────────────────────────────────────────
+// Returns all pending (in-vote) trip items with options and current tallies.
+//
+// Query params:
+//   tripId     (UUID)    required
+//   lineUserId (string)  optional — marks which option the caller voted for
+
+const GetSchema = z.object({
+  tripId: z.string().uuid(),
+  lineUserId: z.string().optional(),
+});
+
+export interface VoteOption {
+  id: string;
+  name: string;
+  image_url: string | null;
+  rating: number | null;
+  price_level: string | null;
+  booking_url: string | null;
+  voteCount: number;
+  votedByMe: boolean;
+}
+
+export interface ActiveVote {
+  item: {
+    id: string;
+    title: string;
+    item_type: string;
+    deadline_at: string | null;
+  };
+  options: VoteOption[];
+  totalVotes: number;
+  myVoteOptionId: string | null;
+}
+
+export interface VotesResponse {
+  votes: ActiveVote[];
+}
+
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { searchParams } = new URL(req.url);
+  const parsed = GetSchema.safeParse({
+    tripId: searchParams.get("tripId") ?? undefined,
+    lineUserId: searchParams.get("lineUserId") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json<ApiError>(
+      { error: "Validation failed", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { tripId, lineUserId } = parsed.data;
+  const db = createAdminClient();
+
+  // 1. Get pending items
+  const { data: pendingItems, error: itemsErr } = await db
+    .from("trip_items")
+    .select("id, title, item_type, deadline_at")
+    .eq("trip_id", tripId)
+    .eq("stage", "pending")
+    .order("created_at", { ascending: true });
+
+  if (itemsErr) {
+    return NextResponse.json<ApiError>(
+      { error: "Failed to fetch pending items", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+
+  if (!pendingItems?.length) {
+    return NextResponse.json<VotesResponse>({ votes: [] });
+  }
+
+  const itemIds = pendingItems.map((i) => i.id as string);
+
+  // 2. Get options for all pending items
+  const { data: options, error: optErr } = await db
+    .from("trip_item_options")
+    .select("id, trip_item_id, name, image_url, rating, price_level, booking_url")
+    .in("trip_item_id", itemIds);
+
+  if (optErr) {
+    return NextResponse.json<ApiError>(
+      { error: "Failed to fetch options", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+
+  // 3. Get votes for all pending items
+  const { data: votes, error: votesErr } = await db
+    .from("votes")
+    .select("trip_item_id, option_id, line_user_id")
+    .in("trip_item_id", itemIds);
+
+  if (votesErr) {
+    return NextResponse.json<ApiError>(
+      { error: "Failed to fetch votes", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+
+  // 4. Aggregate
+  const optionRows = options ?? [];
+  const voteRows = votes ?? [];
+
+  const result: ActiveVote[] = pendingItems.map((item) => {
+    const itemOptions = optionRows.filter((o) => o.trip_item_id === item.id);
+    const itemVotes = voteRows.filter((v) => v.trip_item_id === item.id);
+
+    // tally votes per option
+    const tally = new Map<string, number>();
+    for (const v of itemVotes) {
+      const optId = v.option_id as string;
+      tally.set(optId, (tally.get(optId) ?? 0) + 1);
+    }
+
+    // find this user's vote
+    const myVote = lineUserId
+      ? itemVotes.find((v) => v.line_user_id === lineUserId)
+      : null;
+    const myVoteOptionId = myVote ? (myVote.option_id as string) : null;
+
+    const voteOptions: VoteOption[] = itemOptions.map((o) => ({
+      id: o.id as string,
+      name: o.name as string,
+      image_url: (o.image_url as string | null) ?? null,
+      rating: o.rating != null ? Number(o.rating) : null,
+      price_level: (o.price_level as string | null) ?? null,
+      booking_url: (o.booking_url as string | null) ?? null,
+      voteCount: tally.get(o.id as string) ?? 0,
+      votedByMe: myVoteOptionId === (o.id as string),
+    }));
+
+    return {
+      item: {
+        id: item.id as string,
+        title: item.title as string,
+        item_type: item.item_type as string,
+        deadline_at: (item.deadline_at as string | null) ?? null,
+      },
+      options: voteOptions,
+      totalVotes: itemVotes.length,
+      myVoteOptionId,
+    };
+  });
+
+  return NextResponse.json<VotesResponse>({ votes: result });
+}
+
+// ─── POST /api/liff/votes ─────────────────────────────────────────────────────
+// Cast a vote from the LIFF dashboard.
+// Requires a valid LINE LIFF ID token in the Authorization: Bearer <token> header.
+
 const BodySchema = z.object({
   tripItemId: z.string().uuid(),
   optionId: z.string().uuid(),
-  lineGroupId: z.string().min(1),   // LINE group ID (not DB UUID) for push messages
-  groupId: z.string().uuid(),       // DB group UUID
+  lineGroupId: z.string().min(1),
+  groupId: z.string().uuid(),
 });
 
-/**
- * POST /api/liff/votes
- *
- * Cast a vote from the LIFF dashboard.
- * Requires a valid LINE LIFF ID token in the Authorization: Bearer <token> header.
- * The verified lineUserId is extracted from the token — the body never supplies it.
- */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // Auth
   const idToken = extractBearerToken(req.headers.get("Authorization"));
   if (!idToken) {
     return NextResponse.json<ApiError>(
@@ -38,7 +186,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // ── Validation ────────────────────────────────────────────────────────────
   let body: unknown;
   try {
     body = await req.json();
@@ -59,7 +206,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { tripItemId, optionId, lineGroupId, groupId } = parsed.data;
 
-  // ── Cast vote ─────────────────────────────────────────────────────────────
   const result = await castVote({ tripItemId, optionId, groupId, lineUserId });
 
   if (!result.accepted) {
@@ -71,7 +217,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const tally = Object.fromEntries(result.tally);
 
-  // ── Majority reached → close once ─────────────────────────────────────────
   if (result.majority.reached && result.majority.winningOptionId) {
     const { closed } = await closeVote(
       tripItemId,
@@ -81,7 +226,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
 
     if (closed) {
-      // Only announce if this request performed the close (prevents double-announce)
       await announceWinner(
         tripItemId,
         result.majority.winningOptionId,
@@ -108,7 +252,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   }
 
-  // ── Vote recorded, not yet closed → push live tally to the LINE group ─────
   await refreshVoteCarousel(tripItemId, lineGroupId);
 
   return NextResponse.json({

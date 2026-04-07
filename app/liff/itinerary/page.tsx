@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLiff } from "@/components/liff-provider";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { ItineraryItem } from "@/app/api/liff/itinerary/route";
 
@@ -24,6 +22,8 @@ const ITEM_TYPE_EMOJI: Record<string, string> = {
   insurance: "🛡️",
   other: "📌",
 };
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ItineraryPage() {
   const { isReady, isLoggedIn, profile, lineGroupId, error } = useLiff();
@@ -73,50 +73,78 @@ export default function ItineraryPage() {
 
   if (!trip) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-        <p className="text-4xl mb-3">🗺️</p>
-        <h2 className="text-lg font-semibold mb-1">No active trip</h2>
-        <p className="text-sm text-muted-foreground">
-          Type <span className="font-mono bg-secondary px-1 rounded">/start</span> in the group chat to begin.
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-[#dcfce7] dark:bg-[#14532d] flex items-center justify-center text-3xl">
+          🗺️
+        </div>
+        <div>
+          <h2 className="text-base font-semibold">No active trip</h2>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            Type{" "}
+            <code className="font-mono bg-[var(--secondary)] px-1 py-0.5 rounded text-xs">
+              /start
+            </code>{" "}
+            in the group chat to begin.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="max-w-md mx-auto p-4 pt-6 space-y-4">
+      <div className="max-w-md mx-auto">
         <TripHeader trip={trip} />
-        <Separator />
-        <div className="flex flex-col items-center py-12 text-center">
-          <p className="text-3xl mb-3">⏳</p>
-          <p className="text-sm text-muted-foreground">
-            No confirmed items yet.<br />
-            Use <span className="font-mono">/vote</span> in chat to start deciding.
-          </p>
+        <div className="flex flex-col items-center py-16 text-center px-6 gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--secondary)] flex items-center justify-center text-3xl">
+            ⏳
+          </div>
+          <div>
+            <p className="font-semibold text-sm">No confirmed items yet</p>
+            <p className="text-sm text-[var(--muted-foreground)] mt-1">
+              Use{" "}
+              <code className="font-mono text-xs">/vote</code> in chat to start
+              deciding. Confirmed items appear here.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Group items by date if deadline_at is set, otherwise "No date"
   const grouped = groupByDate(items);
 
   return (
-    <div className="max-w-md mx-auto p-4 pb-24 space-y-4">
+    <div className="max-w-md mx-auto">
       <TripHeader trip={trip} />
-      <Separator />
 
-      {grouped.map(({ date, label, dayItems }) => (
-        <div key={date} className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-            {label}
-          </p>
-          {dayItems.map((item) => (
-            <ItineraryCard key={item.id} item={item} />
-          ))}
-        </div>
-      ))}
+      {/* Stats bar */}
+      <div className="px-4 pb-3 flex gap-4 text-xs text-[var(--muted-foreground)]">
+        <span className="text-[var(--primary)] font-semibold">{items.length} confirmed</span>
+        {grouped.length > 1 && <span>{grouped.length} days</span>}
+      </div>
+
+      {/* Timeline */}
+      <div className="px-4 pb-4 space-y-6">
+        {grouped.map(({ date, label, dayItems }) => (
+          <div key={date}>
+            {/* Date header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-px flex-1 bg-[var(--border)]" />
+              <span className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide whitespace-nowrap">
+                {label}
+              </span>
+              <div className="h-px flex-1 bg-[var(--border)]" />
+            </div>
+
+            <div className="space-y-3">
+              {dayItems.map((item) => (
+                <ItineraryCard key={item.id} item={item} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -133,8 +161,8 @@ function groupByDate(items: ItineraryItem[]) {
     if (item.deadline_at) {
       const d = new Date(item.deadline_at);
       key = d.toISOString().split("T")[0];
-      label = d.toLocaleDateString("zh-TW", {
-        month: "long",
+      label = d.toLocaleDateString(undefined, {
+        month: "short",
         day: "numeric",
         weekday: "short",
       });
@@ -151,10 +179,10 @@ function groupByDate(items: ItineraryItem[]) {
 
 function TripHeader({ trip }: { trip: Trip }) {
   return (
-    <div className="pt-4">
-      <h1 className="text-xl font-bold">🗺️ {trip.destination_name}</h1>
+    <div className="sticky top-0 z-10 bg-[var(--background)] border-b border-[var(--border)] px-4 py-3">
+      <h1 className="font-bold text-base">🗺️ {trip.destination_name}</h1>
       {trip.start_date && trip.end_date && (
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
           {trip.start_date} → {trip.end_date}
         </p>
       )}
@@ -167,22 +195,25 @@ function ItineraryCard({ item }: { item: ItineraryItem }) {
   const opt = item.confirmed_option;
 
   return (
-    <Card className="overflow-hidden">
+    <div className="rounded-2xl border border-[var(--border)] overflow-hidden">
+      {/* Image */}
       {opt?.image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={opt.image_url}
           alt={opt.name}
-          className="w-full h-32 object-cover"
+          className="w-full h-36 object-cover"
         />
       )}
-      <CardContent className="p-3 space-y-1.5">
-        <div className="flex items-start gap-2">
-          <span className="text-base leading-none mt-0.5">{emoji}</span>
+
+      <div className="p-4 space-y-2">
+        {/* Title row */}
+        <div className="flex items-start gap-2.5">
+          <span className="text-xl leading-none mt-0.5 shrink-0">{emoji}</span>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm leading-snug">{item.title}</p>
             {opt && opt.name !== item.title && (
-              <p className="text-xs text-muted-foreground">{opt.name}</p>
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{opt.name}</p>
             )}
           </div>
           {opt?.rating && (
@@ -192,46 +223,56 @@ function ItineraryCard({ item }: { item: ItineraryItem }) {
           )}
         </div>
 
+        {/* Address */}
         {opt?.address && (
-          <p className="text-xs text-muted-foreground pl-6 truncate">{opt.address}</p>
+          <div className="flex items-start gap-1.5 pl-8">
+            <span className="text-xs text-[var(--muted-foreground)] shrink-0">📍</span>
+            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">{opt.address}</p>
+          </div>
         )}
 
-        <div className={cn("flex items-center gap-2 pl-6", !opt?.price_level && !opt?.booking_url && "hidden")}>
-          {opt?.price_level && (
-            <span className="text-xs text-muted-foreground">{opt.price_level}</span>
-          )}
-          {opt?.booking_url && (
-            <a
-              href={opt.booking_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary underline underline-offset-2"
-            >
-              Book →
-            </a>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        {/* Price + booking */}
+        {(opt?.price_level || opt?.booking_url) && (
+          <div className={cn("flex items-center gap-3 pl-8")}>
+            {opt.price_level && (
+              <span className="text-xs text-[var(--muted-foreground)]">{opt.price_level}</span>
+            )}
+            {opt.booking_url && (
+              <a
+                href={opt.booking_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-[var(--primary)] underline underline-offset-2"
+              >
+                Book →
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 function LoadingScreen() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-3">
-      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-muted-foreground">Loading itinerary...</p>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3">
+      <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+      <p className="text-sm text-[var(--muted-foreground)]">Loading itinerary...</p>
     </div>
   );
 }
 
 function ErrorScreen({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center gap-3">
-      <p className="text-2xl">⚠️</p>
-      <p className="text-sm text-muted-foreground">{message}</p>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-3">
+      <p className="text-3xl">⚠️</p>
+      <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="text-sm text-primary underline underline-offset-2">
+        <button
+          onClick={onRetry}
+          className="text-sm text-[var(--primary)] underline underline-offset-2"
+        >
           Tap to retry
         </button>
       )}
