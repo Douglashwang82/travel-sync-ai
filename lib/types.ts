@@ -30,7 +30,8 @@ export type EntityType =
   | "preference"
   | "budget"
   | "constraint"
-  | "conflict";
+  | "conflict"
+  | "availability";
 
 export type EventProcessingStatus =
   | "pending"

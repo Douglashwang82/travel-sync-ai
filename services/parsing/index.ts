@@ -78,7 +78,8 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
       groupId,
       lineEventId,
       parseResult.entities,
-      parseResult.suggestedActions
+      parseResult.suggestedActions,
+      lineUserId
     );
     console.log(`[parsing] Successfully persisted items to board!`);
   } catch (err) {
