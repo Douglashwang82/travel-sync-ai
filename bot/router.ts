@@ -30,13 +30,20 @@ export async function routeCommand(
   const [rawCmd, ...args] = text.trim().split(/\s+/);
   const cmd = rawCmd.toLowerCase();
 
-  // Helper that tries reply token first, falls back to push
+  // Helper that tries reply token first (single-use), falls back to push
+  let replyToken = ctx.replyToken;
   const reply: Reply = async (message: string) => {
-    if (ctx.replyToken) {
-      await replyText(ctx.replyToken, message);
-    } else {
-      await pushText(ctx.lineGroupId, message);
+    if (replyToken) {
+      const token = replyToken;
+      replyToken = undefined; // consume — LINE reply tokens are one-shot
+      try {
+        await replyText(token, message);
+        return;
+      } catch {
+        // token expired or LINE rejected it — fall through to push
+      }
     }
+    await pushText(ctx.lineGroupId, message);
   };
 
   // /help and /optout are always allowed — no rate limiting

@@ -46,7 +46,8 @@ export async function handleShare(
     metadata = await extractUrlMetadata(url);
   } catch (err) {
     console.error("[share] extraction failed", err);
-    await reply(
+    await pushText(
+      ctx.lineGroupId,
       "I couldn't read that URL. It may be behind a login or the site blocked me.\n" +
         "Try /add [item name] to manually add it to the board."
     );
@@ -69,7 +70,7 @@ export async function handleShare(
 
   if (itemError || !item) {
     console.error("[share] failed to insert trip_item", itemError);
-    await reply("Something went wrong saving that item. Please try again.");
+    await pushText(ctx.lineGroupId, "Something went wrong saving that item. Please try again.");
     return;
   }
 
