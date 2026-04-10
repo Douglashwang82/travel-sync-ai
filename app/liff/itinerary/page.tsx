@@ -10,6 +10,7 @@ import {
 } from "@/components/liff/shared";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { liffFetch } from "@/lib/liff-client";
 import type { ItineraryItem } from "@/app/api/liff/itinerary/route";
 
 type Trip = {
@@ -43,7 +44,7 @@ export default function ItineraryPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const sessionRes = await fetch(
+      const sessionRes = await liffFetch(
         `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}`
       );
       if (!sessionRes.ok) throw new Error("Failed to load session");
@@ -55,7 +56,7 @@ export default function ItineraryPage() {
         return;
       }
 
-      const res = await fetch(`/api/liff/itinerary?tripId=${session.activeTrip.id}`);
+      const res = await liffFetch(`/api/liff/itinerary?tripId=${session.activeTrip.id}`);
       if (!res.ok) throw new Error("Failed to load itinerary");
       const data = await res.json();
       setTrip(data.trip);

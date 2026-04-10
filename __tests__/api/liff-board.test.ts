@@ -3,6 +3,13 @@ import { NextRequest } from "next/server";
 import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
+vi.mock("@/lib/liff-server", () => ({
+  requireTripMembership: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "Utest",
+    membership: { groupId: "group-test", role: "organizer" },
+  }),
+}));
 
 import { createAdminClient } from "@/lib/db";
 import { GET } from "@/app/api/liff/board/route";

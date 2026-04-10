@@ -22,6 +22,7 @@ export function verifyLineSignature(
     .createHmac("sha256", channelSecret)
     .update(body)
     .digest("base64");
+  if (expected.length !== signature.length) return false;
   return crypto.timingSafeEqual(
     Buffer.from(expected),
     Buffer.from(signature)

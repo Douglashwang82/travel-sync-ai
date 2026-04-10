@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { castVote, closeVote } from "@/services/vote";
 import { announceWinner, refreshVoteCarousel } from "@/services/decisions";
-import { verifyLiffToken, extractBearerToken } from "@/lib/liff-auth";
+import { requireTripMembership, requireVoteAccess } from "@/lib/liff-server";
 import type { ApiError } from "@/lib/types";
 
 // ─── GET /api/liff/votes ──────────────────────────────────────────────────────
@@ -15,7 +15,6 @@ import type { ApiError } from "@/lib/types";
 
 const GetSchema = z.object({
   tripId: z.string().uuid(),
-  lineUserId: z.string().optional(),
 });
 
 export interface VoteOption {
@@ -49,7 +48,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
   const parsed = GetSchema.safeParse({
     tripId: searchParams.get("tripId") ?? undefined,
-    lineUserId: searchParams.get("lineUserId") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -59,7 +57,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { tripId, lineUserId } = parsed.data;
+  const { tripId } = parsed.data;
+  const membership = await requireTripMembership(req, tripId);
+  if (!membership.ok) return membership.response;
+  const lineUserId = membership.lineUserId;
   const db = createAdminClient();
 
   // 1. Get pending items
@@ -164,28 +165,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 const BodySchema = z.object({
   tripItemId: z.string().uuid(),
   optionId: z.string().uuid(),
-  lineGroupId: z.string().min(1),
-  groupId: z.string().uuid(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Auth
-  const idToken = extractBearerToken(req.headers.get("Authorization"));
-  if (!idToken) {
-    return NextResponse.json<ApiError>(
-      { error: "Missing Authorization header", code: "UNAUTHORIZED" },
-      { status: 401 }
-    );
-  }
-
-  const lineUserId = await verifyLiffToken(idToken);
-  if (!lineUserId) {
-    return NextResponse.json<ApiError>(
-      { error: "Invalid or expired LIFF token", code: "UNAUTHORIZED" },
-      { status: 401 }
-    );
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -204,7 +186,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { tripItemId, optionId, lineGroupId, groupId } = parsed.data;
+  const { tripItemId, optionId } = parsed.data;
+  const voteAccess = await requireVoteAccess(req, tripItemId);
+  if (!voteAccess.ok) return voteAccess.response;
+
+  const { lineUserId, groupId, lineGroupId } = voteAccess;
 
   const result = await castVote({ tripItemId, optionId, groupId, lineUserId });
 

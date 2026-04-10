@@ -18,6 +18,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { liffFetch } from "@/lib/liff-client";
 import type { ExpensesResponse, ExpenseRow } from "@/app/api/liff/expenses/route";
 
 type SessionData = {
@@ -48,7 +49,7 @@ export default function ExpensesPage() {
     setLoadError(null);
     try {
       // Resolve session
-      const sessionRes = await fetch(
+      const sessionRes = await liffFetch(
         `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
       );
       if (!sessionRes.ok) throw new Error("Failed to load session");
@@ -58,7 +59,7 @@ export default function ExpensesPage() {
       // Fetch expenses
       const params = new URLSearchParams({ groupId: sess.group.id });
       if (sess.activeTrip) params.set("tripId", sess.activeTrip.id);
-      const res = await fetch(`/api/liff/expenses?${params}`);
+      const res = await liffFetch(`/api/liff/expenses?${params}`);
       if (!res.ok) throw new Error("Failed to load expenses");
       setData(await res.json());
     } catch (err) {
@@ -87,13 +88,12 @@ export default function ExpensesPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch("/api/liff/expenses", {
+      const res = await liffFetch("/api/liff/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupId: session.group.id,
           tripId: session.activeTrip?.id ?? null,
-          lineUserId: profile.userId,
           displayName: profile.displayName,
           amount,
           description: expDesc.trim(),

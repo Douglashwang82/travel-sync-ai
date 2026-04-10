@@ -15,10 +15,14 @@ function applyFilters(rows: Row[], filters: Array<{ col: string; op: string; val
   return rows.filter((row) =>
     filters.every((f) => {
       if (f.op === "eq") return row[f.col] === f.val;
+      if (f.op === "neq") return row[f.col] !== f.val;
       if (f.op === "in") return (f.val as unknown[]).includes(row[f.col]);
       if (f.op === "is") {
         if (f.val === null) return row[f.col] == null;
         return row[f.col] === f.val;
+      }
+      if (f.op === "lte") {
+        return String(row[f.col] ?? "") <= String(f.val ?? "");
       }
       if (f.op === "ilike") {
         const rowVal = String(row[f.col] ?? "").toLowerCase();
@@ -103,6 +107,11 @@ class QueryBuilder {
     return this;
   }
 
+  neq(col: string, val: unknown) {
+    this._filters.push({ col, op: "neq", val });
+    return this;
+  }
+
   in(col: string, vals: unknown[]) {
     this._filters.push({ col, op: "in", val: vals });
     return this;
@@ -110,6 +119,11 @@ class QueryBuilder {
 
   is(col: string, val: unknown) {
     this._filters.push({ col, op: "is", val });
+    return this;
+  }
+
+  lte(col: string, val: unknown) {
+    this._filters.push({ col, op: "lte", val });
     return this;
   }
 
@@ -121,6 +135,16 @@ class QueryBuilder {
   limit(_n: number) {
     // Limit is ignored in the mock — test data sets should be small
     return this;
+  }
+
+  maybeSingle() {
+    this._single = true;
+    return this._execute().then((result) => {
+      if ((result.error as { code?: string } | null)?.code === "PGRST116") {
+        return { data: null, error: null };
+      }
+      return result;
+    });
   }
 
   ilike(col: string, val: unknown) {

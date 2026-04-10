@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
+import { requireTripMembership } from "@/lib/liff-server";
 import type { ApiError } from "@/lib/types";
 
 const QuerySchema = z.object({
@@ -41,6 +42,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const { tripId } = result.data;
+  const membership = await requireTripMembership(req, tripId);
+  if (!membership.ok) return membership.response;
   const db = createAdminClient();
 
   const { data: trip, error: tripError } = await db

@@ -4,6 +4,18 @@ import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
 vi.mock("@/lib/analytics", () => ({ track: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/liff-server", () => ({
+  requireOrganizerForTrip: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "Uorganizer",
+    membership: { groupId: "group-test", role: "organizer" },
+  }),
+  requireOrganizerForItem: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "Uorganizer",
+    membership: { groupId: "group-test", role: "organizer" },
+  }),
+}));
 
 import { createAdminClient } from "@/lib/db";
 import { POST } from "@/app/api/liff/items/route";

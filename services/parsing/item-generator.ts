@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
 import { createItem } from "@/services/trip-state";
+import { rememberPlace } from "@/services/memory";
 import type { ParsedEntity, SuggestedAction } from "./extractor";
 import type { ItemType } from "@/lib/types";
 
@@ -55,7 +56,14 @@ export async function applyParseResult(
 
       case "add_option":
         if (action.optionName && action.itemType) {
-          await addOptionToItem(tripId, action.optionName, action.itemType);
+          await rememberPlace({
+            tripId,
+            groupId,
+            itemType: action.itemType as ItemType,
+            title: action.optionName,
+            sourceLineUserId: lineUserId,
+            sourceEventId: lineEventId,
+          });
         }
         break;
 
@@ -129,60 +137,3 @@ async function createTodoIfAbsent(
   });
 }
 
-/**
- * Add a named option to the latest non-confirmed trip item of the given type.
- * If no suitable item exists, creates one first.
- */
-async function addOptionToItem(
-  tripId: string,
-  optionName: string,
-  itemType: string
-): Promise<void> {
-  const db = createAdminClient();
-
-  // Find the most recently created non-confirmed item of this type
-  const { data: item } = await db
-    .from("trip_items")
-    .select("id")
-    .eq("trip_id", tripId)
-    .eq("item_type", itemType)
-    .neq("stage", "confirmed")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  let itemId: string;
-
-  if (item) {
-    itemId = item.id;
-  } else {
-    // No suitable item exists — create one so the option has somewhere to live
-    const result = await createItem({
-      tripId,
-      title: `Choose ${itemType}`,
-      itemType: itemType as ItemType,
-      source: "ai",
-    });
-    if (!result.ok) return;
-    itemId = result.item.id;
-  }
-
-  // Dedup: skip if the same name already exists for this item (case-insensitive)
-  const { data: existingOption } = await db
-    .from("trip_item_options")
-    .select("id")
-    .eq("trip_item_id", itemId)
-    .ilike("name", optionName)
-    .limit(1)
-    .single();
-
-  if (existingOption) return;
-
-  await db.from("trip_item_options").insert({
-    trip_item_id: itemId,
-    provider: "manual",
-    name: optionName,
-    external_ref: null,
-    metadata_json: {},
-  });
-}

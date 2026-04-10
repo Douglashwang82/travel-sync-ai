@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { liffFetch } from "@/lib/liff-client";
 import type { ActiveVote, VoteOption } from "@/app/api/liff/votes/route";
 
 type SessionData = {
@@ -35,7 +36,7 @@ export default function VotesPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const sessionRes = await fetch(
+      const sessionRes = await liffFetch(
         `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
       );
       if (!sessionRes.ok) throw new Error("Failed to load session");
@@ -49,9 +50,8 @@ export default function VotesPage() {
 
       const params = new URLSearchParams({
         tripId: sess.activeTrip.id,
-        lineUserId: profile.userId,
       });
-      const res = await fetch(`/api/liff/votes?${params}`);
+      const res = await liffFetch(`/api/liff/votes?${params}`);
       if (!res.ok) throw new Error("Failed to load votes");
       const data = await res.json();
       setVotes(data.votes ?? []);
@@ -69,35 +69,17 @@ export default function VotesPage() {
   async function handleVote(tripItemId: string, optionId: string) {
     if (!session || !profile) return;
 
-    // Get LIFF ID token for auth
-    let idToken: string | null = null;
-    try {
-      const liff = (await import("@line/liff")).default;
-      idToken = liff.getIDToken();
-    } catch {
-      setVoteError("Unable to get auth token. Please reopen in LINE.");
-      return;
-    }
-
-    if (!idToken) {
-      setVoteError("Not authenticated. Please reopen in LINE.");
-      return;
-    }
-
     setCastingFor(optionId);
     setVoteError(null);
     try {
-      const res = await fetch("/api/liff/votes", {
+      const res = await liffFetch("/api/liff/votes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           tripItemId,
           optionId,
-          lineGroupId: session.group.lineGroupId,
-          groupId: session.group.id,
         }),
       });
 

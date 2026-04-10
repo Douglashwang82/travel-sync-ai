@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
+import { authenticateLiffRequest, requireGroupMembership, requireTripMembership } from "@/lib/liff-server";
 import {
   recordExpense,
   getExpenseSummary,
@@ -50,6 +51,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const { groupId, tripId } = parsed.data;
+  const membership = tripId
+    ? await requireTripMembership(req, tripId)
+    : await requireGroupMembership(req, groupId);
+  if (!membership.ok) return membership.response;
   const db = createAdminClient();
 
   // Fetch expense rows
@@ -94,7 +99,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // Body:
 //   groupId       (UUID)
 //   tripId        (UUID | null)
-//   lineUserId    (string)  — payer's LINE user ID
 //   displayName   (string)  — payer's display name
 //   amount        (number)  — positive
 //   description   (string)
@@ -102,13 +106,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 const PostSchema = z.object({
   groupId: z.string().uuid(),
   tripId: z.string().uuid().nullable().default(null),
-  lineUserId: z.string().min(1),
   displayName: z.string().min(1),
   amount: z.number().positive(),
   description: z.string().min(1).max(200),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const auth = await authenticateLiffRequest(req);
+  if (!auth.ok) return auth.response;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -127,8 +133,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { groupId, tripId, lineUserId, displayName, amount, description } =
+  const { groupId, tripId, displayName, amount, description } =
     parsed.data;
+
+  const membership = tripId
+    ? await requireTripMembership(req, tripId)
+    : await requireGroupMembership(req, groupId);
+  if (!membership.ok) return membership.response;
+
+  const lineUserId = auth.lineUserId;
 
   // Split among all current group members
   const beneficiaries = await getAllMemberBeneficiaries(groupId);

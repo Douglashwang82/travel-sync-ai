@@ -128,7 +128,7 @@ export default function HomePage() {
               name="TravelSync"
               color="bg-[#dcfce7] dark:bg-[#14532d]"
             >
-              Got it! I've added "Hotel near Namba" to the trip board. Type{" "}
+              Got it! I&apos;ve added &quot;Hotel near Namba&quot; to the trip board. Type{" "}
               <span className="font-mono text-xs">/vote hotel</span> to start
               comparing options.
             </ChatBubble>

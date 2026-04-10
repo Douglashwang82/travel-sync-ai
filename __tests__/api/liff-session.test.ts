@@ -3,6 +3,9 @@ import { NextRequest } from "next/server";
 import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
+vi.mock("@/lib/liff-server", () => ({
+  authenticateLiffRequest: vi.fn().mockResolvedValue({ ok: true, lineUserId: "U9876543210" }),
+}));
 
 import { createAdminClient } from "@/lib/db";
 import { GET } from "@/app/api/liff/session/route";
@@ -36,12 +39,12 @@ describe("GET /api/liff/session — validation", () => {
     expect((await res.json()).code).toBe("VALIDATION_ERROR");
   });
 
-  it("returns 400 when lineUserId is missing", async () => {
+  it("accepts requests without lineUserId query param because it comes from the LIFF token", async () => {
     const db = createMockDb();
     vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
 
     const res = await GET(makeRequest({ lineGroupId: LINE_GROUP_ID }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
   });
 });
 

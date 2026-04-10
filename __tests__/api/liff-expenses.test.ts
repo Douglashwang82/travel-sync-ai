@@ -3,6 +3,19 @@ import { NextRequest } from "next/server";
 import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
+vi.mock("@/lib/liff-server", () => ({
+  authenticateLiffRequest: vi.fn().mockResolvedValue({ ok: true, lineUserId: "Uabcdef1234567890" }),
+  requireGroupMembership: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "Uabcdef1234567890",
+    membership: { groupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", role: "member" },
+  }),
+  requireTripMembership: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "Uabcdef1234567890",
+    membership: { groupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", role: "member" },
+  }),
+}));
 vi.mock("@/services/expenses", async (importOriginal) => {
   // Re-export real implementation but allow db mock to intercept
   const real = await importOriginal<typeof import("@/services/expenses")>();
@@ -210,7 +223,6 @@ describe("POST /api/liff/expenses — validation", () => {
       makePostRequest({
         groupId: GROUP_ID,
         tripId: TRIP_ID,
-        lineUserId: USER_ID,
         displayName: "Alice",
         amount: -100,
         description: "Bad",
@@ -227,7 +239,6 @@ describe("POST /api/liff/expenses — validation", () => {
       makePostRequest({
         groupId: GROUP_ID,
         tripId: TRIP_ID,
-        lineUserId: USER_ID,
         displayName: "Alice",
         amount: 1000,
         description: "",
@@ -254,7 +265,6 @@ describe("POST /api/liff/expenses — record expense", () => {
       makePostRequest({
         groupId: GROUP_ID,
         tripId: TRIP_ID,
-        lineUserId: USER_ID,
         displayName: "Alice",
         amount: 3000,
         description: "Dinner at Nanbantei",
@@ -294,7 +304,6 @@ describe("POST /api/liff/expenses — record expense", () => {
       makePostRequest({
         groupId: GROUP_ID,
         tripId: TRIP_ID,
-        lineUserId: USER_ID,  // Alice — not in members list
         displayName: "Alice",
         amount: 2000,
         description: "Hotel deposit",
@@ -324,7 +333,6 @@ describe("POST /api/liff/expenses — record expense", () => {
       makePostRequest({
         groupId: GROUP_ID,
         tripId: null,
-        lineUserId: USER_ID,
         displayName: "Alice",
         amount: 500,
         description: "Snacks",

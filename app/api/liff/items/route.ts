@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
+import { requireOrganizerForItem, requireOrganizerForTrip } from "@/lib/liff-server";
 import {
   createItem,
   updateItem,
@@ -90,6 +91,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   switch (data.action) {
     case "create": {
+      const auth = await requireOrganizerForTrip(req, data.tripId);
+      if (!auth.ok) return auth.response;
+
       // Verify the trip exists before creating an item
       const db = createAdminClient();
       const { data: trip } = await db
@@ -124,6 +128,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     case "update": {
+      const auth = await requireOrganizerForItem(req, data.itemId);
+      if (!auth.ok) return auth.response;
+
       const result = await updateItem(data.itemId, {
         title: data.title,
         description: data.description ?? undefined,
@@ -141,6 +148,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     case "reopen": {
+      const auth = await requireOrganizerForItem(req, data.itemId);
+      if (!auth.ok) return auth.response;
+
       const result = await reopenItem(data.itemId);
       if (!result.ok) {
         return NextResponse.json<ApiError>(
@@ -152,6 +162,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     case "delete": {
+      const auth = await requireOrganizerForItem(req, data.itemId);
+      if (!auth.ok) return auth.response;
+
       const result = await deleteItem(data.itemId);
       if (!result.ok) {
         return NextResponse.json<ApiError>(

@@ -36,6 +36,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { liffFetch } from "@/lib/liff-client";
 import type { BoardData, TripItem, ItemType } from "@/lib/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -103,8 +104,8 @@ export default function DashboardPage() {
     setLoadError(null);
     setActionError(null);
     try {
-      const sessionRes = await fetch(
-        `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
+      const sessionRes = await liffFetch(
+        `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`,
       );
       if (!sessionRes.ok) throw new Error("Failed to load session");
       const sessionData: SessionData = await sessionRes.json();
@@ -115,7 +116,7 @@ export default function DashboardPage() {
         return;
       }
 
-      const boardRes = await fetch(`/api/liff/board?tripId=${sessionData.activeTrip.id}`);
+      const boardRes = await liffFetch(`/api/liff/board?tripId=${sessionData.activeTrip.id}`);
       if (!boardRes.ok) throw new Error("Failed to load board");
       setBoard(await boardRes.json());
     } catch (err) {
@@ -134,7 +135,7 @@ export default function DashboardPage() {
     setAdding(true);
     setAddError(null);
     try {
-      const res = await fetch("/api/liff/items", {
+      const res = await liffFetch("/api/liff/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -160,7 +161,7 @@ export default function DashboardPage() {
     setActioning(true);
     setActionError(null);
     try {
-      const res = await fetch("/api/liff/items", {
+      const res = await liffFetch("/api/liff/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "reopen", itemId }),
@@ -185,7 +186,7 @@ export default function DashboardPage() {
     setActioning(true);
     setActionError(null);
     try {
-      const res = await fetch("/api/liff/items", {
+      const res = await liffFetch("/api/liff/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", itemId: itemToDelete.id }),

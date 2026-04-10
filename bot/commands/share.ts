@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
 import { extractUrlMetadata } from "@/services/share/extractor";
+import { rememberPlace } from "@/services/memory";
 import type { CommandContext } from "../router";
 
 const URL_RE = /^https?:\/\/.+/i;
@@ -54,45 +55,24 @@ export async function handleShare(
     return;
   }
 
-  // Create the trip item
-  const { data: item, error: itemError } = await db
-    .from("trip_items")
-    .insert({
-      trip_id: trip.id,
-      title: metadata.name,
-      description: metadata.description,
-      item_type: metadata.item_type,
-      stage: "todo",
-      source: "command",
-    })
-    .select("id")
-    .single();
-
-  if (itemError || !item) {
-    console.error("[share] failed to insert trip_item", itemError);
-    await pushText(ctx.lineGroupId, "Something went wrong saving that item. Please try again.");
-    return;
-  }
-
-  // Create the option (the shared URL becomes a voteable candidate)
-  const { error: optionError } = await db.from("trip_item_options").insert({
-    trip_item_id: item.id,
-    provider: "manual",
-    name: metadata.name,
-    image_url: metadata.image_url,
-    rating: metadata.rating,
-    price_level: metadata.price,
+  const remembered = await rememberPlace({
+    tripId: trip.id,
+    groupId: ctx.dbGroupId,
+    itemType: metadata.item_type,
+    title: metadata.name,
+    summary: metadata.description,
     address: metadata.address,
-    booking_url: metadata.booking_url,
-    metadata_json: {
-      description: metadata.description,
-      shared_by: ctx.userId ?? "unknown",
-    },
+    rating: metadata.rating,
+    priceLevel: metadata.price,
+    imageUrl: metadata.image_url,
+    bookingUrl: metadata.booking_url,
+    sourceLineUserId: ctx.userId,
   });
 
-  if (optionError) {
-    // Non-fatal: item was saved; just log
-    console.error("[share] failed to insert trip_item_option", optionError);
+  if (!remembered) {
+    console.error("[share] failed to remember shared item", metadata);
+    await pushText(ctx.lineGroupId, "Something went wrong saving that item. Please try again.");
+    return;
   }
 
   await pushText(ctx.lineGroupId, buildConfirmMessage(metadata));

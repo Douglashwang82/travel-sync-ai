@@ -10,6 +10,7 @@ import { handleOptout, handleOptin } from "./commands/optout";
 import { handleShare } from "./commands/share";
 import { handleExp } from "./commands/exp";
 import { handleExpSummary } from "./commands/exp-summary";
+import { handleRecommend } from "./commands/recommend";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -92,6 +93,10 @@ export async function routeCommand(
 
     case "/share":
       await handleShare(args, ctx, reply);
+      break;
+
+    case "/recommend":
+      await handleRecommend(args, ctx, reply);
       break;
 
     case "/exp":

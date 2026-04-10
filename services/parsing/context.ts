@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/db";
+import { getMemoryHints } from "@/services/memory";
 
 export interface TripContext {
   tripId: string;
@@ -7,6 +8,7 @@ export interface TripContext {
   endDate: string | null;
   openItems: string[];          // titles of todo/pending items
   recentEntities: RecentEntity[];
+  memoryHints: string[];
 }
 
 interface RecentEntity {
@@ -63,6 +65,8 @@ export async function assembleTripContext(
     .order("created_at", { ascending: false })
     .limit(MAX_OPEN_ITEMS);
 
+  const memoryHints = await getMemoryHints(trip.id);
+
   return {
     tripId: trip.id,
     destination: trip.destination_name ?? null,
@@ -74,5 +78,6 @@ export async function assembleTripContext(
       canonicalValue: e.canonical_value,
       displayValue: e.display_value,
     })),
+    memoryHints,
   };
 }

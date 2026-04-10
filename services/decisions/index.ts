@@ -6,6 +6,7 @@ import { buildVoteCarousel, buildWinnerMessage } from "./flex";
 import { getVoteTally } from "@/services/vote";
 import type { ItemType } from "@/lib/types";
 import { inferItemType } from "@/bot/commands/add";
+import { searchPlaces } from "./places";
 
 const VOTE_DURATION_HOURS = 24;
 
@@ -102,19 +103,58 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   }
 
   // Fetch all options now on the anchor item (its own + imported siblings)
-  const { data: allOptions } = await db
+  let { data: allOptions } = await db
     .from("trip_item_options")
     .select("id, name, image_url, rating, price_level, address, booking_url")
     .eq("trip_item_id", itemId);
 
   if (!allOptions?.length) {
-    console.log(`[decisions] No shared options found for "${item.title}" — item stays in todo`);
-    await pushText(
-      lineGroupId,
-      `🗳️ No voting options yet for "${item.title}".\n\n` +
-        `Ask group members to /share some links, then try again!`
-    );
-    return;
+    const placesResult = await searchPlaces(input.destination, resolvedType);
+
+    if (placesResult.candidates.length > 0) {
+      const { error: insertError } = await db.from("trip_item_options").insert(
+        placesResult.candidates.map((candidate) => ({
+          trip_item_id: itemId,
+          provider: "google_places" as const,
+          external_ref: candidate.placeId,
+          name: candidate.name,
+          image_url: candidate.photoUrl,
+          rating: candidate.rating,
+          price_level: candidate.priceLevel,
+          address: candidate.address,
+          booking_url: candidate.bookingUrl,
+          metadata_json: { source: "places_search" },
+        }))
+      );
+
+      if (insertError) {
+        console.error("[decisions] failed to insert Places candidates", insertError);
+      } else {
+        const refreshed = await db
+          .from("trip_item_options")
+          .select("id, name, image_url, rating, price_level, address, booking_url")
+          .eq("trip_item_id", itemId);
+        allOptions = refreshed.data ?? [];
+      }
+    }
+
+    if (!allOptions?.length) {
+      console.log(`[decisions] No shared options found for "${item.title}" — item stays in todo`);
+      if (placesResult.errorKind === "no_results") {
+        await pushText(
+          lineGroupId,
+          `🗳️ No places found for "${item.title}" in ${input.destination} yet.\n\n` +
+            `Ask group members to /share some links, then try /vote again.`
+        );
+      } else {
+        await pushText(
+          lineGroupId,
+          `🗳️ I couldn't reach place search for "${item.title}" right now.\n\n` +
+            `Ask group members to /share some links, then try /vote again.`
+        );
+      }
+      return;
+    }
   }
 
   console.log(`[decisions] Found ${allOptions.length} option(s). Starting vote...`);

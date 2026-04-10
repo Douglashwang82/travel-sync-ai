@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
+import { authenticateLiffRequest } from "@/lib/liff-server";
 import type { ApiError } from "@/lib/types";
 
 const SessionQuerySchema = z.object({
   lineGroupId: z.string().min(1),
-  lineUserId: z.string().min(1),
+  lineUserId: z.string().optional(),
   displayName: z.string().optional(),
 });
 
@@ -17,15 +18,18 @@ const SessionQuerySchema = z.object({
  *
  * Query params:
  *   lineGroupId  — LINE group ID from LIFF context
- *   lineUserId   — LINE user ID from LIFF profile
+ *   lineUserId   — optional LIFF profile user ID; must match the verified token if provided
  *   displayName  — display name from LIFF profile (optional, for caching)
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const auth = await authenticateLiffRequest(req);
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(req.url);
 
   const params = {
     lineGroupId: searchParams.get("lineGroupId") ?? "",
-    lineUserId: searchParams.get("lineUserId") ?? "",
+    lineUserId: searchParams.get("lineUserId") ?? undefined,
     displayName: searchParams.get("displayName") ?? undefined,
   };
 
@@ -37,7 +41,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { lineGroupId, lineUserId, displayName } = result.data;
+  const { lineGroupId, lineUserId: claimedLineUserId, displayName } = result.data;
+  if (claimedLineUserId && claimedLineUserId !== auth.lineUserId) {
+    return NextResponse.json<ApiError>(
+      { error: "LIFF user mismatch", code: "FORBIDDEN" },
+      { status: 403 }
+    );
+  }
+
+  const lineUserId = auth.lineUserId;
   const db = createAdminClient();
 
   // Resolve or create group record

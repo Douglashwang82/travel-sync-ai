@@ -79,6 +79,10 @@ function buildSystemPrompt(ctx: TripContext): string {
     contextLines.push(`Recently extracted facts: ${recent}`);
   }
 
+  if (ctx.memoryHints.length > 0) {
+    contextLines.push(`Remembered places and options: ${ctx.memoryHints.join(", ")}`);
+  }
+
   return `You are a travel entity extractor for a LINE group trip planning bot.
 The primary language is Traditional Chinese (zh-TW). Messages may also contain English or mixed Chinese-English.
 
@@ -158,7 +162,7 @@ export async function extractEntities(
   try {
     console.log(`[extractor] calling Gemini for message: "${messageText.substring(0, 30)}..."`);
     raw = await generateJson<unknown>(systemPrompt, messageText);
-    console.log(`[extractor] result received, relevant: ${(raw as any)?.relevant}`);
+    console.log(`[extractor] result received, relevant: ${readRelevantFlag(raw)}`);
   } catch (err) {
     // LLM failure — treat as irrelevant rather than crashing the pipeline
     console.error("[extractor] Gemini call failed permanently", err);
@@ -184,4 +188,9 @@ export async function extractEntities(
   }
 
   return parsed;
+}
+
+function readRelevantFlag(raw: unknown): string {
+  if (!raw || typeof raw !== "object" || !("relevant" in raw)) return "unknown";
+  return String((raw as { relevant?: unknown }).relevant);
 }

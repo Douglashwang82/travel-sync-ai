@@ -6,7 +6,13 @@ vi.mock("@/lib/db");
 // Mock services that make external calls
 vi.mock("@/services/vote");
 vi.mock("@/services/decisions");
-vi.mock("@/lib/liff-auth");
+vi.mock("@/lib/liff-server", () => ({
+  requireTripMembership: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "Uaaaaaaaaaa",
+    membership: { groupId: "group-test", role: "member" },
+  }),
+}));
 
 import { createAdminClient } from "@/lib/db";
 import { GET } from "@/app/api/liff/votes/route";
@@ -168,11 +174,11 @@ describe("GET /api/liff/votes — with pending items", () => {
     expect(dinnerVote.myVoteOptionId).toBeNull();
   });
 
-  it("marks the caller's voted option when lineUserId is provided", async () => {
+  it("marks the verified caller's voted option", async () => {
     const db = createMockDb(seedData);
     vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
 
-    const res = await GET(makeRequest({ tripId: TRIP_ID, lineUserId: USER_A }));
+    const res = await GET(makeRequest({ tripId: TRIP_ID }));
     const body = await res.json();
 
     const hotelVote = body.votes.find((v: { item: { title: string } }) => v.item.title === "Hotel");
@@ -185,7 +191,14 @@ describe("GET /api/liff/votes — with pending items", () => {
     expect(apaOpt.votedByMe).toBe(false);
   });
 
-  it("does not mark any option when lineUserId is not provided", async () => {
+  it("does not mark any option when the verified user has not voted", async () => {
+    const { requireTripMembership } = await import("@/lib/liff-server");
+    vi.mocked(requireTripMembership).mockResolvedValueOnce({
+      ok: true,
+      lineUserId: "U_never_voted",
+      membership: { groupId: "group-test", role: "member" },
+    });
+
     const db = createMockDb(seedData);
     vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
 
@@ -197,20 +210,6 @@ describe("GET /api/liff/votes — with pending items", () => {
       for (const opt of vote.options) {
         expect(opt.votedByMe).toBe(false);
       }
-    }
-  });
-
-  it("does not mark option when user has not voted", async () => {
-    const db = createMockDb(seedData);
-    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
-
-    const res = await GET(makeRequest({ tripId: TRIP_ID, lineUserId: "U_never_voted" }));
-    const body = await res.json();
-
-    const hotelVote = body.votes.find((v: { item: { title: string } }) => v.item.title === "Hotel");
-    expect(hotelVote.myVoteOptionId).toBeNull();
-    for (const opt of hotelVote.options) {
-      expect(opt.votedByMe).toBe(false);
     }
   });
 

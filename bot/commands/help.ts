@@ -16,6 +16,10 @@ const HELP_TEXT = `TravelSync AI — Commands
   Share a hotel, flight, restaurant, or activity link. I'll extract the details and add it to the board as a voteable option.
   Example: /share https://booking.com/hotel/xyz
 
+/recommend [type]
+  Recommend remembered places from the group's chat history first.
+  Example: /recommend restaurant
+
 /nudge
   Remind group members with pending votes or open items.
 

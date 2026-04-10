@@ -15,9 +15,16 @@ import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
 vi.mock("@/lib/analytics", () => ({ track: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/liff-server", () => ({
+  requireTripMembership: vi.fn().mockResolvedValue({
+    ok: true,
+    lineUserId: "user-0",
+    membership: { groupId: "group-flow-001", role: "organizer" },
+  }),
+}));
 
 import { createAdminClient } from "@/lib/db";
-import { startVote, confirmItem, reopenItem } from "@/services/trip-state";
+import { startVote, reopenItem } from "@/services/trip-state";
 import { castVote, closeVote } from "@/services/vote";
 import { GET as getBoardGET } from "@/app/api/liff/board/route";
 
