@@ -1,10 +1,11 @@
 import { createAdminClient } from "@/lib/db";
-import type { ItemStage, ItemType, ItemSource, TripItem } from "@/lib/types";
+import type { ItemKind, ItemStage, ItemType, ItemSource, TripItem } from "@/lib/types";
 
 export interface CreateItemInput {
   tripId: string;
   title: string;
   itemType?: ItemType;
+  itemKind?: ItemKind;
   description?: string;
   source?: ItemSource;
   deadlineAt?: string;
@@ -33,6 +34,7 @@ export async function createItem(input: CreateItemInput): Promise<TransitionResu
       trip_id: input.tripId,
       title: input.title,
       item_type: input.itemType ?? "other",
+      item_kind: input.itemKind ?? "decision",
       description: input.description ?? null,
       stage: "todo",
       source: input.source ?? "manual",
@@ -99,12 +101,19 @@ export async function startVote(
 
   const { data: item } = await db
     .from("trip_items")
-    .select("id, stage")
+    .select("id, stage, item_kind")
     .eq("id", itemId)
     .single();
 
   if (!item) {
     return { ok: false, error: "Item not found", code: "NOT_FOUND" };
+  }
+  if (item.item_kind === "knowledge") {
+    return {
+      ok: false,
+      error: "Knowledge-base items cannot be voted on — use /decide to promote it to a decision first",
+      code: "WRONG_KIND",
+    };
   }
   if (item.stage !== "todo") {
     return {

@@ -31,11 +31,12 @@ export async function handleVote(
     return;
   }
 
-  // Fetch todo AND pending items so we can give accurate feedback
+  // Fetch decision items only (knowledge items cannot be voted on directly)
   const { data: items } = await db
     .from("trip_items")
     .select("id, title, item_type, stage")
     .eq("trip_id", trip.id)
+    .eq("item_kind", "decision")
     .in("stage", ["todo", "pending"]);
 
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -52,8 +53,9 @@ export async function handleVote(
 
   if (!match) {
     await reply(
-      `No To-Do item matching "${args.join(" ")}" found.\n` +
-        `Use /status to see the board, or /add to create a new item.`
+      `No decision item matching "${args.join(" ")}" found.\n\n` +
+        `If you've added places with /add or /share, use /decide ${itemQuery} to turn them into a group vote.\n` +
+        `Use /status to see the board.`
     );
     return;
   }

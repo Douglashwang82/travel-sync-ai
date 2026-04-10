@@ -54,7 +54,7 @@ export async function handleShare(
     return;
   }
 
-  // Create the trip item
+  // Create the trip item as a knowledge-base entry (not a vote decision)
   const { data: item, error: itemError } = await db
     .from("trip_items")
     .insert({
@@ -62,6 +62,7 @@ export async function handleShare(
       title: metadata.name,
       description: metadata.description,
       item_type: metadata.item_type,
+      item_kind: "knowledge",
       stage: "todo",
       source: "command",
     })
@@ -123,7 +124,7 @@ function buildConfirmMessage(m: Awaited<ReturnType<typeof extractUrlMetadata>>):
 
   if (m.address) lines.push(`📍 ${m.address}`);
 
-  lines.push(`\nUse /vote ${m.item_type} to start a group vote.`);
+  lines.push(`\nSaved to knowledge base. Use /decide ${m.item_type} to start a group vote.`);
 
   return lines.join("\n");
 }

@@ -54,8 +54,10 @@ export async function applyParseResult(
         break;
 
       case "add_option":
+        // Specific venues/places suggested in chat go to the knowledge base.
+        // They become candidates for a group decision when someone runs /decide.
         if (action.optionName && action.itemType) {
-          await addOptionToItem(tripId, action.optionName, action.itemType);
+          await addToKnowledgeBase(tripId, action.optionName, action.itemType);
         }
         break;
 
@@ -130,59 +132,34 @@ async function createTodoIfAbsent(
 }
 
 /**
- * Add a named option to the latest non-confirmed trip item of the given type.
- * If no suitable item exists, creates one first.
+ * Add a specific place or venue to the knowledge base.
+ * These are concrete suggestions from chat (e.g. "UTT restaurant looks good")
+ * that the AI can later use to recommend a trip plan or seed a group vote.
  */
-async function addOptionToItem(
+async function addToKnowledgeBase(
   tripId: string,
-  optionName: string,
+  placeName: string,
   itemType: string
 ): Promise<void> {
   const db = createAdminClient();
 
-  // Find the most recently created non-confirmed item of this type
-  const { data: item } = await db
+  // Dedup: skip if a knowledge item with the same name already exists
+  const { data: existing } = await db
     .from("trip_items")
     .select("id")
     .eq("trip_id", tripId)
-    .eq("item_type", itemType)
-    .neq("stage", "confirmed")
-    .order("created_at", { ascending: false })
+    .eq("item_kind", "knowledge")
+    .ilike("title", placeName)
     .limit(1)
     .single();
 
-  let itemId: string;
+  if (existing) return;
 
-  if (item) {
-    itemId = item.id;
-  } else {
-    // No suitable item exists — create one so the option has somewhere to live
-    const result = await createItem({
-      tripId,
-      title: `Choose ${itemType}`,
-      itemType: itemType as ItemType,
-      source: "ai",
-    });
-    if (!result.ok) return;
-    itemId = result.item.id;
-  }
-
-  // Dedup: skip if the same name already exists for this item (case-insensitive)
-  const { data: existingOption } = await db
-    .from("trip_item_options")
-    .select("id")
-    .eq("trip_item_id", itemId)
-    .ilike("name", optionName)
-    .limit(1)
-    .single();
-
-  if (existingOption) return;
-
-  await db.from("trip_item_options").insert({
-    trip_item_id: itemId,
-    provider: "manual",
-    name: optionName,
-    external_ref: null,
-    metadata_json: {},
+  await createItem({
+    tripId,
+    title: placeName,
+    itemType: itemType as ItemType,
+    itemKind: "knowledge",
+    source: "ai",
   });
 }

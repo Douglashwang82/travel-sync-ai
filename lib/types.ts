@@ -17,6 +17,8 @@ export type ItemType =
 
 export type ItemStage = "todo" | "pending" | "confirmed";
 
+export type ItemKind = "knowledge" | "decision";
+
 export type ItemSource = "ai" | "command" | "manual" | "system";
 
 export type OptionProvider = "google_places" | "ota" | "manual";
@@ -78,6 +80,7 @@ export interface TripItem {
   id: string;
   trip_id: string;
   item_type: ItemType;
+  item_kind: ItemKind;
   title: string;
   description: string | null;
   stage: ItemStage;
@@ -160,6 +163,7 @@ export interface ApiError {
 
 export interface BoardData {
   trip: Trip;
+  knowledge: TripItem[];
   todo: TripItem[];
   pending: TripItem[];
   confirmed: TripItem[];

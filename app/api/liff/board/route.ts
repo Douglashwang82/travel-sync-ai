@@ -56,9 +56,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const board: BoardData = {
     trip: trip as BoardData["trip"],
-    todo: allItems.filter((i) => i.stage === "todo"),
-    pending: allItems.filter((i) => i.stage === "pending"),
-    confirmed: allItems.filter((i) => i.stage === "confirmed"),
+    // Knowledge-base items are separated from the voting board
+    knowledge: allItems.filter((i) => i.item_kind === "knowledge"),
+    // Decision items follow the todo → pending → confirmed voting flow
+    todo: allItems.filter((i) => i.item_kind === "decision" && i.stage === "todo"),
+    pending: allItems.filter((i) => i.item_kind === "decision" && i.stage === "pending"),
+    confirmed: allItems.filter((i) => i.item_kind === "decision" && i.stage === "confirmed"),
   };
 
   return NextResponse.json(board);

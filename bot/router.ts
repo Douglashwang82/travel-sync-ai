@@ -10,6 +10,8 @@ import { handleOptout, handleOptin } from "./commands/optout";
 import { handleShare } from "./commands/share";
 import { handleExp } from "./commands/exp";
 import { handleExpSummary } from "./commands/exp-summary";
+import { handleDecide } from "./commands/decide";
+import { handlePlan } from "./commands/plan";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -88,6 +90,14 @@ export async function routeCommand(
 
     case "/vote":
       await handleVote(args, ctx, reply);
+      break;
+
+    case "/decide":
+      await handleDecide(args, ctx, reply);
+      break;
+
+    case "/plan":
+      await handlePlan(ctx, reply);
       break;
 
     case "/share":

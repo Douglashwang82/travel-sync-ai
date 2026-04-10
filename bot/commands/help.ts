@@ -4,27 +4,41 @@ const HELP_TEXT = `TravelSync AI — Commands
   Start a new trip. Example: /start Osaka 7/15-7/20
 
 /status
-  Show the trip board (To-Do / Pending / Confirmed).
+  Show the trip board (Knowledge / Pending / Confirmed).
 
-/vote [item]
-  Start a vote for a board item. Example: /vote hotel
+── Knowledge Base ──────────────────
 
-/add [item]
-  Add a To-Do item. Example: /add Book travel insurance
+/add [place or note]
+  Save an interesting place or event to the knowledge base.
+  Example: /add Dotonbori ramen street
 
 /share [url]
-  Share a hotel, flight, restaurant, or activity link. I'll extract the details and add it to the board as a voteable option.
+  Share a link. I'll extract the details and save it to the knowledge base.
   Example: /share https://booking.com/hotel/xyz
 
+/plan
+  Ask AI to suggest a day-by-day itinerary from your saved places.
+
+── Group Decisions ──────────────────
+
+/decide [type]
+  Turn saved knowledge items into a group vote.
+  Example: /decide restaurant  →  vote on all saved restaurants
+
+/vote [item]
+  Start a vote for an existing decision item.
+  Example: /vote hotel
+
 /nudge
-  Remind group members with pending votes or open items.
+  Remind group members with pending votes.
+
+── Expenses ──────────────────
 
 /exp [amount] [description] [for @name1 @name2 | for all]
-  Record a payment. Split equally among named members or the whole group.
-  Example: /exp 1200 dinner for @Alice @Bob
+  Record a payment. Example: /exp 1200 dinner for @Alice @Bob
 
 /exp-summary
-  Show who owes who money and the minimum settlements needed.
+  Show who owes who and minimum settlements.
 
 /help
   Show this message.

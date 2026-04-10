@@ -28,7 +28,11 @@ export async function handleAdd(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
-    await reply("Usage: /add [item]\nExample: /add Book travel insurance");
+    await reply(
+      "Usage: /add [item]\n" +
+        "Example: /add Shinjuku ramen place\n\n" +
+        "Adds to the knowledge base. Use /decide [type] to turn knowledge items into a group vote."
+    );
     return;
   }
 
@@ -52,6 +56,7 @@ export async function handleAdd(
     trip_id: trip.id,
     title,
     item_type: itemType,
+    item_kind: "knowledge",
     stage: "todo",
     source: "command",
   });
@@ -62,5 +67,8 @@ export async function handleAdd(
     return;
   }
 
-  await reply(`Added to To-Do: "${title}"\n\nUse /vote ${title} to start a group decision.`);
+  await reply(
+    `Added to knowledge base: "${title}"\n\n` +
+      `Use /decide ${itemType} to start a group vote on all saved ${itemType} options.`
+  );
 }
