@@ -15,6 +15,7 @@ function applyFilters(rows: Row[], filters: Array<{ col: string; op: string; val
   return rows.filter((row) =>
     filters.every((f) => {
       if (f.op === "eq") return row[f.col] === f.val;
+      if (f.op === "neq") return row[f.col] !== f.val;
       if (f.op === "in") return (f.val as unknown[]).includes(row[f.col]);
       if (f.op === "is") {
         if (f.val === null) return row[f.col] == null;
@@ -120,6 +121,11 @@ class QueryBuilder {
 
   limit(_n: number) {
     // Limit is ignored in the mock — test data sets should be small
+    return this;
+  }
+
+  neq(col: string, val: unknown) {
+    this._filters.push({ col, op: "neq", val });
     return this;
   }
 
