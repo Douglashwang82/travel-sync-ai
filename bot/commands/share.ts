@@ -48,9 +48,9 @@ export async function handleShare(
   } catch (err) {
     console.error("[share] extraction failed", err);
     await pushText(
-      ctx.lineGroupId,
-      "I couldn't read that URL. It may be behind a login or the site blocked me.\n" +
-        "Try /add [item name] to manually add it to the board."
+        ctx.lineGroupId,
+        "I couldn't read that URL. It may be behind a login or the site blocked me.\n" +
+        "Try /add [item name] to add a planning item, or share another link."
     );
     return;
   }
@@ -92,7 +92,7 @@ function buildConfirmMessage(m: Awaited<ReturnType<typeof extractUrlMetadata>>):
   };
 
   const emoji = typeEmoji[m.item_type] ?? "📌";
-  lines.push(`${emoji} Added to To-Do: "${m.name}"`);
+  lines.push(`${emoji} Saved to trip knowledge: "${m.name}"`);
 
   if (m.description) lines.push(`\n${m.description}`);
 
@@ -103,7 +103,7 @@ function buildConfirmMessage(m: Awaited<ReturnType<typeof extractUrlMetadata>>):
 
   if (m.address) lines.push(`📍 ${m.address}`);
 
-  lines.push(`\nUse /vote ${m.item_type} to start a group vote.`);
+  lines.push(`\nUse /recommend ${m.item_type} to recall it later, or /decide ${m.item_type} when the group is ready to choose.`);
 
   return lines.join("\n");
 }

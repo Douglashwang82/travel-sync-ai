@@ -70,6 +70,6 @@ export async function handleRecommend(
   await reply(
     `Here are the top remembered ${itemType} picks from your group chat:\n\n` +
       `${lines.join("\n")}\n\n` +
-      `Use /vote ${itemType} to turn them into a group decision.`
+      `Use /decide ${itemType} when you want to turn these ideas into a group decision.`
   );
 }

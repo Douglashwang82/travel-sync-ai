@@ -34,14 +34,14 @@ export async function handleVote(
   // Fetch todo AND pending items so we can give accurate feedback
   const { data: items } = await db
     .from("trip_items")
-    .select("id, title, item_type, stage")
+    .select("id, title, item_type, item_kind, stage")
     .eq("trip_id", trip.id)
     .in("stage", ["todo", "pending"]);
 
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   const normalizedQuery = normalize(itemQuery);
 
-  const match = items?.find((i) => {
+  const matches = (items ?? []).filter((i) => {
     const normalizedTitle = normalize(i.title);
     return (
       normalizedTitle.includes(normalizedQuery) ||
@@ -50,10 +50,23 @@ export async function handleVote(
     );
   });
 
+  const match = matches.sort((a, b) => {
+    if (a.item_kind === b.item_kind) return 0;
+    return a.item_kind === "decision" ? -1 : 1;
+  })[0];
+
   if (!match) {
     await reply(
-      `No To-Do item matching "${args.join(" ")}" found.\n` +
-        `Use /status to see the board, or /add to create a new item.`
+      `No decision item matching "${args.join(" ")}" found.\n` +
+        `Use /decide ${args.join(" ")} to create one, or /status to see the board.`
+    );
+    return;
+  }
+
+  if (match.item_kind !== "decision") {
+    await reply(
+      `"${match.title}" is a planning item, not a decision item.\n` +
+        `Use /decide ${match.item_type ?? args.join(" ")} to create a voteable decision first.`
     );
     return;
   }

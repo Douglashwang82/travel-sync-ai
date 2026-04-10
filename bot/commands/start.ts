@@ -134,7 +134,7 @@ export async function handleStart(
       `📍 Destination: ${destination}` +
       dateStr +
       `\n\nI'll start tracking travel-related messages. ` +
-      `Use /add to create to-do items, or /vote to start a group decision.\n\n` +
+      `Use /add for planning items, /recommend to recall knowledge, or /decide to set up a group decision.\n\n` +
       `Type /status to see the trip board.`
   );
 }

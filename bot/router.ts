@@ -6,6 +6,7 @@ import { handleStatus } from "./commands/status";
 import { handleAdd } from "./commands/add";
 import { handleNudge } from "./commands/nudge";
 import { handleVote } from "./commands/vote";
+import { handleDecide } from "./commands/decide";
 import { handleOptout, handleOptin } from "./commands/optout";
 import { handleShare } from "./commands/share";
 import { handleExp } from "./commands/exp";
@@ -89,6 +90,10 @@ export async function routeCommand(
 
     case "/vote":
       await handleVote(args, ctx, reply);
+      break;
+
+    case "/decide":
+      await handleDecide(args, ctx, reply);
       break;
 
     case "/share":

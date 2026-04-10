@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/db";
-import { createItem } from "@/services/trip-state";
 import type { ItemType } from "@/lib/types";
 
 export interface PlaceMemoryInput {
@@ -49,6 +48,18 @@ export interface Recommendation {
   mentionCount: number;
 }
 
+export interface PlaceKnowledge {
+  id: string;
+  title: string;
+  summary: string | null;
+  address: string | null;
+  rating: number | null;
+  priceLevel: string | null;
+  imageUrl: string | null;
+  bookingUrl: string | null;
+  mentionCount: number;
+}
+
 export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemory | null> {
   const db = createAdminClient();
   const canonicalKey = buildCanonicalKey(input.title, input.bookingUrl);
@@ -83,7 +94,6 @@ export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemor
       .select("*")
       .single();
 
-    await syncMemoryToTripOption(updated ?? { ...existing, ...patch });
     return (updated ?? { ...existing, ...patch }) as PlaceMemory;
   }
 
@@ -111,7 +121,6 @@ export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemor
 
   if (!created) return null;
 
-  await syncMemoryToTripOption(created as PlaceMemory);
   return created as PlaceMemory;
 }
 
@@ -160,67 +169,35 @@ export async function getMemoryHints(
     .map((entry) => `${entry.item_type}:${entry.title}`);
 }
 
-async function syncMemoryToTripOption(memory: PlaceMemory): Promise<void> {
+export async function getKnowledgeEntries(
+  tripId: string,
+  itemType: ItemType,
+  query?: string,
+  limit = 10
+): Promise<PlaceKnowledge[]> {
   const db = createAdminClient();
-  const itemId = await getOrCreateOpenItem(memory.trip_id, memory.item_type);
-  if (!itemId) return;
-
-  const { data: existingOption } = await db
-    .from("trip_item_options")
-    .select("id")
-    .eq("trip_item_id", itemId)
-    .ilike("name", memory.title)
-    .limit(1)
-    .single();
-
-  const patch = {
-    provider: "manual" as const,
-    name: memory.title,
-    image_url: memory.image_url,
-    rating: memory.rating,
-    price_level: memory.price_level,
-    address: memory.address,
-    booking_url: memory.booking_url,
-    metadata_json: {
-      memory_id: memory.id,
-      summary: memory.summary,
-      mention_count: memory.mention_count,
-    },
-  };
-
-  if (existingOption) {
-    await db.from("trip_item_options").update(patch).eq("id", existingOption.id);
-    return;
-  }
-
-  await db.from("trip_item_options").insert({
-    trip_item_id: itemId,
-    ...patch,
-  });
-}
-
-async function getOrCreateOpenItem(tripId: string, itemType: ItemType): Promise<string | null> {
-  const db = createAdminClient();
-  const { data: item } = await db
-    .from("trip_items")
-    .select("id")
+  const { data } = await db
+    .from("trip_memories")
+    .select("*")
     .eq("trip_id", tripId)
-    .eq("item_type", itemType)
-    .neq("stage", "confirmed")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+    .eq("item_type", itemType);
 
-  if (item) return item.id;
-
-  const result = await createItem({
-    tripId,
-    title: `Choose ${itemType}`,
-    itemType,
-    source: "ai",
-  });
-
-  return result.ok ? result.item.id : null;
+  const normalizedQuery = normalizeQuery(query);
+  return ((data ?? []) as PlaceMemory[])
+    .filter((entry) => matchesQuery(entry, normalizedQuery))
+    .sort((a, b) => buildRecommendationScore(b) - buildRecommendationScore(a))
+    .slice(0, limit)
+    .map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      summary: entry.summary,
+      address: entry.address,
+      rating: entry.rating,
+      priceLevel: entry.price_level,
+      imageUrl: entry.image_url,
+      bookingUrl: entry.booking_url,
+      mentionCount: entry.mention_count,
+    }));
 }
 
 function buildCanonicalKey(title: string, bookingUrl?: string | null): string {

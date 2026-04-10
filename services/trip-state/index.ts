@@ -1,10 +1,11 @@
 import { createAdminClient } from "@/lib/db";
-import type { ItemStage, ItemType, ItemSource, TripItem } from "@/lib/types";
+import type { ItemKind, ItemStage, ItemType, ItemSource, TripItem } from "@/lib/types";
 
 export interface CreateItemInput {
   tripId: string;
   title: string;
   itemType?: ItemType;
+  itemKind?: ItemKind;
   description?: string;
   source?: ItemSource;
   deadlineAt?: string;
@@ -33,6 +34,7 @@ export async function createItem(input: CreateItemInput): Promise<TransitionResu
       trip_id: input.tripId,
       title: input.title,
       item_type: input.itemType ?? "other",
+      item_kind: input.itemKind ?? "task",
       description: input.description ?? null,
       stage: "todo",
       source: input.source ?? "manual",

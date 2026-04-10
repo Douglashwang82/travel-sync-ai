@@ -52,6 +52,7 @@ export async function handleAdd(
     trip_id: trip.id,
     title,
     item_type: itemType,
+    item_kind: "task",
     stage: "todo",
     source: "command",
   });
@@ -62,5 +63,8 @@ export async function handleAdd(
     return;
   }
 
-  await reply(`Added to To-Do: "${title}"\n\nUse /vote ${title} to start a group decision.`);
+  await reply(
+    `Added to To-Do: "${title}"\n\n` +
+      `This is a planning item. When the group is ready to choose, use /decide ${itemType === "other" ? title : itemType}.`
+  );
 }

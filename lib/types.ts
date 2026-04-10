@@ -19,6 +19,8 @@ export type ItemStage = "todo" | "pending" | "confirmed";
 
 export type ItemSource = "ai" | "command" | "manual" | "system";
 
+export type ItemKind = "task" | "decision";
+
 export type OptionProvider = "google_places" | "ota" | "manual";
 
 export type EntityType =
@@ -78,6 +80,7 @@ export interface TripItem {
   id: string;
   trip_id: string;
   item_type: ItemType;
+  item_kind: ItemKind;
   title: string;
   description: string | null;
   stage: ItemStage;

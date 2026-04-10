@@ -36,6 +36,7 @@ function seedDb() {
         title: "Hotel booking",
         stage: "todo",
         item_type: "hotel",
+        item_kind: "decision",
         source: "command",
         deadline_at: null,
         confirmed_option_id: null,
@@ -141,6 +142,39 @@ describe("startDecision — network_error from Places API", () => {
 // ── happy path: candidates found ──────────────────────────────────────────────
 
 describe("startDecision — candidates found", () => {
+  it("imports remembered knowledge into the decision before falling back to search", async () => {
+    const db = seedDb();
+    db._tables.set("trip_memories", [
+      {
+        id: "memory-1",
+        trip_id: TRIP_ID,
+        group_id: GROUP_ID,
+        item_type: "hotel",
+        title: "Park Hyatt Tokyo",
+        canonical_key: "park hyatt tokyo",
+        summary: "Shared by the group",
+        address: "3-7-1-2 Nishi Shinjuku",
+        rating: 4.6,
+        price_level: "$$$",
+        image_url: "https://example.com/photo.jpg",
+        booking_url: "https://booking.example/park-hyatt",
+        mention_count: 2,
+        last_mentioned_at: "2026-04-08T00:00:00Z",
+        created_at: "2026-04-08T00:00:00Z",
+      },
+    ]);
+    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
+    vi.mocked(searchPlaces).mockResolvedValue({ candidates: [], errorKind: null });
+
+    await startDecision(INPUT);
+
+    const options = db._tables.get("trip_item_options") ?? [];
+    expect(options).toHaveLength(1);
+    expect(options[0].name).toBe("Park Hyatt Tokyo");
+    expect(options[0].trip_item_id).toBe(ITEM_ID);
+    expect(searchPlaces).not.toHaveBeenCalled();
+  });
+
   it("moves item to pending and inserts options", async () => {
     const db = seedDb();
     vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);

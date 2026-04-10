@@ -6,14 +6,17 @@ const HELP_TEXT = `TravelSync AI — Commands
 /status
   Show the trip board (To-Do / Pending / Confirmed).
 
+/decide [item]
+  Create a decision item for the group to choose later. Example: /decide restaurant
+
 /vote [item]
-  Start a vote for a board item. Example: /vote hotel
+  Start a vote for a decision item. Example: /vote restaurant
 
 /add [item]
-  Add a To-Do item. Example: /add Book travel insurance
+  Add a planning item. Example: /add Book travel insurance
 
 /share [url]
-  Share a hotel, flight, restaurant, or activity link. I'll extract the details and add it to the board as a voteable option.
+  Share a hotel, flight, restaurant, or activity link. I'll remember it as trip knowledge for later recommendations or decisions.
   Example: /share https://booking.com/hotel/xyz
 
 /recommend [type]
