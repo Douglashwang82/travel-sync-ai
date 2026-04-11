@@ -16,6 +16,7 @@ import { handleIncident } from "./commands/incident";
 import { handleReady } from "./commands/ready";
 import { handleOps } from "./commands/ops";
 import { handleOption } from "./commands/option";
+import { handleBooked } from "./commands/booked";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -122,6 +123,10 @@ export async function routeCommand(
 
     case "/incident":
       await handleIncident(args, ctx, reply);
+      break;
+
+    case "/booked":
+      await handleBooked(args, ctx, reply);
       break;
 
     case "/exp":

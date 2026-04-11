@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 import { liffFetch } from "@/lib/liff-client";
 import { toLiffErrorMessage } from "@/lib/liff-errors";
 import { useLiffSession } from "@/lib/use-liff-session";
-import type { BoardData, TripItem, ItemType } from "@/lib/types";
+import type { BoardData, TripItem, ItemType, BookingStatus } from "@/lib/types";
 
 const ITEM_TYPE_LABELS: Record<ItemType, string> = {
   hotel: "Hotel",
@@ -80,6 +80,10 @@ export default function DashboardPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<TripItem | null>(null);
+
+  const [bookingRef, setBookingRef] = useState("");
+  const [bookingActioning, setBookingActioning] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const loadBoard = useCallback(async () => {
     setLoading(true);
@@ -206,6 +210,44 @@ export default function DashboardPage() {
       );
     } finally {
       setActioning(false);
+    }
+  }
+
+  async function handleMarkBooked(itemId: string) {
+    if (!bookingRef.trim()) return;
+
+    setBookingActioning(true);
+    setBookingError(null);
+
+    try {
+      const res = await liffFetch("/api/liff/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "mark_booked",
+          itemId,
+          bookingRef: bookingRef.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to mark as booked");
+      }
+
+      setBookingRef("");
+      setDetailSheetOpen(false);
+      await loadBoard();
+    } catch (err) {
+      setBookingError(
+        toLiffErrorMessage(
+          "mark-booked",
+          err,
+          "We could not record the booking. Please try again."
+        )
+      );
+    } finally {
+      setBookingActioning(false);
     }
   }
 
@@ -409,7 +451,16 @@ export default function DashboardPage() {
       </Sheet>
 
       {selectedItem && (
-        <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
+        <Sheet
+          open={detailSheetOpen}
+          onOpenChange={(open) => {
+            setDetailSheetOpen(open);
+            if (!open) {
+              setBookingRef("");
+              setBookingError(null);
+            }
+          }}
+        >
           <SheetContent side="bottom" className="rounded-t-2xl">
             <SheetHeader className="mb-4">
               <SheetTitle className="flex items-center gap-2.5 text-left pr-6">
@@ -434,12 +485,31 @@ export default function DashboardPage() {
                 >
                   {selectedItem.stage === "pending" ? "pending vote" : selectedItem.stage}
                 </Badge>
+                {selectedItem.stage === "confirmed" &&
+                  selectedItem.booking_status === "needed" && (
+                    <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0">
+                      Booking needed
+                    </Badge>
+                  )}
+                {selectedItem.stage === "confirmed" &&
+                  selectedItem.booking_status === "booked" && (
+                    <Badge className="bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac] border-0">
+                      Booked ✓
+                    </Badge>
+                  )}
               </div>
 
               {selectedItem.description && (
                 <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
                   {selectedItem.description}
                 </p>
+              )}
+
+              {selectedItem.booking_status === "booked" && selectedItem.booking_ref && (
+                <div className="flex items-start gap-2 text-xs text-[var(--muted-foreground)] bg-[var(--secondary)] rounded-xl px-3 py-2">
+                  <span className="font-medium shrink-0">Booking ref:</span>
+                  <span className="break-all">{selectedItem.booking_ref}</span>
+                </div>
               )}
 
               {selectedItem.deadline_at && (
@@ -453,6 +523,42 @@ export default function DashboardPage() {
                   </span>
                 </div>
               )}
+
+              {/* Mark as Booked — available to all members for confirmed items needing booking */}
+              {selectedItem.stage === "confirmed" &&
+                selectedItem.booking_status === "needed" && (
+                  <div className="space-y-2 border border-amber-200 dark:border-amber-900/50 rounded-xl px-3 py-3">
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Booking not yet confirmed
+                    </p>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="booking-ref" className="text-xs">
+                        Confirmation number or URL
+                      </Label>
+                      <Input
+                        id="booking-ref"
+                        placeholder="e.g. AX-12345 or https://..."
+                        value={bookingRef}
+                        onChange={(e) => setBookingRef(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && void handleMarkBooked(selectedItem.id)
+                        }
+                        className="text-sm"
+                      />
+                    </div>
+                    {bookingError && (
+                      <p className="text-xs text-destructive">{bookingError}</p>
+                    )}
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => void handleMarkBooked(selectedItem.id)}
+                      disabled={bookingActioning || !bookingRef.trim()}
+                    >
+                      {bookingActioning ? "Saving..." : "Mark as booked"}
+                    </Button>
+                  </div>
+                )}
 
               {isOrganizer && (
                 <div className="flex flex-col gap-2 pt-1">
@@ -542,6 +648,16 @@ function BoardColumn({
               className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--secondary)] active:bg-[var(--secondary)] transition-colors"
             >
               <span className="flex-1 text-sm font-medium truncate">{item.title}</span>
+              {item.stage === "confirmed" && item.booking_status === "needed" && (
+                <span className="text-[10px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-medium">
+                  Book
+                </span>
+              )}
+              {item.stage === "confirmed" && item.booking_status === "booked" && (
+                <span className="text-[10px] shrink-0 bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac] px-1.5 py-0.5 rounded-full font-medium">
+                  ✓ Booked
+                </span>
+              )}
               {item.deadline_at && (
                 <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">
                   {new Date(item.deadline_at).toLocaleDateString(undefined, {
