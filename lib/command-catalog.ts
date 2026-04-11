@@ -40,6 +40,14 @@ export const COMMAND_CATALOG: CommandCatalogEntry[] = [
     liffVisible: true,
   },
   {
+    command: "/option",
+    usage: "[decision-item] | [option-name]",
+    example: "/option restaurant | Ramen Shop Osaka",
+    description: "Add a voting option to a decision item so the group can vote on it.",
+    emoji: "🔤",
+    liffVisible: true,
+  },
+  {
     command: "/add",
     usage: "[item]",
     example: "/add Book travel insurance",
