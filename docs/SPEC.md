@@ -14,16 +14,36 @@ Single Next.js app on Vercel + Supabase. Three surfaces:
 2. **LIFF Web App** — Dashboard (board), Itinerary (confirmed timeline), Help
 3. **Internal APIs** — `/api/liff/*` endpoints serving the LIFF pages
 
-## Bot Commands (MVP)
+## Bot Commands
 
 | Command | Description |
 |---------|-------------|
 | `/start [destination] [dates]` | Initialize trip, set destination and date range |
-| `/vote [item]` | Trigger visual vote for a board item |
 | `/status` | Show item counts and list per stage |
-| `/nudge` | Remind non-voters and stale-item owners |
-| `/add [item]` | Manually add a To-Do item |
+| `/decide [item]` | Create a decision item so the group can vote on it later |
+| `/option [decision-item] \| [option-name]` | Add a manual voting option to a decision item |
+| `/vote [item]` | Open voting for a decision item; fetches options from memory then Google Places |
+| `/add [item]` | Add a planning task to the To-Do board |
+| `/share [url]` | Save a hotel, restaurant, flight, or activity link as trip knowledge |
+| `/recommend [type]` | Surface remembered places from the group's chat history |
+| `/ready` | Show a readiness summary using confirmed trip details only |
+| `/ops` | Show the trip operations summary based on confirmed execution data |
+| `/incident [what happened]` | Open a verified incident playbook for disruptions |
+| `/nudge` | Remind non-voters and groups with stale To-Do items |
+| `/exp [amount] [description] [for @name1 @name2 \| for all]` | Record a payment and split it |
+| `/exp-summary` | Show minimum settlements (who owes whom) |
+| `/optout` | Stop TravelSync from parsing a user's messages |
+| `/optin` | Re-enable message parsing after opting out |
 | `/help` | List all commands |
+
+### Decision flow
+
+```
+/decide restaurant          → creates "Choose restaurant" decision item (stage: todo)
+/option restaurant | Foo    → manually adds "Foo" as a voteable option
+/vote restaurant            → opens voting; auto-fetches options from memory / Places API,
+                              merges with any manually added options
+```
 
 ## Data Model Summary
 

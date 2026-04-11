@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased] — Phase 6: Group Decision Authoring
+
+### Added
+- `bot/commands/decide.ts` — `/decide [item]` command; creates a `decision` item (item_kind: "decision") on the trip board; normalises bare type names (e.g. "restaurant" → "Choose restaurant"); blocks duplicate decisions and redirects to `/vote`
+- `bot/commands/option.ts` — `/option [decision-item] | [option-name]` command; lets any group member manually attach a voteable option to a decision item before or during voting; deduplicates by case-insensitive name; works on both `todo` and `pending` items
+- `services/trip-state/addOption()` — service function that inserts a `trip_item_options` row with `provider: "manual"`; validates item kind and stage; returns typed `AddOptionResult`
+- `lib/command-catalog.ts` — added `/decide` and `/option` catalog entries; both appear in `/help` output and LIFF command list
+- Supabase migration `20260409010000_trip_item_kinds.sql` — adds `item_kind TEXT NOT NULL DEFAULT 'task'` to `trip_items` with check constraint `('task', 'decision')`
+- `__tests__/unit/option-command.test.ts` — 10 unit tests covering input validation, trip/item lookup, task-vs-decision guard, successful addition on todo and pending items, duplicate rejection, item-kind preference, and DB error path
+
 ## [Unreleased] — Phase 5: Automation and Hardening
 
 ### Added
