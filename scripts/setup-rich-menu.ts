@@ -11,6 +11,8 @@
  */
 
 import * as line from "@line/bot-sdk";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
@@ -25,10 +27,11 @@ if (!liffId) {
 
 const client = new line.messagingApi.MessagingApiClient({ channelAccessToken });
 
-// LIFF URLs for each tab
-const dashboardUrl = liffId ? `https://liff.line.me/${liffId}/liff/dashboard` : "https://example.com/liff/dashboard";
-const itineraryUrl = liffId ? `https://liff.line.me/${liffId}/liff/itinerary` : "https://example.com/liff/itinerary";
-const helpUrl     = liffId ? `https://liff.line.me/${liffId}/liff/help`      : "https://example.com/liff/help";
+// The LIFF app's Endpoint URL is configured as `/liff/`, so child pages should
+// be referenced relative to that endpoint rather than duplicating `/liff`.
+const dashboardUrl = liffId ? `https://liff.line.me/${liffId}/dashboard` : "https://example.com/dashboard";
+const itineraryUrl = liffId ? `https://liff.line.me/${liffId}/itinerary` : "https://example.com/itinerary";
+const helpUrl     = liffId ? `https://liff.line.me/${liffId}/help`      : "https://example.com/help";
 
 const richMenuBody: line.messagingApi.RichMenuRequest = {
   size: { width: 2500, height: 843 },
@@ -71,14 +74,38 @@ async function main() {
   const { richMenuId } = await client.createRichMenu(richMenuBody);
   console.log(`✓ Rich menu created: ${richMenuId}`);
 
-  // Note: You must upload an image separately using the LINE console or
-  // the Rich Menu Image API before the menu renders visually.
-  // Endpoint: POST https://api-data.line.me/v2/bot/richmenu/{richMenuId}/content
-  console.log(`\n⚠️  Upload a rich menu image (2500×843px) via LINE console or:`);
-  console.log(`   curl -X POST https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content \\`);
-  console.log(`     -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \\`);
-  console.log(`     -H "Content-Type: image/png" \\`);
-  console.log(`     --data-binary @rich-menu.png`);
+  const imagePath = path.resolve(process.cwd(), "rich-menu.png");
+  try {
+    const image = await readFile(imagePath);
+    console.log(`Uploading rich menu image from ${imagePath}...`);
+    const uploadRes = await fetch(
+      `https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${channelAccessToken}`,
+          "Content-Type": "image/png",
+        },
+        body: image,
+      }
+    );
+    if (!uploadRes.ok) {
+      const detail = await uploadRes.text();
+      throw new Error(`Image upload failed (${uploadRes.status}): ${detail}`);
+    }
+    console.log("✓ Rich menu image uploaded");
+  } catch (err) {
+    console.log(`\n⚠️  Could not upload rich menu image automatically from ${imagePath}.`);
+    console.log("Upload the image first, then rerun this script or set the default rich menu manually.");
+    console.log(`   curl -X POST https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content \\`);
+    console.log(`     -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \\`);
+    console.log(`     -H "Content-Type: image/png" \\`);
+    console.log(`     --data-binary @rich-menu.png`);
+    console.log(`\nRich menu ID: ${richMenuId}`);
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(`Image upload detail: ${message}`);
+    return;
+  }
 
   console.log("\nSetting as default rich menu for all users...");
   await client.setDefaultRichMenu(richMenuId);
