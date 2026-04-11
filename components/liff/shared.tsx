@@ -1,65 +1,56 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
-
-// ─── Skeleton ──────────────────────────────────────────────────────────────
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-pulse bg-[var(--secondary)] rounded-lg",
+        "animate-pulse rounded-lg bg-[var(--secondary)]",
         className
       )}
     />
   );
 }
 
-// ─── Loading screens ───────────────────────────────────────────────────────
-
-/** Spinner + optional message — used while LIFF is initialising / logging in */
 export function LoadingSpinner({ message }: { message?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-3">
-      <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-      {message && (
+    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
+      {message ? (
         <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
-      )}
+      ) : null}
     </div>
   );
 }
 
-/** Kanban-style skeleton — mimics the dashboard board columns */
 export function BoardSkeleton() {
   return (
-    <div className="max-w-md mx-auto">
-      {/* Header */}
+    <div className="mx-auto max-w-md">
       <div className="border-b border-[var(--border)] px-4 py-3">
         <Skeleton className="h-5 w-36" />
-        <Skeleton className="h-3 w-24 mt-1.5" />
-        <Skeleton className="h-1 w-full rounded-full mt-2" />
+        <Skeleton className="mt-1.5 h-3 w-24" />
+        <Skeleton className="mt-2 h-1 w-full rounded-full" />
       </div>
 
-      <div className="px-4 pt-4 space-y-3">
-        {[["w-14", 2], ["w-24", 1], ["w-20", 3]].map(([w, n], colIdx) => (
+      <div className="space-y-3 px-4 pt-4">
+        {[["w-14", 2], ["w-24", 1], ["w-20", 3]].map(([width, count], colIdx) => (
           <div
             key={colIdx}
-            className="rounded-2xl border border-[var(--border)] overflow-hidden"
+            className="overflow-hidden rounded-2xl border border-[var(--border)]"
           >
-            {/* Column header */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--secondary)]">
-              <Skeleton className={`h-4 ${w}`} />
+            <div className="flex items-center justify-between bg-[var(--secondary)] px-4 py-2.5">
+              <Skeleton className={`h-4 ${width}`} />
               <Skeleton className="h-5 w-6 rounded-full" />
             </div>
-            {/* Rows */}
-            {Array.from({ length: n as number }).map((_, rowIdx) => (
+            {Array.from({ length: count as number }).map((_, rowIdx) => (
               <div
                 key={rowIdx}
-                className="px-4 py-3 flex items-center gap-3 border-t border-[var(--border)] first:border-0"
+                className="flex items-center gap-3 border-t border-[var(--border)] px-4 py-3 first:border-0"
               >
-                <Skeleton className="h-5 w-5 rounded shrink-0" />
+                <Skeleton className="h-5 w-5 shrink-0 rounded" />
                 <Skeleton className="h-4 flex-1" />
               </div>
             ))}
@@ -70,26 +61,22 @@ export function BoardSkeleton() {
   );
 }
 
-/** Generic list skeleton — 3 rows of text + meta */
 export function ListSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="max-w-md mx-auto">
-      {/* Header */}
+    <div className="mx-auto max-w-md">
       <div className="border-b border-[var(--border)] px-4 py-3">
         <Skeleton className="h-5 w-28" />
-        <Skeleton className="h-3 w-20 mt-1.5" />
+        <Skeleton className="mt-1.5 h-3 w-20" />
       </div>
 
-      <div className="px-4 pt-4 space-y-4">
-        {/* Summary card */}
+      <div className="space-y-4 px-4 pt-4">
         <Skeleton className="h-24 rounded-2xl" />
 
-        {/* List section */}
         <div>
-          <Skeleton className="h-3 w-20 mb-2" />
-          <div className="rounded-2xl border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">
+          <Skeleton className="mb-2 h-3 w-20" />
+          <div className="overflow-hidden rounded-2xl border border-[var(--border)] divide-y divide-[var(--border)]">
             {Array.from({ length: rows }).map((_, i) => (
-              <div key={i} className="px-4 py-3 flex items-center gap-3">
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
@@ -104,19 +91,17 @@ export function ListSkeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
-/** Timeline skeleton — mimics the itinerary page */
 export function TimelineSkeleton() {
   return (
-    <div className="max-w-md mx-auto">
+    <div className="mx-auto max-w-md">
       <div className="border-b border-[var(--border)] px-4 py-3">
         <Skeleton className="h-5 w-36" />
-        <Skeleton className="h-3 w-24 mt-1.5" />
+        <Skeleton className="mt-1.5 h-3 w-24" />
       </div>
 
-      <div className="px-4 pt-4 space-y-5">
+      <div className="space-y-5 px-4 pt-4">
         {[2, 1, 2].map((count, groupIdx) => (
           <div key={groupIdx} className="space-y-3">
-            {/* Date label */}
             <div className="flex items-center gap-3">
               <div className="h-px flex-1 bg-[var(--border)]" />
               <Skeleton className="h-3 w-20 rounded-full" />
@@ -125,12 +110,12 @@ export function TimelineSkeleton() {
             {Array.from({ length: count }).map((_, itemIdx) => (
               <div
                 key={itemIdx}
-                className="rounded-2xl border border-[var(--border)] overflow-hidden"
+                className="overflow-hidden rounded-2xl border border-[var(--border)]"
               >
-                {itemIdx === 0 && groupIdx === 0 && (
-                  <Skeleton className="w-full h-36" />
-                )}
-                <div className="p-4 space-y-2">
+                {itemIdx === 0 && groupIdx === 0 ? (
+                  <Skeleton className="h-36 w-full" />
+                ) : null}
+                <div className="space-y-2 p-4">
                   <div className="flex items-start gap-2.5">
                     <Skeleton className="h-6 w-6 shrink-0 rounded" />
                     <div className="flex-1 space-y-1.5">
@@ -148,8 +133,6 @@ export function TimelineSkeleton() {
   );
 }
 
-// ─── Error screen ──────────────────────────────────────────────────────────
-
 export function ErrorScreen({
   message,
   onRetry,
@@ -158,26 +141,24 @@ export function ErrorScreen({
   onRetry?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center gap-4">
-      <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950 flex items-center justify-center text-2xl">
-        ⚠️
+    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-xl font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+        !
       </div>
       <div>
-        <p className="font-semibold text-sm">Something went wrong</p>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1 max-w-xs leading-relaxed">
+        <p className="text-sm font-semibold">Something went wrong</p>
+        <p className="mt-1 max-w-xs text-sm leading-relaxed text-[var(--muted-foreground)]">
           {message}
         </p>
       </div>
-      {onRetry && (
+      {onRetry ? (
         <Button variant="outline" size="sm" onClick={onRetry}>
           Try again
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }
-
-// ─── Empty state ───────────────────────────────────────────────────────────
 
 export function EmptyState({
   emoji,
@@ -191,13 +172,13 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-[var(--secondary)] flex items-center justify-center text-3xl select-none">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex h-16 w-16 select-none items-center justify-center rounded-2xl bg-[var(--secondary)] text-3xl">
         {emoji}
       </div>
       <div>
-        <p className="font-semibold text-sm">{title}</p>
-        <div className="text-sm text-[var(--muted-foreground)] mt-1 max-w-xs leading-relaxed">
+        <p className="text-sm font-semibold">{title}</p>
+        <div className="mt-1 max-w-xs text-sm leading-relaxed text-[var(--muted-foreground)]">
           {description}
         </div>
       </div>
@@ -205,8 +186,6 @@ export function EmptyState({
     </div>
   );
 }
-
-// ─── Inline error banner ───────────────────────────────────────────────────
 
 export function InlineError({
   message,
@@ -216,18 +195,18 @@ export function InlineError({
   onDismiss?: () => void;
 }) {
   return (
-    <div className="mx-4 mt-3 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
-      <span className="text-sm shrink-0">⚠️</span>
-      <p className="text-xs leading-relaxed flex-1">{message}</p>
-      {onDismiss && (
+    <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+      <span className="shrink-0 text-sm font-semibold">!</span>
+      <p className="flex-1 text-xs leading-relaxed">{message}</p>
+      {onDismiss ? (
         <button
           onClick={onDismiss}
-          className="shrink-0 text-red-400 hover:text-red-600 transition-colors"
+          className="shrink-0 text-red-400 transition-colors hover:text-red-600"
           aria-label="Dismiss"
         >
-          ✕
+          x
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

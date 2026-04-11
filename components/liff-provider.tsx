@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { getLiffE2EContext } from "@/lib/liff-e2e";
 
 interface LiffProfile {
   userId: string;
@@ -38,6 +39,18 @@ export function LiffProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    const e2eContext = getLiffE2EContext();
+    if (e2eContext) {
+      setState({
+        isReady: e2eContext.isReady ?? true,
+        isLoggedIn: e2eContext.isLoggedIn ?? true,
+        profile: e2eContext.profile ?? null,
+        lineGroupId: e2eContext.lineGroupId ?? null,
+        error: e2eContext.error ?? null,
+      });
+      return;
+    }
+
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
     if (!liffId) {
       setState((s) => ({ ...s, isReady: true, error: "LIFF ID not configured" }));

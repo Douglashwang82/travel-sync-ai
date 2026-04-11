@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useLiff } from "@/components/liff-provider";
+import { useCallback, useEffect, useState } from "react";
 import {
   LoadingSpinner,
   ListSkeleton,
@@ -12,65 +11,93 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { liffFetch } from "@/lib/liff-client";
+import { toLiffErrorMessage } from "@/lib/liff-errors";
+import { useLiffSession } from "@/lib/use-liff-session";
 import type { ActiveVote, VoteOption } from "@/app/api/liff/votes/route";
 
-type SessionData = {
-  group: { id: string; lineGroupId: string };
-  member: { lineUserId: string };
-  activeTrip: { id: string; destination_name: string } | null;
-};
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function VotesPage() {
-  const { isReady, isLoggedIn, profile, lineGroupId, error } = useLiff();
-  const [session, setSession] = useState<SessionData | null>(null);
+  const {
+    isReady,
+    isLoggedIn,
+    error,
+    session,
+    sessionLoading,
+    sessionError,
+    reloadSession,
+  } = useLiffSession();
   const [votes, setVotes] = useState<ActiveVote[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [castingFor, setCastingFor] = useState<string | null>(null); // optionId being cast
-  const [voteError, setVoteError]   = useState<string | null>(null);
+  const [castingFor, setCastingFor] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!profile || !lineGroupId) return;
     setLoading(true);
     setLoadError(null);
-    try {
-      const sessionRes = await liffFetch(
-        `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
-      );
-      if (!sessionRes.ok) throw new Error("Failed to load session");
-      const sess: SessionData = await sessionRes.json();
-      setSession(sess);
 
-      if (!sess.activeTrip) {
+    try {
+      const sessionData = await reloadSession();
+      if (!sessionData) throw new Error("Failed to load session");
+
+      if (!sessionData.activeTrip) {
         setVotes([]);
         return;
       }
 
-      const params = new URLSearchParams({
-        tripId: sess.activeTrip.id,
-      });
-      const res = await liffFetch(`/api/liff/votes?${params}`);
+      const res = await liffFetch(`/api/liff/votes?tripId=${sessionData.activeTrip.id}`);
       if (!res.ok) throw new Error("Failed to load votes");
+
       const data = await res.json();
       setVotes(data.votes ?? []);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load");
+      setLoadError(
+        toLiffErrorMessage(
+          "votes",
+          err,
+          "We could not load active votes right now. Reopen this page in LINE and try again."
+        )
+      );
     } finally {
       setLoading(false);
     }
-  }, [profile, lineGroupId]);
+  }, [reloadSession]);
 
   useEffect(() => {
-    if (isReady && isLoggedIn) load();
-  }, [isReady, isLoggedIn, load]);
+    if (!isReady || !isLoggedIn || !session || sessionLoading) return;
+
+    if (!session.activeTrip) {
+      setVotes([]);
+      return;
+    }
+
+    void (async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const res = await liffFetch(`/api/liff/votes?tripId=${session.activeTrip!.id}`);
+        if (!res.ok) throw new Error("Failed to load votes");
+        const data = await res.json();
+        setVotes(data.votes ?? []);
+      } catch (err) {
+        setLoadError(
+          toLiffErrorMessage(
+            "votes",
+            err,
+            "We could not load active votes right now. Reopen this page in LINE and try again."
+          )
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [isReady, isLoggedIn, session, sessionLoading]);
 
   async function handleVote(tripItemId: string, optionId: string) {
-    if (!session || !profile) return;
+    if (!session) return;
 
     setCastingFor(optionId);
     setVoteError(null);
+
     try {
       const res = await liffFetch("/api/liff/votes", {
         method: "POST",
@@ -88,28 +115,32 @@ export default function VotesPage() {
         throw new Error(err.error ?? "Vote failed");
       }
 
-      // Refresh votes to reflect the new tally
       await load();
     } catch (err) {
-      setVoteError(err instanceof Error ? err.message : "Error casting vote");
+      setVoteError(
+        toLiffErrorMessage(
+          "cast-vote",
+          err,
+          "We could not submit your vote. Please try again."
+        )
+      );
     } finally {
       setCastingFor(null);
     }
   }
 
-  // ── Render states ─────────────────────────────────────────────────────────
-
-  if (!isReady)    return <LoadingSpinner message="Initializing…" />;
-  if (error)       return <ErrorScreen message={error} />;
-  if (!isLoggedIn) return <LoadingSpinner message="Logging in…" />;
-  if (loading)     return <ListSkeleton rows={3} />;
-  if (loadError)   return <ErrorScreen message={loadError} onRetry={load} />;
+  if (!isReady) return <LoadingSpinner message="Initializing..." />;
+  if (error) return <ErrorScreen message={error} />;
+  if (!isLoggedIn) return <LoadingSpinner message="Logging in..." />;
+  if (sessionLoading && !session) return <ListSkeleton rows={3} />;
+  if (sessionError && !session) return <ErrorScreen message={sessionError} onRetry={load} />;
+  if (loading) return <ListSkeleton rows={3} />;
+  if (loadError) return <ErrorScreen message={loadError} onRetry={load} />;
 
   return (
     <div className="max-w-md mx-auto">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-sm border-b border-[var(--border)] px-4 py-3">
-        <h1 className="font-bold text-base">🗳️ Active Votes</h1>
+        <h1 className="font-bold text-base">Active Votes</h1>
         {session?.activeTrip && (
           <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
             {session.activeTrip.destination_name}
@@ -125,12 +156,12 @@ export default function VotesPage() {
 
       {votes.length === 0 ? (
         <EmptyState
-          emoji="🗳️"
+          emoji="Vote"
           title="No active votes"
           description={
             <>
-              Type <code className="font-mono text-xs">/vote [item]</code> in
-              chat to start a vote on a board item.
+              Type <code className="font-mono text-xs">/vote [item]</code> in chat to start a
+              vote on a board item.
             </>
           }
         />
@@ -150,8 +181,6 @@ export default function VotesPage() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 function VoteCard({
   vote,
   onVote,
@@ -165,13 +194,13 @@ function VoteCard({
 
   return (
     <div className="rounded-2xl border border-[var(--border)] overflow-hidden">
-      {/* Item header */}
       <div className="px-4 py-3 bg-[var(--secondary)] dark:bg-[#111] flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold text-sm truncate">{vote.item.title}</p>
           {vote.item.deadline_at && (
             <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-              Closes {new Date(vote.item.deadline_at).toLocaleString(undefined, {
+              Closes{" "}
+              {new Date(vote.item.deadline_at).toLocaleString(undefined, {
                 month: "short",
                 day: "numeric",
                 hour: "2-digit",
@@ -185,28 +214,25 @@ function VoteCard({
             {vote.totalVotes} vote{vote.totalVotes !== 1 ? "s" : ""}
           </Badge>
           {hasVoted && (
-            <Badge className="text-xs bg-[var(--primary)] text-white border-0">
-              Voted
-            </Badge>
+            <Badge className="text-xs bg-[var(--primary)] text-white border-0">Voted</Badge>
           )}
         </div>
       </div>
 
-      {/* Options */}
       {vote.options.length === 0 ? (
         <p className="px-4 py-3 text-xs text-[var(--muted-foreground)] italic">
           No options yet. Use /vote in chat to add options.
         </p>
       ) : (
         <div className="divide-y divide-[var(--border)]">
-          {vote.options.map((opt) => (
+          {vote.options.map((option) => (
             <OptionRow
-              key={opt.id}
-              option={opt}
+              key={option.id}
+              option={option}
               totalVotes={vote.totalVotes}
-              isMyVote={vote.myVoteOptionId === opt.id}
-              isCasting={castingFor === opt.id}
-              onVote={() => onVote(vote.item.id, opt.id)}
+              isMyVote={vote.myVoteOptionId === option.id}
+              isCasting={castingFor === option.id}
+              onVote={() => onVote(vote.item.id, option.id)}
             />
           ))}
         </div>
@@ -232,7 +258,6 @@ function OptionRow({
 
   return (
     <div className={cn("p-4", isMyVote && "bg-[#f0fdf4] dark:bg-[#0d1a0d]")}>
-      {/* Option image */}
       {option.image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -247,7 +272,7 @@ function OptionRow({
           <p className="font-medium text-sm truncate">{option.name}</p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {option.rating && (
-              <span className="text-xs text-[var(--muted-foreground)]">⭐ {option.rating}</span>
+              <span className="text-xs text-[var(--muted-foreground)]">{option.rating}</span>
             )}
             {option.price_level && (
               <span className="text-xs text-[var(--muted-foreground)]">{option.price_level}</span>
@@ -259,7 +284,7 @@ function OptionRow({
                 rel="noopener noreferrer"
                 className="text-xs text-[var(--primary)] underline underline-offset-2"
               >
-                View →
+                View
               </a>
             )}
           </div>
@@ -270,16 +295,12 @@ function OptionRow({
           variant={isMyVote ? "default" : "outline"}
           onClick={onVote}
           disabled={isCasting}
-          className={cn(
-            "shrink-0 text-xs h-8",
-            isMyVote && "bg-[var(--primary)] text-white border-0"
-          )}
+          className={cn("shrink-0 text-xs h-8", isMyVote && "bg-[var(--primary)] text-white border-0")}
         >
-          {isCasting ? "..." : isMyVote ? "✓ Voted" : "Vote"}
+          {isCasting ? "..." : isMyVote ? "Voted" : "Vote"}
         </Button>
       </div>
 
-      {/* Vote bar */}
       {totalVotes > 0 && (
         <div className="mt-3">
           <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
@@ -299,4 +320,3 @@ function OptionRow({
     </div>
   );
 }
-

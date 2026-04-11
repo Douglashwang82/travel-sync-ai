@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useLiff } from "@/components/liff-provider";
 import {
   EmptyState,
   ErrorScreen,
@@ -9,18 +8,11 @@ import {
   ListSkeleton,
   LoadingSpinner,
 } from "@/components/liff/shared";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { liffFetch } from "@/lib/liff-client";
-
-type SessionData = {
-  group: { id: string; lineGroupId: string; name: string | null };
-  member: { lineUserId: string; role: string };
-  activeTrip: {
-    id: string;
-    destination_name: string;
-    start_date: string | null;
-    end_date: string | null;
-  } | null;
-};
+import { toLiffErrorMessage } from "@/lib/liff-errors";
+import { useLiffSession } from "@/lib/use-liff-session";
 
 type OperationsSummary = {
   tripId: string;
@@ -45,26 +37,26 @@ type OperationsSummary = {
 };
 
 export default function OperationsPage() {
-  const { isReady, isLoggedIn, profile, lineGroupId, error } = useLiff();
-  const [session, setSession] = useState<SessionData | null>(null);
+  const {
+    isReady,
+    isLoggedIn,
+    error,
+    session,
+    sessionLoading,
+    sessionError,
+    reloadSession,
+  } = useLiffSession();
   const [summary, setSummary] = useState<OperationsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!profile || !lineGroupId) return;
-
     setLoading(true);
     setLoadError(null);
 
     try {
-      const sessionRes = await liffFetch(
-        `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
-      );
-      if (!sessionRes.ok) throw new Error("Failed to load session");
-
-      const sessionData: SessionData = await sessionRes.json();
-      setSession(sessionData);
+      const sessionData = await reloadSession();
+      if (!sessionData) throw new Error("Failed to load session");
 
       if (!sessionData.activeTrip) {
         setSummary(null);
@@ -78,26 +70,61 @@ export default function OperationsPage() {
 
       setSummary(await opsRes.json());
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load operations");
+      setLoadError(
+        toLiffErrorMessage(
+          "operations",
+          err,
+          "We could not load trip operations right now. Reopen this page in LINE and try again."
+        )
+      );
     } finally {
       setLoading(false);
     }
-  }, [profile, lineGroupId]);
+  }, [reloadSession]);
 
   useEffect(() => {
-    if (isReady && isLoggedIn) load();
-  }, [isReady, isLoggedIn, load]);
+    if (!isReady || !isLoggedIn || !session || sessionLoading) return;
+
+    if (!session.activeTrip) {
+      setSummary(null);
+      return;
+    }
+
+    void (async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const opsRes = await liffFetch(
+          `/api/liff/operations?tripId=${encodeURIComponent(session.activeTrip!.id)}`
+        );
+        if (!opsRes.ok) throw new Error("Failed to load operations");
+        setSummary(await opsRes.json());
+      } catch (err) {
+        setLoadError(
+          toLiffErrorMessage(
+            "operations",
+            err,
+            "We could not load trip operations right now. Reopen this page in LINE and try again."
+          )
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [isReady, isLoggedIn, session, sessionLoading]);
 
   if (!isReady) return <LoadingSpinner message="Initializing..." />;
   if (error) return <ErrorScreen message={error} />;
   if (!isLoggedIn) return <LoadingSpinner message="Logging in..." />;
+  if (sessionLoading && !session) return <ListSkeleton rows={4} />;
+  if (sessionError && !session) return <ErrorScreen message={sessionError} onRetry={load} />;
   if (loading) return <ListSkeleton rows={4} />;
   if (loadError) return <ErrorScreen message={loadError} onRetry={load} />;
 
   if (!summary || !session?.activeTrip) {
     return (
       <EmptyState
-        emoji="🧭"
+        emoji="Ops"
         title="No operations data yet"
         description="Start a trip and commit key transport or stay details before using the operations command center."
       />
@@ -135,6 +162,18 @@ export default function OperationsPage() {
               </p>
             </div>
           </div>
+        </section>
+
+        <section className="rounded-2xl border border-[var(--border)] p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Readiness companion</p>
+            <p className="text-xs text-[var(--muted-foreground)] mt-1">
+              Jump to the readiness checklist for blocker-level detail.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/liff/readiness">Open readiness</Link>
+          </Button>
         </section>
 
         <SectionCard title="Next Actions" items={summary.nextActions} empty="No immediate actions from committed data." />

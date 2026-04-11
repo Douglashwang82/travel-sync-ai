@@ -1,6 +1,13 @@
 "use client";
 
+import { getLiffE2EContext } from "@/lib/liff-e2e";
+
 export async function getLiffIdToken(): Promise<string | null> {
+  const e2eContext = getLiffE2EContext();
+  if (e2eContext?.idToken) {
+    return e2eContext.idToken;
+  }
+
   try {
     const liff = (await import("@line/liff")).default;
     return liff.getIDToken();
