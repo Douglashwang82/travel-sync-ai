@@ -15,6 +15,7 @@ import { handleRecommend } from "./commands/recommend";
 import { handleIncident } from "./commands/incident";
 import { handleReady } from "./commands/ready";
 import { handleOps } from "./commands/ops";
+import { handleOption } from "./commands/option";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -97,6 +98,10 @@ export async function routeCommand(
 
     case "/decide":
       await handleDecide(args, ctx, reply);
+      break;
+
+    case "/option":
+      await handleOption(args, ctx, reply);
       break;
 
     case "/share":

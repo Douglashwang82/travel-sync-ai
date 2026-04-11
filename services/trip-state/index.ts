@@ -209,6 +209,67 @@ export async function getActiveTrip(groupId: string) {
   return data ?? null;
 }
 
+export interface AddOptionInput {
+  itemId: string;
+  name: string;
+}
+
+export type AddOptionResult =
+  | { ok: true; optionId: string; name: string }
+  | { ok: false; error: string; code: string };
+
+/**
+ * Manually add a voteable option to a decision item.
+ * The item must be a decision in todo or pending stage.
+ */
+export async function addOption(input: AddOptionInput): Promise<AddOptionResult> {
+  const db = createAdminClient();
+
+  const { data: item } = await db
+    .from("trip_items")
+    .select("id, item_kind, stage")
+    .eq("id", input.itemId)
+    .single();
+
+  if (!item) {
+    return { ok: false, error: "Item not found", code: "NOT_FOUND" };
+  }
+  if (item.item_kind !== "decision") {
+    return { ok: false, error: "Item is not a decision item", code: "WRONG_KIND" };
+  }
+  if (item.stage === "confirmed") {
+    return { ok: false, error: "Item is already confirmed", code: "ALREADY_CONFIRMED" };
+  }
+
+  // Reject exact-name duplicates (case-insensitive)
+  const { data: existing } = await db
+    .from("trip_item_options")
+    .select("id")
+    .eq("trip_item_id", input.itemId)
+    .ilike("name", input.name)
+    .limit(1)
+    .single();
+
+  if (existing) {
+    return { ok: false, error: "Option already exists", code: "DUPLICATE" };
+  }
+
+  const { data, error } = await db
+    .from("trip_item_options")
+    .insert({
+      trip_item_id: input.itemId,
+      provider: "manual",
+      name: input.name,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: "Failed to add option", code: "DB_ERROR" };
+  }
+  return { ok: true, optionId: data.id, name: input.name };
+}
+
 /**
  * Fetch a single board item with its options.
  */
