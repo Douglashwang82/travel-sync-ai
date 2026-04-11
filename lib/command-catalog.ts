@@ -116,6 +116,20 @@ export const COMMAND_CATALOG: CommandCatalogEntry[] = [
     liffVisible: true,
   },
   {
+    command: "/cancel",
+    example: "/cancel",
+    description: "Cancel the current active trip.",
+    emoji: "🚫",
+    liffVisible: true,
+  },
+  {
+    command: "/complete",
+    example: "/complete",
+    description: "Mark the current active trip as complete.",
+    emoji: "🏁",
+    liffVisible: true,
+  },
+  {
     command: "/optout",
     example: "/optout",
     description: "Stop TravelSync from parsing your messages for trip planning.",

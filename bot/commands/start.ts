@@ -57,7 +57,7 @@ export async function handleStart(
   if (existing) {
     await reply(
       `There's already an active trip to ${existing.destination_name}.\n` +
-        `Use /status to view it, or ask me to cancel it first.`
+        `Use /status to view it, or /cancel to cancel it first.`
     );
     return;
   }
