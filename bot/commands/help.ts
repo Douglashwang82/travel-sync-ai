@@ -23,6 +23,16 @@ const HELP_TEXT = `TravelSync AI — Commands
   Recommend remembered places from the group's chat history first.
   Example: /recommend restaurant
 
+/ready
+  Show a readiness summary using committed trip details only, with explicit unknowns for anything not yet confirmed.
+
+/ops
+  Show the batched trip operations command center summary using committed execution data only.
+
+/incident [what happened]
+  Experimental: open a verified incident playbook for travel disruptions like flight delay, lost passport, illness, or missed meetup.
+  Example: /incident I lost my passport
+
 /nudge
   Remind group members with pending votes or open items.
 

@@ -1,0 +1,16 @@
+-- TravelSync AI v1.2 execution-stage scaffold
+-- This migration is intentionally non-destructive and serves as a placeholder
+-- for the upcoming operational schema rollout.
+--
+-- Planned tables:
+--   trip_readiness_items
+--   trip_transport_monitors
+--   trip_transport_alerts
+--   trip_incidents
+--   trip_incident_events
+--   trip_daily_briefings
+--
+-- Planned approach:
+--   1. Add tables without breaking existing v1.1 planning flows.
+--   2. Backfill nothing by default.
+--   3. Generate readiness and monitoring state lazily per trip.

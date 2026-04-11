@@ -12,6 +12,9 @@ import { handleShare } from "./commands/share";
 import { handleExp } from "./commands/exp";
 import { handleExpSummary } from "./commands/exp-summary";
 import { handleRecommend } from "./commands/recommend";
+import { handleIncident } from "./commands/incident";
+import { handleReady } from "./commands/ready";
+import { handleOps } from "./commands/ops";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -102,6 +105,18 @@ export async function routeCommand(
 
     case "/recommend":
       await handleRecommend(args, ctx, reply);
+      break;
+
+    case "/ready":
+      await handleReady(ctx, reply);
+      break;
+
+    case "/ops":
+      await handleOps(ctx, reply);
+      break;
+
+    case "/incident":
+      await handleIncident(args, ctx, reply);
       break;
 
     case "/exp":

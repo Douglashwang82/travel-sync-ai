@@ -11,7 +11,10 @@ type AnalyticsEventName =
   | "nudge_sent"
   | "nudge_conversion"
   | "bot_removed"
-  | "daily_digest_sent";
+  | "daily_digest_sent"
+  | "incident_started"
+  | "ops_command_used"
+  | "ops_view_opened";
 
 interface TrackOptions {
   groupId?: string;
