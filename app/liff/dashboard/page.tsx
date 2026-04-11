@@ -115,7 +115,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isReady || !isLoggedIn || !session || sessionLoading) return;
 
-    if (!session.activeTrip) {
+    const activeTrip = session.activeTrip;
+
+    if (!activeTrip) {
       setBoard(null);
       return;
     }
@@ -125,7 +127,7 @@ export default function DashboardPage() {
       setLoadError(null);
       setActionError(null);
       try {
-        const boardRes = await liffFetch(`/api/liff/board?tripId=${session.activeTrip!.id}`);
+        const boardRes = await liffFetch(`/api/liff/board?tripId=${activeTrip.id}`);
         if (!boardRes.ok) throw new Error("Failed to load board");
         setBoard(await boardRes.json());
       } catch (err) {

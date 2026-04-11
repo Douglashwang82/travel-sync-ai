@@ -82,7 +82,9 @@ export default function ItineraryPage() {
   useEffect(() => {
     if (!isReady || !isLoggedIn || !session || sessionLoading) return;
 
-    if (!session.activeTrip) {
+    const activeTrip = session.activeTrip;
+
+    if (!activeTrip) {
       setTrip(null);
       setItems([]);
       return;
@@ -92,7 +94,7 @@ export default function ItineraryPage() {
       setLoading(true);
       setLoadError(null);
       try {
-        const res = await liffFetch(`/api/liff/itinerary?tripId=${session.activeTrip!.id}`);
+        const res = await liffFetch(`/api/liff/itinerary?tripId=${activeTrip.id}`);
         if (!res.ok) throw new Error("Failed to load itinerary");
 
         const data = await res.json();

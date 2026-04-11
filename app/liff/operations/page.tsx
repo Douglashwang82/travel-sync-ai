@@ -85,7 +85,9 @@ export default function OperationsPage() {
   useEffect(() => {
     if (!isReady || !isLoggedIn || !session || sessionLoading) return;
 
-    if (!session.activeTrip) {
+    const activeTrip = session.activeTrip;
+
+    if (!activeTrip) {
       setSummary(null);
       return;
     }
@@ -95,7 +97,7 @@ export default function OperationsPage() {
       setLoadError(null);
       try {
         const opsRes = await liffFetch(
-          `/api/liff/operations?tripId=${encodeURIComponent(session.activeTrip!.id)}`
+          `/api/liff/operations?tripId=${encodeURIComponent(activeTrip.id)}`
         );
         if (!opsRes.ok) throw new Error("Failed to load operations");
         setSummary(await opsRes.json());

@@ -159,7 +159,9 @@ export default function ReadinessPage() {
       return;
     }
 
-    if (!session.activeTrip) {
+    const activeTrip = session.activeTrip;
+
+    if (!activeTrip) {
       setSnapshot(null);
       return;
     }
@@ -170,7 +172,7 @@ export default function ReadinessPage() {
 
       try {
         const readinessRes = await liffFetch(
-          `/api/liff/readiness?tripId=${encodeURIComponent(session.activeTrip.id)}`
+          `/api/liff/readiness?tripId=${encodeURIComponent(activeTrip.id)}`
         );
 
         if (!readinessRes.ok) {

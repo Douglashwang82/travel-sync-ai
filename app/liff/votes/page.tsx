@@ -65,7 +65,9 @@ export default function VotesPage() {
   useEffect(() => {
     if (!isReady || !isLoggedIn || !session || sessionLoading) return;
 
-    if (!session.activeTrip) {
+    const activeTrip = session.activeTrip;
+
+    if (!activeTrip) {
       setVotes([]);
       return;
     }
@@ -74,7 +76,7 @@ export default function VotesPage() {
       setLoading(true);
       setLoadError(null);
       try {
-        const res = await liffFetch(`/api/liff/votes?tripId=${session.activeTrip!.id}`);
+        const res = await liffFetch(`/api/liff/votes?tripId=${activeTrip.id}`);
         if (!res.ok) throw new Error("Failed to load votes");
         const data = await res.json();
         setVotes(data.votes ?? []);
