@@ -18,7 +18,9 @@ type AnalyticsEventName =
   // Booking lifecycle events
   | "booking_prompt_sent"
   | "booking_confirmed"
-  | "booking_reminder_sent";
+  | "booking_reminder_sent"
+  | "trip_cancelled"
+  | "trip_completed";
 
 interface TrackOptions {
   groupId?: string;

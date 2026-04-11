@@ -17,6 +17,8 @@ import { handleReady } from "./commands/ready";
 import { handleOps } from "./commands/ops";
 import { handleOption } from "./commands/option";
 import { handleBooked } from "./commands/booked";
+import { handleCancel } from "./commands/cancel";
+import { handleComplete } from "./commands/complete";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -135,6 +137,14 @@ export async function routeCommand(
 
     case "/exp-summary":
       await handleExpSummary(ctx, reply);
+      break;
+
+    case "/cancel":
+      await handleCancel(ctx, reply);
+      break;
+
+    case "/complete":
+      await handleComplete(ctx, reply);
       break;
 
     case "/optout":
