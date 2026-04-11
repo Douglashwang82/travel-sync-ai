@@ -21,6 +21,17 @@ export type ItemSource = "ai" | "command" | "manual" | "system";
 
 export type ItemKind = "task" | "decision";
 
+export type BookingStatus = "not_required" | "needed" | "booked";
+
+// Item types that require a booking action after vote confirmation.
+export const BOOKABLE_ITEM_TYPES: ItemType[] = [
+  "hotel",
+  "restaurant",
+  "activity",
+  "transport",
+  "flight",
+];
+
 export type OptionProvider = "google_places" | "ota" | "manual";
 
 export type EntityType =
@@ -89,6 +100,11 @@ export interface TripItem {
   confirmed_option_id: string | null;
   deadline_at: string | null;
   tie_extension_count: number;
+  // Booking lifecycle — only meaningful when stage = 'confirmed' and item_kind = 'decision'
+  booking_status: BookingStatus;
+  booking_ref: string | null;
+  booked_by_line_user_id: string | null;
+  booked_at: string | null;
   created_at: string;
   updated_at: string;
 }

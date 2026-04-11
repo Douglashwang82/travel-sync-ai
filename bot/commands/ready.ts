@@ -36,13 +36,32 @@ export async function handleReady(
       : `This readiness summary is based on committed trip details only (${snapshot.confidenceScore}% confidence).`;
 
   const completed = snapshot.items.filter((item) => item.status === "completed");
-  const blockers = snapshot.blockers.slice(0, 4);
-  const missingInputs = snapshot.missingInputs.slice(0, 3);
+  // Separate "open" (decided, not booked) from other blockers so bookings stand out
+  const bookingNeeded = snapshot.blockers.filter((item) => item.status === "open");
+  const otherBlockers = snapshot.blockers
+    .filter((item) => item.status !== "open")
+    .slice(0, 3);
+  const missingInputs = snapshot.missingInputs
+    .filter((input) => !input.toLowerCase().includes("booking"))
+    .slice(0, 3);
+  const bookingInputs = snapshot.missingInputs.filter((input) =>
+    input.toLowerCase().includes("booking")
+  );
 
   const lines = [
     `Readiness - ${snapshot.trip.destinationName}`,
     intro,
     `Completion: ${snapshot.completionPercent}%`,
+  ];
+
+  // Surface unbooked items first — most actionable gap
+  if (bookingNeeded.length > 0) {
+    lines.push("", "⚠️ Decided but not yet booked:");
+    lines.push(...bookingNeeded.map((item) => `- ${item.title}`));
+    lines.push(...bookingInputs.map((input) => `  ${input}`));
+  }
+
+  lines.push(
     "",
     "Committed source of truth:",
     ...(snapshot.committedSourceSummary.length > 0
@@ -52,13 +71,13 @@ export async function handleReady(
     "Completed:",
     ...(completed.length > 0
       ? completed.map((item) => `- ${item.title}`)
-      : ["- Nothing fully confirmed yet."]),
-    "",
-    "Needs attention:",
-    ...(blockers.length > 0
-      ? blockers.map((item) => `- ${item.title}: ${item.description}`)
-      : ["- No critical blockers detected from committed data."]),
-  ];
+      : ["- Nothing fully confirmed yet."])
+  );
+
+  if (otherBlockers.length > 0) {
+    lines.push("", "Needs attention:");
+    lines.push(...otherBlockers.map((item) => `- ${item.title}: ${item.description}`));
+  }
 
   if (missingInputs.length > 0) {
     lines.push("", "Best next inputs:");

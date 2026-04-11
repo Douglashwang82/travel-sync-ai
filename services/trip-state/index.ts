@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
-import type { ItemKind, ItemStage, ItemType, ItemSource, TripItem } from "@/lib/types";
+import type { ItemKind, ItemStage, ItemType, ItemSource, TripItem, BookingStatus } from "@/lib/types";
+import { BOOKABLE_ITEM_TYPES } from "@/lib/types";
 
 export interface CreateItemInput {
   tripId: string;
@@ -133,6 +134,10 @@ export async function startVote(
  * Confirm an item with a winning option.
  * Atomic: the UPDATE only matches rows where stage is not already confirmed,
  * so concurrent calls cannot double-fire — the second caller gets ALREADY_CONFIRMED.
+ *
+ * Also sets booking_status automatically:
+ *   - 'needed'       for bookable item types (hotel, restaurant, activity, transport, flight)
+ *   - 'not_required' for all others (insurance, other, task items)
  */
 export async function confirmItem(
   itemId: string,
@@ -140,31 +145,108 @@ export async function confirmItem(
 ): Promise<TransitionResult> {
   const db = createAdminClient();
 
+  // Pre-fetch item_type to determine booking_status.
+  // item_type is immutable so this is safe to read before the atomic update.
+  const { data: existing } = await db
+    .from("trip_items")
+    .select("id, item_type, stage")
+    .eq("id", itemId)
+    .single();
+
+  if (!existing) {
+    return { ok: false, error: "Item not found", code: "NOT_FOUND" };
+  }
+  if (existing.stage === "confirmed") {
+    return { ok: false, error: "Item is already confirmed", code: "ALREADY_CONFIRMED" };
+  }
+
+  const bookingStatus: BookingStatus = BOOKABLE_ITEM_TYPES.includes(
+    existing.item_type as ItemType
+  )
+    ? "needed"
+    : "not_required";
+
   const { data, error } = await db
     .from("trip_items")
     .update({
       stage: "confirmed" as ItemStage,
       confirmed_option_id: confirmedOptionId,
       deadline_at: null,
+      booking_status: bookingStatus,
     })
     .eq("id", itemId)
     .in("stage", ["todo", "pending"] as ItemStage[])
     .select("*")
     .single();
 
-  // PGRST116 = 0 rows returned — either not found or already confirmed
+  // PGRST116 = 0 rows returned — concurrent confirm beat us to it
   if (error?.code === "PGRST116") {
-    const { data: existing } = await db
-      .from("trip_items")
-      .select("id, stage")
-      .eq("id", itemId)
-      .single();
-    if (!existing) return { ok: false, error: "Item not found", code: "NOT_FOUND" };
     return { ok: false, error: "Item is already confirmed", code: "ALREADY_CONFIRMED" };
   }
 
   if (error || !data) {
     return { ok: false, error: "Failed to confirm item", code: "DB_ERROR" };
+  }
+  return { ok: true, item: data as TripItem };
+}
+
+export interface ConfirmBookingInput {
+  itemId: string;
+  bookingRef: string;
+  bookedByLineUserId: string;
+}
+
+/**
+ * Record that a confirmed decision item has been booked.
+ * Only applies to items with booking_status = 'needed'.
+ * Returns the updated item on success.
+ */
+export async function confirmBooking(
+  input: ConfirmBookingInput
+): Promise<TransitionResult> {
+  const db = createAdminClient();
+
+  const { data: item } = await db
+    .from("trip_items")
+    .select("id, stage, booking_status, title")
+    .eq("id", input.itemId)
+    .single();
+
+  if (!item) {
+    return { ok: false, error: "Item not found", code: "NOT_FOUND" };
+  }
+  if (item.stage !== "confirmed") {
+    return {
+      ok: false,
+      error: "Only confirmed items can be marked as booked",
+      code: "INVALID_STAGE",
+    };
+  }
+  if (item.booking_status === "not_required") {
+    return {
+      ok: false,
+      error: "This item does not require a booking",
+      code: "NOT_BOOKABLE",
+    };
+  }
+  if (item.booking_status === "booked") {
+    return { ok: false, error: "Item is already marked as booked", code: "ALREADY_BOOKED" };
+  }
+
+  const { data, error } = await db
+    .from("trip_items")
+    .update({
+      booking_status: "booked" as BookingStatus,
+      booking_ref: input.bookingRef,
+      booked_by_line_user_id: input.bookedByLineUserId,
+      booked_at: new Date().toISOString(),
+    })
+    .eq("id", input.itemId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: "Failed to update booking status", code: "DB_ERROR" };
   }
   return { ok: true, item: data as TripItem };
 }
