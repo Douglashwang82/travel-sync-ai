@@ -1,0 +1,27 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="900" rx="40" fill="#FBF8F2"/>
+  <text x="90" y="110" fill="#0F2743" font-size="42" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">TravelSync AI 指令能力地圖</text>
+  <text x="90" y="150" fill="#40617F" font-size="24" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif">依使用場景區分為規劃、執行、旅費與支援四大區塊</text>
+
+  <rect x="90" y="220" width="660" height="260" rx="34" fill="#ECFFF6" stroke="#00A86B" stroke-width="2"/>
+  <text x="130" y="285" fill="#00A86B" font-size="22" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="700">規劃與決策</text>
+  <text x="130" y="338" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/start /status /add /share</text>
+  <text x="130" y="384" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/decide /option /vote</text>
+  <text x="130" y="430" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/recommend /nudge</text>
+
+  <rect x="850" y="220" width="660" height="260" rx="34" fill="#EEF7FF" stroke="#0077B6" stroke-width="2"/>
+  <text x="890" y="285" fill="#0077B6" font-size="22" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="700">執行與營運</text>
+  <text x="890" y="338" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/ready /ops /incident</text>
+  <text x="890" y="384" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/booked</text>
+  <text x="890" y="432" fill="#40617F" font-size="22" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif">從規劃延伸到出發前與旅行中</text>
+
+  <rect x="90" y="560" width="660" height="220" rx="34" fill="#FFF6E8" stroke="#F59E0B" stroke-width="2"/>
+  <text x="130" y="625" fill="#F59E0B" font-size="22" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="700">旅費管理</text>
+  <text x="130" y="678" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/exp /exp-summary</text>
+  <text x="130" y="724" fill="#40617F" font-size="22" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif">記錄代墊與輸出最小結算路徑</text>
+
+  <rect x="850" y="560" width="660" height="220" rx="34" fill="#F5EEFF" stroke="#7C3AED" stroke-width="2"/>
+  <text x="890" y="625" fill="#7C3AED" font-size="22" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="700">支援、隱私、生命週期</text>
+  <text x="890" y="678" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/cancel /complete /help</text>
+  <text x="890" y="724" fill="#0F2743" font-size="34" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" font-weight="800">/optout /optin</text>
+</svg>
