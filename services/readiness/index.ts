@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/db";
-import type { ItemType, Trip, TripItem } from "@/lib/types";
+import type { BookingStatus, ItemType, Trip, TripItem } from "@/lib/types";
 
 export type ReadinessCategory =
   | "documents"
@@ -53,12 +53,12 @@ export async function getReadinessSnapshot(tripId: string): Promise<ReadinessSna
 
   const { data: items } = await db
     .from("trip_items")
-    .select("id, title, item_type, stage, confirmed_option_id")
+    .select("id, title, item_type, stage, confirmed_option_id, booking_status")
     .eq("trip_id", tripId);
 
   const confirmedItems = ((items ?? []) as Pick<
     TripItem,
-    "id" | "title" | "item_type" | "stage" | "confirmed_option_id"
+    "id" | "title" | "item_type" | "stage" | "confirmed_option_id" | "booking_status"
   >[]).filter((item) => item.stage === "confirmed");
 
   return buildReadinessSnapshot(
@@ -70,7 +70,7 @@ export async function getReadinessSnapshot(tripId: string): Promise<ReadinessSna
 export function buildReadinessSnapshot(
   trip: Pick<Trip, "id" | "destination_name" | "start_date" | "end_date">,
   confirmedItems: Array<
-    Pick<TripItem, "id" | "title" | "item_type" | "confirmed_option_id">
+    Pick<TripItem, "id" | "title" | "item_type" | "confirmed_option_id" | "booking_status">
   >
 ): ReadinessSnapshot {
   const hotelItems = findByTypes(confirmedItems, ["hotel"]);
@@ -111,13 +111,14 @@ export function buildReadinessSnapshot(
       id: "stay",
       tripId: trip.id,
       category: "reservations",
-      title: "Accommodation committed",
-      description:
-        hotelItems.length > 0
-          ? `Confirmed stay plan found: ${hotelItems.map((item) => item.title).join(", ")}.`
-          : "No confirmed accommodation item found yet.",
+      title: "Accommodation booked",
+      description: buildItemsDescription(
+        hotelItems,
+        "No confirmed accommodation item found yet.",
+        "stay"
+      ),
       severity: "high",
-      status: hotelItems.length > 0 ? "completed" : "unknown",
+      status: aggregateBookingStatus(hotelItems),
       dueAt: trip.start_date,
       sourceKind: "system",
       evidence: hotelItems.map((item) => item.title),
@@ -126,13 +127,14 @@ export function buildReadinessSnapshot(
       id: "primary-transport",
       tripId: trip.id,
       category: "transport",
-      title: "Primary transport committed",
-      description:
-        transportItems.length > 0
-          ? `Confirmed transport found: ${transportItems.map((item) => item.title).join(", ")}.`
-          : "No confirmed flight or transport item found yet.",
+      title: "Primary transport booked",
+      description: buildItemsDescription(
+        transportItems,
+        "No confirmed flight or transport item found yet.",
+        "transport"
+      ),
       severity: "critical",
-      status: transportItems.length > 0 ? "completed" : "unknown",
+      status: aggregateBookingStatus(transportItems),
       dueAt: trip.start_date,
       sourceKind: "system",
       evidence: transportItems.map((item) => item.title),
@@ -156,15 +158,16 @@ export function buildReadinessSnapshot(
       id: "return-plan",
       tripId: trip.id,
       category: "return",
-      title: "Return journey committed",
-      description:
-        returnTransportItems.length > 0
-          ? `Return transport looks committed: ${returnTransportItems
-              .map((item) => item.title)
-              .join(", ")}.`
-          : "No committed return transport could be confirmed from the current trip data.",
+      title: "Return journey booked",
+      description: buildItemsDescription(
+        returnTransportItems,
+        "No committed return transport could be confirmed from the current trip data.",
+        "return"
+      ),
       severity: "high",
-      status: returnTransportItems.length > 0 ? "completed" : "unknown",
+      status: returnTransportItems.length > 0
+        ? aggregateBookingStatus(returnTransportItems)
+        : "unknown",
       dueAt: trip.end_date,
       sourceKind: "system",
       evidence: returnTransportItems.map((item) => item.title),
@@ -195,10 +198,58 @@ export function buildReadinessSnapshot(
 }
 
 function findByTypes(
-  items: Array<Pick<TripItem, "title" | "item_type">>,
+  items: Array<Pick<TripItem, "title" | "item_type" | "booking_status">>,
   types: ItemType[]
 ) {
   return items.filter((item) => types.includes(item.item_type));
+}
+
+/**
+ * Convert a group of confirmed items' booking statuses into a single
+ * ReadinessStatus for the parent checklist row.
+ *
+ * - Any item with booking_status='needed' → 'open'  (booking required but not done)
+ * - All items 'booked' or 'not_required'  → 'completed'
+ * - No items at all                        → 'unknown'
+ */
+function aggregateBookingStatus(
+  items: Array<Pick<TripItem, "booking_status">>
+): ReadinessStatus {
+  if (items.length === 0) return "unknown";
+  const anyNeedBooking = items.some((item) => item.booking_status === "needed");
+  if (anyNeedBooking) return "open";
+  return "completed";
+}
+
+/**
+ * Build a human-readable description for a readiness row, taking booking_status
+ * into account so the text accurately reflects whether items are decided vs booked.
+ */
+function buildItemsDescription(
+  items: Array<Pick<TripItem, "title" | "booking_status">>,
+  emptyMessage: string,
+  context: "stay" | "transport" | "return"
+): string {
+  if (items.length === 0) return emptyMessage;
+
+  const bookedItems = items.filter(
+    (item) => item.booking_status === "booked" || item.booking_status === "not_required"
+  );
+  const pendingItems = items.filter((item) => item.booking_status === "needed");
+
+  if (pendingItems.length === 0) {
+    const contextLabel = context === "stay" ? "stay" : "transport";
+    return `Confirmed and booked ${contextLabel}: ${items.map((item) => item.title).join(", ")}.`;
+  }
+
+  const parts: string[] = [];
+  if (bookedItems.length > 0) {
+    parts.push(`Booked: ${bookedItems.map((item) => item.title).join(", ")}`);
+  }
+  parts.push(
+    `Decided but not yet booked: ${pendingItems.map((item) => item.title).join(", ")}. Use /booked [item] [ref] once booking is complete.`
+  );
+  return parts.join(". ");
 }
 
 function collectEvidence(
@@ -210,17 +261,22 @@ function collectEvidence(
 
 function buildMissingInputs(items: ReadinessItem[]): string[] {
   return items
-    .filter((item) => item.status === "unknown")
+    .filter((item) => item.status === "unknown" || item.status === "open")
     .map((item) => {
+      if (item.status === "open") {
+        // Decision made but booking not yet completed
+        return `Complete the booking for: ${item.title}. Use /booked [item] [confirmation ref].`;
+      }
+      // status === 'unknown' — not even decided yet
       switch (item.id) {
         case "documents":
           return "Confirm passport validity and visa needs for the group.";
         case "stay":
-          return "Commit the accommodation choice so operations can rely on it.";
+          return "Decide and book accommodation — no confirmed hotel yet.";
         case "primary-transport":
-          return "Commit the main flight or transport so departure readiness can be validated.";
+          return "Decide and book the main flight or transport so departure readiness can be validated.";
         case "return-plan":
-          return "Add the return transport as a committed item.";
+          return "Add and book the return transport as a committed item.";
         default:
           return `Confirm: ${item.title}.`;
       }

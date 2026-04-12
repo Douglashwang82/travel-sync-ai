@@ -40,6 +40,14 @@ export const COMMAND_CATALOG: CommandCatalogEntry[] = [
     liffVisible: true,
   },
   {
+    command: "/option",
+    usage: "[decision-item] | [option-name]",
+    example: "/option restaurant | Ramen Shop Osaka",
+    description: "Add a voting option to a decision item so the group can vote on it.",
+    emoji: "🔤",
+    liffVisible: true,
+  },
+  {
     command: "/add",
     usage: "[item]",
     example: "/add Book travel insurance",
@@ -105,6 +113,20 @@ export const COMMAND_CATALOG: CommandCatalogEntry[] = [
     example: "/exp-summary",
     description: "Show who owes whom and the minimum settlements needed.",
     emoji: "💸",
+    liffVisible: true,
+  },
+  {
+    command: "/cancel",
+    example: "/cancel",
+    description: "Cancel the current active trip.",
+    emoji: "🚫",
+    liffVisible: true,
+  },
+  {
+    command: "/complete",
+    example: "/complete",
+    description: "Mark the current active trip as complete.",
+    emoji: "🏁",
     liffVisible: true,
   },
   {

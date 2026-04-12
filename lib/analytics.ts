@@ -14,7 +14,13 @@ type AnalyticsEventName =
   | "daily_digest_sent"
   | "incident_started"
   | "ops_command_used"
-  | "ops_view_opened";
+  | "ops_view_opened"
+  // Booking lifecycle events
+  | "booking_prompt_sent"
+  | "booking_confirmed"
+  | "booking_reminder_sent"
+  | "trip_cancelled"
+  | "trip_completed";
 
 interface TrackOptions {
   groupId?: string;

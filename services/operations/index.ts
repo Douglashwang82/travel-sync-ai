@@ -125,8 +125,7 @@ function deriveTripPhase(
   if (today < start) return daysBetween(today, start) <= 7 ? "countdown" : "planning";
   if (today === start) return "departure";
   if (today > start && today < end) return "active";
-  if (today === end) return "return";
-  if (today > end) return "complete";
+  if (today >= end) return "return";
   return "planning";
 }
 
@@ -156,10 +155,13 @@ function deriveNextActionsFromPhase(
       return ["Use /brief for a daily run-of-day summary.", "Keep all group updates batched into one operational message."];
     case "return":
       return [
-        trip.end_date ? `Today is the return date: ${trip.end_date}. Reconfirm checkout and transport.` : "Reconfirm return timing.",
+        trip.end_date
+          ? `Return date: ${trip.end_date}. Reconfirm checkout and transport.`
+          : "Reconfirm return timing.",
+        "Use /complete to wrap up the trip, or /exp-summary to settle expenses.",
       ];
     case "complete":
-      return ["Trip dates have passed. Shift to wrap-up, settlement, and follow-up tasks."];
+      return ["Trip is complete. Use /exp-summary to settle expenses or /start to plan the next trip."];
   }
 }
 

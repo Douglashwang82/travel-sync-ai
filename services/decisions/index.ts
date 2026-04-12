@@ -239,7 +239,8 @@ export async function refreshVoteCarousel(
 }
 
 /**
- * Announce the vote winner.
+ * Announce the vote winner, then — if the confirmed item requires booking —
+ * send a follow-up prompt with the winning option's booking URL.
  * Callers must pass the pre-computed vote counts - no re-fetch needed.
  */
 export async function announceWinner(
@@ -252,8 +253,16 @@ export async function announceWinner(
   const db = createAdminClient();
 
   const [{ data: option }, { data: item }] = await Promise.all([
-    db.from("trip_item_options").select("name").eq("id", winningOptionId).single(),
-    db.from("trip_items").select("title").eq("id", itemId).single(),
+    db
+      .from("trip_item_options")
+      .select("name, booking_url")
+      .eq("id", winningOptionId)
+      .single(),
+    db
+      .from("trip_items")
+      .select("title, booking_status")
+      .eq("id", itemId)
+      .single(),
   ]);
 
   await pushText(
@@ -265,4 +274,22 @@ export async function announceWinner(
       totalVotes
     )
   );
+
+  // If this item type requires booking, prompt the group to complete it
+  if (item?.booking_status === "needed") {
+    const bookingLine = option?.booking_url
+      ? `\n\nBook here: ${option.booking_url}`
+      : "";
+    await pushText(
+      lineGroupId,
+      `📋 Next step: make the booking for "${item.title}".${bookingLine}\n\nOnce it's done, type:\n/booked ${item.title} [confirmation number]`
+    );
+
+    await track("booking_prompt_sent", {
+      properties: {
+        item_id: itemId,
+        has_booking_url: !!option?.booking_url,
+      },
+    });
+  }
 }

@@ -348,10 +348,28 @@ export default function ReadinessPage() {
           </div>
         </section>
 
+        {snapshot.missingInputs.some((input) =>
+          input.toLowerCase().includes("booking")
+        ) && (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-900/10">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              Items decided but not yet booked
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-400">
+              Open the trip board, tap a confirmed item, and enter the confirmation number to mark
+              it as booked.
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+              <Link href="/liff/dashboard">Go to trip board</Link>
+            </Button>
+          </section>
+        )}
+
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--secondary)] p-4">
           <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">
-            This readiness view is currently generated from committed trip data only.
-            Checklist editing and manual confirmations are not implemented yet.
+            This readiness view is generated from committed trip data. To mark a booking as
+            confirmed, open the trip board and tap any item with a &ldquo;Booking needed&rdquo;
+            badge.
           </p>
           <Button variant="outline" size="sm" className="mt-3 w-full" onClick={load}>
             Refresh snapshot

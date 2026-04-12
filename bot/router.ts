@@ -15,6 +15,10 @@ import { handleRecommend } from "./commands/recommend";
 import { handleIncident } from "./commands/incident";
 import { handleReady } from "./commands/ready";
 import { handleOps } from "./commands/ops";
+import { handleOption } from "./commands/option";
+import { handleBooked } from "./commands/booked";
+import { handleCancel } from "./commands/cancel";
+import { handleComplete } from "./commands/complete";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -99,6 +103,10 @@ export async function routeCommand(
       await handleDecide(args, ctx, reply);
       break;
 
+    case "/option":
+      await handleOption(args, ctx, reply);
+      break;
+
     case "/share":
       await handleShare(args, ctx, reply);
       break;
@@ -119,12 +127,24 @@ export async function routeCommand(
       await handleIncident(args, ctx, reply);
       break;
 
+    case "/booked":
+      await handleBooked(args, ctx, reply);
+      break;
+
     case "/exp":
       await handleExp(args, ctx, reply);
       break;
 
     case "/exp-summary":
       await handleExpSummary(ctx, reply);
+      break;
+
+    case "/cancel":
+      await handleCancel(ctx, reply);
+      break;
+
+    case "/complete":
+      await handleComplete(ctx, reply);
       break;
 
     case "/optout":

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireOrganizerForItem, requireOrganizerForTrip } from "@/lib/liff-server";
+import {
+  requireOrganizerForItem,
+  requireOrganizerForTrip,
+  requireGroupMembership,
+} from "@/lib/liff-server";
 import {
   createItem,
   updateItem,
   deleteItem,
   reopenItem,
+  confirmBooking,
 } from "@/services/trip-state";
 import type { ApiError, ItemType } from "@/lib/types";
 
@@ -49,11 +54,18 @@ const DeleteItemSchema = z.object({
   itemId: z.string().uuid(),
 });
 
+const MarkBookedSchema = z.object({
+  action: z.literal("mark_booked"),
+  itemId: z.string().uuid(),
+  bookingRef: z.string().min(1).max(500),
+});
+
 const BodySchema = z.discriminatedUnion("action", [
   CreateItemSchema,
   UpdateItemSchema,
   ReopenItemSchema,
   DeleteItemSchema,
+  MarkBookedSchema,
 ]);
 
 // ─── Route ────────────────────────────────────────────────────────────────────
@@ -173,6 +185,61 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         );
       }
       return new NextResponse(null, { status: 204 });
+    }
+
+    case "mark_booked": {
+      // Any trip member (not just organizer) can confirm they made a booking
+      const db = createAdminClient();
+      const { data: item } = await db
+        .from("trip_items")
+        .select("trip_id")
+        .eq("id", data.itemId)
+        .single();
+
+      if (!item) {
+        return NextResponse.json<ApiError>(
+          { error: "Item not found", code: "NOT_FOUND" },
+          { status: 404 }
+        );
+      }
+
+      const { data: trip } = await db
+        .from("trips")
+        .select("id, group_id")
+        .eq("id", item.trip_id)
+        .single();
+
+      if (!trip) {
+        return NextResponse.json<ApiError>(
+          { error: "Trip not found", code: "NOT_FOUND" },
+          { status: 404 }
+        );
+      }
+
+      const auth = await requireGroupMembership(req, trip.group_id);
+      if (!auth.ok) return auth.response;
+
+      const result = await confirmBooking({
+        itemId: data.itemId,
+        bookingRef: data.bookingRef,
+        bookedByLineUserId: auth.lineUserId,
+      });
+
+      if (!result.ok) {
+        const status =
+          result.code === "NOT_FOUND"
+            ? 404
+            : result.code === "INVALID_STAGE" || result.code === "NOT_BOOKABLE"
+              ? 422
+              : result.code === "ALREADY_BOOKED"
+                ? 409
+                : 500;
+        return NextResponse.json<ApiError>(
+          { error: result.error, code: result.code },
+          { status }
+        );
+      }
+      return NextResponse.json(result.item);
     }
   }
 }
