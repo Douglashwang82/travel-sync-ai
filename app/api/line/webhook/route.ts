@@ -4,6 +4,7 @@ import { verifyLineSignature } from "@/lib/line";
 import { createAdminClient } from "@/lib/db";
 import { processLineEvent } from "@/services/event-processor";
 import { validateEnv } from "@/lib/env";
+import { captureError } from "@/lib/monitoring";
 
 // LINE sends this header for signature verification
 const SIGNATURE_HEADER = "x-line-signature";
@@ -157,6 +158,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         });
       } catch (err) {
         console.error(`[webhook] Background processing failed for ${lineEvent.id}`, err);
+        captureError(err, { context: "webhook_background", lineEventId: lineEvent.id });
       }
     });
   });

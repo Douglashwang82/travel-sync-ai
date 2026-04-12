@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
+import { cleanupRateLimitWindows } from "@/lib/rate-limit";
 
 /**
  * GET /api/cron/cleanup
@@ -42,6 +43,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .delete({ count: "exact" })
     .lte("created_at", oneYearAgo);
   results.analytics_events = analyticsCount ?? 0;
+
+  // Purge expired rate limit windows (prevents unbounded table growth)
+  await cleanupRateLimitWindows();
 
   console.info("[cron/cleanup] deleted rows", results);
   return NextResponse.json({ deleted: results });
