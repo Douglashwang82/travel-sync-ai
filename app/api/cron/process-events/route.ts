@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/db";
 import { processLineEvent } from "@/services/event-processor";
 import { retryFailedOutbound } from "@/lib/line";
 import { verifyCronRequest } from "@/lib/cron-auth";
+import { captureError } from "@/lib/monitoring";
 
 const MAX_RETRIES = 5;
 const BATCH_SIZE = 20;
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (error) {
     console.error("[cron/process-events] query error", error);
+    captureError(error, { context: "cron_process_events" });
     return NextResponse.json({ error: "DB error" }, { status: 500 });
   }
 

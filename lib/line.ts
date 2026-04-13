@@ -129,13 +129,16 @@ async function markOutboundSent(id: string | undefined): Promise<void> {
     .eq("id", id);
 }
 
-async function markOutboundFailed(id: string | undefined, err: unknown): Promise<void> {
+async function markOutboundFailed(id: string | undefined, err: unknown, retryCount = 0): Promise<void> {
   if (!id) return;
   const db = createAdminClient();
   const reason = err instanceof Error ? err.message : String(err);
+  // Exponential backoff: 2^retry_count seconds (2s, 4s, 8s, 16s, …) capped at 1 hour
+  const backoffSeconds = Math.min(Math.pow(2, retryCount + 1), 3600);
+  const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000).toISOString();
   await db
     .from("outbound_messages")
-    .update({ status: "failed", failure_reason: reason })
+    .update({ status: "failed", failure_reason: reason, next_retry_at: nextRetryAt })
     .eq("id", id);
 }
 
@@ -149,11 +152,13 @@ const MAX_OUTBOUND_RETRIES = 3;
 export async function retryFailedOutbound(): Promise<number> {
   const db = createAdminClient();
 
+  const now = new Date().toISOString();
   const { data: failed } = await db
     .from("outbound_messages")
     .select("id, message_type, payload_json, retry_count")
     .eq("status", "failed")
     .lt("retry_count", MAX_OUTBOUND_RETRIES)
+    .or(`next_retry_at.is.null,next_retry_at.lte.${now}`)
     .order("created_at", { ascending: true })
     .limit(20);
 
@@ -185,12 +190,16 @@ export async function retryFailedOutbound(): Promise<number> {
       retried++;
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
+      const newRetryCount = msg.retry_count + 1;
+      const backoffSeconds = Math.min(Math.pow(2, newRetryCount), 3600);
+      const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000).toISOString();
       await db
         .from("outbound_messages")
         .update({
           status: "failed",
           failure_reason: reason,
-          retry_count: msg.retry_count + 1,
+          retry_count: newRetryCount,
+          next_retry_at: nextRetryAt,
         })
         .eq("id", msg.id);
     }

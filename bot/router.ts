@@ -59,14 +59,14 @@ export async function routeCommand(
   const unthrottledCmds = ["/help", "/optout", "/optin"];
   if (!unthrottledCmds.includes(cmd)) {
     // Group-level limit
-    const groupLimit = checkRateLimit("group", ctx.lineGroupId);
+    const groupLimit = await checkRateLimit("group", ctx.lineGroupId);
     if (!groupLimit.allowed) {
       await reply(`Too many commands. Please wait a moment and try again.`);
       return;
     }
     // User-level limit
     if (ctx.userId) {
-      const userLimit = checkRateLimit("user", ctx.userId);
+      const userLimit = await checkRateLimit("user", ctx.userId);
       if (!userLimit.allowed) {
         await reply(`You're sending commands too quickly. Please slow down a little.`);
         return;

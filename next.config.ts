@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+// instrumentation.ts is loaded automatically in Next.js 16 — no config needed.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
