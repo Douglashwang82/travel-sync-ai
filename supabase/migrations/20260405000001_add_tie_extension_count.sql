@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Add tie_extension_count to trip_items
--- Migration: 20260405000000_add_tie_extension_count
+-- Migration: 20260405000001_add_tie_extension_count
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Tracks how many times a tied vote has been extended.
 -- Used to cap infinite tie extensions and escalate to the organizer.

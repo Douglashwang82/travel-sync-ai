@@ -9,7 +9,7 @@
  * when Sentry is not initialised.
  */
 
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from "@sentry/node";
 
 export function captureError(
   err: unknown,
