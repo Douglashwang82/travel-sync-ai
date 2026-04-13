@@ -1,11 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // Instrumentation hook (instrumentation.ts) must be explicitly enabled
-  // to initialise Sentry before the first request is processed.
-  experimental: {
-    instrumentationHook: true,
-  },
-};
+// instrumentation.ts is loaded automatically in Next.js 16 — no config needed.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
