@@ -26,9 +26,10 @@ Sentry.init({
   ],
 
   beforeSend(event) {
-    // Strip LINE user/group IDs from breadcrumbs to reduce PII in Sentry
-    if (event.breadcrumbs?.values) {
-      for (const crumb of event.breadcrumbs.values) {
+    // Strip LINE user/group IDs from breadcrumbs to reduce PII in Sentry.
+    // In @sentry/node v9, event.breadcrumbs is Breadcrumb[] directly.
+    if (Array.isArray(event.breadcrumbs)) {
+      for (const crumb of event.breadcrumbs) {
         if (crumb.message) {
           crumb.message = crumb.message.replace(/U[a-f0-9]{32}/g, "[LINE_USER]");
           crumb.message = crumb.message.replace(/C[a-f0-9]{32}/g, "[LINE_GROUP]");
