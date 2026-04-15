@@ -3,6 +3,9 @@ import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
 vi.mock("@/lib/analytics", () => ({ track: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/services/decisions/places", () => ({
+  getPlaceDetails: vi.fn().mockResolvedValue(null),
+}));
 vi.mock("@/services/trip-state", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/services/trip-state")>();
   return { ...actual };
@@ -10,6 +13,7 @@ vi.mock("@/services/trip-state", async (importOriginal) => {
 
 import { createAdminClient } from "@/lib/db";
 import { castVote, closeVote, getVoteTally } from "@/services/vote";
+import { getPlaceDetails } from "@/services/decisions/places";
 
 const TRIP_ITEM_ID = "item-vote-001";
 const GROUP_ID = "group-vote-001";
@@ -35,6 +39,8 @@ function makeDb(stage = "pending", memberCount = 4) {
 
 beforeEach(() => {
   resetIdCounter();
+  vi.mocked(getPlaceDetails).mockClear();
+  vi.mocked(getPlaceDetails).mockResolvedValue(null);
 });
 
 // ── castVote ──────────────────────────────────────────────────────────────────
@@ -231,6 +237,84 @@ describe("closeVote", () => {
     const item = items.find((r) => r.id === TRIP_ITEM_ID);
     expect(item?.stage).toBe("confirmed");
     expect(item?.confirmed_option_id).toBe(OPTION_A);
+  });
+
+  it("enriches the winning option after confirmation when it came from Google Places", async () => {
+    const db = createMockDb({
+      trip_items: [
+        {
+          id: TRIP_ITEM_ID,
+          stage: "pending",
+          trip_id: "trip-001",
+          title: "Hotel vote",
+          item_type: "hotel",
+        },
+      ],
+      trip_item_options: [
+        {
+          id: OPTION_A,
+          trip_item_id: TRIP_ITEM_ID,
+          provider: "google_places",
+          external_ref: "ChIJplace1",
+          name: "Park Hyatt Tokyo",
+          image_url: null,
+          rating: null,
+          price_level: null,
+          address: "Old address",
+          google_maps_url: null,
+          photo_name: null,
+          lat: null,
+          lng: null,
+          metadata_json: { source: "places_search" },
+        },
+      ],
+      votes: [],
+      group_members: [],
+    });
+    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
+    vi.mocked(getPlaceDetails).mockResolvedValueOnce({
+      name: "Park Hyatt Tokyo",
+      address: "3-7-1-2 Nishi Shinjuku",
+      rating: 4.6,
+      priceLevel: "$$$",
+      photoUrl: "https://example.com/photo.jpg",
+      photoName: "places/ChIJplace1/photos/photo1",
+      placeId: "ChIJplace1",
+      bookingUrl: null,
+      googleMapsUrl: "https://maps.google.com/?cid=123",
+      lat: 35.685,
+      lng: 139.69,
+    });
+
+    const result = await closeVote(TRIP_ITEM_ID, OPTION_A, GROUP_ID, 3);
+
+    expect(result.closed).toBe(true);
+    expect(getPlaceDetails).toHaveBeenCalledWith("ChIJplace1");
+
+    const options = db._tables.get("trip_item_options") ?? [];
+    const option = options.find((r) => r.id === OPTION_A);
+    expect(option?.address).toBe("3-7-1-2 Nishi Shinjuku");
+    expect(option?.rating).toBe(4.6);
+    expect(option?.price_level).toBe("$$$");
+    expect(option?.image_url).toBe("https://example.com/photo.jpg");
+    expect(option?.google_maps_url).toBe("https://maps.google.com/?cid=123");
+    expect(option?.photo_name).toBe("places/ChIJplace1/photos/photo1");
+    expect(option?.lat).toBe(35.685);
+    expect(option?.lng).toBe(139.69);
+    expect(option?.source_last_synced_at).toBeTruthy();
+    expect((option?.metadata_json as Record<string, unknown>).google_maps_uri).toBe(
+      "https://maps.google.com/?cid=123"
+    );
+    expect((option?.metadata_json as Record<string, unknown>).enriched_from_place_details).toBe(true);
+  });
+
+  it("skips enrichment for non-Google options", async () => {
+    const db = makeDb("pending");
+    vi.mocked(createAdminClient).mockReturnValue(db as ReturnType<typeof createAdminClient>);
+
+    await closeVote(TRIP_ITEM_ID, OPTION_A, GROUP_ID, 3);
+
+    expect(getPlaceDetails).not.toHaveBeenCalled();
   });
 
   it("returns closed:false when item is already confirmed (race condition)", async () => {

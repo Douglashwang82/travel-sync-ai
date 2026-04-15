@@ -11,6 +11,13 @@ export type LiffSessionData = {
   activeTrip: {
     id: string;
     destination_name: string;
+    destination_place_id: string | null;
+    destination_formatted_address: string | null;
+    destination_google_maps_url: string | null;
+    destination_lat: number | null;
+    destination_lng: number | null;
+    destination_timezone: string | null;
+    destination_source_last_synced_at: string | null;
     start_date: string | null;
     end_date: string | null;
     status?: string;

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/db";
-import type { BookingStatus, ItemType, Trip, TripItem } from "@/lib/types";
+import type { ItemType, Trip, TripItem } from "@/lib/types";
 
 export type ReadinessCategory =
   | "documents"
@@ -29,6 +29,12 @@ export interface ReadinessSnapshot {
   tripId: string;
   trip: {
     destinationName: string;
+    destinationPlaceId: string | null;
+    destinationFormattedAddress: string | null;
+    destinationGoogleMapsUrl: string | null;
+    destinationLat: number | null;
+    destinationLng: number | null;
+    destinationTimezone: string | null;
     startDate: string | null;
     endDate: string | null;
   };
@@ -45,7 +51,18 @@ export async function getReadinessSnapshot(tripId: string): Promise<ReadinessSna
 
   const { data: trip } = await db
     .from("trips")
-    .select("id, destination_name, start_date, end_date")
+    .select(`
+      id,
+      destination_name,
+      destination_place_id,
+      destination_formatted_address,
+      destination_google_maps_url,
+      destination_lat,
+      destination_lng,
+      destination_timezone,
+      start_date,
+      end_date
+    `)
     .eq("id", tripId)
     .single();
 
@@ -62,13 +79,37 @@ export async function getReadinessSnapshot(tripId: string): Promise<ReadinessSna
   >[]).filter((item) => item.stage === "confirmed");
 
   return buildReadinessSnapshot(
-    trip as Pick<Trip, "id" | "destination_name" | "start_date" | "end_date">,
+    trip as Pick<
+      Trip,
+      | "id"
+      | "destination_name"
+      | "destination_place_id"
+      | "destination_formatted_address"
+      | "destination_google_maps_url"
+      | "destination_lat"
+      | "destination_lng"
+      | "destination_timezone"
+      | "start_date"
+      | "end_date"
+    >,
     confirmedItems
   );
 }
 
 export function buildReadinessSnapshot(
-  trip: Pick<Trip, "id" | "destination_name" | "start_date" | "end_date">,
+  trip: Pick<
+    Trip,
+    | "id"
+    | "destination_name"
+    | "destination_place_id"
+    | "destination_formatted_address"
+    | "destination_google_maps_url"
+    | "destination_lat"
+    | "destination_lng"
+    | "destination_timezone"
+    | "start_date"
+    | "end_date"
+  >,
   confirmedItems: Array<
     Pick<TripItem, "id" | "title" | "item_type" | "confirmed_option_id" | "booking_status">
   >
@@ -181,6 +222,12 @@ export function buildReadinessSnapshot(
     tripId: trip.id,
     trip: {
       destinationName: trip.destination_name,
+      destinationPlaceId: trip.destination_place_id,
+      destinationFormattedAddress: trip.destination_formatted_address,
+      destinationGoogleMapsUrl: trip.destination_google_maps_url,
+      destinationLat: trip.destination_lat,
+      destinationLng: trip.destination_lng,
+      destinationTimezone: trip.destination_timezone,
       startDate: trip.start_date,
       endDate: trip.end_date,
     },
@@ -284,12 +331,32 @@ function buildMissingInputs(items: ReadinessItem[]): string[] {
 }
 
 function buildCommittedSummary(
-  trip: Pick<Trip, "start_date" | "end_date">,
+  trip: Pick<
+    Trip,
+    | "start_date"
+    | "end_date"
+    | "destination_place_id"
+    | "destination_formatted_address"
+    | "destination_google_maps_url"
+    | "destination_timezone"
+  >,
   hotelItems: Array<Pick<TripItem, "title">>,
   transportItems: Array<Pick<TripItem, "title">>
 ): string[] {
   const summary: string[] = [];
 
+  if (trip.destination_place_id) {
+    summary.push(`Destination anchor: ${trip.destination_place_id}`);
+  }
+  if (trip.destination_formatted_address) {
+    summary.push(`Destination address: ${trip.destination_formatted_address}`);
+  }
+  if (trip.destination_timezone) {
+    summary.push(`Destination timezone: ${trip.destination_timezone}`);
+  }
+  if (trip.destination_google_maps_url) {
+    summary.push(`Destination map: ${trip.destination_google_maps_url}`);
+  }
   if (trip.start_date && trip.end_date) {
     summary.push(`Trip dates: ${trip.start_date} to ${trip.end_date}`);
   }
@@ -306,3 +373,4 @@ function buildCommittedSummary(
 function roundPercent(value: number): number {
   return Math.round(value * 100);
 }
+

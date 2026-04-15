@@ -17,6 +17,9 @@
 - [ ] T1.7 Add service modules for operations, readiness, alerts, incidents, and briefings
 - [ ] T1.8 Add LIFF route scaffolds for operations and readiness
 - [ ] T1.9 Add cron route scaffolds for readiness refresh, daily briefings, transport monitor, and incident follow-up
+- [ ] T1.10 Refactor Google Places usage into search-first and detail-on-selection flows
+- [ ] T1.11 Add shared Google service wrappers under `services/google/`
+- [ ] T1.12 Add env var definitions and runtime validation for Maps Platform integrations
 
 ## Phase 2: Readiness MVP
 
@@ -46,6 +49,7 @@
 - [ ] T4.4 Add `/brief` command handler
 - [ ] T4.5 Add `POST /api/cron/daily-briefings`
 - [ ] T4.6 Persist briefing send history
+- [ ] T4.7 Add Google Weather enrichment with cache-backed fallback behavior
 
 ## Phase 5: Flight Monitoring and Alerts
 
@@ -56,6 +60,8 @@
 - [ ] T5.5 Add `POST /api/cron/transport-monitor`
 - [ ] T5.6 Send LINE alerts and store alert history
 - [ ] T5.7 Surface transport status inside operations view
+- [ ] T5.8 Add route timing enrichment to operations summaries and briefings
+- [ ] T5.9 Keep transport status provider abstraction independent from Google Maps Platform
 
 ## Phase 6: Incident Playbooks
 
@@ -74,3 +80,4 @@
 - [ ] T7.3 Add integration tests for `/ops`, `/ready`, and `/brief`
 - [ ] T7.4 Add operational dashboards and logs
 - [ ] T7.5 Run beta with a small set of active trips
+- [ ] T7.6 Add Google API timeout, retry, and degraded-state tests

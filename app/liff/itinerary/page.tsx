@@ -140,7 +140,13 @@ export default function ItineraryPage() {
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto">
-        <TripHeader trip={trip} />
+        <TripHeader
+          trip={trip}
+          destinationTimezone={session.activeTrip.destination_timezone}
+          destinationMapUrl={session.activeTrip.destination_google_maps_url}
+          destinationAddress={session.activeTrip.destination_formatted_address}
+          destinationLastSyncedAt={session.activeTrip.destination_source_last_synced_at}
+        />
         <EmptyState
           emoji="Soon"
           title="No confirmed items yet"
@@ -159,7 +165,13 @@ export default function ItineraryPage() {
 
   return (
     <div className="max-w-md mx-auto">
-      <TripHeader trip={trip} />
+      <TripHeader
+        trip={trip}
+        destinationTimezone={session.activeTrip.destination_timezone}
+        destinationMapUrl={session.activeTrip.destination_google_maps_url}
+        destinationAddress={session.activeTrip.destination_formatted_address}
+        destinationLastSyncedAt={session.activeTrip.destination_source_last_synced_at}
+      />
 
       <div className="px-4 pb-3 flex gap-4 text-xs text-[var(--muted-foreground)]">
         <span className="text-[var(--primary)] font-semibold">{items.length} confirmed</span>
@@ -213,7 +225,22 @@ function groupByDate(items: ItineraryItem[]) {
   return Array.from(map.entries()).map(([date, value]) => ({ date, ...value }));
 }
 
-function TripHeader({ trip }: { trip: Trip }) {
+function TripHeader({
+  trip,
+  destinationTimezone,
+  destinationMapUrl,
+  destinationAddress,
+  destinationLastSyncedAt,
+}: {
+  trip: Trip;
+  destinationTimezone: string | null;
+  destinationMapUrl: string | null;
+  destinationAddress: string | null;
+  destinationLastSyncedAt: string | null;
+}) {
+  const timeZoneLabel = formatTimeZoneLabel(destinationTimezone);
+  const lastSyncedLabel = formatLastSyncedLabel(destinationLastSyncedAt);
+
   return (
     <div className="sticky top-0 z-10 bg-[var(--background)] border-b border-[var(--border)] px-4 py-3">
       <h1 className="font-bold text-base">{trip.destination_name}</h1>
@@ -222,8 +249,67 @@ function TripHeader({ trip }: { trip: Trip }) {
           {trip.start_date} to {trip.end_date}
         </p>
       )}
+      {(timeZoneLabel || destinationMapUrl || destinationAddress) && (
+        <div className="mt-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            {timeZoneLabel && (
+              <Badge
+                variant="secondary"
+                className="rounded-full bg-[var(--secondary)] text-[var(--secondary-foreground)]"
+              >
+                Timezone: {timeZoneLabel}
+              </Badge>
+            )}
+            {destinationMapUrl && (
+              <a
+                href={destinationMapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
+              >
+                Open map
+              </a>
+            )}
+            {!destinationMapUrl && destinationAddress && (
+              <Badge variant="outline" className="max-w-full truncate">
+                {destinationAddress}
+              </Badge>
+            )}
+          </div>
+          {lastSyncedLabel && (
+            <p className="mt-1.5 text-[11px] text-[var(--muted-foreground)]">
+              Synced {lastSyncedLabel}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+function formatTimeZoneLabel(timeZone: string | null | undefined): string | null {
+  if (!timeZone) return null;
+  return timeZone.split("/").join(" / ");
+}
+
+function formatLastSyncedLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function ItineraryCard({ item }: { item: ItineraryItem }) {
@@ -261,10 +347,20 @@ function ItineraryCard({ item }: { item: ItineraryItem }) {
           </div>
         )}
 
-        {(option?.price_level || option?.booking_url) && (
+        {(option?.price_level || option?.booking_url || option?.google_maps_url) && (
           <div className={cn("flex items-center gap-3 pl-8")}>
             {option.price_level && (
               <span className="text-xs text-[var(--muted-foreground)]">{option.price_level}</span>
+            )}
+            {option.google_maps_url && (
+              <a
+                href={option.google_maps_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-[var(--primary)] underline underline-offset-2"
+              >
+                Map
+              </a>
             )}
             {option.booking_url && (
               <a

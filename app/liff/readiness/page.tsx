@@ -234,6 +234,12 @@ export default function ReadinessPage() {
 
   const unknownCount = snapshot.items.filter((item) => item.status === "unknown").length;
   const openCount = snapshot.items.filter((item) => item.status === "open").length;
+  const destinationTimeZone = formatTimeZoneLabel(session.activeTrip.destination_timezone);
+  const destinationMapUrl = session.activeTrip.destination_google_maps_url;
+  const destinationAddress = session.activeTrip.destination_formatted_address;
+  const destinationLastSyncedLabel = formatLastSyncedLabel(
+    session.activeTrip.destination_source_last_synced_at
+  );
 
   return (
     <div className="mx-auto max-w-md">
@@ -245,6 +251,40 @@ export default function ReadinessPage() {
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
           {formatDateRange(snapshot.trip.startDate, snapshot.trip.endDate)}
         </p>
+        {(destinationTimeZone || destinationMapUrl || destinationAddress) && (
+          <div className="mt-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              {destinationTimeZone && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-full bg-[var(--secondary)] text-[var(--secondary-foreground)]"
+                >
+                  Timezone: {destinationTimeZone}
+                </Badge>
+              )}
+              {destinationMapUrl && (
+                <a
+                  href={destinationMapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
+                >
+                  Open map
+                </a>
+              )}
+              {!destinationMapUrl && destinationAddress && (
+                <Badge variant="outline" className="max-w-full truncate">
+                  {destinationAddress}
+                </Badge>
+              )}
+            </div>
+            {destinationLastSyncedLabel && (
+              <p className="mt-1.5 text-[11px] text-[var(--muted-foreground)]">
+                Synced {destinationLastSyncedLabel}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {snapshot.blockers.length > 0 ? (
@@ -541,4 +581,42 @@ function formatDateRange(startDate: string | null, endDate: string | null): stri
   }
 
   return "Trip dates not committed yet";
+}
+
+function formatTimeZoneLabel(timeZone: string | null | undefined): string | null {
+  if (!timeZone) {
+    return null;
+  }
+
+  return timeZone.split("/").join(" / ");
+}
+
+function formatLastSyncedLabel(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+  if (diffMinutes < 1) {
+    return "just now";
+  }
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }

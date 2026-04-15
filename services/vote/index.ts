@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db";
 import { confirmItem } from "@/services/trip-state";
 import { track } from "@/lib/analytics";
+import { getPlaceDetails } from "@/services/decisions/places";
 
 export interface CastVoteInput {
   tripItemId: string;
@@ -156,6 +157,8 @@ export async function closeVote(
     return { closed: false };
   }
 
+  await enrichConfirmedGooglePlaceOption(winningOptionId);
+
   await track("vote_completed", {
     groupId,
     properties: {
@@ -218,4 +221,57 @@ function checkMajority(
     winningOptionId,
     winningCount,
   };
+}
+
+async function enrichConfirmedGooglePlaceOption(optionId: string): Promise<void> {
+  const db = createAdminClient();
+
+  const { data: option } = await db
+    .from("trip_item_options")
+    .select("id, provider, external_ref, name, address, image_url, rating, price_level, metadata_json, google_maps_url, photo_name, lat, lng")
+    .eq("id", optionId)
+    .single();
+
+  if (!option || option.provider !== "google_places" || !option.external_ref) {
+    return;
+  }
+
+  const details = await getPlaceDetails(option.external_ref);
+  if (!details) {
+    return;
+  }
+
+  const existingMetadata =
+    option.metadata_json && typeof option.metadata_json === "object"
+      ? (option.metadata_json as Record<string, unknown>)
+      : {};
+
+  const patch: Record<string, unknown> = {
+    name: details.name || option.name,
+    address: details.address ?? option.address ?? null,
+    image_url: details.photoUrl ?? option.image_url ?? null,
+    rating: details.rating ?? option.rating ?? null,
+    price_level: details.priceLevel ?? option.price_level ?? null,
+    google_maps_url: details.googleMapsUrl ?? option.google_maps_url ?? null,
+    photo_name: details.photoName ?? option.photo_name ?? null,
+    lat: details.lat ?? option.lat ?? null,
+    lng: details.lng ?? option.lng ?? null,
+    source_last_synced_at: new Date().toISOString(),
+    metadata_json: {
+      ...existingMetadata,
+      source: existingMetadata.source ?? "places_search",
+      google_maps_uri: details.googleMapsUrl,
+      enriched_from_place_details: true,
+      enriched_at: new Date().toISOString(),
+    },
+  };
+
+  const { error } = await db
+    .from("trip_item_options")
+    .update(patch)
+    .eq("id", optionId);
+
+  if (error) {
+    console.error("[vote] failed to enrich confirmed Google place option", error);
+  }
 }

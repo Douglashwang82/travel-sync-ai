@@ -21,6 +21,7 @@ export interface ItineraryItem {
     rating: number | null;
     price_level: string | null;
     booking_url: string | null;
+    google_maps_url: string | null;
   } | null;
 }
 
@@ -74,7 +75,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         image_url,
         rating,
         price_level,
-        booking_url
+        booking_url,
+        google_maps_url
       )
     `)
     .eq("trip_id", tripId)
@@ -106,6 +108,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             rating: opt.rating,
             price_level: opt.price_level,
             booking_url: opt.booking_url,
+            google_maps_url: opt.google_maps_url,
           }
         : null,
     };

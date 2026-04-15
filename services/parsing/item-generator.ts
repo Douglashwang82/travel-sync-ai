@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db";
 import { createItem } from "@/services/trip-state";
 import { rememberPlace } from "@/services/memory";
+import { enrichTripDestinationMetadata } from "@/services/trips/destination";
 import type { ParsedEntity, SuggestedAction } from "./extractor";
 import type { ItemType } from "@/lib/types";
 
@@ -88,7 +89,17 @@ async function applyTripCoreUpdate(
 
   if (field === "destination") {
     const loc = entities.find((e) => e.type === "location");
-    if (loc) patch.destination_name = loc.canonicalValue;
+    if (loc) {
+      patch.destination_name = loc.canonicalValue;
+      patch.destination_place_id = null;
+      patch.destination_formatted_address = null;
+      patch.destination_lat = null;
+      patch.destination_lng = null;
+      patch.destination_google_maps_url = null;
+      patch.destination_photo_name = null;
+      patch.destination_timezone = null;
+      patch.destination_source_last_synced_at = null;
+    }
   } else if (field === "date_range" || field === "start_date" || field === "end_date") {
     const range = entities.find((e) => e.type === "date_range");
     if (range) {
@@ -106,6 +117,10 @@ async function applyTripCoreUpdate(
 
   if (Object.keys(patch).length > 0) {
     await db.from("trips").update(patch).eq("id", tripId);
+
+    if (field === "destination" && typeof patch.destination_name === "string") {
+      await enrichTripDestinationMetadata(tripId, patch.destination_name);
+    }
   }
 }
 

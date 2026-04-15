@@ -79,6 +79,13 @@ export interface Trip {
   title: string | null;
   destination_name: string;
   destination_place_id: string | null;
+  destination_formatted_address: string | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
+  destination_google_maps_url: string | null;
+  destination_photo_name: string | null;
+  destination_timezone: string | null;
+  destination_source_last_synced_at: string | null;
   start_date: string | null;
   end_date: string | null;
   status: TripStatus;
@@ -121,6 +128,11 @@ export interface TripItemOption {
   distance_meters: number | null;
   address: string | null;
   booking_url: string | null;
+  lat: number | null;
+  lng: number | null;
+  google_maps_url: string | null;
+  photo_name: string | null;
+  source_last_synced_at: string | null;
   metadata_json: Record<string, unknown>;
   created_at: string;
 }

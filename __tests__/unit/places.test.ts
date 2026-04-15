@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { searchPlaces } from "@/services/decisions/places";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+import { getPlaceDetails, searchPlaces } from "@/services/decisions/places";
 
 const mockPlace = {
   id: "ChIJplace1",
@@ -33,6 +31,7 @@ function makeErrorResponse(status = 403) {
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
   process.env.GOOGLE_PLACES_API_KEY = "test-key";
+  delete process.env.GOOGLE_MAPS_SERVER_API_KEY;
 });
 
 afterEach(() => {
@@ -40,9 +39,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// ── No API key ────────────────────────────────────────────────────────────────
-
-describe("searchPlaces — no API key", () => {
+describe("searchPlaces - no API key", () => {
   it("returns network_error immediately without calling fetch", async () => {
     delete process.env.GOOGLE_PLACES_API_KEY;
 
@@ -54,10 +51,8 @@ describe("searchPlaces — no API key", () => {
   });
 });
 
-// ── Successful response ───────────────────────────────────────────────────────
-
-describe("searchPlaces — success", () => {
-  it("returns normalized candidates and errorKind:null", async () => {
+describe("searchPlaces - success", () => {
+  it("returns normalized low-cost candidates and errorKind:null", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(makeOkResponse());
 
     const result = await searchPlaces("Tokyo", "hotel");
@@ -65,11 +60,11 @@ describe("searchPlaces — success", () => {
     expect(result.errorKind).toBeNull();
     expect(result.candidates).toHaveLength(1);
     expect(result.candidates[0].name).toBe("Park Hyatt Tokyo");
-    expect(result.candidates[0].rating).toBe(4.6);
-    expect(result.candidates[0].priceLevel).toBe("$$$");
+    expect(result.candidates[0].rating).toBeNull();
+    expect(result.candidates[0].priceLevel).toBeNull();
     expect(result.candidates[0].placeId).toBe("ChIJplace1");
     expect(result.candidates[0].address).toBe("3-7-1-2 Nishi Shinjuku");
-    expect(result.candidates[0].photoUrl).toContain("places/ChIJplace1/photos/photo1");
+    expect(result.candidates[0].photoUrl).toBeNull();
   });
 
   it("returns no_results when API responds ok but places array is empty", async () => {
@@ -79,7 +74,7 @@ describe("searchPlaces — success", () => {
 
     expect(result.candidates).toHaveLength(0);
     expect(result.errorKind).toBe("no_results");
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1); // no retry on empty results
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
   it("respects maxResults and caps the returned candidates", async () => {
@@ -95,7 +90,7 @@ describe("searchPlaces — success", () => {
     expect(result.candidates).toHaveLength(3);
   });
 
-  it("builds the correct text query for each item type", async () => {
+  it("builds the correct text query and low-cost field mask", async () => {
     vi.mocked(fetch).mockResolvedValue(makeOkResponse());
 
     await searchPlaces("Tokyo", "restaurant");
@@ -104,12 +99,13 @@ describe("searchPlaces — success", () => {
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.textQuery).toContain("restaurants");
     expect(body.textQuery).toContain("Tokyo");
+    expect((init as RequestInit).headers).toMatchObject({
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
+    });
   });
 });
 
-// ── Non-2xx API error (quota, bad key) ────────────────────────────────────────
-
-describe("searchPlaces — API error response", () => {
+describe("searchPlaces - API error response", () => {
   it("returns network_error immediately without retrying on non-2xx", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(makeErrorResponse(403));
 
@@ -117,24 +113,20 @@ describe("searchPlaces — API error response", () => {
 
     expect(result.candidates).toHaveLength(0);
     expect(result.errorKind).toBe("network_error");
-    // Only one call — no retry for 4xx errors
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 });
 
-// ── Network throw with retry ──────────────────────────────────────────────────
-
-describe("searchPlaces — retry on network throw", () => {
+describe("searchPlaces - retry on network throw", () => {
   it("retries on network throw and succeeds on third attempt", async () => {
     vi.useFakeTimers();
 
     vi.mocked(fetch)
-      .mockRejectedValueOnce(new Error("Network error"))   // attempt 1
-      .mockRejectedValueOnce(new Error("Network error"))   // attempt 2
-      .mockResolvedValueOnce(makeOkResponse());             // attempt 3
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce(makeOkResponse());
 
     const promise = searchPlaces("Tokyo", "hotel");
-    // Advance through the retry sleeps (1000ms + 2000ms)
     await vi.runAllTimersAsync();
     const result = await promise;
 
@@ -154,7 +146,6 @@ describe("searchPlaces — retry on network throw", () => {
 
     expect(result.candidates).toHaveLength(0);
     expect(result.errorKind).toBe("network_error");
-    // 1 initial + 2 retries = 3 total attempts
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
   });
 
@@ -172,7 +163,61 @@ describe("searchPlaces — retry on network throw", () => {
     await promise;
 
     const delays = setTimeoutSpy.mock.calls.map(([, ms]) => ms);
-    expect(delays).toContain(1000); // first retry delay
-    expect(delays).toContain(2000); // second retry delay
+    expect(delays).toContain(1000);
+    expect(delays).toContain(2000);
+  });
+});
+
+describe("getPlaceDetails", () => {
+  it("returns richer details for a selected place", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      {
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            id: "ChIJplace1",
+            displayName: { text: "Park Hyatt Tokyo" },
+            formattedAddress: "3-7-1-2 Nishi Shinjuku",
+            rating: 4.6,
+            priceLevel: "PRICE_LEVEL_EXPENSIVE",
+            photos: [{ name: "places/ChIJplace1/photos/photo1" }],
+            googleMapsUri: "https://maps.google.com/?cid=123",
+            location: { latitude: 35.685, longitude: 139.69 },
+          }),
+        text: () => Promise.resolve(""),
+      } as unknown as Response
+    );
+
+    const result = await getPlaceDetails("ChIJplace1");
+
+    expect(result).not.toBeNull();
+    expect(result?.rating).toBe(4.6);
+    expect(result?.priceLevel).toBe("$$$");
+    expect(result?.photoUrl).toContain("places/ChIJplace1/photos/photo1");
+    expect(result?.photoName).toBe("places/ChIJplace1/photos/photo1");
+    expect(result?.googleMapsUrl).toBe("https://maps.google.com/?cid=123");
+    expect(result?.lat).toBe(35.685);
+    expect(result?.lng).toBe(139.69);
+  });
+
+  it("falls back to unified maps key when GOOGLE_PLACES_API_KEY is unset", async () => {
+    delete process.env.GOOGLE_PLACES_API_KEY;
+    process.env.GOOGLE_MAPS_SERVER_API_KEY = "maps-key";
+    vi.mocked(fetch).mockResolvedValueOnce(
+      {
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ id: "ChIJplace1", displayName: { text: "Park Hyatt Tokyo" } }),
+        text: () => Promise.resolve(""),
+      } as unknown as Response
+    );
+
+    await getPlaceDetails("ChIJplace1");
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect((init as RequestInit).headers).toMatchObject({
+      "X-Goog-Api-Key": "maps-key",
+    });
   });
 });

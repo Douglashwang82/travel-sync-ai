@@ -95,6 +95,13 @@ describe("GET /api/liff/session — happy path", () => {
           id: TRIP_DB_ID,
           group_id: GROUP_DB_ID,
           destination_name: "Kyoto",
+          destination_place_id: "place-kyoto",
+          destination_formatted_address: "Kyoto, Japan",
+          destination_google_maps_url: "https://maps.google.com/?cid=789",
+          destination_lat: 35.0116,
+          destination_lng: 135.7681,
+          destination_timezone: "Asia/Tokyo",
+          destination_source_last_synced_at: "2026-04-13T18:00:00.000Z",
           start_date: "2026-06-01",
           end_date: "2026-06-07",
           status: "active",
@@ -112,6 +119,12 @@ describe("GET /api/liff/session — happy path", () => {
     const body = await res.json();
     expect(body.activeTrip).not.toBeNull();
     expect(body.activeTrip.destination_name).toBe("Kyoto");
+    expect(body.activeTrip.destination_place_id).toBe("place-kyoto");
+    expect(body.activeTrip.destination_formatted_address).toBe("Kyoto, Japan");
+    expect(body.activeTrip.destination_google_maps_url).toBe("https://maps.google.com/?cid=789");
+    expect(body.activeTrip.destination_lat).toBe(35.0116);
+    expect(body.activeTrip.destination_lng).toBe(135.7681);
+    expect(body.activeTrip.destination_timezone).toBe("Asia/Tokyo");
   });
 
   it("returns organizer role for existing organizer member", async () => {

@@ -63,6 +63,13 @@ describe("GET /api/liff/board", () => {
         {
           id: TRIP_ID,
           destination_name: "Tokyo",
+          destination_place_id: "place-tokyo",
+          destination_formatted_address: "Tokyo, Japan",
+          destination_google_maps_url: "https://maps.google.com/?cid=123",
+          destination_lat: 35.6762,
+          destination_lng: 139.6503,
+          destination_timezone: "Asia/Tokyo",
+          destination_source_last_synced_at: "2026-04-13T18:00:00.000Z",
           start_date: "2026-05-01",
           end_date: "2026-05-10",
           status: "active",
@@ -83,6 +90,12 @@ describe("GET /api/liff/board", () => {
     const body = await res.json();
     expect(body.trip.id).toBe(TRIP_ID);
     expect(body.trip.destination_name).toBe("Tokyo");
+    expect(body.trip.destination_place_id).toBe("place-tokyo");
+    expect(body.trip.destination_formatted_address).toBe("Tokyo, Japan");
+    expect(body.trip.destination_google_maps_url).toBe("https://maps.google.com/?cid=123");
+    expect(body.trip.destination_lat).toBe(35.6762);
+    expect(body.trip.destination_lng).toBe(139.6503);
+    expect(body.trip.destination_timezone).toBe("Asia/Tokyo");
 
     expect(body.todo).toHaveLength(2);
     expect(body.pending).toHaveLength(1);
@@ -107,5 +120,6 @@ describe("GET /api/liff/board", () => {
     expect(body.todo).toEqual([]);
     expect(body.pending).toEqual([]);
     expect(body.confirmed).toEqual([]);
+    expect(body.trip.destination_place_id ?? null).toBeNull();
   });
 });

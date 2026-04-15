@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/db";
-import type { ItemType, Trip, TripItem } from "@/lib/types";
+import type { ItemType, Trip, TripItem, TripItemOption } from "@/lib/types";
 import { getReadinessSnapshot, type ReadinessSnapshot } from "@/services/readiness";
 
 export type TripPhase =
@@ -13,6 +13,14 @@ export type TripPhase =
 export interface OperationsSummary {
   tripId: string;
   destinationName: string;
+  destinationAnchor: {
+    placeId: string | null;
+    formattedAddress: string | null;
+    googleMapsUrl: string | null;
+    lat: number | null;
+    lng: number | null;
+    timeZone: string | null;
+  };
   phase: TripPhase;
   headline: string;
   nextActions: string[];
@@ -24,6 +32,13 @@ export interface OperationsSummary {
     confidenceScore: number;
     blockerCount: number;
   };
+  confirmedLinks: Array<{
+    itemId: string;
+    title: string;
+    itemType: ItemType;
+    googleMapsUrl: string | null;
+    bookingUrl: string | null;
+  }>;
   sourceOfTruth: string[];
   freshness: {
     generatedAt: string;
@@ -39,7 +54,19 @@ export async function getOperationsSummary(
 
   const { data: trip } = await db
     .from("trips")
-    .select("id, destination_name, start_date, end_date, status")
+    .select(`
+      id,
+      destination_name,
+      destination_place_id,
+      destination_formatted_address,
+      destination_google_maps_url,
+      destination_lat,
+      destination_lng,
+      destination_timezone,
+      start_date,
+      end_date,
+      status
+    `)
     .eq("id", tripId)
     .single();
 
@@ -47,24 +74,79 @@ export async function getOperationsSummary(
 
   const { data: items } = await db
     .from("trip_items")
-    .select("id, title, item_type, stage, deadline_at")
+    .select(`
+      id,
+      title,
+      item_type,
+      stage,
+      deadline_at,
+      confirmed_option_id,
+      trip_item_options!trip_items_confirmed_option_id_fkey (
+        id,
+        google_maps_url,
+        booking_url
+      )
+    `)
     .eq("trip_id", tripId)
     .order("created_at", { ascending: true });
 
   const readiness = await getReadinessSnapshot(tripId);
   return buildOperationsSummary(
-    trip as Pick<Trip, "id" | "destination_name" | "start_date" | "end_date" | "status">,
+    trip as Pick<
+      Trip,
+      | "id"
+      | "destination_name"
+      | "destination_place_id"
+      | "destination_formatted_address"
+      | "destination_google_maps_url"
+      | "destination_lat"
+      | "destination_lng"
+      | "destination_timezone"
+      | "start_date"
+      | "end_date"
+      | "status"
+    >,
     ((items ?? []) as Pick<
       TripItem,
-      "id" | "title" | "item_type" | "stage" | "deadline_at"
-    >[]),
+      "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id"
+    >[]).map((item) => ({
+      ...item,
+      confirmed_option: extractConfirmedOption(item),
+    })) as Array<
+      Pick<
+        TripItem,
+        "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id"
+      > & {
+        confirmed_option: Pick<TripItemOption, "google_maps_url" | "booking_url"> | null;
+      }
+    >,
     readiness
   );
 }
 
 export function buildOperationsSummary(
-  trip: Pick<Trip, "id" | "destination_name" | "start_date" | "end_date" | "status">,
-  items: Array<Pick<TripItem, "id" | "title" | "item_type" | "stage" | "deadline_at">>,
+  trip: Pick<
+    Trip,
+    | "id"
+    | "destination_name"
+    | "destination_place_id"
+    | "destination_formatted_address"
+    | "destination_google_maps_url"
+    | "destination_lat"
+    | "destination_lng"
+    | "destination_timezone"
+    | "start_date"
+    | "end_date"
+    | "status"
+  >,
+  items: Array<
+    Pick<
+      TripItem,
+      "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id"
+    > & {
+      confirmed_option: Pick<TripItemOption, "google_maps_url" | "booking_url"> | null;
+    }
+  >,
   readiness: ReadinessSnapshot | null
 ): OperationsSummary {
   const phase = deriveTripPhase(trip);
@@ -87,6 +169,14 @@ export function buildOperationsSummary(
   return {
     tripId: trip.id,
     destinationName: trip.destination_name,
+    destinationAnchor: {
+      placeId: trip.destination_place_id,
+      formattedAddress: trip.destination_formatted_address,
+      googleMapsUrl: trip.destination_google_maps_url,
+      lat: trip.destination_lat,
+      lng: trip.destination_lng,
+      timeZone: trip.destination_timezone,
+    },
     phase,
     headline: buildHeadline(phase, trip.destination_name, nextActions.length, activeRisks.length),
     nextActions,
@@ -103,6 +193,16 @@ export function buildOperationsSummary(
       confidenceScore: readiness?.confidenceScore ?? 0,
       blockerCount: readinessBlockers.length,
     },
+    confirmedLinks: confirmedItems
+      .map((item) => ({
+        itemId: item.id,
+        title: item.title,
+        itemType: item.item_type,
+        googleMapsUrl: item.confirmed_option?.google_maps_url ?? null,
+        bookingUrl: item.confirmed_option?.booking_url ?? null,
+      }))
+      .filter((item) => item.googleMapsUrl || item.bookingUrl)
+      .slice(0, 6),
     sourceOfTruth: readiness?.committedSourceSummary ?? [],
     freshness: {
       generatedAt: new Date().toISOString(),
@@ -113,11 +213,11 @@ export function buildOperationsSummary(
 }
 
 function deriveTripPhase(
-  trip: Pick<Trip, "start_date" | "end_date" | "status">
+  trip: Pick<Trip, "start_date" | "end_date" | "status" | "destination_timezone">
 ): TripPhase {
   if (trip.status === "completed") return "complete";
 
-  const today = todayIso();
+  const today = todayIso(trip.destination_timezone);
   const start = trip.start_date;
   const end = trip.end_date;
 
@@ -223,7 +323,19 @@ function formatItemType(itemType: ItemType): string {
   return itemType;
 }
 
-function todayIso(): string {
+function todayIso(timeZone?: string | null): string {
+  if (timeZone) {
+    try {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date());
+    } catch {
+      // Fall through to UTC if the stored timezone is invalid.
+    }
+  }
   return new Date().toISOString().slice(0, 10);
 }
 
@@ -231,4 +343,19 @@ function daysBetween(fromIso: string, toIso: string): number {
   const from = Date.parse(fromIso);
   const to = Date.parse(toIso);
   return Math.round((to - from) / (1000 * 60 * 60 * 24));
+}
+
+function extractConfirmedOption(
+  item: Record<string, unknown>
+): Pick<TripItemOption, "google_maps_url" | "booking_url"> | null {
+  const option = item.trip_item_options;
+  const resolved = Array.isArray(option) ? option[0] : option;
+  if (!resolved || typeof resolved !== "object") return null;
+
+  const candidate = resolved as Record<string, unknown>;
+  return {
+    google_maps_url:
+      typeof candidate.google_maps_url === "string" ? candidate.google_maps_url : null,
+    booking_url: typeof candidate.booking_url === "string" ? candidate.booking_url : null,
+  };
 }

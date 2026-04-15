@@ -91,7 +91,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Fetch active trip
   const { data: trip } = await db
     .from("trips")
-    .select("id, destination_name, start_date, end_date, status")
+    .select(`
+      id,
+      destination_name,
+      destination_place_id,
+      destination_formatted_address,
+      destination_google_maps_url,
+      destination_lat,
+      destination_lng,
+      destination_timezone,
+      destination_source_last_synced_at,
+      start_date,
+      end_date,
+      status
+    `)
     .eq("group_id", group.id)
     .in("status", ["draft", "active"])
     .single();

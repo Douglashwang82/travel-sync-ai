@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { track } from "@/lib/analytics";
+import { enrichTripDestinationMetadata } from "@/services/trips/destination";
 import type { CommandContext } from "../router";
 
 /**
@@ -123,6 +124,8 @@ export async function handleStart(
       end_date: endDate,
     },
   });
+
+  await enrichTripDestinationMetadata(trip.id, destination);
 
   const dateStr =
     startDate && endDate
