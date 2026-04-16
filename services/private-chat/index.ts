@@ -20,27 +20,37 @@ export async function handleDirectMessage(
 ): Promise<void> {
   const db = createAdminClient();
 
-  // Find the user's most recently active real LINE group.
-  // LINE group IDs start with 'C' (group) or 'R' (room); user IDs start with 'U'.
-  // We exclude the spurious 'group' row that the webhook creates for 1:1 chats.
-  const { data: membership } = await db
+  // Find all groups this user is a member of (excluding 1:1 "group" rows the webhook creates,
+  // which use the LINE userId — starting with 'U' — as line_group_id).
+  const { data: memberships } = await db
     .from("group_members")
-    .select("group_id, line_groups!inner(id, line_group_id, name, status)")
+    .select("group_id, joined_at")
     .eq("line_user_id", lineUserId)
     .is("left_at", null)
-    .not("line_groups.line_group_id", "like", "U%")
-    .eq("line_groups.status", "active")
-    .order("joined_at", { ascending: false })
-    .limit(1)
-    .single();
+    .order("joined_at", { ascending: false });
 
-  if (!membership) {
+  if (!memberships || memberships.length === 0) {
     await replyText(replyToken, ONBOARDING_MESSAGE);
     return;
   }
 
-  const dbGroupId = membership.group_id;
-  const group = membership.line_groups as { id: string; line_group_id: string; name: string | null; status: string };
+  // Find the most recently joined active real group (line_group_id NOT starting with 'U')
+  const { data: group } = await db
+    .from("line_groups")
+    .select("id, line_group_id, name, status")
+    .in("id", memberships.map((m) => m.group_id))
+    .eq("status", "active")
+    .not("line_group_id", "like", "U%")
+    .order("last_seen_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!group) {
+    await replyText(replyToken, ONBOARDING_MESSAGE);
+    return;
+  }
+
+  const dbGroupId = group.id;
 
   // Get active trip for this group
   const { data: trip } = await db
