@@ -142,3 +142,47 @@ export async function generateText(
     throw err;
   }
 }
+
+export type ConversationMessage = { role: "user" | "agent"; content: string };
+
+/**
+ * Call Gemini with a full conversation history for multi-turn chat.
+ * Maps 'agent' role to 'model' for the Gemini API.
+ * Throws GeminiUnavailableError when the circuit breaker is open.
+ */
+export async function generateConversation(
+  systemPrompt: string,
+  history: ConversationMessage[],
+  newMessage: string
+): Promise<string> {
+  if (!isCircuitAllowing()) {
+    throw new GeminiUnavailableError(
+      `Gemini circuit breaker is OPEN — skipping call`
+    );
+  }
+
+  const client = getClient();
+  const contents = [
+    ...history.map((msg) => ({
+      role: msg.role === "agent" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    })),
+    { role: "user", parts: [{ text: newMessage }] },
+  ];
+
+  try {
+    const response = await client.models.generateContent({
+      model: MODEL,
+      contents,
+      config: { systemInstruction: systemPrompt },
+    });
+    const text = response.text ?? "";
+    recordSuccess();
+    return text;
+  } catch (err) {
+    if (err instanceof GeminiUnavailableError) throw err;
+    recordFailure();
+    console.error(`[gemini] conversation API call failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw err;
+  }
+}

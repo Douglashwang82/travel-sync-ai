@@ -38,7 +38,9 @@ import { cn } from "@/lib/utils";
 import { liffFetch } from "@/lib/liff-client";
 import { toLiffErrorMessage } from "@/lib/liff-errors";
 import { useLiffSession } from "@/lib/use-liff-session";
+import { AgentStatusCard } from "@/components/liff/agent-status-card";
 import type { BoardData, TripItem, ItemType } from "@/lib/types";
+import type { AgentStatusData } from "@/app/api/liff/agent-status/route";
 
 const ITEM_TYPE_LABELS: Record<ItemType, string> = {
   hotel: "Hotel",
@@ -84,6 +86,8 @@ export default function DashboardPage() {
   const [bookingRef, setBookingRef] = useState("");
   const [bookingActioning, setBookingActioning] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+
+  const [agentStatus, setAgentStatus] = useState<AgentStatusData | null>(null);
 
   const loadBoard = useCallback(async () => {
     setLoading(true);
@@ -131,9 +135,13 @@ export default function DashboardPage() {
       setLoadError(null);
       setActionError(null);
       try {
-        const boardRes = await liffFetch(`/api/liff/board?tripId=${activeTrip.id}`);
+        const [boardRes, statusRes] = await Promise.all([
+          liffFetch(`/api/liff/board?tripId=${activeTrip.id}`),
+          liffFetch(`/api/liff/agent-status?tripId=${activeTrip.id}`),
+        ]);
         if (!boardRes.ok) throw new Error("Failed to load board");
         setBoard(await boardRes.json());
+        if (statusRes.ok) setAgentStatus(await statusRes.json());
       } catch (err) {
         setLoadError(
           toLiffErrorMessage(
@@ -406,6 +414,7 @@ export default function DashboardPage() {
       {actionError && <InlineError message={actionError} onDismiss={() => setActionError(null)} />}
 
       <div className="px-4 pt-4 space-y-3 pb-4">
+        {agentStatus && <AgentStatusCard data={agentStatus} />}
         <BoardColumn
           title="To-Do"
           colorClass="text-[var(--muted-foreground)]"

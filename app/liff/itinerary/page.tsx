@@ -142,10 +142,10 @@ export default function ItineraryPage() {
       <div className="max-w-md mx-auto">
         <TripHeader
           trip={trip}
-          destinationTimezone={session.activeTrip.destination_timezone}
-          destinationMapUrl={session.activeTrip.destination_google_maps_url}
-          destinationAddress={session.activeTrip.destination_formatted_address}
-          destinationLastSyncedAt={session.activeTrip.destination_source_last_synced_at}
+          destinationTimezone={session?.activeTrip?.destination_timezone ?? null}
+          destinationMapUrl={session?.activeTrip?.destination_google_maps_url ?? null}
+          destinationAddress={session?.activeTrip?.destination_formatted_address ?? null}
+          destinationLastSyncedAt={session?.activeTrip?.destination_source_last_synced_at ?? null}
         />
         <EmptyState
           emoji="Soon"
@@ -167,10 +167,10 @@ export default function ItineraryPage() {
     <div className="max-w-md mx-auto">
       <TripHeader
         trip={trip}
-        destinationTimezone={session.activeTrip.destination_timezone}
-        destinationMapUrl={session.activeTrip.destination_google_maps_url}
-        destinationAddress={session.activeTrip.destination_formatted_address}
-        destinationLastSyncedAt={session.activeTrip.destination_source_last_synced_at}
+        destinationTimezone={session?.activeTrip?.destination_timezone ?? null}
+        destinationMapUrl={session?.activeTrip?.destination_google_maps_url ?? null}
+        destinationAddress={session?.activeTrip?.destination_formatted_address ?? null}
+        destinationLastSyncedAt={session?.activeTrip?.destination_source_last_synced_at ?? null}
       />
 
       <div className="px-4 pb-3 flex gap-4 text-xs text-[var(--muted-foreground)]">
