@@ -1,14 +1,17 @@
 import { createAdminClient } from "@/lib/db";
+import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
 import { checkRelevance } from "./relevance";
 import { assembleTripContext } from "./context";
 import { extractEntities } from "./extractor";
 import { persistConflicts } from "./conflict";
 import { applyParseResult } from "./item-generator";
+import type { ParsedEntity, SuggestedAction } from "./extractor";
 
 export interface ParseMessageInput {
   messageText: string;
   groupId: string;
+  lineGroupId?: string;
   lineEventId: string;
   lineUserId?: string;
 }
@@ -29,7 +32,7 @@ export interface ParseMessageInput {
  * take down the event-processor.
  */
 export async function parseMessage(input: ParseMessageInput): Promise<void> {
-  const { messageText, groupId, lineEventId, lineUserId } = input;
+  const { messageText, groupId, lineGroupId, lineEventId, lineUserId } = input;
   console.log(`[parsing] Starting pipeline for group ${groupId}...`);
 
   // ── 0. Optout check ────────────────────────────────────────────────────────
@@ -82,6 +85,14 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
       lineUserId
     );
     console.log(`[parsing] Successfully persisted items to board!`);
+
+    // Send a brief acknowledgment to the group when something meaningful was extracted
+    if (lineGroupId) {
+      const ack = buildExtractionAck(parseResult.entities, parseResult.suggestedActions);
+      if (ack) {
+        await pushText(lineGroupId, ack).catch(() => {});
+      }
+    }
   } catch (err) {
     console.error("[parsing] applyParseResult failed", { lineEventId, err });
   }
@@ -96,6 +107,16 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
         lineEventId,
         parseResult.conflicts
       );
+
+      // Notify the group about each conflict
+      if (lineGroupId) {
+        for (const conflict of parseResult.conflicts) {
+          await pushText(
+            lineGroupId,
+            `I noticed a potential conflict: ${conflict.description}. Added it to Pending Votes for the group to decide.`
+          ).catch(() => {});
+        }
+      }
     } catch (err) {
       console.error("[parsing] persistConflicts failed", { lineEventId, err });
     }
@@ -113,3 +134,33 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
     }).catch(() => {});
   }
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function buildExtractionAck(
+  _entities: ParsedEntity[],
+  actions: SuggestedAction[]
+): string | null {
+  const parts: string[] = [];
+
+  for (const action of actions) {
+    if (action.action === "update_trip_core") {
+      if (action.field === "destination") parts.push("destination updated");
+      else if (
+        action.field === "date_range" ||
+        action.field === "start_date" ||
+        action.field === "end_date"
+      ) {
+        parts.push("dates noted");
+      }
+    } else if (action.action === "create_todo_item" && action.itemTitle) {
+      parts.push(`"${action.itemTitle}" added to To-Do`);
+    } else if (action.action === "add_option" && action.optionName) {
+      parts.push(`"${action.optionName}" noted as an option`);
+    }
+  }
+
+  if (parts.length === 0) return null;
+  return `Got it — ${parts.join(", ")}.`;
+}
+

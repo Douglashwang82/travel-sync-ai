@@ -3,6 +3,7 @@ import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
 import { routeCommand } from "@/bot/router";
 import { parseMessage } from "@/services/parsing";
+import { handleDirectMessage } from "@/services/private-chat";
 import { castVote, closeVote } from "@/services/vote";
 import { refreshVoteCarousel, announceWinner } from "@/services/decisions";
 
@@ -125,6 +126,15 @@ async function handleMessage(ctx: EventContext, lineEventId: string): Promise<vo
     return;
   }
 
+  // Detect 1:1 DM: LINE user IDs start with 'U'; group IDs start with 'C' or 'R'
+  const isDm = lineGroupId === userId;
+  if (isDm) {
+    if (!userId || !replyToken) return;
+    console.log(`[processor] Routing 1:1 DM for user ${userId}`);
+    await handleDirectMessage(userId, replyToken, messageText);
+    return;
+  }
+
   // Route slash commands immediately
   if (messageText.startsWith("/")) {
     await routeCommand(messageText, {
@@ -141,6 +151,7 @@ async function handleMessage(ctx: EventContext, lineEventId: string): Promise<vo
     await parseMessage({
       messageText,
       groupId: dbGroupId,
+      lineGroupId,
       lineEventId,
       lineUserId: userId,
     });
