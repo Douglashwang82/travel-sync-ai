@@ -3,17 +3,21 @@ import { createAdminClient } from "@/lib/db";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { captureError } from "@/lib/monitoring";
 import { runTrackingList } from "@/services/tracking/runner";
+import { composeAndSendDigest } from "@/services/tracking/digest";
 import type { TrackingList } from "@/services/tracking/types";
 
 const BATCH_SIZE = 30;
 const CONCURRENCY = 4;
+const DIGEST_CONCURRENCY = 2;
 
 /**
  * GET /api/cron/tracking-digest
  *
  * Daily run (vercel.json: "0 6 * * *" — 06:00 UTC ≈ 14:00 Asia/Taipei).
- * MVP: iterates active tracking_lists due for refresh and runs each.
- * Digest composition/delivery is a follow-up phase.
+ * Two phases:
+ *   1. Fetch + extract for every active tracking_lists row that's due.
+ *   2. For each user who had a successful run this pass, compose + send
+ *      the daily digest via LINE 1:1 DM.
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
@@ -54,8 +58,35 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     { success: 0, skipped: 0, failed: 0 }
   );
 
-  console.info(`[cron/tracking-digest] processed ${lists.length}`, counts);
-  return NextResponse.json({ processed: lists.length, ...counts });
+  // ─── Phase 2: per-user digest fan-out ──────────────────────────────────────
+  // Only users with at least one `success` (new items) this pass get a push.
+  const usersToDigest = new Set<string>();
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled" && r.value.status === "success" && r.value.new_item_ids.length > 0) {
+      usersToDigest.add(lists[i].line_user_id);
+    }
+  });
+
+  const digestResults = await runWithConcurrency(
+    Array.from(usersToDigest),
+    DIGEST_CONCURRENCY,
+    (userId) => composeAndSendDigest(userId)
+  );
+
+  const delivered = digestResults.filter(
+    (r) => r.status === "fulfilled" && r.value.delivered
+  ).length;
+
+  console.info(
+    `[cron/tracking-digest] processed ${lists.length}`,
+    { ...counts, digests: usersToDigest.size, delivered }
+  );
+  return NextResponse.json({
+    processed: lists.length,
+    ...counts,
+    digests: usersToDigest.size,
+    delivered,
+  });
 }
 
 // Lists whose last_run_at is older than their frequency are due. SQL-side
