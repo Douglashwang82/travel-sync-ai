@@ -55,8 +55,11 @@ export interface FetchedItem {
 
 // Output of the LLM extractor — persisted to tracking_items
 export interface ExtractedItem {
+  external_id: string;
   title: string;
   summary: string;
+  url: string | null;
+  image_url: string | null;
   category: TrackingCategory;
   location: string | null;
   tags: string[];
