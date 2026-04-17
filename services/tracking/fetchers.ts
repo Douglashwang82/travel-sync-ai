@@ -378,7 +378,7 @@ async function fetchYouTube(url: string): Promise<FetchResult> {
   const raw = json.items ?? [];
 
   const items: FetchedItem[] = raw
-    .map((it) => {
+    .map((it): FetchedItem | null => {
       const videoId = it.contentDetails?.videoId ?? it.snippet?.resourceId?.videoId;
       if (!videoId) return null;
       const title = (it.snippet?.title ?? "").trim();
@@ -396,7 +396,7 @@ async function fetchYouTube(url: string): Promise<FetchResult> {
         image_url: thumb,
         body_text: [title, description].filter(Boolean).join("\n\n").slice(0, 4_000),
         published_at: published ? new Date(published).toISOString() : null,
-      } satisfies FetchedItem;
+      };
     })
     .filter((v): v is FetchedItem => v !== null);
 

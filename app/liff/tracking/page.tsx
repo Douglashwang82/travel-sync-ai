@@ -371,7 +371,7 @@ export default function TrackingPage() {
       {lists && lists.length > 0 ? (
         <div className="border-t border-[var(--border)] px-4 py-3">
           <Button variant="outline" size="sm" onClick={() => void handleSendDigest()}>
-            Send today's digest to LINE
+            Send today&apos;s digest to LINE
           </Button>
         </div>
       ) : null}
