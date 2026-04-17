@@ -96,6 +96,13 @@ async function trackAdd(
     return;
   }
 
+  if (/^https?:\/\/([^/]+\.)?threads\.(net|com)\//i.test(url)) {
+    await reply(
+      "Threads isn't supported yet — Meta's Threads API has no public discovery endpoint. Try Instagram (Business/Creator accounts only) or an RSS feed instead."
+    );
+    return;
+  }
+
   const categoryArg = rest.find((a) => !URL_RE.test(a))?.toLowerCase() as Category | undefined;
   const category: Category = categoryArg && CATEGORIES.includes(categoryArg) ? categoryArg : "travel";
   const sourceType = detectSourceType(url);
@@ -150,9 +157,12 @@ async function trackRun(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function detectSourceType(url: string): "website" | "rss" | "youtube" {
+function detectSourceType(
+  url: string
+): "website" | "rss" | "youtube" | "instagram" {
   const lower = url.toLowerCase();
   if (/^https?:\/\/([^/]+\.)?youtube\.com\//.test(lower)) return "youtube";
+  if (/^https?:\/\/([^/]+\.)?instagram\.com\//.test(lower)) return "instagram";
   if (/\/(feed|rss|atom)\/?($|\?)/.test(lower)) return "rss";
   if (/\.(xml|rss|atom)($|\?)/.test(lower)) return "rss";
   return "website";

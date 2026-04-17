@@ -28,4 +28,9 @@ describe("detectSourceType", () => {
     expect(detectSourceType("https://www.timeout.com/tokyo")).toBe("website");
     expect(detectSourceType("https://blog.example.com/posts/123")).toBe("website");
   });
+
+  it("recognises instagram.com URLs", () => {
+    expect(detectSourceType("https://www.instagram.com/natgeotravel")).toBe("instagram");
+    expect(detectSourceType("https://instagram.com/some.creator/")).toBe("instagram");
+  });
 });

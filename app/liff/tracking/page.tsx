@@ -67,8 +67,8 @@ const SOURCE_OPTIONS: { value: SourceType; label: string; hint: string }[] = [
   { value: "website", label: "Website", hint: "Any blog or listing page" },
   { value: "rss", label: "RSS / Atom", hint: "Cheapest; most travel blogs expose one" },
   { value: "youtube", label: "YouTube", hint: "Channel URL (@handle, /channel/UC…, /c/, /user/)" },
-  { value: "instagram", label: "Instagram", hint: "Coming soon" },
-  { value: "threads", label: "Threads", hint: "Coming soon" },
+  { value: "instagram", label: "Instagram", hint: "Business/Creator accounts only (public)" },
+  { value: "threads", label: "Threads", hint: "Not supported (no public API)" },
   { value: "x", label: "X (Twitter)", hint: "Coming soon" },
   { value: "tiktok", label: "TikTok", hint: "Coming soon" },
 ];
@@ -396,7 +396,11 @@ function CreateForm({ onSubmit }: { onSubmit: (i: CreateInput) => Promise<void> 
   const [submitting, setSubmitting] = useState(false);
 
   const mvpUnsupported =
-    sourceType !== "website" && sourceType !== "rss" && sourceType !== "youtube";
+    sourceType !== "website" &&
+    sourceType !== "rss" &&
+    sourceType !== "youtube" &&
+    sourceType !== "instagram";
+  const threadsBlocked = sourceType === "threads";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -466,13 +470,26 @@ function CreateForm({ onSubmit }: { onSubmit: (i: CreateInput) => Promise<void> 
           onChange={(e) => setRegion(e.target.value)}
         />
       </div>
-      {mvpUnsupported ? (
+      {threadsBlocked ? (
+        <p className="text-[11px] text-amber-700">
+          Threads isn&apos;t supported — Meta&apos;s Threads API has no public discovery
+          endpoint. Try Instagram (Business/Creator accounts only) or RSS instead.
+        </p>
+      ) : mvpUnsupported ? (
         <p className="text-[11px] text-amber-700">
           {SOURCE_OPTIONS.find((o) => o.value === sourceType)?.label} is not wired up yet —
-          Website, RSS, and YouTube work today.
+          Website, RSS, YouTube, and Instagram work today.
+        </p>
+      ) : sourceType === "instagram" ? (
+        <p className="text-[11px] text-slate-500">
+          Instagram reads via Business Discovery — target must be a public
+          Business or Creator account.
         </p>
       ) : null}
-      <Button type="submit" disabled={submitting || mvpUnsupported || !sourceUrl.trim()}>
+      <Button
+        type="submit"
+        disabled={submitting || mvpUnsupported || threadsBlocked || !sourceUrl.trim()}
+      >
         {submitting ? "Adding…" : "Add source"}
       </Button>
     </form>

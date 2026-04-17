@@ -139,3 +139,67 @@ describe("parseYouTubeUrl", () => {
     expect(parseYouTubeUrl("not a url")).toBeNull();
   });
 });
+
+const { parseInstagramUrl, parseThreadsUrl } = __test;
+
+describe("parseInstagramUrl", () => {
+  it("extracts username from profile URL", () => {
+    expect(parseInstagramUrl("https://www.instagram.com/natgeotravel")).toEqual({
+      username: "natgeotravel",
+    });
+    expect(parseInstagramUrl("https://instagram.com/natgeotravel/")).toEqual({
+      username: "natgeotravel",
+    });
+  });
+
+  it("extracts username from reel and post URLs (first path segment)", () => {
+    expect(parseInstagramUrl("https://www.instagram.com/natgeotravel/reel/Cabc123/")).toEqual({
+      username: "natgeotravel",
+    });
+  });
+
+  it("rejects reserved paths", () => {
+    expect(parseInstagramUrl("https://www.instagram.com/explore/")).toBeNull();
+    expect(parseInstagramUrl("https://www.instagram.com/p/Cabc123/")).toBeNull();
+    expect(parseInstagramUrl("https://www.instagram.com/accounts/login")).toBeNull();
+  });
+
+  it("rejects non-Instagram hosts and malformed URLs", () => {
+    expect(parseInstagramUrl("https://example.com/natgeotravel")).toBeNull();
+    expect(parseInstagramUrl("https://www.instagram.com/")).toBeNull();
+    expect(parseInstagramUrl("not a url")).toBeNull();
+  });
+
+  it("accepts dots and underscores in usernames", () => {
+    expect(parseInstagramUrl("https://www.instagram.com/travel.with.j_/")).toEqual({
+      username: "travel.with.j_",
+    });
+  });
+});
+
+describe("parseThreadsUrl", () => {
+  it("extracts username from @handle URL on threads.net", () => {
+    expect(parseThreadsUrl("https://www.threads.net/@natgeotravel")).toEqual({
+      username: "natgeotravel",
+    });
+    expect(parseThreadsUrl("https://threads.net/@natgeotravel/")).toEqual({
+      username: "natgeotravel",
+    });
+  });
+
+  it("also accepts threads.com (rebrand URL)", () => {
+    expect(parseThreadsUrl("https://www.threads.com/@natgeotravel")).toEqual({
+      username: "natgeotravel",
+    });
+  });
+
+  it("rejects paths that don't start with @", () => {
+    expect(parseThreadsUrl("https://www.threads.net/search")).toBeNull();
+    expect(parseThreadsUrl("https://www.threads.net/")).toBeNull();
+  });
+
+  it("rejects non-Threads hosts", () => {
+    expect(parseThreadsUrl("https://instagram.com/@foo")).toBeNull();
+    expect(parseThreadsUrl("not a url")).toBeNull();
+  });
+});

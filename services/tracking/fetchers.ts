@@ -412,6 +412,175 @@ async function fetchYouTube(url: string): Promise<FetchResult> {
   };
 }
 
+// ─── Instagram fetcher (Meta Graph API, Business Discovery) ──────────────────
+// Business Discovery lets our own IG Business/Creator account read any PUBLIC
+// Business/Creator account's media — no per-target OAuth required. Personal
+// accounts are not discoverable; we surface that as a clear error so the user
+// knows to pick a Business/Creator source instead.
+//
+// Env:
+//   META_IG_BUSINESS_ACCOUNT_ID — our IG Business Account ID (the "caller")
+//   META_GRAPH_TOKEN           — long-lived page access token with
+//                                 instagram_basic + pages_show_list scopes
+// Docs: https://developers.facebook.com/docs/instagram-api/guides/business-discovery
+//
+// Quota: each business_discovery query counts toward the caller account's
+// rate limits (~200 calls/hour/user). With a small subscriber base that's
+// well within budget.
+
+const IG_MAX_RESULTS = 25;
+const META_GRAPH_VERSION = "v20.0";
+
+// Reserved first-path segments that are NOT usernames.
+const IG_RESERVED = new Set([
+  "explore", "accounts", "p", "reel", "reels", "stories", "tv", "direct",
+  "about", "developer", "press", "legal", "privacy", "terms",
+]);
+
+export function parseInstagramUrl(raw: string): { username: string } | null {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)instagram\.com$/i.test(u.hostname)) return null;
+
+  const segs = u.pathname.split("/").filter(Boolean);
+  if (segs.length === 0) return null;
+  const first = segs[0].toLowerCase();
+  if (IG_RESERVED.has(first)) return null;
+  // Usernames are 1–30 chars, letters/numbers/periods/underscores.
+  if (!/^[a-z0-9._]{1,30}$/i.test(segs[0])) return null;
+  return { username: segs[0] };
+}
+
+async function fetchInstagram(url: string): Promise<FetchResult> {
+  const igAccountId = process.env.META_IG_BUSINESS_ACCOUNT_ID;
+  const token = process.env.META_GRAPH_TOKEN;
+  if (!igAccountId || !token) {
+    throw new Error("META_IG_BUSINESS_ACCOUNT_ID and META_GRAPH_TOKEN must be set");
+  }
+
+  const parsed = parseInstagramUrl(url);
+  if (!parsed) {
+    return {
+      items: [],
+      content_hash: "",
+      raw_excerpt: "unrecognised Instagram URL",
+      http_status: 400,
+    };
+  }
+
+  const mediaFields = "id,caption,media_type,media_url,permalink,timestamp,thumbnail_url";
+  const bd = `business_discovery.username(${parsed.username}){username,name,media.limit(${IG_MAX_RESULTS}){${mediaFields}}}`;
+  const endpoint =
+    `https://graph.facebook.com/${META_GRAPH_VERSION}/${igAccountId}` +
+    `?fields=${encodeURIComponent(bd)}&access_token=${encodeURIComponent(token)}`;
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(endpoint, { signal: ac.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    // Meta returns 400 with a specific sub-code when target isn't a
+    // Business/Creator account — surface a friendlier excerpt.
+    const friendly = /not a business/i.test(body)
+      ? `@${parsed.username} is not an Instagram Business/Creator account (Business Discovery only reads those).`
+      : `HTTP ${res.status} ${body.slice(0, 400)}`;
+    return {
+      items: [],
+      content_hash: "",
+      raw_excerpt: friendly,
+      http_status: res.status,
+    };
+  }
+
+  type Media = {
+    id: string;
+    caption?: string;
+    media_type?: string;
+    media_url?: string;
+    permalink?: string;
+    timestamp?: string;
+    thumbnail_url?: string;
+  };
+  type BdResponse = {
+    business_discovery?: {
+      username?: string;
+      name?: string;
+      media?: { data?: Media[] };
+    };
+  };
+  const json = (await res.json()) as BdResponse;
+  const media = json.business_discovery?.media?.data ?? [];
+
+  const items: FetchedItem[] = media
+    .filter((m) => m.id && (m.permalink || m.media_url))
+    .map((m) => {
+      const caption = (m.caption ?? "").trim();
+      const title = caption.split("\n")[0].slice(0, 200) || `@${parsed.username} post`;
+      const image =
+        m.media_type === "VIDEO" ? m.thumbnail_url ?? m.media_url ?? null : m.media_url ?? null;
+      return {
+        external_id: `ig:${m.id}`,
+        title,
+        url: m.permalink ?? m.media_url ?? null,
+        image_url: image ?? null,
+        body_text: caption.slice(0, 4_000),
+        published_at: m.timestamp ? new Date(m.timestamp).toISOString() : null,
+      } satisfies FetchedItem;
+    });
+
+  const content_hash = items.length
+    ? sha256(items.map((i) => i.external_id).sort().join("\n"))
+    : "";
+
+  return {
+    items,
+    content_hash,
+    raw_excerpt: `instagram @${parsed.username} — ${items.length} posts`,
+    http_status: 200,
+  };
+}
+
+// ─── Threads fetcher ────────────────────────────────────────────────────────
+// The official Threads API (Meta) is OAuth-only: it can read accounts that
+// have granted our app access, but there is no public "business discovery"
+// equivalent. Reading arbitrary public Threads profiles via the official
+// API is not possible today, so we fail loudly rather than silently.
+// Re-enable when Meta ships a discovery endpoint.
+
+export function parseThreadsUrl(raw: string): { username: string } | null {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)threads\.(net|com)$/i.test(u.hostname)) return null;
+
+  const segs = u.pathname.split("/").filter(Boolean);
+  if (segs.length === 0) return null;
+  const first = segs[0];
+  if (!first.startsWith("@")) return null;
+  const handle = first.slice(1);
+  if (!/^[a-z0-9._]{1,30}$/i.test(handle)) return null;
+  return { username: handle };
+}
+
+async function fetchThreads(_url: string): Promise<FetchResult> {
+  throw new Error(
+    "Threads tracking is not supported: Meta's Threads API has no public business-discovery endpoint, only per-account OAuth."
+  );
+}
+
 // Exported only for unit tests.
 export const __test = {
   htmlToText,
@@ -421,6 +590,8 @@ export const __test = {
   parseFeedItem,
   extractBlocks,
   parseYouTubeUrl,
+  parseInstagramUrl,
+  parseThreadsUrl,
 };
 
 // ─── Registry ────────────────────────────────────────────────────────────────
@@ -432,8 +603,8 @@ const notImplemented: Fetcher = async () => {
 export const fetchers: Record<TrackingSourceType, Fetcher> = {
   website: fetchWebsite,
   rss: fetchRss,
-  instagram: notImplemented,
-  threads: notImplemented,
+  instagram: fetchInstagram,
+  threads: fetchThreads,
   x: notImplemented,
   youtube: fetchYouTube,
   tiktok: notImplemented,
