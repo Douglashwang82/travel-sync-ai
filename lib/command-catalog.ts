@@ -130,6 +130,14 @@ export const COMMAND_CATALOG: CommandCatalogEntry[] = [
     liffVisible: true,
   },
   {
+    command: "/track",
+    usage: "[add <url>|run]",
+    example: "/track add https://www.timeout.com/tokyo restaurant",
+    description: "Follow a website or RSS feed for daily travel & restaurant updates.",
+    emoji: "📡",
+    liffVisible: true,
+  },
+  {
     command: "/optout",
     example: "/optout",
     description: "Stop TravelSync from parsing your messages for trip planning.",

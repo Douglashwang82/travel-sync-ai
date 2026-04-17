@@ -20,6 +20,7 @@ import { handleBooked } from "./commands/booked";
 import { handleCancel } from "./commands/cancel";
 import { handleComplete } from "./commands/complete";
 import { handleAsk } from "./commands/ask";
+import { handleTrack } from "./commands/track";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -150,6 +151,10 @@ export async function routeCommand(
 
     case "/ask":
       await handleAsk(args, ctx, reply);
+      break;
+
+    case "/track":
+      await handleTrack(args, ctx, reply);
       break;
 
     case "/optout":
