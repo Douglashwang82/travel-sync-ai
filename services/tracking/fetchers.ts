@@ -265,6 +265,153 @@ function isoDate(raw: string): string | null {
   return Number.isFinite(t) ? new Date(t).toISOString() : null;
 }
 
+// ─── YouTube Data API fetcher ────────────────────────────────────────────────
+// Uses the uploads playlist trick: for any channel with ID "UCxxx", its
+// uploads playlist is "UUxxx". That lets us skip channels.list entirely
+// when a channel ID is already in the URL, saving quota. For @handles and
+// legacy /c/ or /user/ URLs we call channels.list once to resolve.
+//
+// Quota budget per run:
+//   - Direct channel ID URL: 1 unit (playlistItems.list)
+//   - Handle / username URL: 2 units (channels.list + playlistItems.list)
+// Free quota is 10,000 units/day — plenty for hundreds of subscribers.
+
+const YT_MAX_RESULTS = 25;
+
+type YtUrlId =
+  | { kind: "channel"; channelId: string }
+  | { kind: "handle"; handle: string }
+  | { kind: "username"; username: string };
+
+export function parseYouTubeUrl(raw: string): YtUrlId | null {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (!/(^|\.)youtube\.com$/i.test(u.hostname) && u.hostname.toLowerCase() !== "youtu.be") {
+    return null;
+  }
+
+  const path = u.pathname.replace(/\/+$/, "");
+  const segs = path.split("/").filter(Boolean);
+
+  // /channel/UCxxx
+  if (segs[0] === "channel" && segs[1]?.startsWith("UC")) {
+    return { kind: "channel", channelId: segs[1] };
+  }
+  // /@handle or @handle/videos
+  if (segs[0]?.startsWith("@")) {
+    return { kind: "handle", handle: segs[0].slice(1) };
+  }
+  // /c/customname
+  if (segs[0] === "c" && segs[1]) {
+    return { kind: "handle", handle: segs[1] };
+  }
+  // /user/legacyname
+  if (segs[0] === "user" && segs[1]) {
+    return { kind: "username", username: segs[1] };
+  }
+  return null;
+}
+
+async function resolveUploadsPlaylist(apiKey: string, id: YtUrlId): Promise<string | null> {
+  if (id.kind === "channel") {
+    // uploads playlist is UU + <channel id without UC prefix>
+    return "UU" + id.channelId.slice(2);
+  }
+
+  const params = new URLSearchParams({ part: "contentDetails", key: apiKey });
+  if (id.kind === "handle") params.set("forHandle", `@${id.handle}`);
+  else params.set("forUsername", id.username);
+
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?${params}`);
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    items?: Array<{ contentDetails?: { relatedPlaylists?: { uploads?: string } } }>;
+  };
+  return json.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null;
+}
+
+async function fetchYouTube(url: string): Promise<FetchResult> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) throw new Error("YOUTUBE_API_KEY is not set");
+
+  const id = parseYouTubeUrl(url);
+  if (!id) {
+    return { items: [], content_hash: "", raw_excerpt: "unrecognised YouTube URL", http_status: 400 };
+  }
+
+  const uploads = await resolveUploadsPlaylist(apiKey, id);
+  if (!uploads) {
+    return { items: [], content_hash: "", raw_excerpt: "channel not found or quota exhausted", http_status: 404 };
+  }
+
+  const params = new URLSearchParams({
+    part: "snippet,contentDetails",
+    playlistId: uploads,
+    maxResults: String(YT_MAX_RESULTS),
+    key: apiKey,
+  });
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${params}`);
+  if (!res.ok) {
+    return {
+      items: [],
+      content_hash: "",
+      raw_excerpt: `HTTP ${res.status} ${res.statusText}`,
+      http_status: res.status,
+    };
+  }
+
+  type PlaylistItem = {
+    snippet?: {
+      title?: string;
+      description?: string;
+      publishedAt?: string;
+      resourceId?: { videoId?: string };
+      thumbnails?: { high?: { url?: string }; default?: { url?: string } };
+    };
+    contentDetails?: { videoId?: string; videoPublishedAt?: string };
+  };
+  const json = (await res.json()) as { items?: PlaylistItem[] };
+  const raw = json.items ?? [];
+
+  const items: FetchedItem[] = raw
+    .map((it) => {
+      const videoId = it.contentDetails?.videoId ?? it.snippet?.resourceId?.videoId;
+      if (!videoId) return null;
+      const title = (it.snippet?.title ?? "").trim();
+      const description = (it.snippet?.description ?? "").trim();
+      const published =
+        it.contentDetails?.videoPublishedAt ??
+        it.snippet?.publishedAt ??
+        null;
+      const thumb =
+        it.snippet?.thumbnails?.high?.url ?? it.snippet?.thumbnails?.default?.url ?? null;
+      return {
+        external_id: `yt:${videoId}`,
+        title: title || `YouTube video ${videoId}`,
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        image_url: thumb,
+        body_text: [title, description].filter(Boolean).join("\n\n").slice(0, 4_000),
+        published_at: published ? new Date(published).toISOString() : null,
+      } satisfies FetchedItem;
+    })
+    .filter((v): v is FetchedItem => v !== null);
+
+  const content_hash = items.length
+    ? sha256(items.map((i) => i.external_id).sort().join("\n"))
+    : "";
+
+  return {
+    items,
+    content_hash,
+    raw_excerpt: `youtube ${id.kind} — ${items.length} videos`,
+    http_status: 200,
+  };
+}
+
 // Exported only for unit tests.
 export const __test = {
   htmlToText,
@@ -273,6 +420,7 @@ export const __test = {
   sha256,
   parseFeedItem,
   extractBlocks,
+  parseYouTubeUrl,
 };
 
 // ─── Registry ────────────────────────────────────────────────────────────────
@@ -287,6 +435,6 @@ export const fetchers: Record<TrackingSourceType, Fetcher> = {
   instagram: notImplemented,
   threads: notImplemented,
   x: notImplemented,
-  youtube: notImplemented,
+  youtube: fetchYouTube,
   tiktok: notImplemented,
 };

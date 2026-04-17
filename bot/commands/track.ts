@@ -150,8 +150,9 @@ async function trackRun(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function detectSourceType(url: string): "website" | "rss" {
+function detectSourceType(url: string): "website" | "rss" | "youtube" {
   const lower = url.toLowerCase();
+  if (/^https?:\/\/([^/]+\.)?youtube\.com\//.test(lower)) return "youtube";
   if (/\/(feed|rss|atom)\/?($|\?)/.test(lower)) return "rss";
   if (/\.(xml|rss|atom)($|\?)/.test(lower)) return "rss";
   return "website";

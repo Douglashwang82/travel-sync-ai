@@ -57,7 +57,7 @@ type TrackingItem = {
 const SOURCE_OPTIONS: { value: SourceType; label: string; hint: string }[] = [
   { value: "website", label: "Website", hint: "Any blog or listing page" },
   { value: "rss", label: "RSS / Atom", hint: "Cheapest; most travel blogs expose one" },
-  { value: "youtube", label: "YouTube", hint: "Coming soon" },
+  { value: "youtube", label: "YouTube", hint: "Channel URL (@handle, /channel/UC…, /c/, /user/)" },
   { value: "instagram", label: "Instagram", hint: "Coming soon" },
   { value: "threads", label: "Threads", hint: "Coming soon" },
   { value: "x", label: "X (Twitter)", hint: "Coming soon" },
@@ -355,7 +355,8 @@ function CreateForm({ onSubmit }: { onSubmit: (i: CreateInput) => Promise<void> 
   const [region, setRegion] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const mvpUnsupported = sourceType !== "website" && sourceType !== "rss";
+  const mvpUnsupported =
+    sourceType !== "website" && sourceType !== "rss" && sourceType !== "youtube";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -428,7 +429,7 @@ function CreateForm({ onSubmit }: { onSubmit: (i: CreateInput) => Promise<void> 
       {mvpUnsupported ? (
         <p className="text-[11px] text-amber-700">
           {SOURCE_OPTIONS.find((o) => o.value === sourceType)?.label} is not wired up yet —
-          Website and RSS work today.
+          Website, RSS, and YouTube work today.
         </p>
       ) : null}
       <Button type="submit" disabled={submitting || mvpUnsupported || !sourceUrl.trim()}>

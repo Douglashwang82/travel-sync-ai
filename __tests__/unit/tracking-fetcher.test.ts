@@ -97,3 +97,45 @@ describe("extractBlocks", () => {
     expect(blocks[0]).toContain("A");
   });
 });
+
+const { parseYouTubeUrl } = __test;
+
+describe("parseYouTubeUrl", () => {
+  it("parses direct channel IDs", () => {
+    expect(parseYouTubeUrl("https://www.youtube.com/channel/UCabcdef123")).toEqual({
+      kind: "channel",
+      channelId: "UCabcdef123",
+    });
+  });
+
+  it("parses @handle URLs (with and without trailing path)", () => {
+    expect(parseYouTubeUrl("https://www.youtube.com/@TravelWithJ")).toEqual({
+      kind: "handle",
+      handle: "TravelWithJ",
+    });
+    expect(parseYouTubeUrl("https://youtube.com/@TravelWithJ/videos")).toEqual({
+      kind: "handle",
+      handle: "TravelWithJ",
+    });
+  });
+
+  it("treats /c/ vanity URLs as handles", () => {
+    expect(parseYouTubeUrl("https://www.youtube.com/c/SomeChannel")).toEqual({
+      kind: "handle",
+      handle: "SomeChannel",
+    });
+  });
+
+  it("parses legacy /user/ URLs", () => {
+    expect(parseYouTubeUrl("https://www.youtube.com/user/legacyname")).toEqual({
+      kind: "username",
+      username: "legacyname",
+    });
+  });
+
+  it("returns null for non-YouTube URLs and unrecognised paths", () => {
+    expect(parseYouTubeUrl("https://example.com/@foo")).toBeNull();
+    expect(parseYouTubeUrl("https://www.youtube.com/")).toBeNull();
+    expect(parseYouTubeUrl("not a url")).toBeNull();
+  });
+});

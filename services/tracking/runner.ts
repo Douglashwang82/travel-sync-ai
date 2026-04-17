@@ -79,9 +79,10 @@ export async function runTrackingList(list: TrackingList): Promise<RunnerResult>
 
     // ─── Extraction ─────────────────────────────────────────────────────────
     // Website: one HTML page → let the LLM split + summarise.
-    // RSS:     feed is already item-shaped → bypass the LLM entirely.
+    // RSS / YouTube: already item-shaped (each row is a post / video) →
+    // bypass the LLM entirely. The list's default category/region is used.
     const extracted =
-      list.source_type === "rss"
+      list.source_type === "rss" || list.source_type === "youtube"
         ? mapFeedItems(list, fetched.items)
         : await extractItems(list, fetched.items);
 
