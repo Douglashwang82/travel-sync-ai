@@ -15,7 +15,7 @@ import { captureError } from "@/lib/monitoring";
 import { GeminiUnavailableError } from "@/lib/gemini";
 import { fetchers } from "./fetchers";
 import { extractItems } from "./extractor";
-import type { TrackingList } from "./types";
+import type { ExtractedItem, FetchedItem, TrackingList } from "./types";
 
 const MAX_CONSECUTIVE_FAILURES = 5;
 
@@ -77,8 +77,13 @@ export async function runTrackingList(list: TrackingList): Promise<RunnerResult>
       .single();
     const snapshotId = snap?.id as string | undefined;
 
-    // ─── LLM extraction ─────────────────────────────────────────────────────
-    const extracted = await extractItems(list, fetched.items);
+    // ─── Extraction ─────────────────────────────────────────────────────────
+    // Website: one HTML page → let the LLM split + summarise.
+    // RSS:     feed is already item-shaped → bypass the LLM entirely.
+    const extracted =
+      list.source_type === "rss"
+        ? mapFeedItems(list, fetched.items)
+        : await extractItems(list, fetched.items);
 
     if (extracted.length === 0) {
       return await finish(db, list, runId, {
@@ -135,6 +140,34 @@ export async function runTrackingList(list: TrackingList): Promise<RunnerResult>
       error: msg,
     });
   }
+}
+
+// Bypass the LLM for feed-style sources: items arrive pre-split and
+// pre-summarised. We copy through title/summary/url/published_at as-is and
+// fall back to the list's category + region since feeds don't tell us
+// those. A cheap enrichment pass can be added later if needed.
+function mapFeedItems(list: TrackingList, items: FetchedItem[]): ExtractedItem[] {
+  return items
+    .filter((it) => it.title)
+    .map((it) => ({
+      external_id: normaliseExternalId(it.external_id ?? it.url ?? it.title),
+      title: it.title.slice(0, 200),
+      summary: it.body_text.slice(0, 400),
+      url: it.url,
+      image_url: it.image_url,
+      category: list.category,
+      location: list.region ?? null,
+      tags: [],
+    }));
+}
+
+function normaliseExternalId(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9\-_/:.]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 200) || "unknown";
 }
 
 type Finish = Omit<RunnerResult, "list_id">;

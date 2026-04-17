@@ -39,3 +39,61 @@ describe("absolutize", () => {
     );
   });
 });
+
+const { parseFeedItem, extractBlocks } = __test;
+
+describe("parseFeedItem (RSS 2.0)", () => {
+  it("extracts title, link, guid, pubDate, description", () => {
+    const block = `
+      <title><![CDATA[東京拉麵專題]]></title>
+      <link>https://blog.example.com/ramen</link>
+      <guid>https://blog.example.com/ramen</guid>
+      <pubDate>Mon, 14 Apr 2026 09:00:00 +0000</pubDate>
+      <description><![CDATA[<p>今年新開的 10 家必吃拉麵</p>]]></description>
+    `;
+    const item = parseFeedItem(block, false, "https://blog.example.com/feed");
+    expect(item.title).toBe("東京拉麵專題");
+    expect(item.url).toBe("https://blog.example.com/ramen");
+    expect(item.external_id).toBe("https://blog.example.com/ramen");
+    expect(item.published_at).toBe(new Date("2026-04-14T09:00:00Z").toISOString());
+    expect(item.body_text).toContain("今年新開的 10 家必吃拉麵");
+  });
+
+  it("falls back to url when guid is missing, and resolves relative link", () => {
+    const block = `<title>Hello</title><link>/posts/1</link>`;
+    const item = parseFeedItem(block, false, "https://ex.com/feed.xml");
+    expect(item.url).toBe("https://ex.com/posts/1");
+    expect(item.external_id).toBe("https://ex.com/posts/1");
+  });
+});
+
+describe("parseFeedItem (Atom)", () => {
+  it("extracts from <entry> with href link and published", () => {
+    const block = `
+      <id>tag:example.com,2026:entry/42</id>
+      <title>Kyoto Spring Guide</title>
+      <link rel="alternate" href="https://example.com/kyoto"/>
+      <published>2026-04-10T00:00:00Z</published>
+      <summary>Cherry blossom routes and ryokan picks.</summary>
+    `;
+    const item = parseFeedItem(block, true, "https://example.com/atom");
+    expect(item.title).toBe("Kyoto Spring Guide");
+    expect(item.url).toBe("https://example.com/kyoto");
+    expect(item.external_id).toBe("tag:example.com,2026:entry/42");
+    expect(item.published_at).toBe("2026-04-10T00:00:00.000Z");
+    expect(item.body_text).toContain("Cherry blossom");
+  });
+});
+
+describe("extractBlocks", () => {
+  it("pulls multiple items out of an RSS document", () => {
+    const xml = `<rss><channel>
+      <item><title>A</title></item>
+      <item><title>B</title></item>
+      <item><title>C</title></item>
+    </channel></rss>`;
+    const blocks = extractBlocks(xml, "item");
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0]).toContain("A");
+  });
+});
