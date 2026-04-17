@@ -54,6 +54,15 @@ type TrackingItem = {
   first_seen_at: string;
 };
 
+type TrackingRun = {
+  id: string;
+  status: "pending" | "running" | "success" | "failed" | "skipped";
+  started_at: string;
+  finished_at: string | null;
+  new_item_count: number;
+  error: string | null;
+};
+
 const SOURCE_OPTIONS: { value: SourceType; label: string; hint: string }[] = [
   { value: "website", label: "Website", hint: "Any blog or listing page" },
   { value: "rss", label: "RSS / Atom", hint: "Cheapest; most travel blogs expose one" },
@@ -86,8 +95,11 @@ export default function TrackingPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [inlineError, setInlineError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [itemsExpanded, setItemsExpanded] = useState<string | null>(null);
+  const [runsExpanded, setRunsExpanded] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, TrackingItem[]>>({});
+  const [runs, setRuns] = useState<Record<string, TrackingRun[]>>({});
+  const [runsLoading, setRunsLoading] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -173,7 +185,7 @@ export default function TrackingPage() {
       }
       const data = (await res.json()) as { items: TrackingItem[] };
       setItems((prev) => ({ ...prev, [row.id]: data.items }));
-      setExpanded(row.id);
+      setItemsExpanded(row.id);
       await load();
     } finally {
       setPendingId(null);
@@ -196,6 +208,25 @@ export default function TrackingPage() {
       setInlineError("Today's digest was already delivered.");
     } else {
       setInlineError("Digest could not be composed. Try again later.");
+    }
+  }
+
+  async function handleShowRuns(row: TrackingList) {
+    if (runsExpanded === row.id) {
+      setRunsExpanded(null);
+      return;
+    }
+    setRunsExpanded(row.id);
+    if (runs[row.id]) return;  // already loaded
+    setRunsLoading(row.id);
+    try {
+      const res = await liffFetch(`/api/liff/tracking/runs?listId=${row.id}`);
+      if (res.ok) {
+        const data = (await res.json()) as { runs: TrackingRun[] };
+        setRuns((prev) => ({ ...prev, [row.id]: data.runs }));
+      }
+    } finally {
+      setRunsLoading(null);
     }
   }
 
@@ -234,6 +265,7 @@ export default function TrackingPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
+                    <HealthDot row={row} />
                     <Badge className={cn("text-[10px]", CATEGORY_BADGE[row.category])}>
                       {row.category}
                     </Badge>
@@ -245,11 +277,6 @@ export default function TrackingPage() {
                         paused
                       </Badge>
                     ) : null}
-                    {row.consecutive_failures > 0 ? (
-                      <Badge variant="outline" className="text-[10px] text-red-600">
-                        {row.consecutive_failures} failed
-                      </Badge>
-                    ) : null}
                   </div>
                   <p className="mt-1 truncate text-sm font-medium">
                     {row.display_name ?? shortenUrl(row.source_url)}
@@ -258,9 +285,7 @@ export default function TrackingPage() {
                     {row.source_url}
                   </p>
                   <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
-                    {row.last_success_at
-                      ? `Last items: ${relativeTime(row.last_success_at)}`
-                      : "Never run"}
+                    {healthLabel(row)}
                   </p>
                 </div>
               </div>
@@ -294,14 +319,22 @@ export default function TrackingPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setExpanded(expanded === row.id ? null : row.id)}
+                    onClick={() => setItemsExpanded(itemsExpanded === row.id ? null : row.id)}
                   >
-                    {expanded === row.id ? "Hide items" : `Show items (${items[row.id].length})`}
+                    {itemsExpanded === row.id ? "Hide items" : `Items (${items[row.id].length})`}
                   </Button>
                 ) : null}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={runsLoading === row.id}
+                  onClick={() => void handleShowRuns(row)}
+                >
+                  {runsExpanded === row.id ? "Hide history" : "History"}
+                </Button>
               </div>
 
-              {expanded === row.id && items[row.id]?.length ? (
+              {itemsExpanded === row.id && items[row.id]?.length ? (
                 <ul className="mt-3 space-y-2 rounded-xl bg-[var(--secondary)] p-3">
                   {items[row.id].slice(0, 10).map((it) => (
                     <li key={it.id} className="text-xs">
@@ -322,6 +355,13 @@ export default function TrackingPage() {
                     </li>
                   ))}
                 </ul>
+              ) : null}
+
+              {runsExpanded === row.id ? (
+                <RunHistory
+                  runs={runs[row.id]}
+                  loading={runsLoading === row.id}
+                />
               ) : null}
             </li>
           ))}
@@ -436,6 +476,106 @@ function CreateForm({ onSubmit }: { onSubmit: (i: CreateInput) => Promise<void> 
         {submitting ? "Adding…" : "Add source"}
       </Button>
     </form>
+  );
+}
+
+// ─── Health helpers ──────────────────────────────────────────────────────────
+
+type HealthState = "ok" | "failed" | "skipped" | "never";
+
+function getHealth(row: TrackingList): HealthState {
+  if (!row.last_run_at) return "never";
+  if (row.consecutive_failures > 0) return "failed";
+  if (row.last_success_at && row.last_success_at >= row.last_run_at) return "ok";
+  return "skipped";
+}
+
+function HealthDot({ row }: { row: TrackingList }) {
+  const h = getHealth(row);
+  const cls: Record<HealthState, string> = {
+    ok:      "bg-emerald-500",
+    failed:  "bg-red-500",
+    skipped: "bg-amber-400",
+    never:   "bg-slate-300",
+  };
+  const title: Record<HealthState, string> = {
+    ok:      "Last run succeeded",
+    failed:  `${row.consecutive_failures} consecutive failure${row.consecutive_failures === 1 ? "" : "s"}`,
+    skipped: "Last run had no new items",
+    never:   "Never run",
+  };
+  return (
+    <span
+      className={cn("inline-block h-2 w-2 rounded-full shrink-0", cls[h])}
+      title={title[h]}
+    />
+  );
+}
+
+function healthLabel(row: TrackingList): string {
+  const h = getHealth(row);
+  if (h === "never") return "Never run";
+  if (h === "failed") {
+    const snippet = row.last_run_at ? `last attempt ${relativeTime(row.last_run_at)}` : "";
+    return `Failed ${row.consecutive_failures}× — ${snippet}`;
+  }
+  if (h === "skipped") return `No new items — last checked ${relativeTime(row.last_run_at!)}`;
+  return `Last items ${relativeTime(row.last_success_at!)}`;
+}
+
+// ─── RunHistory ──────────────────────────────────────────────────────────────
+
+const RUN_STATUS_META: Record<TrackingRun["status"], { label: string; cls: string }> = {
+  success: { label: "✓", cls: "text-emerald-600" },
+  failed:  { label: "✗", cls: "text-red-600" },
+  skipped: { label: "↩", cls: "text-amber-600" },
+  running: { label: "…", cls: "text-sky-600" },
+  pending: { label: "·", cls: "text-slate-400" },
+};
+
+function RunHistory({ runs: runList, loading }: { runs: TrackingRun[] | undefined; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="mt-3 rounded-xl bg-[var(--secondary)] p-3">
+        <p className="text-xs text-[var(--muted-foreground)]">Loading history…</p>
+      </div>
+    );
+  }
+  if (!runList || runList.length === 0) {
+    return (
+      <div className="mt-3 rounded-xl bg-[var(--secondary)] p-3">
+        <p className="text-xs text-[var(--muted-foreground)]">No runs recorded yet.</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="mt-3 space-y-1.5 rounded-xl bg-[var(--secondary)] p-3">
+      {runList.map((run) => {
+        const meta = RUN_STATUS_META[run.status];
+        const duration = run.finished_at
+          ? Math.round((new Date(run.finished_at).getTime() - new Date(run.started_at).getTime()) / 1000)
+          : null;
+        return (
+          <li key={run.id} className="text-xs">
+            <div className="flex items-baseline gap-2">
+              <span className={cn("font-bold w-3 shrink-0", meta.cls)}>{meta.label}</span>
+              <span className="text-[var(--muted-foreground)]">{relativeTime(run.started_at)}</span>
+              {run.status === "success" && run.new_item_count > 0 ? (
+                <span className="text-emerald-700">+{run.new_item_count} items</span>
+              ) : null}
+              {duration !== null ? (
+                <span className="ml-auto text-[10px] text-[var(--muted-foreground)]">{duration}s</span>
+              ) : null}
+            </div>
+            {run.error ? (
+              <p className="mt-0.5 truncate pl-5 text-[10px] text-red-600">
+                {run.error.slice(0, 120)}
+              </p>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
