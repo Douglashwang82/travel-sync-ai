@@ -23,6 +23,10 @@ import { handleAsk } from "./commands/ask";
 import { handleTrack } from "./commands/track";
 import { handleBudget } from "./commands/budget";
 import { handleIdea, handleIdeas } from "./commands/idea";
+import { handleDocs } from "./commands/docs";
+import { handlePack } from "./commands/pack";
+import { handleConfirm } from "./commands/confirm";
+import { handleDeleteMyData } from "./commands/delete-data";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -169,6 +173,22 @@ export async function routeCommand(
 
     case "/ideas":
       await handleIdeas(ctx, reply);
+      break;
+
+    case "/docs":
+      await handleDocs(args, ctx, reply);
+      break;
+
+    case "/pack":
+      await handlePack(args, ctx, reply);
+      break;
+
+    case "/confirm":
+      await handleConfirm(args, ctx, reply);
+      break;
+
+    case "/delete-my-data":
+      await handleDeleteMyData(ctx, reply);
       break;
 
     case "/optout":
