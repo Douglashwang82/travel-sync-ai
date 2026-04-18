@@ -121,15 +121,7 @@ async function handleMessage(ctx: EventContext, lineEventId: string): Promise<vo
     return;
   }
 
-  // Detect 1:1 DM: LINE user IDs start with 'U'; group IDs start with 'C' or 'R'
-  const isDm = lineGroupId === userId;
-  if (isDm) {
-    if (!userId || !replyToken) return;
-    await handleDirectMessage(userId, replyToken, messageText);
-    return;
-  }
-
-  // Route slash commands immediately
+  // Route slash commands immediately (works in both groups and 1:1 DMs)
   if (messageText.startsWith("/")) {
     await routeCommand(messageText, {
       lineGroupId,
@@ -137,6 +129,14 @@ async function handleMessage(ctx: EventContext, lineEventId: string): Promise<vo
       userId,
       replyToken,
     });
+    return;
+  }
+
+  // Detect 1:1 DM: LINE user IDs start with 'U'; group IDs start with 'C' or 'R'
+  const isDm = lineGroupId === userId;
+  if (isDm) {
+    if (!userId || !replyToken) return;
+    await handleDirectMessage(userId, replyToken, messageText);
     return;
   }
 
