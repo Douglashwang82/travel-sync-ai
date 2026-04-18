@@ -182,6 +182,34 @@ export interface AnalyticsEvent {
   created_at: string;
 }
 
+export type TicketType =
+  | "flight"
+  | "train"
+  | "bus"
+  | "ferry"
+  | "museum"
+  | "attraction"
+  | "event"
+  | "accommodation"
+  | "other";
+
+export interface TripTicket {
+  id: string;
+  trip_id: string;
+  group_id: string;
+  added_by_line_user_id: string;
+  ticket_type: TicketType;
+  title: string;
+  vendor: string | null;
+  reference_code: string | null;
+  passenger_name: string | null;
+  valid_from: string | null;
+  valid_until: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── API response shapes ──────────────────────────────────────────────────────
 
 export interface ApiError {

@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/liff/dashboard", label: "Board", shortLabel: "Board" },
   { href: "/liff/itinerary", label: "Itinerary", shortLabel: "Plan" },
   { href: "/liff/route", label: "Route", shortLabel: "Route" },
+  { href: "/liff/tickets", label: "Tickets", shortLabel: "Tickets" },
   { href: "/liff/expenses", label: "Expenses", shortLabel: "Money" },
   { href: "/liff/votes", label: "Votes", shortLabel: "Votes" },
   { href: "/liff/readiness", label: "Readiness", shortLabel: "Ready" },
