@@ -41,6 +41,7 @@ import { useLiffSession } from "@/lib/use-liff-session";
 import { AgentStatusCard } from "@/components/liff/agent-status-card";
 import type { BoardData, TripItem, ItemType } from "@/lib/types";
 import type { AgentStatusData } from "@/app/api/liff/agent-status/route";
+import type { GroupMemberSummary } from "@/app/api/liff/members/route";
 
 const ITEM_TYPE_LABELS: Record<ItemType, string> = {
   hotel: "Hotel",
@@ -62,10 +63,13 @@ const ITEM_TYPES: { value: ItemType; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const UNASSIGNED = "__unassigned__";
+
 export default function DashboardPage() {
   const { isReady, isLoggedIn, error, session, sessionLoading, sessionError, reloadSession } =
     useLiffSession();
   const [board, setBoard] = useState<BoardData | null>(null);
+  const [members, setMembers] = useState<GroupMemberSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -87,6 +91,9 @@ export default function DashboardPage() {
   const [bookingActioning, setBookingActioning] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
+  const [assignActioning, setAssignActioning] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+
   const [agentStatus, setAgentStatus] = useState<AgentStatusData | null>(null);
 
   const loadBoard = useCallback(async () => {
@@ -103,10 +110,15 @@ export default function DashboardPage() {
         return;
       }
 
-      const boardRes = await liffFetch(`/api/liff/board?tripId=${sessionData.activeTrip.id}`);
+      const tripId = sessionData.activeTrip.id;
+      const [boardRes, membersRes] = await Promise.all([
+        liffFetch(`/api/liff/board?tripId=${tripId}`),
+        liffFetch(`/api/liff/members?tripId=${tripId}`),
+      ]);
       if (!boardRes.ok) throw new Error("Failed to load board");
 
       setBoard(await boardRes.json());
+      if (membersRes.ok) setMembers(await membersRes.json());
     } catch (err) {
       setLoadError(
         toLiffErrorMessage(
@@ -135,13 +147,16 @@ export default function DashboardPage() {
       setLoadError(null);
       setActionError(null);
       try {
-        const [boardRes, statusRes] = await Promise.all([
-          liffFetch(`/api/liff/board?tripId=${activeTrip.id}`),
-          liffFetch(`/api/liff/agent-status?tripId=${activeTrip.id}`),
+        const tripId = activeTrip.id;
+        const [boardRes, statusRes, membersRes] = await Promise.all([
+          liffFetch(`/api/liff/board?tripId=${tripId}`),
+          liffFetch(`/api/liff/agent-status?tripId=${tripId}`),
+          liffFetch(`/api/liff/members?tripId=${tripId}`),
         ]);
         if (!boardRes.ok) throw new Error("Failed to load board");
         setBoard(await boardRes.json());
         if (statusRes.ok) setAgentStatus(await statusRes.json());
+        if (membersRes.ok) setMembers(await membersRes.json());
       } catch (err) {
         setLoadError(
           toLiffErrorMessage(
@@ -259,6 +274,40 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleAssign(itemId: string, lineUserId: string | null) {
+    setAssignActioning(true);
+    setAssignError(null);
+
+    try {
+      const res = await liffFetch("/api/liff/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          itemId,
+          assignedTo: lineUserId,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to assign item");
+
+      const updated: TripItem = await res.json();
+      setSelectedItem(updated);
+      // Refresh the board to reflect the change
+      await loadBoard();
+    } catch (err) {
+      setAssignError(
+        toLiffErrorMessage(
+          "assign-item",
+          err,
+          "We could not assign that item. Please try again."
+        )
+      );
+    } finally {
+      setAssignActioning(false);
+    }
+  }
+
   function openDeleteDialog(item: TripItem) {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
@@ -295,6 +344,11 @@ export default function DashboardPage() {
     } finally {
       setActioning(false);
     }
+  }
+
+  function memberDisplayName(lineUserId: string): string {
+    const member = members.find((m) => m.lineUserId === lineUserId);
+    return member?.displayName ?? lineUserId;
   }
 
   if (!isReady) return <LoadingSpinner message="Initializing..." />;
@@ -421,6 +475,7 @@ export default function DashboardPage() {
           pillClass="bg-[var(--secondary)] text-[var(--muted-foreground)]"
           items={board.todo}
           emptyMessage="No open items. Add one above or type /add in chat."
+          members={members}
           onItemClick={(item) => {
             setSelectedItem(item);
             setDetailSheetOpen(true);
@@ -432,6 +487,7 @@ export default function DashboardPage() {
           pillClass="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
           items={board.pending}
           emptyMessage="No active votes. Type /vote [item] to start one."
+          members={members}
           onItemClick={(item) => {
             setSelectedItem(item);
             setDetailSheetOpen(true);
@@ -443,6 +499,7 @@ export default function DashboardPage() {
           pillClass="bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]"
           items={board.confirmed}
           emptyMessage="Nothing confirmed yet."
+          members={members}
           onItemClick={(item) => {
             setSelectedItem(item);
             setDetailSheetOpen(true);
@@ -508,6 +565,7 @@ export default function DashboardPage() {
             if (!open) {
               setBookingRef("");
               setBookingError(null);
+              setAssignError(null);
             }
           }}
         >
@@ -573,6 +631,41 @@ export default function DashboardPage() {
                   </span>
                 </div>
               )}
+
+              {/* Assignment section */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-[var(--muted-foreground)]">Assigned to</p>
+                {isOrganizer && members.length > 0 ? (
+                  <Select
+                    value={selectedItem.assigned_to_line_user_id ?? UNASSIGNED}
+                    onValueChange={(value) => {
+                      const lineUserId = value === UNASSIGNED ? null : value;
+                      void handleAssign(selectedItem.id, lineUserId);
+                    }}
+                    disabled={assignActioning}
+                  >
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                      {members.map((m) => (
+                        <SelectItem key={m.lineUserId} value={m.lineUserId}>
+                          {m.displayName ?? m.lineUserId}
+                          {m.role === "organizer" ? " (organizer)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-[var(--foreground)]">
+                    {selectedItem.assigned_to_line_user_id
+                      ? memberDisplayName(selectedItem.assigned_to_line_user_id)
+                      : "Unassigned"}
+                  </p>
+                )}
+                {assignError && <p className="text-xs text-destructive">{assignError}</p>}
+              </div>
 
               {/* Mark as Booked — available to all members for confirmed items needing booking */}
               {selectedItem.stage === "confirmed" &&
@@ -690,6 +783,7 @@ function BoardColumn({
   pillClass,
   items,
   emptyMessage,
+  members,
   onItemClick,
 }: {
   title: string;
@@ -697,6 +791,7 @@ function BoardColumn({
   pillClass: string;
   items: TripItem[];
   emptyMessage: string;
+  members: GroupMemberSummary[];
   onItemClick: (item: TripItem) => void;
 }) {
   return (
@@ -716,37 +811,48 @@ function BoardColumn({
             {emptyMessage}
           </p>
         ) : (
-          items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--secondary)] active:bg-[var(--secondary)] transition-colors"
-            >
-              <span className="flex-1 text-sm font-medium truncate">{item.title}</span>
-              {item.stage === "confirmed" && item.booking_status === "needed" && (
-                <span className="text-[10px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-medium">
-                  Book
-                </span>
-              )}
-              {item.stage === "confirmed" && item.booking_status === "booked" && (
-                <span className="text-[10px] shrink-0 bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac] px-1.5 py-0.5 rounded-full font-medium">
-                  ✓ Booked
-                </span>
-              )}
-              {item.deadline_at && (
-                <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">
-                  {new Date(item.deadline_at).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-              )}
-              <span className="text-[var(--muted-foreground)] text-sm shrink-0">{">"}</span>
-            </button>
-          ))
+          items.map((item) => {
+            const assignee = item.assigned_to_line_user_id
+              ? (members.find((m) => m.lineUserId === item.assigned_to_line_user_id)?.displayName ??
+                item.assigned_to_line_user_id)
+              : null;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => onItemClick(item)}
+                className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--secondary)] active:bg-[var(--secondary)] transition-colors"
+              >
+                <span className="flex-1 text-sm font-medium truncate">{item.title}</span>
+                {assignee && (
+                  <span className="text-[10px] shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium max-w-[80px] truncate">
+                    {assignee}
+                  </span>
+                )}
+                {item.stage === "confirmed" && item.booking_status === "needed" && (
+                  <span className="text-[10px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-medium">
+                    Book
+                  </span>
+                )}
+                {item.stage === "confirmed" && item.booking_status === "booked" && (
+                  <span className="text-[10px] shrink-0 bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac] px-1.5 py-0.5 rounded-full font-medium">
+                    ✓ Booked
+                  </span>
+                )}
+                {item.deadline_at && (
+                  <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">
+                    {new Date(item.deadline_at).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                )}
+                <span className="text-[var(--muted-foreground)] text-sm shrink-0">{">"}</span>
+              </button>
+            );
+          })
         )}
       </div>
     </div>
   );
 }
-

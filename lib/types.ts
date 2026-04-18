@@ -107,6 +107,7 @@ export interface TripItem {
   confirmed_option_id: string | null;
   deadline_at: string | null;
   tie_extension_count: number;
+  assigned_to_line_user_id: string | null;
   // Booking lifecycle — only meaningful when stage = 'confirmed' and item_kind = 'decision'
   booking_status: BookingStatus;
   booking_ref: string | null;
