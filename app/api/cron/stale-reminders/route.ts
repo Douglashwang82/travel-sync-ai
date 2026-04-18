@@ -3,6 +3,8 @@ import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
+import { captureError } from "@/lib/monitoring";
+import { logger } from "@/lib/logger";
 
 const STALE_HOURS = 48;
 // Don't send stale reminders more than once every 24h per group
@@ -18,6 +20,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
   if (authError) return authError;
 
+  try {
   const db = createAdminClient();
   const staleThreshold = new Date(Date.now() - STALE_HOURS * 60 * 60 * 1000).toISOString();
   const cooldownThreshold = new Date(Date.now() - REMINDER_COOLDOWN_HOURS * 60 * 60 * 1000).toISOString();
@@ -86,6 +89,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     notified++;
   }
 
-  console.info(`[cron/stale-reminders] notified ${notified} groups`);
+  logger.info("stale-reminders done", { context: "cron_stale_reminders", notified });
   return NextResponse.json({ notified });
+  } catch (err) {
+    logger.error("stale-reminders cron failed", { context: "cron_stale_reminders" });
+    captureError(err, { context: "cron_stale_reminders" });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }

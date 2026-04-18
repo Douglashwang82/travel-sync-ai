@@ -4,6 +4,7 @@ import { processLineEvent } from "@/services/event-processor";
 import { retryFailedOutbound } from "@/lib/line";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { captureError } from "@/lib/monitoring";
+import { logger } from "@/lib/logger";
 
 const MAX_RETRIES = 5;
 const BATCH_SIZE = 20;
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .limit(BATCH_SIZE);
 
   if (error) {
-    console.error("[cron/process-events] query error", error);
+    logger.error("process-events DB query failed", { context: "cron_process_events" });
     captureError(error, { context: "cron_process_events" });
     return NextResponse.json({ error: "DB error" }, { status: 500 });
   }
@@ -66,6 +67,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Also retry any failed outbound messages
   const retriedOutbound = await retryFailedOutbound();
 
-  console.info(`[cron/process-events] processed ${processed}/${events.length}, retried outbound ${retriedOutbound}`);
+  logger.info("process-events done", { context: "cron_process_events", processed, retriedOutbound });
   return NextResponse.json({ processed, retriedOutbound });
 }

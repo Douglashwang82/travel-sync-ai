@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/db";
 import { closeVote } from "@/services/vote";
 import { announceWinner } from "@/services/decisions";
 import { pushText } from "@/lib/line";
+import { captureError } from "@/lib/monitoring";
+import { logger } from "@/lib/logger";
 
 const TIE_EXTENSION_HOURS = 12;
 const MAX_TIE_EXTENSIONS = 2;
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
   if (authError) return authError;
 
+  try {
   const db = createAdminClient();
   const now = new Date().toISOString();
 
@@ -157,16 +160,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         // Log participation rate separately (votes cast vs eligible members)
         const participationRate =
           memberCount && memberCount > 0 ? votes.length / memberCount : null;
-        console.info(
-          `[cron/vote-deadlines] closed "${item.title}" — winner votes: ${topCount}/${votes.length}` +
-            (participationRate != null
-              ? `, participation: ${(participationRate * 100).toFixed(0)}%`
-              : "")
-        );
+        logger.info("vote closed", { context: "cron_vote_deadlines", tripId: item.trip_id });
       }
     }
   }
 
-  console.info(`[cron/vote-deadlines] closed ${closed}/${expiredItems.length} votes`);
+  logger.info("vote-deadlines done", { context: "cron_vote_deadlines", closed });
   return NextResponse.json({ closed });
+  } catch (err) {
+    logger.error("vote-deadlines cron failed", { context: "cron_vote_deadlines" });
+    captureError(err, { context: "cron_vote_deadlines" });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }

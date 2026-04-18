@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/process-events",
-      "schedule": "0 0 * * *"
-    },
-    {
       "path": "/api/cron/vote-deadlines",
       "schedule": "0 1 * * *"
     },
@@ -19,6 +15,14 @@
     {
       "path": "/api/cron/tracking-digest",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/daily-briefings",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/daily-digest",
+      "schedule": "0 23 * * *"
     }
   ]
 }

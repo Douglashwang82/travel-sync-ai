@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import { routeCommand } from "@/bot/router";
 import { parseMessage } from "@/services/parsing";
 import { handleDirectMessage } from "@/services/private-chat";
@@ -26,50 +27,45 @@ export async function processLineEvent(
   ctx: EventContext
 ): Promise<void> {
   const db = createAdminClient();
-  console.log(`[processor] Starting work on event ${lineEventId} (type: ${eventType})`);
+  logger.info("event start", { eventId: lineEventId, context: eventType, groupId: ctx.dbGroupId ?? undefined });
 
   // Mark as processing
   await db
     .from("line_events")
     .update({ processing_status: "processing" })
     .eq("id", lineEventId);
-  console.log(`[processor] Event ${lineEventId} is now marked as 'processing'`);
 
   try {
     switch (eventType) {
       case "join":
       case "follow":
-        console.log(`[processor] Handling JOIN/FOLLOW event`);
         await handleJoin(ctx);
         break;
 
       case "leave":
-        console.log(`[processor] Handling LEAVE event`);
         await handleLeave(ctx);
         break;
 
       case "message":
-        console.log(`[processor] Handling MESSAGE event (text: "${ctx.messageText?.substring(0, 20)}...")`);
         await handleMessage(ctx, lineEventId);
         break;
 
       case "postback":
-        console.log(`[processor] Handling POSTBACK event`);
         await handlePostback(payload, ctx);
         break;
 
       default:
-        console.log(`[processor] Ignoring unknown event type: ${eventType}`);
+        logger.warn("unknown event type", { eventId: lineEventId, context: eventType });
         break;
     }
 
-    console.log(`[processor] Finished event ${lineEventId} successfully.`);
+    logger.info("event done", { eventId: lineEventId, context: eventType });
     await db
       .from("line_events")
       .update({ processing_status: "processed", processed_at: new Date().toISOString() })
       .eq("id", lineEventId);
   } catch (err) {
-    console.error("[processor] CRITICAL ERROR", { lineEventId, eventType, err });
+    logger.error("event failed", { eventId: lineEventId, context: eventType, groupId: ctx.dbGroupId ?? undefined });
     const failureReason = err instanceof Error ? err.message : String(err);
 
     await db
@@ -86,7 +82,7 @@ export async function processLineEvent(
 
 async function handleJoin(ctx: EventContext): Promise<void> {
   if (!ctx.lineGroupId) {
-    console.warn(`[processor] handleJoin failed: No lineGroupId`);
+    logger.warn("handleJoin: missing lineGroupId");
     return;
   }
 
@@ -120,9 +116,8 @@ async function handleLeave(ctx: EventContext): Promise<void> {
 
 async function handleMessage(ctx: EventContext, lineEventId: string): Promise<void> {
   const { messageText, replyToken, dbGroupId, lineGroupId, userId } = ctx;
-  console.log(`[processor] handleMessage called (text: "${messageText?.substring(0, 20)}...")`);
   if (!messageText || !lineGroupId) {
-    console.warn(`[processor] handleMessage early return: missing messageText or lineGroupId`);
+    logger.warn("handleMessage: missing messageText or lineGroupId", { groupId: dbGroupId ?? undefined });
     return;
   }
 
@@ -130,7 +125,6 @@ async function handleMessage(ctx: EventContext, lineEventId: string): Promise<vo
   const isDm = lineGroupId === userId;
   if (isDm) {
     if (!userId || !replyToken) return;
-    console.log(`[processor] Routing 1:1 DM for user ${userId}`);
     await handleDirectMessage(userId, replyToken, messageText);
     return;
   }

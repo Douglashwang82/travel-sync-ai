@@ -3,6 +3,8 @@ import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
+import { captureError } from "@/lib/monitoring";
+import { logger } from "@/lib/logger";
 
 // Send booking reminders when departure is this many days away or fewer
 const BOOKING_REMINDER_THRESHOLD_DAYS = 7;
@@ -19,6 +21,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
   if (authError) return authError;
 
+  try {
   const db = createAdminClient();
   const now = new Date();
   const thresholdDate = new Date(
@@ -83,13 +86,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     reminded++;
-    console.info(
-      `[cron/readiness-refresh] reminded trip ${trip.id} — ${unbookedItems.length} unbooked item(s), ${daysUntilDeparture}d until departure`
-    );
+    logger.info("readiness-refresh: sent reminder", { tripId: trip.id, context: "cron_readiness_refresh" });
   }
 
-  console.info(
-    `[cron/readiness-refresh] checked ${trips.length} trip(s), sent reminders to ${reminded}`
-  );
+  logger.info("readiness-refresh done", { context: "cron_readiness_refresh", reminded, tripsChecked: trips.length });
   return NextResponse.json({ reminded, tripsChecked: trips.length });
+  } catch (err) {
+    logger.error("readiness-refresh cron failed", { context: "cron_readiness_refresh" });
+    captureError(err, { context: "cron_readiness_refresh" });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }
