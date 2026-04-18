@@ -42,6 +42,7 @@ const UpdateItemSchema = z.object({
   description: z.string().max(1000).nullable().optional(),
   itemType: ItemTypeEnum.optional(),
   deadlineAt: z.string().datetime().nullable().optional(),
+  assignedTo: z.string().min(1).nullable().optional(),
 });
 
 const ReopenItemSchema = z.object({
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         description: data.description ?? undefined,
         itemType: data.itemType as ItemType | undefined,
         deadlineAt: data.deadlineAt ?? undefined,
+        assignedToLineUserId: data.assignedTo ?? undefined,
       });
 
       if (!result.ok) {

@@ -107,6 +107,7 @@ export interface TripItem {
   confirmed_option_id: string | null;
   deadline_at: string | null;
   tie_extension_count: number;
+  assigned_to_line_user_id: string | null;
   // Booking lifecycle — only meaningful when stage = 'confirmed' and item_kind = 'decision'
   booking_status: BookingStatus;
   booking_ref: string | null;
@@ -179,6 +180,34 @@ export interface AnalyticsEvent {
   user_id: string | null;
   properties: Record<string, unknown>;
   created_at: string;
+}
+
+export type TicketType =
+  | "flight"
+  | "train"
+  | "bus"
+  | "ferry"
+  | "museum"
+  | "attraction"
+  | "event"
+  | "accommodation"
+  | "other";
+
+export interface TripTicket {
+  id: string;
+  trip_id: string;
+  group_id: string;
+  added_by_line_user_id: string;
+  ticket_type: TicketType;
+  title: string;
+  vendor: string | null;
+  reference_code: string | null;
+  passenger_name: string | null;
+  valid_from: string | null;
+  valid_until: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ─── API response shapes ──────────────────────────────────────────────────────

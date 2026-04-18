@@ -17,6 +17,7 @@ export interface UpdateItemInput {
   description?: string;
   itemType?: ItemType;
   deadlineAt?: string | null;
+  assignedToLineUserId?: string | null;
 }
 
 export type TransitionResult =
@@ -65,6 +66,7 @@ export async function updateItem(
   if (input.description !== undefined) patch.description = input.description;
   if (input.itemType !== undefined) patch.item_type = input.itemType;
   if (input.deadlineAt !== undefined) patch.deadline_at = input.deadlineAt;
+  if (input.assignedToLineUserId !== undefined) patch.assigned_to_line_user_id = input.assignedToLineUserId;
 
   const { data, error } = await db
     .from("trip_items")
