@@ -20,7 +20,9 @@ type AnalyticsEventName =
   | "booking_confirmed"
   | "booking_reminder_sent"
   | "trip_cancelled"
-  | "trip_completed";
+  | "trip_completed"
+  | "budget_set"
+  | "idea_submitted";
 
 interface TrackOptions {
   groupId?: string;

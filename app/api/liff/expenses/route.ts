@@ -31,6 +31,8 @@ export interface ExpenseRow {
 
 export interface ExpensesResponse {
   totalAmount: number;
+  budgetAmount: number | null;
+  budgetCurrency: string;
   expenses: ExpenseRow[];
   balances: Array<{ displayName: string; net: number }>;
   settlements: Array<{ from: string; to: string; amount: number }>;
@@ -58,6 +60,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const db = createAdminClient();
 
   // Fetch expense rows
+  // Fetch trip budget if tripId is provided
+  let budgetAmount: number | null = null;
+  let budgetCurrency = "TWD";
+  if (tripId) {
+    const { data: trip } = await db
+      .from("trips")
+      .select("budget_amount, budget_currency")
+      .eq("id", tripId)
+      .single();
+    if (trip) {
+      budgetAmount = trip.budget_amount != null ? Number(trip.budget_amount) : null;
+      budgetCurrency = (trip.budget_currency as string) || "TWD";
+    }
+  }
+
   let query = db
     .from("expenses")
     .select("id, description, amount, paid_by_display_name, created_at")
@@ -87,6 +104,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json<ExpensesResponse>({
     totalAmount: summary.totalAmount,
+    budgetAmount,
+    budgetCurrency,
     expenses,
     balances: summary.balances,
     settlements: summary.settlements,

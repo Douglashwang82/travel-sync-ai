@@ -21,6 +21,8 @@ import { handleCancel } from "./commands/cancel";
 import { handleComplete } from "./commands/complete";
 import { handleAsk } from "./commands/ask";
 import { handleTrack } from "./commands/track";
+import { handleBudget } from "./commands/budget";
+import { handleIdea, handleIdeas } from "./commands/idea";
 
 export interface CommandContext {
   lineGroupId: string;
@@ -155,6 +157,18 @@ export async function routeCommand(
 
     case "/track":
       await handleTrack(args, ctx, reply);
+      break;
+
+    case "/budget":
+      await handleBudget(args, ctx, reply);
+      break;
+
+    case "/idea":
+      await handleIdea(args, ctx, reply);
+      break;
+
+    case "/ideas":
+      await handleIdeas(ctx, reply);
       break;
 
     case "/optout":

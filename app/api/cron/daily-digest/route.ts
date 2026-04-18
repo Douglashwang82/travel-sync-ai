@@ -3,6 +3,8 @@ import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
+import { captureError } from "@/lib/monitoring";
+import { logger } from "@/lib/logger";
 
 const LOOKBACK_HOURS = 24;
 // Prevent double-firing if the cron runs slightly off-schedule
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
   if (authError) return authError;
 
+  try {
   const db = createAdminClient();
   const since = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
   const cooldownThreshold = new Date(Date.now() - COOLDOWN_HOURS * 60 * 60 * 1000).toISOString();
@@ -167,6 +170,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     digests++;
   }
 
-  console.info(`[cron/daily-digest] sent ${digests} digests`);
+  logger.info("daily-digest done", { context: "cron_daily_digest", digests });
   return NextResponse.json({ digests });
+  } catch (err) {
+    logger.error("daily-digest cron failed", { context: "cron_daily_digest" });
+    captureError(err, { context: "cron_daily_digest" });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }

@@ -15,7 +15,7 @@ export async function handleExpSummary(
 
   const { data: trip } = await db
     .from("trips")
-    .select("id")
+    .select("id, budget_amount, budget_currency")
     .eq("group_id", ctx.dbGroupId)
     .in("status", ["draft", "active"])
     .single();
@@ -27,16 +27,34 @@ export async function handleExpSummary(
     return;
   }
 
-  await reply(buildSummaryMessage(summary));
+  const budget = trip?.budget_amount != null
+    ? { amount: Number(trip.budget_amount), currency: trip.budget_currency as string || "TWD" }
+    : null;
+
+  await reply(buildSummaryMessage(summary, budget));
 }
 
 function buildSummaryMessage(
-  summary: Awaited<ReturnType<typeof getExpenseSummary>>
+  summary: Awaited<ReturnType<typeof getExpenseSummary>>,
+  budget: { amount: number; currency: string } | null
 ): string {
   const lines: string[] = [];
 
   lines.push(`💰 Expense Summary`);
-  lines.push(`Total: $${summary.totalAmount.toLocaleString()}`);
+  lines.push(`Total spent: ${summary.totalAmount.toLocaleString()}`);
+
+  if (budget) {
+    const remaining = budget.amount - summary.totalAmount;
+    const pct = Math.min(Math.round((summary.totalAmount / budget.amount) * 100), 100);
+    const bar = "█".repeat(Math.floor(pct / 10)) + "░".repeat(10 - Math.floor(pct / 10));
+    lines.push(`Budget: ${summary.totalAmount.toLocaleString()} / ${budget.amount.toLocaleString()} ${budget.currency} (${pct}%)`);
+    lines.push(`[${bar}]`);
+    if (remaining < 0) {
+      lines.push(`⚠️ Over budget by ${Math.abs(remaining).toLocaleString()} ${budget.currency}`);
+    } else {
+      lines.push(`Remaining: ${remaining.toLocaleString()} ${budget.currency}`);
+    }
+  }
   lines.push(``);
 
   // Balances section
