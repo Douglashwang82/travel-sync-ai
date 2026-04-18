@@ -80,17 +80,16 @@ export async function sendDailyBriefings(): Promise<DailyBriefingResult[]> {
   return results;
 }
 
+type TripItemOption = { name: string | null; address: string | null; booking_url: string | null };
+
 type TripItem = {
   id: string;
   title: string;
   item_type: string;
   deadline_at: string | null;
   booking_ref?: string | null;
-  trip_item_options?: {
-    name: string | null;
-    address: string | null;
-    booking_url: string | null;
-  } | null;
+  // Supabase join returns an array even for a to-one FK
+  trip_item_options?: TripItemOption[] | TripItemOption | null;
 };
 
 type DeadlineItem = {
@@ -131,7 +130,9 @@ function buildBriefingMessage(
     lines.push("\n✅ Confirmed for today:");
     for (const item of bookedItems) {
       const icon = TYPE_ICON[item.item_type] ?? "📌";
-      const opt = item.trip_item_options;
+      const opt = Array.isArray(item.trip_item_options)
+        ? (item.trip_item_options[0] ?? null)
+        : (item.trip_item_options ?? null);
       const name = opt?.name ?? item.title;
       const time = item.deadline_at
         ? new Date(item.deadline_at).toLocaleTimeString("en-US", {

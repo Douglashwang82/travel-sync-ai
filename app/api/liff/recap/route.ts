@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 
+type OptionRow = { name: string | null; address: string | null };
+
+type ConfirmedItemRow = {
+  id: string;
+  title: string;
+  item_type: string;
+  booking_ref: string | null;
+  deadline_at: string | null;
+  // Supabase join returns an array even for a to-one FK
+  trip_item_options: OptionRow[] | OptionRow | null;
+};
+
+type ExpenseRow = {
+  id: string;
+  description: string | null;
+  amount: unknown;
+  paid_by_display_name: string | null;
+  created_at: string;
+};
+
 const QuerySchema = z.object({
   lineGroupId: z.string().min(1),
 });
@@ -55,7 +75,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .eq("trip_id", trip.id)
     .order("created_at", { ascending: true });
 
-  const totalSpent = (expenses ?? []).reduce((sum, e) => sum + Number(e.amount), 0);
+  const typedExpenses = (expenses ?? []) as ExpenseRow[];
+  const typedItems = (confirmedItems ?? []) as ConfirmedItemRow[];
+  const totalSpent = typedExpenses.reduce((sum: number, e: ExpenseRow) => sum + Number(e.amount), 0);
 
   // Group members
   const { data: members } = await db
@@ -74,17 +96,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       budgetAmount: trip.budget_amount ? Number(trip.budget_amount) : null,
       budgetCurrency: trip.budget_currency ?? "TWD",
     },
-    confirmedItems: (confirmedItems ?? []).map((item) => ({
-      id: item.id,
-      title: item.title,
-      itemType: item.item_type,
-      bookingRef: item.booking_ref,
-      scheduledAt: item.deadline_at,
-      option: item.trip_item_options
-        ? { name: (item.trip_item_options as { name: string | null }).name, address: (item.trip_item_options as { address: string | null }).address }
-        : null,
-    })),
-    expenses: (expenses ?? []).map((e) => ({
+    confirmedItems: typedItems.map((item: ConfirmedItemRow) => {
+      const opt = Array.isArray(item.trip_item_options)
+        ? (item.trip_item_options[0] ?? null)
+        : (item.trip_item_options ?? null);
+      return {
+        id: item.id,
+        title: item.title,
+        itemType: item.item_type,
+        bookingRef: item.booking_ref,
+        scheduledAt: item.deadline_at,
+        option: opt ? { name: opt.name, address: opt.address } : null,
+      };
+    }),
+    expenses: typedExpenses.map((e: ExpenseRow) => ({
       id: e.id,
       description: e.description,
       amount: Number(e.amount),

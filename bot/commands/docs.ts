@@ -2,8 +2,7 @@ import { createAdminClient } from "@/lib/db";
 import { track } from "@/lib/analytics";
 import type { CommandContext } from "../router";
 
-const DOC_TYPES = ["passport", "visa", "insurance", "other"] as const;
-type DocType = (typeof DOC_TYPES)[number];
+type DocType = "passport" | "visa" | "insurance" | "other";
 
 const DOC_TYPE_ALIASES: Record<string, DocType> = {
   passport: "passport", pass: "passport", 護照: "passport",

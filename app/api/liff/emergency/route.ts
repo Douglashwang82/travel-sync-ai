@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 
+type MemberRow = { line_user_id: string; display_name: string | null; role: string };
+
 const QuerySchema = z.object({
   lineGroupId: z.string().min(1),
   lineUserId: z.string().min(1),
@@ -78,8 +80,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const countryCode = detectCountryCode(trip?.destination_name ?? null);
   const emergencyNumbers = countryCode ? EMERGENCY_NUMBERS[countryCode] ?? null : null;
 
-  // Find organizer
-  const organizer = members?.find((m) => m.role === "organizer");
+  const typedMembers = (members ?? []) as MemberRow[];
+
+  const organizer = typedMembers.find((m) => m.role === "organizer");
 
   return NextResponse.json({
     trip: trip
@@ -97,7 +100,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     organizer: organizer
       ? { lineUserId: organizer.line_user_id, displayName: organizer.display_name }
       : null,
-    members: (members ?? []).map((m) => ({
+    members: typedMembers.map((m) => ({
       lineUserId: m.line_user_id,
       displayName: m.display_name,
       isYou: m.line_user_id === lineUserId,

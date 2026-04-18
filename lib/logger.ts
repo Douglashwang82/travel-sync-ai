@@ -27,7 +27,8 @@ function emit(level: Level, msg: string, ctx?: LogContext): void {
   else console.log(entry);
 
   if (process.env.SENTRY_DSN) {
-    Sentry.addBreadcrumb({ level, message: msg, data: ctx });
+    const sentryLevel = level === "warn" ? "warning" : level;
+    Sentry.addBreadcrumb({ level: sentryLevel, message: msg, data: ctx });
   }
 }
 

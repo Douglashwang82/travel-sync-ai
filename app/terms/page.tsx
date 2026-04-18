@@ -16,7 +16,7 @@ export default function TermsPage() {
       <Section title="1. Acceptance">
         <p>
           By adding TravelSync AI to your LINE group or using any of its web interfaces, you agree
-          to these Terms of Service ("Terms"). If you do not agree, please remove the bot from
+          to these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, please remove the bot from
           your group.
         </p>
       </Section>
@@ -25,7 +25,7 @@ export default function TermsPage() {
         <p>
           TravelSync AI is an AI-assisted trip planning assistant delivered as a LINE chatbot and
           companion web app. It helps groups plan travel, record expenses, vote on options, and
-          track documents. The Service is provided "as is" and is intended for personal, non-
+          track documents. The Service is provided &ldquo;as is&rdquo; and is intended for personal, non-
           commercial group travel planning.
         </p>
       </Section>
@@ -74,7 +74,7 @@ export default function TermsPage() {
 
       <Section title="8. Disclaimers and limitation of liability">
         <p>
-          THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. TO THE MAXIMUM EXTENT
+          THE SERVICE IS PROVIDED &ldquo;AS IS&rdquo; WITHOUT WARRANTIES OF ANY KIND. TO THE MAXIMUM EXTENT
           PERMITTED BY LAW, WE DISCLAIM ALL LIABILITY FOR INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
           DAMAGES ARISING FROM YOUR USE OF THE SERVICE. OUR TOTAL LIABILITY SHALL NOT EXCEED THE
           AMOUNT YOU PAID US IN THE 12 MONTHS PRECEDING THE CLAIM (WHICH FOR A FREE SERVICE IS

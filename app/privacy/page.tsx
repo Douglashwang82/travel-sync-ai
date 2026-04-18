@@ -15,8 +15,8 @@ export default function PrivacyPage() {
 
       <Section title="1. Who we are">
         <p>
-          TravelSync AI ("we", "our", "us") operates a LINE Messaging API chatbot and associated
-          web services (the "Service") that helps groups plan travel. Our contact email is{" "}
+          TravelSync AI (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) operates a LINE Messaging API chatbot and associated
+          web services (the &ldquo;Service&rdquo;) that helps groups plan travel. Our contact email is{" "}
           <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-600 underline">
             {CONTACT_EMAIL}
           </a>

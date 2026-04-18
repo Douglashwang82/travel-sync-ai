@@ -2,8 +2,7 @@ import { createAdminClient } from "@/lib/db";
 import { track } from "@/lib/analytics";
 import type { CommandContext } from "../router";
 
-const CATEGORIES = ["documents", "clothing", "toiletries", "electronics", "safety", "general"] as const;
-type PackCategory = (typeof CATEGORIES)[number];
+type PackCategory = "documents" | "clothing" | "toiletries" | "electronics" | "safety" | "general";
 
 const CATEGORY_ALIASES: Record<string, PackCategory> = {
   documents: "documents", docs: "documents", doc: "documents", 文件: "documents",
