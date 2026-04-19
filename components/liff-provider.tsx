@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { getLiffE2EContext } from "@/lib/liff-e2e";
+import { stashLineGroupId, popLineGroupId } from "@/lib/liff-group-context";
 
 interface LiffProfile {
   userId: string;
@@ -68,9 +69,7 @@ export function LiffProvider({ children }: { children: ReactNode }) {
           const preLoginCtx = liff.getContext();
           const preLoginGroupId =
             preLoginCtx?.type === "group" ? preLoginCtx.groupId : null;
-          if (preLoginGroupId) {
-            sessionStorage.setItem("liff:lineGroupId", preLoginGroupId);
-          }
+          if (preLoginGroupId) stashLineGroupId(preLoginGroupId);
           liff.login();
           return;
         }
@@ -79,9 +78,7 @@ export function LiffProvider({ children }: { children: ReactNode }) {
         const context = liff.getContext();
         const groupId =
           (context?.type === "group" ? context.groupId : null) ??
-          sessionStorage.getItem("liff:lineGroupId") ??
-          null;
-        sessionStorage.removeItem("liff:lineGroupId");
+          popLineGroupId();
 
         setState({
           isReady: true,
