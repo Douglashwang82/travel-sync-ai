@@ -145,7 +145,7 @@ export default function VotesPage() {
         <h1 className="font-bold text-base">Active Votes</h1>
         {session?.activeTrip && (
           <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-            {session.activeTrip.destination_name}
+            {session.activeTrip.destination_name ?? "New trip"}
           </p>
         )}
       </div>

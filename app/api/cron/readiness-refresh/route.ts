@@ -71,7 +71,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     await pushText(
       lineGroup.line_group_id,
-      `📋 Booking reminder — ${trip.destination_name} is ${daysUntilDeparture} day${daysUntilDeparture === 1 ? "" : "s"} away.\n\n` +
+      `📋 Booking reminder — ${trip.destination_name ?? "your trip"} is ${daysUntilDeparture} day${daysUntilDeparture === 1 ? "" : "s"} away.\n\n` +
         `The following items are confirmed but not yet booked:\n${itemList}\n\n` +
         `Once a booking is done, reply with:\n/booked [item name] [confirmation ref]`
     );

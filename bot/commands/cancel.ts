@@ -53,11 +53,12 @@ export async function handleCancel(
   await track("trip_cancelled", {
     groupId: ctx.dbGroupId,
     userId: ctx.userId,
-    properties: { destination: trip.destination_name },
+    properties: { destination: trip.destination_name ?? null },
   });
 
+  const label = trip.destination_name ? `Trip to ${trip.destination_name}` : "The trip";
   await reply(
-    `Trip to ${trip.destination_name} has been cancelled.\n\n` +
+    `${label} has been cancelled.\n\n` +
       `Use /start to plan a new trip whenever you're ready.`
   );
 }

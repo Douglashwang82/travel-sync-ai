@@ -45,7 +45,7 @@ export async function handleStatus(
       : list.map((i) => `  ${emoji} ${i.title}`).join("\n");
 
   const message =
-    `📋 Trip Board — ${trip.destination_name} (${dateStr})\n\n` +
+    `📋 Trip Board — ${trip.destination_name ?? "destination TBD"} (${dateStr})\n\n` +
     `📌 To-Do (${todo.length})\n${formatList(todo, "•")}\n\n` +
     `⏳ Pending (${pending.length})\n${formatList(pending, "⏳")}\n\n` +
     `✅ Confirmed (${confirmed.length})\n${formatList(confirmed, "✅")}`;

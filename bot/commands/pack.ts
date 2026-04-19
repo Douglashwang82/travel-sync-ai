@@ -130,7 +130,7 @@ export async function handlePack(
   }
 
   if (sub === "list") {
-    return handlePackList(ctx.dbGroupId, ctx.userId, trip.id, trip.destination_name, reply);
+    return handlePackList(ctx.dbGroupId, ctx.userId, trip.id, trip.destination_name ?? "your trip", reply);
   }
 
   if (sub === "check") {

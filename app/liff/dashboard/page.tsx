@@ -368,9 +368,10 @@ export default function DashboardPage() {
           <>
             Type{" "}
             <code className="font-mono bg-[var(--secondary)] px-1 py-0.5 rounded text-xs">
-              /start [destination] [dates]
+              /start
             </code>{" "}
-            in the group chat to begin planning.
+            in the group chat to begin planning — destination, dates, and
+            participants can all be decided later.
           </>
         }
       />
@@ -391,11 +392,15 @@ export default function DashboardPage() {
       <div className="sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-sm border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="min-w-0">
-            <h1 className="font-bold text-base truncate">{board.trip.destination_name}</h1>
+            <h1 className="font-bold text-base truncate">
+              {board.trip.destination_name ?? "New trip"}
+            </h1>
             <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
               {board.trip.start_date && board.trip.end_date
                 ? `${board.trip.start_date} to ${board.trip.end_date}`
-                : `${totalItems} item${totalItems !== 1 ? "s" : ""} total`}
+                : !board.trip.destination_name
+                  ? "Destination & dates TBD"
+                  : `${totalItems} item${totalItems !== 1 ? "s" : ""} total`}
             </p>
           </div>
           {isOrganizer && (

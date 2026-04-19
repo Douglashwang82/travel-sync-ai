@@ -193,7 +193,7 @@ function RouteHeader({
 }) {
   return (
     <div className="sticky top-0 z-10 bg-[var(--background)] border-b border-[var(--border)] px-4 py-3">
-      <h1 className="font-bold text-base">{trip.destination_name}</h1>
+      <h1 className="font-bold text-base">{trip.destination_name ?? "New trip"}</h1>
       {trip.start_date && trip.end_date && (
         <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
           {trip.start_date} to {trip.end_date}

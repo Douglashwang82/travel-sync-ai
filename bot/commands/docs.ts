@@ -73,7 +73,7 @@ export async function handleDocs(
   const displayName = member?.display_name ?? "Unknown";
 
   if (sub === "list") {
-    return handleDocsList(ctx.dbGroupId, trip.destination_name, reply);
+    return handleDocsList(ctx.dbGroupId, trip.destination_name ?? "your trip", reply);
   }
 
   if (sub === "add") {
