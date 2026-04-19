@@ -63,13 +63,25 @@ export function LiffProvider({ children }: { children: ReactNode }) {
         await liff.init({ liffId: liffId! });
 
         if (!liff.isLoggedIn()) {
+          // Stash the group context before the OAuth redirect — LIFF may not
+          // restore it after returning from the LINE login page.
+          const preLoginCtx = liff.getContext();
+          const preLoginGroupId =
+            preLoginCtx?.type === "group" ? preLoginCtx.groupId : null;
+          if (preLoginGroupId) {
+            sessionStorage.setItem("liff:lineGroupId", preLoginGroupId);
+          }
           liff.login();
           return;
         }
 
         const profile = await liff.getProfile();
         const context = liff.getContext();
-        const groupId = context?.type === "group" ? context.groupId : null;
+        const groupId =
+          (context?.type === "group" ? context.groupId : null) ??
+          sessionStorage.getItem("liff:lineGroupId") ??
+          null;
+        sessionStorage.removeItem("liff:lineGroupId");
 
         setState({
           isReady: true,
