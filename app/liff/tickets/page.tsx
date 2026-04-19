@@ -254,7 +254,7 @@ export default function TicketsPage() {
           <div>
             <h1 className="font-bold text-base">Tickets</h1>
             <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-              {session.activeTrip.destination_name}
+              {session.activeTrip.destination_name ?? "New trip"}
               {tickets.length > 0 && ` · ${tickets.length} ticket${tickets.length !== 1 ? "s" : ""}`}
             </p>
           </div>

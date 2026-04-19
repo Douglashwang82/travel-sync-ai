@@ -164,7 +164,7 @@ export default function ExpensesPage() {
           <h1 className="font-bold text-base">Expenses</h1>
           {session?.activeTrip && (
             <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-              {session.activeTrip.destination_name}
+              {session.activeTrip.destination_name ?? "New trip"}
             </p>
           )}
         </div>

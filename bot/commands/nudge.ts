@@ -71,7 +71,9 @@ export async function handleNudge(
     return;
   }
 
-  const lines: string[] = [`📣 Trip update for ${trip.destination_name}:`];
+  const lines: string[] = [
+    `📣 Trip update for ${trip.destination_name ?? "your trip"}:`,
+  ];
 
   if (pendingItems?.length) {
     lines.push(`\n⏳ Still waiting for votes on:`);

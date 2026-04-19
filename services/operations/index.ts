@@ -12,7 +12,7 @@ export type TripPhase =
 
 export interface OperationsSummary {
   tripId: string;
-  destinationName: string;
+  destinationName: string | null;
   destinationAnchor: {
     placeId: string | null;
     formattedAddress: string | null;
@@ -284,12 +284,13 @@ function deriveActiveRisks(
 
 function buildHeadline(
   phase: TripPhase,
-  destinationName: string,
+  destinationName: string | null,
   nextActionCount: number,
   riskCount: number
 ): string {
   const phaseLabel = phase.charAt(0).toUpperCase() + phase.slice(1);
-  return `${phaseLabel} mode for ${destinationName}: ${nextActionCount} next action${nextActionCount === 1 ? "" : "s"}, ${riskCount} active risk${riskCount === 1 ? "" : "s"}.`;
+  const label = destinationName ?? "your trip";
+  return `${phaseLabel} mode for ${label}: ${nextActionCount} next action${nextActionCount === 1 ? "" : "s"}, ${riskCount} active risk${riskCount === 1 ? "" : "s"}.`;
 }
 
 function buildFreshnessNotes(

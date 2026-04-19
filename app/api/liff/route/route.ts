@@ -27,7 +27,7 @@ export interface RouteStop {
 export interface RouteData {
   trip: {
     id: string;
-    destination_name: string;
+    destination_name: string | null;
     destination_lat: number | null;
     destination_lng: number | null;
     start_date: string | null;

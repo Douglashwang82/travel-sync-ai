@@ -104,7 +104,7 @@ export async function handleBudget(
     : "";
 
   await reply(
-    `Budget set for ${trip.destination_name}!\n\n` +
+    `Budget set for ${trip.destination_name ?? "your trip"}!\n\n` +
       `${prev}Total budget: ${amount.toLocaleString()} ${currency}\n\n` +
       `Expenses are tracked automatically with /exp. View the summary with /exp-summary.`
   );
