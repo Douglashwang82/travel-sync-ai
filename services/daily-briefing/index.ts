@@ -53,7 +53,7 @@ export async function sendDailyBriefings(): Promise<DailyBriefingResult[]> {
       .lte("deadline_at", `${today}T23:59:59Z`);
 
     const message = buildBriefingMessage(
-      trip.destination_name,
+      trip.destination_name ?? "your trip",
       today,
       items ?? [],
       todayDeadlines ?? []

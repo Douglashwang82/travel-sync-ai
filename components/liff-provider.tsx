@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { getLiffE2EContext } from "@/lib/liff-e2e";
+import { stashLineGroupId, popLineGroupId } from "@/lib/liff-group-context";
 
 interface LiffProfile {
   userId: string;
@@ -72,6 +73,12 @@ export function LiffProvider({ children }: { children: ReactNode }) {
         await liff.init({ liffId: liffId! });
 
         if (!liff.isLoggedIn()) {
+          // Stash the group context before the OAuth redirect — LIFF may not
+          // restore it after returning from the LINE login page.
+          const preLoginCtx = liff.getContext();
+          const preLoginGroupId =
+            preLoginCtx?.type === "group" ? preLoginCtx.groupId : null;
+          if (preLoginGroupId) stashLineGroupId(preLoginGroupId);
           liff.login();
           return;
         }

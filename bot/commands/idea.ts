@@ -151,7 +151,7 @@ export async function handleIdeas(
 
   if (!ideas?.length) {
     await reply(
-      `No brainstorm ideas yet for ${trip.destination_name}.\n\nDrop one with /idea [text].`
+      `No brainstorm ideas yet for ${trip.destination_name ?? "your trip"}.\n\nDrop one with /idea [text].`
     );
     return;
   }
@@ -165,7 +165,7 @@ export async function handleIdeas(
     byCategory.get(cat)!.push(`  • ${idea.text}${who}`);
   }
 
-  const sections: string[] = [`💡 Brainstorm — ${trip.destination_name} (${ideas.length} idea${ideas.length === 1 ? "" : "s"})`];
+  const sections: string[] = [`💡 Brainstorm — ${trip.destination_name ?? "your trip"} (${ideas.length} idea${ideas.length === 1 ? "" : "s"})`];
   for (const [cat, lines] of byCategory) {
     sections.push(`\n${cat.charAt(0).toUpperCase() + cat.slice(1)}\n${lines.join("\n")}`);
   }

@@ -10,7 +10,7 @@ export type LiffSessionData = {
   member: { lineUserId: string; role: string };
   activeTrip: {
     id: string;
-    destination_name: string;
+    destination_name: string | null;
     destination_place_id: string | null;
     destination_formatted_address: string | null;
     destination_google_maps_url: string | null;

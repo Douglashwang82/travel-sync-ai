@@ -59,14 +59,14 @@ export async function handleComplete(
   });
 
   await reply(
-    `🏁 Trip to ${trip.destination_name} is now complete!\n\n` +
+    `🏁 Trip to ${(trip.destination_name ?? "your trip")} is now complete!\n\n` +
       `Calculating final expenses...`
   );
 
   // Push final settlement summary
   const summary = await getExpenseSummary(ctx.dbGroupId, trip.id).catch(() => null);
   if (summary && summary.totalAmount > 0) {
-    const lines: string[] = [`💰 Final Settlement — ${trip.destination_name}`];
+    const lines: string[] = [`💰 Final Settlement — ${(trip.destination_name ?? "your trip")}`];
     lines.push(`Total spent: ${summary.totalAmount.toLocaleString()}`);
     lines.push(``);
 
@@ -92,7 +92,7 @@ export async function handleComplete(
     .is("left_at", null);
 
   const npsMessage =
-    `👋 Hi! Thanks for using TravelSync AI for your trip to ${trip.destination_name}.\n\n` +
+    `👋 Hi! Thanks for using TravelSync AI for your trip to ${(trip.destination_name ?? "your trip")}.\n\n` +
     `How was your experience? Reply with a number:\n` +
     `1-4 😞 Poor · 5-6 😐 OK · 7-8 🙂 Good · 9-10 🤩 Excellent\n\n` +
     `Your feedback helps us improve. (This is a one-time message.)`;

@@ -28,7 +28,7 @@ export interface ReadinessItem {
 export interface ReadinessSnapshot {
   tripId: string;
   trip: {
-    destinationName: string;
+    destinationName: string | null;
     destinationPlaceId: string | null;
     destinationFormattedAddress: string | null;
     destinationGoogleMapsUrl: string | null;

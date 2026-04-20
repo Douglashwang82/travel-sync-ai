@@ -99,7 +99,7 @@ export async function handleDirectMessage(
 
 function buildSystemPrompt(
   groupName: string | null,
-  trip: { destination_name: string; start_date: string | null; end_date: string | null; status: string } | null
+  trip: { destination_name: string | null; start_date: string | null; end_date: string | null; status: string } | null
 ): string {
   const groupLabel = groupName ?? "your travel group";
 
@@ -119,7 +119,7 @@ function buildSystemPrompt(
   return (
     `You are TravelBot, the AI assistant for ${groupLabel}.\n` +
     `You have read-only access to the trip plan. You can answer questions, give travel advice, and summarize group activity — but you cannot make changes.\n\n` +
-    `Active Trip: ${trip.destination_name}\n` +
+    `Active Trip: ${trip.destination_name ?? "destination not set yet"}\n` +
     `Dates: ${dateRange}\n` +
     `Status: ${trip.status}\n\n` +
     `Keep replies concise — this is a LINE chat. If asked about something you don't have data on, say so clearly.`

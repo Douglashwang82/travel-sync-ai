@@ -73,11 +73,19 @@ export interface GroupMember {
   left_at: string | null;
 }
 
+/**
+ * Display label for a trip in user-facing messages. Destinations can be null
+ * when a trip has been started but the destination hasn't been decided yet.
+ */
+export function tripDisplayName(trip: { destination_name: string | null }): string {
+  return trip.destination_name ?? "your trip";
+}
+
 export interface Trip {
   id: string;
   group_id: string;
   title: string | null;
-  destination_name: string;
+  destination_name: string | null;
   destination_place_id: string | null;
   destination_formatted_address: string | null;
   destination_lat: number | null;

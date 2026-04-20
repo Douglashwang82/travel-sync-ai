@@ -64,7 +64,7 @@ export async function handleAsk(
   const systemPrompt =
     `You are TravelBot, the AI assistant for this LINE travel group.\n` +
     `Answer the question using the trip data below. Be concise — keep your response under 5 lines.\n\n` +
-    `Trip: ${trip.destination_name}\n` +
+    `Trip: ${trip.destination_name ?? "destination not set yet"}\n` +
     `Dates: ${dateRange}\n` +
     `To-Do: ${todo.length > 0 ? todo.join(", ") : "none"}\n` +
     `Pending Vote: ${pending.length > 0 ? pending.join(", ") : "none"}\n` +

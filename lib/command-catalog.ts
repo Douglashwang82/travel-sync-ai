@@ -10,9 +10,10 @@ export type CommandCatalogEntry = {
 export const COMMAND_CATALOG: CommandCatalogEntry[] = [
   {
     command: "/start",
-    usage: "[destination] [dates]",
-    example: "/start Osaka 7/15-7/20",
-    description: "Start a new trip and set the destination and optional travel dates.",
+    usage: "[destination?] [dates?]",
+    example: "/start",
+    description:
+      "Start a new trip. Destination, dates, and participants can all be decided later — pass them now only if you already know.",
     emoji: "🚀",
     liffVisible: true,
   },

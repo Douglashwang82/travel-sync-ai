@@ -83,7 +83,6 @@ export async function handleStatus(
     await reply(summaryText);
     return;
   }
-
   await reply({
     type: "flex",
     altText:
