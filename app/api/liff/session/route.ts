@@ -89,7 +89,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     if (data) {
       const lg = Array.isArray(data.line_groups) ? data.line_groups[0] : data.line_groups;
-      group = lg as typeof group;
+      group = lg as { id: string; line_group_id: string; name: string | null; status: string };
     }
   }
 
