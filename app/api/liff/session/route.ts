@@ -118,8 +118,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .eq("line_user_id", lineUserId)
     .single();
 
-  // Fetch active trip
-  const { data: trip } = await db
+  // Fetch active trip (maybeSingle: 0 rows is valid — no trip yet)
+  const { data: trip, error: tripError } = await db
     .from("trips")
     .select(`
       id,
@@ -137,7 +137,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     `)
     .eq("group_id", group.id)
     .in("status", ["draft", "active"])
-    .single();
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (tripError) {
+    console.error("[liff/session] trip query failed", { groupId: group.id, lineGroupId: group.line_group_id, error: tripError });
+  } else {
+    console.log("[liff/session] resolved", { groupId: group.id, lineGroupId: group.line_group_id, tripId: trip?.id ?? null, tripStatus: trip?.status ?? null });
+  }
 
   return NextResponse.json({
     group: {

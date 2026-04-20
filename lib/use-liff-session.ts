@@ -50,7 +50,14 @@ export function useLiffSession() {
       const sessionRes = await liffFetch(`/api/liff/session?${query.toString()}`);
 
       if (!sessionRes.ok) {
-        throw new Error("Failed to load session");
+        let detail = `HTTP ${sessionRes.status}`;
+        try {
+          const body = await sessionRes.json();
+          detail = body?.error ?? detail;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(`Failed to load session: ${detail}`);
       }
 
       const sessionData: LiffSessionData = await sessionRes.json();
