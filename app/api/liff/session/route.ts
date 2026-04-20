@@ -158,5 +158,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       role: member?.role ?? "member",
     },
     activeTrip: trip ?? null,
+    _debug: {
+      resolvedGroupId: group.id,
+      resolvedLineGroupId: group.line_group_id,
+      requestedLineGroupId: lineGroupId ?? null,
+      tripFound: !!trip,
+      tripId: trip?.id ?? null,
+      tripStatus: trip?.status ?? null,
+    },
   });
 }

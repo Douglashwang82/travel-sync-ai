@@ -46,6 +46,7 @@ export function useLiffSession() {
       if (lineGroupId) {
         query.set("lineGroupId", lineGroupId);
       }
+      console.log("[liff-session] requesting session", { lineGroupId: lineGroupId ?? null, userId: profile.userId });
 
       const sessionRes = await liffFetch(`/api/liff/session?${query.toString()}`);
 
@@ -61,6 +62,7 @@ export function useLiffSession() {
       }
 
       const sessionData: LiffSessionData = await sessionRes.json();
+      console.log("[liff-session] response", sessionData);
       setSession(sessionData);
       return sessionData;
     } catch (err) {
