@@ -36,7 +36,9 @@ export function getLiffE2EContext(): LiffE2EContext | null {
         userId: "U_E2E_USER",
         displayName: "E2E Traveler",
       },
-      lineGroupId: "C_E2E_GROUP",
+      // null = private chat / browser context (no group).
+      // Set to "C_E2E_GROUP" in __LIFF_E2E_CONTEXT__ to simulate group chat.
+      lineGroupId: null,
       error: null,
       idToken: "e2e-liff-token",
     }

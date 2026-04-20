@@ -5,7 +5,10 @@ import { authenticateLiffRequest } from "@/lib/liff-server";
 import type { ApiError } from "@/lib/types";
 
 const SessionQuerySchema = z.object({
-  lineGroupId: z.string().min(1),
+  // Optional: provided when opened from a LINE group chat.
+  // When absent (private chat or external browser), the user's most recently
+  // active group membership is used instead.
+  lineGroupId: z.string().min(1).optional(),
   lineUserId: z.string().optional(),
   displayName: z.string().optional(),
 });
@@ -17,7 +20,7 @@ const SessionQuerySchema = z.object({
  * Called by the LIFF app on load after LINE Login succeeds.
  *
  * Query params:
- *   lineGroupId  — LINE group ID from LIFF context
+ *   lineGroupId  — LINE group ID from LIFF context (omitted in private chat / browser)
  *   lineUserId   — optional LIFF profile user ID; must match the verified token if provided
  *   displayName  — display name from LIFF profile (optional, for caching)
  */
@@ -28,7 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
 
   const params = {
-    lineGroupId: searchParams.get("lineGroupId") ?? "",
+    lineGroupId: searchParams.get("lineGroupId") ?? undefined,
     lineUserId: searchParams.get("lineUserId") ?? undefined,
     displayName: searchParams.get("displayName") ?? undefined,
   };
@@ -52,21 +55,48 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const lineUserId = auth.lineUserId;
   const db = createAdminClient();
 
-  // Resolve or create group record
-  const { data: group, error: groupError } = await db
-    .from("line_groups")
-    .upsert(
-      { line_group_id: lineGroupId, last_seen_at: new Date().toISOString() },
-      { onConflict: "line_group_id" }
-    )
-    .select("id, line_group_id, name, status")
-    .single();
+  let group: { id: string; line_group_id: string; name: string | null; status: string } | null = null;
 
-  if (groupError || !group) {
-    console.error("[liff/session] group upsert failed", groupError);
+  if (lineGroupId) {
+    // Group chat context: upsert the group and use it directly
+    const { data, error: groupError } = await db
+      .from("line_groups")
+      .upsert(
+        { line_group_id: lineGroupId, last_seen_at: new Date().toISOString() },
+        { onConflict: "line_group_id" }
+      )
+      .select("id, line_group_id, name, status")
+      .single();
+
+    if (groupError || !data) {
+      console.error("[liff/session] group upsert failed", groupError);
+      return NextResponse.json<ApiError>(
+        { error: "Failed to resolve group", code: "DB_ERROR" },
+        { status: 500 }
+      );
+    }
+    group = data;
+  } else {
+    // Private chat / browser context: find the user's most recently active group
+    const { data } = await db
+      .from("group_members")
+      .select("group_id, line_groups!inner(id, line_group_id, name, status, last_seen_at)")
+      .eq("line_user_id", lineUserId)
+      .is("left_at", null)
+      .order("line_groups(last_seen_at)", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data) {
+      const lg = Array.isArray(data.line_groups) ? data.line_groups[0] : data.line_groups;
+      group = lg as typeof group;
+    }
+  }
+
+  if (!group) {
     return NextResponse.json<ApiError>(
-      { error: "Failed to resolve group", code: "DB_ERROR" },
-      { status: 500 }
+      { error: "No group found for this user", code: "NOT_FOUND" },
+      { status: 404 }
     );
   }
 

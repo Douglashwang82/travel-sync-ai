@@ -67,7 +67,8 @@ class QueryBuilder {
     if (override) this._forceError = override;
   }
 
-  select(cols = "*", opts?: { count?: "exact"; head?: boolean }) {
+  select(_cols = "*", opts?: { count?: "exact"; head?: boolean }) {
+    void _cols;
     if (this._op === "insert" || this._op === "update" || this._op === "upsert" || this._op === "delete") {
       this._selectAfterMutation = true;
     } else {
@@ -128,12 +129,15 @@ class QueryBuilder {
   }
 
   order(_col: string, _opts?: { ascending?: boolean }) {
+    void _col;
+    void _opts;
     // Preserve insertion order by default (fine for tests)
     return this;
   }
 
   limit(_n: number) {
-    // Limit is ignored in the mock — test data sets should be small
+    void _n;
+    // Limit is ignored in the mock - test data sets should be small
     return this;
   }
 
@@ -148,7 +152,7 @@ class QueryBuilder {
   }
 
   ilike(col: string, val: unknown) {
-    // Case-insensitive LIKE — for tests, use exact string match (sufficient for dedup checks)
+    // Case-insensitive LIKE - for tests, use exact string match (sufficient for dedup checks)
     this._filters.push({ col, op: "ilike", val });
     return this;
   }
@@ -169,7 +173,6 @@ class QueryBuilder {
 
     const table = this.tables.get(this.tableName) ?? [];
 
-    // ── SELECT ──────────────────────────────────────────────────────────────────
     if (this._op === "select") {
       const rows = applyFilters(table, this._filters);
 
@@ -187,7 +190,6 @@ class QueryBuilder {
       return { data: rows, error: null, ...(count !== undefined && { count }) };
     }
 
-    // ── INSERT ──────────────────────────────────────────────────────────────────
     if (this._op === "insert") {
       const newRows = (Array.isArray(this._insertData) ? this._insertData : [this._insertData!]).map(
         (r) => ({ id: newId(), created_at: new Date().toISOString(), ...r })
@@ -200,11 +202,9 @@ class QueryBuilder {
       return { data: newRows, error: null };
     }
 
-    // ── UPDATE ──────────────────────────────────────────────────────────────────
     if (this._op === "update") {
       const toUpdate = applyFilters(table, this._filters);
       if (toUpdate.length === 0 && this._single) {
-        // Mirror the real Supabase PostgREST error code for 0-row single queries
         return { data: null, error: { message: "No rows found", code: "PGRST116" } };
       }
       const updatedIds = new Set(toUpdate.map((r) => r.id));
@@ -218,7 +218,6 @@ class QueryBuilder {
       return { data: updatedRows, error: null };
     }
 
-    // ── DELETE ──────────────────────────────────────────────────────────────────
     if (this._op === "delete") {
       const toDelete = applyFilters(table, this._filters);
       const deleteIds = new Set(toDelete.map((r) => r.id));
@@ -226,7 +225,6 @@ class QueryBuilder {
       return { data: toDelete, error: null };
     }
 
-    // ── UPSERT ──────────────────────────────────────────────────────────────────
     if (this._op === "upsert") {
       const newRows = Array.isArray(this._upsertData) ? this._upsertData : [this._upsertData!];
       const conflictCols = this._upsertOpts.onConflict?.split(",").map((c) => c.trim()) ?? [];
@@ -239,7 +237,6 @@ class QueryBuilder {
           );
           if (existingIdx >= 0) {
             if (this._upsertOpts.ignoreDuplicates) {
-              // Existing row — signal as null result
               continue;
             }
             table[existingIdx] = { ...table[existingIdx], ...(row as Row) };
@@ -268,23 +265,15 @@ class QueryBuilder {
 
 export interface MockDb {
   from: (table: string) => QueryBuilder;
-  /** Direct table access for assertions */
   _tables: Map<string, Row[]>;
 }
 
-/**
- * Create a fresh in-memory Supabase client mock.
- *
- * @param initialData  Seed data per table name.
- * @param errorOverrides  Force an error for a specific table (for error-path testing).
- */
 export function createMockDb(
   initialData: Record<string, Row[]> = {},
   errorOverrides: Record<string, { message: string; code?: string }> = {}
 ): MockDb {
   const tables = new Map<string, Row[]>();
   for (const [tbl, rows] of Object.entries(initialData)) {
-    // Deep-copy so tests don't share state
     tables.set(tbl, rows.map((r) => ({ ...r })));
   }
 

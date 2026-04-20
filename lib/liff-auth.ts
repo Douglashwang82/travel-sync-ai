@@ -22,11 +22,22 @@ interface LineIdTokenClaims {
   picture?: string;
 }
 
+const E2E_MOCK_TOKEN = "e2e-liff-token";
+const E2E_MOCK_USER_ID = "U_E2E_USER";
+
 /**
  * Verify a LIFF ID token and return the verified lineUserId.
  * Returns null if the token is invalid, expired, or verification fails.
  */
 export async function verifyLiffToken(idToken: string): Promise<string | null> {
+  // Allow E2E mock token only when explicitly enabled server-side — never in production
+  if (
+    process.env.NEXT_PUBLIC_E2E_LIFF_MOCK === "1" &&
+    idToken === E2E_MOCK_TOKEN
+  ) {
+    return E2E_MOCK_USER_ID;
+  }
+
   const channelId = process.env.LIFF_CHANNEL_ID;
   if (!channelId) {
     console.warn("[liff-auth] LIFF_CHANNEL_ID not set — skipping token verification");

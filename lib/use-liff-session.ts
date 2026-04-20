@@ -32,15 +32,22 @@ export function useLiffSession() {
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   const reloadSession = useCallback(async () => {
-    if (!profile || !lineGroupId) return null;
+    if (!profile) return null;
 
     setSessionLoading(true);
     setSessionError(null);
 
     try {
-      const sessionRes = await liffFetch(
-        `/api/liff/session?lineGroupId=${encodeURIComponent(lineGroupId)}&lineUserId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}`
-      );
+      // lineGroupId is present in group chat context; omitted in private chat / browser
+      const query = new URLSearchParams({
+        lineUserId: profile.userId,
+        displayName: profile.displayName,
+      });
+      if (lineGroupId) {
+        query.set("lineGroupId", lineGroupId);
+      }
+
+      const sessionRes = await liffFetch(`/api/liff/session?${query.toString()}`);
 
       if (!sessionRes.ok) {
         throw new Error("Failed to load session");

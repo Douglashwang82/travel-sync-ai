@@ -9,11 +9,16 @@ interface LiffProfile {
   pictureUrl?: string;
 }
 
+// Mirrors the LIFF context types that matter for routing logic
+export type LiffContextType = "group" | "utou" | "external" | null;
+
 interface LiffContext {
   isReady: boolean;
   isLoggedIn: boolean;
   profile: LiffProfile | null;
   lineGroupId: string | null;
+  /** How the LIFF was opened: "group", "utou" (private chat), "external" (browser), or null (not yet resolved) */
+  liffContextType: LiffContextType;
   error: string | null;
 }
 
@@ -22,6 +27,7 @@ const LiffCtx = createContext<LiffContext>({
   isLoggedIn: false,
   profile: null,
   lineGroupId: null,
+  liffContextType: null,
   error: null,
 });
 
@@ -35,17 +41,20 @@ export function LiffProvider({ children }: { children: ReactNode }) {
     isLoggedIn: false,
     profile: null,
     lineGroupId: null,
+    liffContextType: null,
     error: null,
   });
 
   useEffect(() => {
     const e2eContext = getLiffE2EContext();
     if (e2eContext) {
+      const ctxType: LiffContextType = e2eContext.lineGroupId ? "group" : "utou";
       setState({
         isReady: e2eContext.isReady ?? true,
         isLoggedIn: e2eContext.isLoggedIn ?? true,
         profile: e2eContext.profile ?? null,
         lineGroupId: e2eContext.lineGroupId ?? null,
+        liffContextType: ctxType,
         error: e2eContext.error ?? null,
       });
       return;
@@ -70,6 +79,10 @@ export function LiffProvider({ children }: { children: ReactNode }) {
         const profile = await liff.getProfile();
         const context = liff.getContext();
         const groupId = context?.type === "group" ? context.groupId : null;
+        const ctxType: LiffContextType =
+          context?.type === "group" ? "group"
+          : context?.type === "utou" ? "utou"
+          : "external";
 
         setState({
           isReady: true,
@@ -80,6 +93,7 @@ export function LiffProvider({ children }: { children: ReactNode }) {
             pictureUrl: profile.pictureUrl,
           },
           lineGroupId: groupId ?? null,
+          liffContextType: ctxType,
           error: null,
         });
       } catch (err) {
