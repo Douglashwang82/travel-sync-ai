@@ -85,9 +85,14 @@ export function LiffProvider({ children }: { children: ReactNode }) {
 
         const profile = await liff.getProfile();
         const context = liff.getContext();
-        const groupId = context?.type === "group" ? context.groupId : null;
+        // liff.getContext() can lose group context after the LINE OAuth redirect.
+        // Restore from sessionStorage if needed.
+        const groupId =
+          context?.type === "group"
+            ? context.groupId
+            : popLineGroupId();
         const ctxType: LiffContextType =
-          context?.type === "group" ? "group"
+          groupId ? "group"
           : context?.type === "utou" ? "utou"
           : "external";
 
