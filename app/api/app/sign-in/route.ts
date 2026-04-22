@@ -5,6 +5,7 @@ import {
   clearAppSessionCookie,
   setAppSessionCookie,
 } from "@/lib/app-server";
+import { isLineLoginConfigured } from "@/lib/app-line-login";
 
 /**
  * Dev sign-in helper for the browser /app experience.
@@ -13,10 +14,24 @@ import {
  * POST — accept { lineUserId } and stamp the session cookie.
  * DELETE — sign out.
  *
- * This is intentionally minimal while real auth (LINE Login for web) is
- * deferred. The endpoint trusts the caller-supplied `lineUserId` and should
- * not be exposed to production traffic as-is.
+ * Locked down in production when LINE Login is configured — otherwise the
+ * picker would remain an impersonation backdoor. DELETE remains open so
+ * signed-in users can always sign themselves out.
  */
+
+function devPickerDisabled(): boolean {
+  return process.env.NODE_ENV === "production" && isLineLoginConfigured();
+}
+
+function disabledResponse(): NextResponse {
+  return NextResponse.json(
+    {
+      error: "Dev sign-in is disabled in production. Use LINE Login instead.",
+      code: "DEV_SIGNIN_DISABLED",
+    },
+    { status: 404 }
+  );
+}
 
 const SignInSchema = z.object({
   lineUserId: z.string().min(1),
@@ -32,6 +47,8 @@ export interface SignInMember {
 }
 
 export async function GET(): Promise<NextResponse> {
+  if (devPickerDisabled()) return disabledResponse();
+
   const db = createAdminClient();
   const { data, error } = await db
     .from("group_members")
@@ -64,6 +81,8 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (devPickerDisabled()) return disabledResponse();
+
   let body: unknown;
   try {
     body = await req.json();
