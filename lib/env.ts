@@ -31,6 +31,9 @@ const SERVER_ENV_VARS: EnvVar[] = [
   { key: "GOOGLE_REDIRECT_URI", required: false, description: "Google OAuth redirect URI for optional Calendar export" },
   { key: "NEXT_PUBLIC_LIFF_ID", required: false, description: "LINE LIFF app ID (required for LIFF pages to work)" },
   { key: "LIFF_CHANNEL_ID", required: false, description: "LINE channel ID for LIFF ID token verification (required for LIFF API routes)" },
+  { key: "LINE_LOGIN_CHANNEL_ID", required: false, description: "LINE Login (web) channel ID — required to enable real sign-in on the /app workspace" },
+  { key: "LINE_LOGIN_CHANNEL_SECRET", required: false, description: "LINE Login (web) channel secret — required with LINE_LOGIN_CHANNEL_ID" },
+  { key: "LINE_LOGIN_REDIRECT_URI", required: false, description: "Optional override for the LINE Login callback URL; defaults to {origin}/api/app/auth/line/callback" },
   { key: "CRON_SECRET", required: false, description: "Secret for Vercel cron route auth (required in production)" },
 ];
 

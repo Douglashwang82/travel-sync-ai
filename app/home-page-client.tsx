@@ -498,7 +498,7 @@ export default function HomePageClient() {
             <Link href="/liff/help" className="transition-colors hover:text-[var(--foreground)]">
               {copy.footer.help}
             </Link>
-            <Link href="/liff/dashboard" className="transition-colors hover:text-[var(--foreground)]">
+            <Link href="/app" className="transition-colors hover:text-[var(--foreground)]">
               {copy.footer.openApp}
             </Link>
           </nav>
