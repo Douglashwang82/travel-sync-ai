@@ -100,6 +100,7 @@ export interface Trip {
   created_by_user_id: string;
   created_at: string;
   ended_at: string | null;
+  forked_from_version_id: string | null;
 }
 
 export interface TripItem {
@@ -217,6 +218,124 @@ export interface TripTicket {
   created_at: string;
   updated_at: string;
 }
+
+// ─── Trip Templates ───────────────────────────────────────────────────────────
+
+export type TemplateVisibility = "public" | "private" | "request_only";
+
+export type AccessRequestStatus = "pending" | "approved" | "denied";
+
+export type TemplateGrantSource = "invite" | "request";
+
+export interface TripTemplate {
+  id: string;
+  author_line_user_id: string;
+  slug: string;
+  current_version_id: string | null;
+  visibility: TemplateVisibility;
+  fork_count: number;
+  like_count: number;
+  comment_count: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface TripTemplateVersion {
+  id: string;
+  template_id: string;
+  version_number: number;
+  source_trip_id: string | null;
+  title: string;
+  destination_name: string;
+  duration_days: number;
+  summary: string | null;
+  cover_image_url: string | null;
+  tags: string[];
+  content_hash: string;
+  published_at: string;
+}
+
+export interface TripTemplateItem {
+  id: string;
+  version_id: string;
+  day_number: number;
+  order_index: number;
+  item_type: ItemType;
+  title: string;
+  notes: string | null;
+  place_name: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  external_url: string | null;
+  duration_minutes: number | null;
+}
+
+export interface TemplateLike {
+  template_id: string;
+  line_user_id: string;
+  created_at: string;
+}
+
+export interface TemplateComment {
+  id: string;
+  template_id: string;
+  line_user_id: string;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+}
+
+export interface TemplateAccessRequest {
+  id: string;
+  template_id: string;
+  requester_user_id: string;
+  status: AccessRequestStatus;
+  message: string | null;
+  decided_at: string | null;
+  created_at: string;
+}
+
+export interface TemplateGrant {
+  template_id: string;
+  line_user_id: string;
+  granted_at: string;
+  granted_by: string;
+  source: TemplateGrantSource;
+}
+
+export interface TemplateReport {
+  id: string;
+  template_id: string | null;
+  comment_id: string | null;
+  reporter_user_id: string;
+  reason: string;
+  created_at: string;
+}
+
+export type NotificationKind =
+  | "template.access_requested"
+  | "template.access_approved"
+  | "template.access_denied"
+  | "template.invited"
+  | "template.new_comment"
+  | "template.forked";
+
+export interface Notification {
+  id: string;
+  recipient_user_id: string;
+  kind: NotificationKind;
+  payload: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}
+
+// Convenience type for the template list/detail view (header + current version joined)
+export type TripTemplateWithVersion = TripTemplate & {
+  current_version: TripTemplateVersion | null;
+};
 
 // ─── API response shapes ──────────────────────────────────────────────────────
 
