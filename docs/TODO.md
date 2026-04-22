@@ -24,6 +24,7 @@ A prioritized task list for the TravelSync AI project. Add new tasks under the a
 
 ## Medium Priority (Quality & Polish)
 
+- [ ] **Web vote LINE chat reliability** — Web-cast votes now call `refreshVoteCarousel` / `announceWinner` fire-and-forget (errors are swallowed). Add structured logging + a retry queue so LINE message failures are observable and retried rather than silently dropped. Also add an integration test that mocks `pushFlex`/`pushText` and asserts they are called after a web cast.
 - [ ] **Real-time LIFF updates** — Replace polling in the dashboard with Supabase real-time subscriptions so vote counts and board changes update live across users.
 - [ ] **Clarify vote majority threshold** — Document and harden the `groupSize / 2` threshold in `services/vote/index.ts`; verify tie handling at even group sizes (e.g., 4-person group at 2-2).
 - [ ] **Structured logging** — Add JSON-structured logs (e.g., with Axiom or a lightweight wrapper) across webhook, cron, and parsing services for production observability.

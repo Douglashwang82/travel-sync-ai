@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { requireAppTripAccess } from "@/lib/app-server";
 import { castVote, closeVote } from "@/services/vote";
+import { announceWinner, refreshVoteCarousel } from "@/services/decisions";
 
 type RouteContext = { params: Promise<{ tripId: string }> };
 
@@ -238,6 +239,14 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   const tally = Object.fromEntries(result.tally);
 
+  // Resolve the LINE group ID once — needed for chat side effects below.
+  const { data: lineGroup } = await db
+    .from("line_groups")
+    .select("line_group_id")
+    .eq("id", auth.groupId)
+    .single();
+  const lineGroupId = lineGroup?.line_group_id as string | null;
+
   let closed = false;
   if (result.majority.reached && result.majority.winningOptionId) {
     const { closed: didClose } = await closeVote(
@@ -247,9 +256,18 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       result.totalVotes
     );
     closed = didClose;
-    // NOTE: we intentionally do not call announceWinner / refreshVoteCarousel
-    // here — those push LINE chat messages. The bot's own vote-deadline cron
-    // handles chat side effects; web votes only mutate the DB.
+    if (closed && lineGroupId) {
+      const winnerVotes = result.tally.get(result.majority.winningOptionId) ?? 0;
+      await announceWinner(
+        parsed.data.tripItemId,
+        result.majority.winningOptionId,
+        lineGroupId,
+        winnerVotes,
+        result.totalVotes
+      ).catch(() => {/* non-fatal: LINE message failure should not fail the API response */});
+    }
+  } else if (lineGroupId) {
+    await refreshVoteCarousel(parsed.data.tripItemId, lineGroupId).catch(() => {/* non-fatal */});
   }
 
   return NextResponse.json({
