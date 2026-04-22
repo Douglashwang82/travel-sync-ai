@@ -16,6 +16,11 @@ export function TripTabs({ tripId }: { tripId: string }) {
       match: (p: string) => p.startsWith(`${base}/itinerary`),
     },
     {
+      href: `${base}/votes`,
+      label: "Votes",
+      match: (p: string) => p.startsWith(`${base}/votes`),
+    },
+    {
       href: `${base}/expenses`,
       label: "Expenses",
       match: (p: string) => p.startsWith(`${base}/expenses`),
