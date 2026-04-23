@@ -217,15 +217,30 @@ export async function publishTemplate(
 
 // ─── Get template ─────────────────────────────────────────────────────────────
 
-export interface TemplateWithItems {
+export type TemplateAccess = "full" | "preview";
+
+export interface TemplateWithAccess {
   template: TripTemplate;
   version: TripTemplateVersion;
   items: TripTemplateItem[];
+  access: TemplateAccess;
+  isAuthor: boolean;
 }
 
+/**
+ * Fetch a template with visibility/grant enforcement.
+ *
+ * Access rules:
+ *  - Author of the template always sees full content.
+ *  - Anyone in template_grants sees full content.
+ *  - visibility='public' → full content for everyone.
+ *  - visibility='request_only' → non-granted viewers get a preview (no items).
+ *  - visibility='private' → non-granted viewers get NOT_FOUND (don't leak existence).
+ */
 export async function getTemplate(
-  slug: string
-): Promise<TemplateResult<TemplateWithItems>> {
+  slug: string,
+  viewerLineUserId: string
+): Promise<TemplateResult<TemplateWithAccess>> {
   const db = createAdminClient();
 
   const { data: template } = await db
@@ -239,6 +254,30 @@ export async function getTemplate(
     return { ok: false, error: "Template has no published version", code: "NOT_FOUND" };
   }
 
+  const isAuthor = (template.author_line_user_id as string) === viewerLineUserId;
+  const visibility = template.visibility as "public" | "private" | "request_only";
+
+  // Determine access level
+  let access: TemplateAccess = "full";
+  let hasGrant = false;
+  if (!isAuthor && visibility !== "public") {
+    const { data: grant } = await db
+      .from("template_grants")
+      .select("template_id")
+      .eq("template_id", template.id as string)
+      .eq("line_user_id", viewerLineUserId)
+      .maybeSingle();
+    hasGrant = grant != null;
+
+    if (!hasGrant) {
+      if (visibility === "private") {
+        return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+      }
+      // request_only without grant → preview
+      access = "preview";
+    }
+  }
+
   const { data: version } = await db
     .from("trip_template_versions")
     .select("*")
@@ -246,19 +285,25 @@ export async function getTemplate(
     .single();
   if (!version) return { ok: false, error: "Template version not found", code: "NOT_FOUND" };
 
-  const { data: itemRows } = await db
-    .from("trip_template_items")
-    .select("*")
-    .eq("version_id", version.id as string)
-    .order("day_number")
-    .order("order_index");
+  let items: TripTemplateItem[] = [];
+  if (access === "full") {
+    const { data: itemRows } = await db
+      .from("trip_template_items")
+      .select("*")
+      .eq("version_id", version.id as string)
+      .order("day_number")
+      .order("order_index");
+    items = (itemRows ?? []) as unknown as TripTemplateItem[];
+  }
 
   return {
     ok: true,
     data: {
       template: template as unknown as TripTemplate,
       version: version as unknown as TripTemplateVersion,
-      items: (itemRows ?? []) as unknown as TripTemplateItem[],
+      items,
+      access,
+      isAuthor,
     },
   };
 }
@@ -277,9 +322,18 @@ export async function forkTemplate(
 ): Promise<TemplateResult<{ tripId: string }>> {
   const db = createAdminClient();
 
-  const result = await getTemplate(input.slug);
+  const result = await getTemplate(input.slug, input.lineUserId);
   if (!result.ok) return result;
-  const { template, version, items } = result.data;
+  const { template, version, items, access } = result.data;
+
+  // Fork requires full access — preview (request_only not yet granted) can't fork
+  if (access !== "full") {
+    return {
+      ok: false,
+      error: "Request access before forking this template",
+      code: "FORBIDDEN",
+    };
+  }
 
   // Verify the user is an active member of the target group
   const { data: membership } = await db
@@ -393,4 +447,181 @@ function computeContentHash(
     })),
   });
   return createHash("sha256").update(canonical).digest("hex");
+}
+
+// ─── Update template (author only) ───────────────────────────────────────────
+
+export interface UpdateTemplateInput {
+  slug: string;
+  authorLineUserId: string;
+  visibility?: TemplateVisibility;
+}
+
+export async function updateTemplate(
+  input: UpdateTemplateInput
+): Promise<TemplateResult<{ template: TripTemplate }>> {
+  const db = createAdminClient();
+
+  const { data: template } = await db
+    .from("trip_templates")
+    .select("id, author_line_user_id")
+    .eq("slug", input.slug)
+    .is("deleted_at", null)
+    .single();
+  if (!template) return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+  if ((template.author_line_user_id as string) !== input.authorLineUserId) {
+    return { ok: false, error: "Not the template author", code: "FORBIDDEN" };
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (input.visibility !== undefined) patch.visibility = input.visibility;
+  if (Object.keys(patch).length === 0) {
+    return { ok: false, error: "No changes provided", code: "VALIDATION_ERROR" };
+  }
+
+  const { data: updated, error } = await db
+    .from("trip_templates")
+    .update(patch)
+    .eq("id", template.id as string)
+    .select("*")
+    .single();
+  if (error || !updated) {
+    return { ok: false, error: "Failed to update template", code: "DB_ERROR" };
+  }
+
+  return { ok: true, data: { template: updated as unknown as TripTemplate } };
+}
+
+// ─── Grants (invites) ─────────────────────────────────────────────────────────
+
+export interface GrantWithDisplayName {
+  line_user_id: string;
+  display_name: string | null;
+  granted_at: string;
+  source: "invite" | "request";
+}
+
+async function loadTemplateAsAuthor(
+  slug: string,
+  authorLineUserId: string
+): Promise<TemplateResult<{ id: string }>> {
+  const db = createAdminClient();
+  const { data: template } = await db
+    .from("trip_templates")
+    .select("id, author_line_user_id")
+    .eq("slug", slug)
+    .is("deleted_at", null)
+    .single();
+  if (!template) return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+  if ((template.author_line_user_id as string) !== authorLineUserId) {
+    return { ok: false, error: "Not the template author", code: "FORBIDDEN" };
+  }
+  return { ok: true, data: { id: template.id as string } };
+}
+
+export async function listTemplateGrants(
+  slug: string,
+  authorLineUserId: string
+): Promise<TemplateResult<{ grants: GrantWithDisplayName[] }>> {
+  const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
+  if (!tmpl.ok) return tmpl;
+
+  const db = createAdminClient();
+  const { data: rows } = await db
+    .from("template_grants")
+    .select("line_user_id, granted_at, source")
+    .eq("template_id", tmpl.data.id)
+    .order("granted_at", { ascending: false });
+
+  const userIds = (rows ?? []).map((r) => r.line_user_id as string);
+  const nameMap: Record<string, string | null> = {};
+  if (userIds.length > 0) {
+    const { data: members } = await db
+      .from("group_members")
+      .select("line_user_id, display_name")
+      .in("line_user_id", userIds)
+      .is("left_at", null);
+    for (const m of members ?? []) {
+      const uid = m.line_user_id as string;
+      if (!(uid in nameMap)) nameMap[uid] = (m.display_name as string | null) ?? null;
+    }
+  }
+
+  const grants: GrantWithDisplayName[] = (rows ?? []).map((r) => ({
+    line_user_id: r.line_user_id as string,
+    display_name: nameMap[r.line_user_id as string] ?? null,
+    granted_at: r.granted_at as string,
+    source: r.source as "invite" | "request",
+  }));
+
+  return { ok: true, data: { grants } };
+}
+
+export async function addTemplateGrant(
+  slug: string,
+  authorLineUserId: string,
+  inviteeLineUserId: string
+): Promise<TemplateResult<{ grant: GrantWithDisplayName }>> {
+  const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
+  if (!tmpl.ok) return tmpl;
+
+  if (inviteeLineUserId === authorLineUserId) {
+    return { ok: false, error: "You already have access as the author", code: "VALIDATION_ERROR" };
+  }
+
+  const db = createAdminClient();
+  const { error } = await db
+    .from("template_grants")
+    .upsert(
+      {
+        template_id: tmpl.data.id,
+        line_user_id: inviteeLineUserId,
+        granted_by: authorLineUserId,
+        source: "invite",
+      },
+      { onConflict: "template_id,line_user_id" }
+    );
+  if (error) {
+    return { ok: false, error: "Failed to add invite", code: "DB_ERROR" };
+  }
+
+  const { data: member } = await db
+    .from("group_members")
+    .select("display_name")
+    .eq("line_user_id", inviteeLineUserId)
+    .is("left_at", null)
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    ok: true,
+    data: {
+      grant: {
+        line_user_id: inviteeLineUserId,
+        display_name: (member?.display_name as string | null) ?? null,
+        granted_at: new Date().toISOString(),
+        source: "invite",
+      },
+    },
+  };
+}
+
+export async function removeTemplateGrant(
+  slug: string,
+  authorLineUserId: string,
+  inviteeLineUserId: string
+): Promise<TemplateResult<{ removed: boolean }>> {
+  const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
+  if (!tmpl.ok) return tmpl;
+
+  const db = createAdminClient();
+  const { error } = await db
+    .from("template_grants")
+    .delete()
+    .eq("template_id", tmpl.data.id)
+    .eq("line_user_id", inviteeLineUserId);
+  if (error) {
+    return { ok: false, error: "Failed to remove invite", code: "DB_ERROR" };
+  }
+  return { ok: true, data: { removed: true } };
 }

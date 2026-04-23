@@ -8,6 +8,7 @@ const PublishSchema = z.object({
   summary: z.string().max(1000).nullable().optional(),
   coverImageUrl: z.string().url().nullable().optional(),
   tags: z.array(z.string().min(1).max(50)).max(10).default([]),
+  visibility: z.enum(["public", "private", "request_only"]).default("public"),
   templateId: z.string().uuid().optional(),
 });
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     summary: parsed.data.summary ?? null,
     coverImageUrl: parsed.data.coverImageUrl ?? null,
     tags: parsed.data.tags,
-    visibility: "public",
+    visibility: parsed.data.visibility,
     templateId: parsed.data.templateId,
   });
 

@@ -21,7 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { appFetchJson } from "@/lib/app-client";
-import type { TripTemplate, TripTemplateVersion, TripTemplateItem } from "@/lib/types";
+import type {
+  TripTemplate,
+  TripTemplateVersion,
+  TripTemplateItem,
+  TemplateVisibility,
+} from "@/lib/types";
 
 interface UserGroup {
   id: string;
@@ -34,7 +39,22 @@ interface TemplateData {
   template: TripTemplate;
   version: TripTemplateVersion;
   items: TripTemplateItem[];
+  access: "full" | "preview";
+  isAuthor: boolean;
 }
+
+interface Grant {
+  line_user_id: string;
+  display_name: string | null;
+  granted_at: string;
+  source: "invite" | "request";
+}
+
+const VISIBILITY_LABELS: Record<TemplateVisibility, string> = {
+  public: "Public",
+  private: "Private",
+  request_only: "Request only",
+};
 
 export function TemplateDetailClient({ slug }: { slug: string }) {
   const [data, setData] = useState<TemplateData | null>(null);
@@ -66,9 +86,10 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
     return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
   }
 
-  const { template, version, items } = data;
+  const { template, version, items, access, isAuthor } = data;
   const byDay = groupByDay(items);
   const days = [...byDay.keys()].sort((a, b) => a - b);
+  const canFork = access === "full";
 
   return (
     <div className="space-y-6">
@@ -101,6 +122,12 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
               <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                 {version.duration_days} {version.duration_days === 1 ? "day" : "days"}
               </span>
+              <VisibilityBadge visibility={template.visibility} />
+              {isAuthor && (
+                <span className="rounded-full bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 font-semibold uppercase tracking-wide">
+                  You own this
+                </span>
+              )}
               {version.tags.map((tag) => (
                 <span
                   key={tag}
@@ -117,9 +144,15 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
               <p className="text-sm text-[var(--muted-foreground)]">{version.summary}</p>
             )}
           </div>
-          <Button onClick={() => setForkOpen(true)} className="shrink-0">
-            Use this template
-          </Button>
+          <div className="shrink-0">
+            {canFork ? (
+              <Button onClick={() => setForkOpen(true)}>Use this template</Button>
+            ) : (
+              <Button variant="outline" disabled title="Request access stub — coming in step 7">
+                Request access
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-3">
@@ -130,16 +163,32 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
         </div>
       </header>
 
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold">Itinerary</h2>
-        {days.length === 0 ? (
-          <p className="text-sm text-[var(--muted-foreground)]">No items in this template yet.</p>
-        ) : (
-          days.map((day) => (
-            <DaySection key={day} day={day} items={byDay.get(day) ?? []} />
-          ))
-        )}
-      </section>
+      {isAuthor && (
+        <AuthorControls
+          slug={slug}
+          currentVisibility={template.visibility}
+          onVisibilityChanged={(v) =>
+            setData((prev) => (prev ? { ...prev, template: { ...prev.template, visibility: v } } : prev))
+          }
+        />
+      )}
+
+      {access === "preview" ? (
+        <PreviewNotice />
+      ) : (
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold">Itinerary</h2>
+          {days.length === 0 ? (
+            <p className="text-sm text-[var(--muted-foreground)]">
+              No items in this template yet.
+            </p>
+          ) : (
+            days.map((day) => (
+              <DaySection key={day} day={day} items={byDay.get(day) ?? []} />
+            ))
+          )}
+        </section>
+      )}
 
       {forkOpen && (
         <ForkModal
@@ -149,6 +198,224 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
           onClose={() => setForkOpen(false)}
         />
       )}
+    </div>
+  );
+}
+
+function VisibilityBadge({ visibility }: { visibility: TemplateVisibility }) {
+  const color =
+    visibility === "public"
+      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+      : visibility === "private"
+      ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+      : "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200";
+  return (
+    <span className={`rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide ${color}`}>
+      {VISIBILITY_LABELS[visibility]}
+    </span>
+  );
+}
+
+function PreviewNotice() {
+  return (
+    <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--secondary)]/40 p-6 text-center space-y-2">
+      <h3 className="text-base font-semibold">Itinerary hidden</h3>
+      <p className="text-sm text-[var(--muted-foreground)]">
+        This template is request-only. The day-by-day itinerary will unlock once the
+        author approves your access request.
+      </p>
+    </div>
+  );
+}
+
+function AuthorControls({
+  slug,
+  currentVisibility,
+  onVisibilityChanged,
+}: {
+  slug: string;
+  currentVisibility: TemplateVisibility;
+  onVisibilityChanged: (v: TemplateVisibility) => void;
+}) {
+  const [visibility, setVisibility] = useState<TemplateVisibility>(currentVisibility);
+  const [savingVis, setSavingVis] = useState(false);
+  const [visError, setVisError] = useState<string | null>(null);
+
+  async function handleVisibilityChange(next: TemplateVisibility) {
+    const prev = visibility;
+    setVisibility(next);
+    setSavingVis(true);
+    setVisError(null);
+    try {
+      await appFetchJson(`/api/app/templates/${slug}`, {
+        method: "PATCH",
+        body: JSON.stringify({ visibility: next }),
+      });
+      onVisibilityChanged(next);
+    } catch (err) {
+      setVisibility(prev);
+      setVisError(err instanceof Error ? err.message : "Failed to update visibility");
+    } finally {
+      setSavingVis(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 space-y-5">
+      <div>
+        <h2 className="text-base font-semibold">Author controls</h2>
+        <p className="text-xs text-[var(--muted-foreground)]">
+          Only you see this section.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Visibility</Label>
+        <Select
+          value={visibility}
+          onValueChange={(v) => void handleVisibilityChange(v as TemplateVisibility)}
+          disabled={savingVis}
+        >
+          <SelectTrigger className="w-full sm:w-[260px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="public">Public</SelectItem>
+            <SelectItem value="request_only">Request only</SelectItem>
+            <SelectItem value="private">Private</SelectItem>
+          </SelectContent>
+        </Select>
+        {visError && <p className="text-xs text-destructive">{visError}</p>}
+      </div>
+
+      {visibility !== "public" && <GrantsManager slug={slug} />}
+    </section>
+  );
+}
+
+function GrantsManager({ slug }: { slug: string }) {
+  const [grants, setGrants] = useState<Grant[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [newUserId, setNewUserId] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await appFetchJson<{ grants: Grant[] }>(
+        `/api/app/templates/${slug}/grants`
+      );
+      setGrants(res.grants);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load invites");
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function handleAdd() {
+    const trimmed = newUserId.trim();
+    if (!trimmed) return;
+    setAdding(true);
+    setAddError(null);
+    try {
+      const res = await appFetchJson<{ grant: Grant }>(
+        `/api/app/templates/${slug}/grants`,
+        {
+          method: "POST",
+          body: JSON.stringify({ lineUserId: trimmed }),
+        }
+      );
+      setGrants((prev) => {
+        const others = (prev ?? []).filter((g) => g.line_user_id !== res.grant.line_user_id);
+        return [res.grant, ...others];
+      });
+      setNewUserId("");
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Failed to add invite");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleRemove(lineUserId: string) {
+    const prev = grants;
+    setGrants((curr) => (curr ?? []).filter((g) => g.line_user_id !== lineUserId));
+    try {
+      await appFetchJson(`/api/app/templates/${slug}/grants/${encodeURIComponent(lineUserId)}`, {
+        method: "DELETE",
+      });
+    } catch {
+      setGrants(prev);
+    }
+  }
+
+  return (
+    <div className="space-y-3 border-t border-[var(--border)] pt-5">
+      <div>
+        <h3 className="text-sm font-semibold">Invites</h3>
+        <p className="text-xs text-[var(--muted-foreground)]">
+          Invited users can access this template regardless of visibility.
+        </p>
+      </div>
+
+      {loadError && <p className="text-xs text-destructive">{loadError}</p>}
+
+      {grants && grants.length > 0 && (
+        <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
+          {grants.map((g) => (
+            <li key={g.line_user_id} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">
+                  {g.display_name ?? "Unknown"}
+                </div>
+                <div className="text-[11px] text-[var(--muted-foreground)] font-mono truncate">
+                  {g.line_user_id}
+                </div>
+                <div className="text-[11px] text-[var(--muted-foreground)]">
+                  {g.source === "invite" ? "Invited" : "Approved from request"} · {formatDate(g.granted_at)}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void handleRemove(g.line_user_id)}
+              >
+                Remove
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {grants && grants.length === 0 && (
+        <p className="text-xs text-[var(--muted-foreground)]">No invites yet.</p>
+      )}
+
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="grant-user-id">Invite by LINE user ID</Label>
+          <Input
+            id="grant-user-id"
+            placeholder="U1234abcd..."
+            value={newUserId}
+            onChange={(e) => setNewUserId(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleAdd();
+              }
+            }}
+          />
+        </div>
+        <Button type="button" onClick={() => void handleAdd()} disabled={adding || !newUserId.trim()}>
+          {adding ? "Adding…" : "Invite"}
+        </Button>
+      </div>
+      {addError && <p className="text-xs text-destructive">{addError}</p>}
     </div>
   );
 }
@@ -242,9 +509,7 @@ function ForkModal({
     }
   }
 
-  const endDate = startDate
-    ? computeEndDate(startDate, durationDays)
-    : null;
+  const endDate = startDate ? computeEndDate(startDate, durationDays) : null;
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>

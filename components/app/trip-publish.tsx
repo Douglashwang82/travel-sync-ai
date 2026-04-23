@@ -7,7 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
-import type { Trip, TripTemplate, TripTemplateVersion } from "@/lib/types";
+import type {
+  Trip,
+  TripTemplate,
+  TripTemplateVersion,
+  TemplateVisibility,
+} from "@/lib/types";
+
+const VISIBILITY_OPTIONS: {
+  value: TemplateVisibility;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "public",
+    label: "Public",
+    description: "Anyone can discover, view, and fork this template.",
+  },
+  {
+    value: "request_only",
+    label: "Request only",
+    description:
+      "Discoverable in the library but details are hidden until you approve a request.",
+  },
+  {
+    value: "private",
+    label: "Private",
+    description: "Only people you invite can find and view this template.",
+  },
+];
 
 export function TripPublishClient({ tripId }: { tripId: string }) {
   const router = useRouter();
@@ -19,6 +47,7 @@ export function TripPublishClient({ tripId }: { tripId: string }) {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [visibility, setVisibility] = useState<TemplateVisibility>("public");
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -70,6 +99,7 @@ export function TripPublishClient({ tripId }: { tripId: string }) {
         summary: summary.trim() || null,
         coverImageUrl: coverImageUrl.trim() || null,
         tags,
+        visibility,
       };
       const res = await appFetchJson<{ template: TripTemplate; version: TripTemplateVersion }>(
         `/api/app/trips/${tripId}/publish`,
@@ -179,6 +209,37 @@ export function TripPublishClient({ tripId }: { tripId: string }) {
           <p className="text-[11px] text-[var(--muted-foreground)]">
             Press Enter or comma to add a tag.
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Visibility</Label>
+          <div className="grid gap-2">
+            {VISIBILITY_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  visibility === opt.value
+                    ? "border-[var(--primary)] bg-[var(--primary)]/5"
+                    : "border-[var(--border)] hover:border-[var(--foreground)]/20"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="visibility"
+                  value={opt.value}
+                  checked={visibility === opt.value}
+                  onChange={() => setVisibility(opt.value)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">{opt.label}</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">
+                    {opt.description}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 p-3 text-xs text-[var(--muted-foreground)] space-y-1">

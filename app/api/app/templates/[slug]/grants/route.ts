@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAppUser } from "@/lib/app-server";
-import { getTemplate, updateTemplate } from "@/services/templates";
+import { addTemplateGrant, listTemplateGrants } from "@/services/templates";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
@@ -10,20 +10,23 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const auth = await requireAppUser(req);
   if (!auth.ok) return auth.response;
 
-  const result = await getTemplate(slug, auth.lineUserId);
+  const result = await listTemplateGrants(slug, auth.lineUserId);
   if (!result.ok) {
-    const status = result.code === "NOT_FOUND" ? 404 : 500;
+    const status =
+      result.code === "NOT_FOUND" ? 404
+      : result.code === "FORBIDDEN" ? 403
+      : 500;
     return NextResponse.json({ error: result.error, code: result.code }, { status });
   }
 
   return NextResponse.json(result.data);
 }
 
-const PatchSchema = z.object({
-  visibility: z.enum(["public", "private", "request_only"]).optional(),
+const PostSchema = z.object({
+  lineUserId: z.string().min(1).max(100),
 });
 
-export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { slug } = await ctx.params;
   const auth = await requireAppUser(req);
   if (!auth.ok) return auth.response;
@@ -35,7 +38,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     return NextResponse.json({ error: "Invalid JSON", code: "INVALID_JSON" }, { status: 400 });
   }
 
-  const parsed = PatchSchema.safeParse(body);
+  const parsed = PostSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
@@ -43,12 +46,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     );
   }
 
-  const result = await updateTemplate({
-    slug,
-    authorLineUserId: auth.lineUserId,
-    visibility: parsed.data.visibility,
-  });
-
+  const result = await addTemplateGrant(slug, auth.lineUserId, parsed.data.lineUserId);
   if (!result.ok) {
     const status =
       result.code === "NOT_FOUND" ? 404
@@ -58,5 +56,5 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     return NextResponse.json({ error: result.error, code: result.code }, { status });
   }
 
-  return NextResponse.json({ template: result.data.template });
+  return NextResponse.json(result.data, { status: 201 });
 }
