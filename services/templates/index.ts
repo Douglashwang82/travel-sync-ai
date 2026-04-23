@@ -625,3 +625,102 @@ export async function removeTemplateGrant(
   }
   return { ok: true, data: { removed: true } };
 }
+
+// ─── Discovery search ─────────────────────────────────────────────────────────
+
+export type TemplateSortOrder = "recent" | "forks" | "likes";
+
+export interface SearchTemplatesInput {
+  q?: string;
+  tags?: string[];
+  durationMin?: number;
+  durationMax?: number;
+  sort?: TemplateSortOrder;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SearchResultItem {
+  slug: string;
+  visibility: TemplateVisibility;
+  fork_count: number;
+  like_count: number;
+  comment_count: number;
+  author_line_user_id: string;
+  title: string;
+  destination_name: string;
+  duration_days: number;
+  summary: string | null;
+  cover_image_url: string | null;
+  tags: string[];
+  published_at: string;
+}
+
+export interface SearchResult {
+  templates: SearchResultItem[];
+  hasMore: boolean;
+  nextOffset: number;
+}
+
+export async function searchTemplates(
+  input: SearchTemplatesInput
+): Promise<TemplateResult<SearchResult>> {
+  const db = createAdminClient();
+  const limit = Math.min(Math.max(input.limit ?? 20, 1), 60);
+  const offset = Math.max(input.offset ?? 0, 0);
+
+  // Fetch one extra row to determine hasMore
+  const { data, error } = await db.rpc("search_templates", {
+    p_q: input.q?.trim() || null,
+    p_tags: input.tags && input.tags.length > 0 ? input.tags : null,
+    p_duration_min: input.durationMin ?? null,
+    p_duration_max: input.durationMax ?? null,
+    p_sort: input.sort ?? "recent",
+    p_limit: limit + 1,
+    p_offset: offset,
+  });
+
+  if (error) {
+    return { ok: false, error: "Search failed", code: "DB_ERROR" };
+  }
+
+  type Row = {
+    slug: string;
+    visibility: TemplateVisibility;
+    fork_count: number;
+    like_count: number;
+    comment_count: number;
+    author_line_user_id: string;
+    version_title: string;
+    version_destination_name: string;
+    version_duration_days: number;
+    version_summary: string | null;
+    version_cover_image_url: string | null;
+    version_tags: string[];
+    version_published_at: string;
+  };
+  const rows = (data as Row[] | null) ?? [];
+  const hasMore = rows.length > limit;
+  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+
+  const templates: SearchResultItem[] = pageRows.map((r) => ({
+    slug: r.slug,
+    visibility: r.visibility,
+    fork_count: r.fork_count,
+    like_count: r.like_count,
+    comment_count: r.comment_count,
+    author_line_user_id: r.author_line_user_id,
+    title: r.version_title,
+    destination_name: r.version_destination_name,
+    duration_days: r.version_duration_days,
+    summary: r.version_summary,
+    cover_image_url: r.version_cover_image_url,
+    tags: r.version_tags ?? [],
+    published_at: r.version_published_at,
+  }));
+
+  return {
+    ok: true,
+    data: { templates, hasMore, nextOffset: offset + pageRows.length },
+  };
+}

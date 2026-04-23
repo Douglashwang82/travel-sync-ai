@@ -58,6 +58,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               Trips
             </Link>
             <Link
+              href="/app/templates"
+              className="hidden text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] sm:block"
+            >
+              Templates
+            </Link>
+            <Link
               href="/"
               className="hidden text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] sm:block"
             >
