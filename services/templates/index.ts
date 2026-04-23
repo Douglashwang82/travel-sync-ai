@@ -225,6 +225,7 @@ export interface TemplateWithAccess {
   items: TripTemplateItem[];
   access: TemplateAccess;
   isAuthor: boolean;
+  hasLiked: boolean;
 }
 
 /**
@@ -296,6 +297,14 @@ export async function getTemplate(
     items = (itemRows ?? []) as unknown as TripTemplateItem[];
   }
 
+  const { data: likeRow } = await db
+    .from("template_likes")
+    .select("template_id")
+    .eq("template_id", template.id as string)
+    .eq("line_user_id", viewerLineUserId)
+    .maybeSingle();
+  const hasLiked = likeRow != null;
+
   return {
     ok: true,
     data: {
@@ -304,6 +313,7 @@ export async function getTemplate(
       items,
       access,
       isAuthor,
+      hasLiked,
     },
   };
 }
@@ -722,5 +732,112 @@ export async function searchTemplates(
   return {
     ok: true,
     data: { templates, hasMore, nextOffset: offset + pageRows.length },
+  };
+}
+
+// ─── Likes ────────────────────────────────────────────────────────────────────
+
+export interface LikeResult {
+  liked: boolean;
+  likeCount: number;
+}
+
+/**
+ * Resolves the template by slug and verifies the viewer is allowed to see it.
+ * Returns the template id for further work.
+ *
+ * Private templates return NOT_FOUND unless the viewer is the author or
+ * has a grant — consistent with getTemplate's visibility rules.
+ */
+async function resolveAccessibleTemplate(
+  slug: string,
+  viewerLineUserId: string
+): Promise<TemplateResult<{ id: string }>> {
+  const db = createAdminClient();
+
+  const { data: template } = await db
+    .from("trip_templates")
+    .select("id, visibility, author_line_user_id")
+    .eq("slug", slug)
+    .is("deleted_at", null)
+    .single();
+  if (!template) return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+
+  const isAuthor = (template.author_line_user_id as string) === viewerLineUserId;
+  const visibility = template.visibility as "public" | "private" | "request_only";
+
+  if (!isAuthor && visibility === "private") {
+    const { data: grant } = await db
+      .from("template_grants")
+      .select("template_id")
+      .eq("template_id", template.id as string)
+      .eq("line_user_id", viewerLineUserId)
+      .maybeSingle();
+    if (!grant) return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+  }
+
+  return { ok: true, data: { id: template.id as string } };
+}
+
+export async function likeTemplate(
+  slug: string,
+  lineUserId: string
+): Promise<TemplateResult<LikeResult>> {
+  const resolved = await resolveAccessibleTemplate(slug, lineUserId);
+  if (!resolved.ok) return resolved;
+
+  const db = createAdminClient();
+
+  // Idempotent insert: ON CONFLICT DO NOTHING avoids firing the like_count
+  // trigger a second time if the user already liked this template.
+  const { error: insertErr } = await db
+    .from("template_likes")
+    .upsert(
+      { template_id: resolved.data.id, line_user_id: lineUserId },
+      { onConflict: "template_id,line_user_id", ignoreDuplicates: true }
+    );
+  if (insertErr) {
+    return { ok: false, error: "Failed to like template", code: "DB_ERROR" };
+  }
+
+  const { data: fresh } = await db
+    .from("trip_templates")
+    .select("like_count")
+    .eq("id", resolved.data.id)
+    .single();
+
+  return {
+    ok: true,
+    data: { liked: true, likeCount: (fresh?.like_count as number | undefined) ?? 0 },
+  };
+}
+
+export async function unlikeTemplate(
+  slug: string,
+  lineUserId: string
+): Promise<TemplateResult<LikeResult>> {
+  const resolved = await resolveAccessibleTemplate(slug, lineUserId);
+  if (!resolved.ok) return resolved;
+
+  const db = createAdminClient();
+
+  const { error: delErr } = await db
+    .from("template_likes")
+    .delete()
+    .eq("template_id", resolved.data.id)
+    .eq("line_user_id", lineUserId);
+  if (delErr) {
+    return { ok: false, error: "Failed to unlike template", code: "DB_ERROR" };
+  }
+
+  const { data: fresh } = await db
+    .from("trip_templates")
+    .select("like_count")
+    .eq("id", resolved.data.id)
+    .single();
+
+  return {
+    ok: true,
+    data: { liked: false, likeCount: (fresh?.like_count as number | undefined) ?? 0 },
   };
 }

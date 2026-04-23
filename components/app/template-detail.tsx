@@ -41,6 +41,7 @@ interface TemplateData {
   items: TripTemplateItem[];
   access: "full" | "preview";
   isAuthor: boolean;
+  hasLiked: boolean;
 }
 
 interface Grant {
@@ -155,9 +156,13 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-3">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-3">
           <span>{template.fork_count} {template.fork_count === 1 ? "fork" : "forks"}</span>
-          <span>{template.like_count} {template.like_count === 1 ? "like" : "likes"}</span>
+          <LikeButton
+            slug={slug}
+            initialHasLiked={data.hasLiked}
+            initialLikeCount={template.like_count}
+          />
           <span>v{version.version_number}</span>
           <span>Published {formatDate(version.published_at)}</span>
         </div>
@@ -199,6 +204,64 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
         />
       )}
     </div>
+  );
+}
+
+function LikeButton({
+  slug,
+  initialHasLiked,
+  initialLikeCount,
+}: {
+  slug: string;
+  initialHasLiked: boolean;
+  initialLikeCount: number;
+}) {
+  const [hasLiked, setHasLiked] = useState(initialHasLiked);
+  const [count, setCount] = useState(initialLikeCount);
+  const [pending, setPending] = useState(false);
+
+  async function toggle() {
+    if (pending) return;
+    const wasLiked = hasLiked;
+
+    // Optimistic update
+    setHasLiked(!wasLiked);
+    setCount((c) => c + (wasLiked ? -1 : 1));
+    setPending(true);
+
+    try {
+      const res = await appFetchJson<{ liked: boolean; likeCount: number }>(
+        `/api/app/templates/${slug}/like`,
+        { method: wasLiked ? "DELETE" : "POST" }
+      );
+      // Reconcile with server truth
+      setHasLiked(res.liked);
+      setCount(res.likeCount);
+    } catch {
+      // Revert on failure
+      setHasLiked(wasLiked);
+      setCount((c) => c + (wasLiked ? 1 : -1));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void toggle()}
+      disabled={pending}
+      aria-pressed={hasLiked}
+      aria-label={hasLiked ? "Unlike this template" : "Like this template"}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition-colors ${
+        hasLiked
+          ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-200"
+          : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+      } disabled:opacity-60`}
+    >
+      <span aria-hidden>{hasLiked ? "♥" : "♡"}</span>
+      <span>{count} {count === 1 ? "like" : "likes"}</span>
+    </button>
   );
 }
 
