@@ -226,6 +226,7 @@ export interface TemplateWithAccess {
   access: TemplateAccess;
   isAuthor: boolean;
   hasLiked: boolean;
+  requestStatus: "none" | "pending" | "approved" | "denied";
 }
 
 /**
@@ -305,6 +306,19 @@ export async function getTemplate(
     .maybeSingle();
   const hasLiked = likeRow != null;
 
+  let requestStatus: "none" | "pending" | "approved" | "denied" = "none";
+  if (!isAuthor && visibility === "request_only") {
+    const { data: reqRow } = await db
+      .from("template_access_requests")
+      .select("status")
+      .eq("template_id", template.id as string)
+      .eq("requester_user_id", viewerLineUserId)
+      .maybeSingle();
+    if (reqRow) {
+      requestStatus = reqRow.status as "pending" | "approved" | "denied";
+    }
+  }
+
   return {
     ok: true,
     data: {
@@ -314,6 +328,7 @@ export async function getTemplate(
       access,
       isAuthor,
       hasLiked,
+      requestStatus,
     },
   };
 }
@@ -1115,4 +1130,249 @@ export async function deleteComment(
     return { ok: false, error: "Failed to delete comment", code: "DB_ERROR" };
   }
   return { ok: true, data: { deleted: true } };
+}
+
+// ─── Access requests (request-only templates) ────────────────────────────────
+
+export interface AccessRequestView {
+  id: string;
+  requester_user_id: string;
+  requester_display_name: string | null;
+  status: "pending" | "approved" | "denied";
+  message: string | null;
+  decided_at: string | null;
+  created_at: string;
+}
+
+function toAccessRequestView(
+  row: {
+    id: string;
+    requester_user_id: string;
+    status: string;
+    message: string | null;
+    decided_at: string | null;
+    created_at: string;
+  },
+  nameMap: Record<string, string | null>
+): AccessRequestView {
+  return {
+    id: row.id,
+    requester_user_id: row.requester_user_id,
+    requester_display_name: nameMap[row.requester_user_id] ?? null,
+    status: row.status as "pending" | "approved" | "denied",
+    message: row.message,
+    decided_at: row.decided_at,
+    created_at: row.created_at,
+  };
+}
+
+/**
+ * Submit (or re-submit) a request to access a request_only template.
+ *
+ * Idempotency: if the requester has an existing row we upsert it back to
+ * 'pending' with the new message. Already-granted users are rejected with
+ * CONFLICT so the UI can surface "you already have access" instead of
+ * pretending a new request was opened.
+ */
+export async function requestTemplateAccess(
+  slug: string,
+  lineUserId: string,
+  message: string | null
+): Promise<TemplateResult<{ request: AccessRequestView }>> {
+  const db = createAdminClient();
+
+  const { data: template } = await db
+    .from("trip_templates")
+    .select("id, visibility, author_line_user_id")
+    .eq("slug", slug)
+    .is("deleted_at", null)
+    .single();
+  if (!template) return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+
+  if ((template.visibility as string) !== "request_only") {
+    return {
+      ok: false,
+      error: "This template doesn't accept access requests",
+      code: "CONFLICT",
+    };
+  }
+  if ((template.author_line_user_id as string) === lineUserId) {
+    return {
+      ok: false,
+      error: "You are the author of this template",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { data: existingGrant } = await db
+    .from("template_grants")
+    .select("template_id")
+    .eq("template_id", template.id as string)
+    .eq("line_user_id", lineUserId)
+    .maybeSingle();
+  if (existingGrant) {
+    return { ok: false, error: "You already have access", code: "CONFLICT" };
+  }
+
+  const trimmed = (message ?? "").trim().slice(0, 500);
+  const { data: upserted, error } = await db
+    .from("template_access_requests")
+    .upsert(
+      {
+        template_id: template.id as string,
+        requester_user_id: lineUserId,
+        status: "pending",
+        message: trimmed || null,
+        decided_at: null,
+      },
+      { onConflict: "template_id,requester_user_id" }
+    )
+    .select("*")
+    .single();
+  if (error || !upserted) {
+    return { ok: false, error: "Failed to submit request", code: "DB_ERROR" };
+  }
+
+  const nameMap = await resolveDisplayNames(db, [lineUserId]);
+  return {
+    ok: true,
+    data: {
+      request: toAccessRequestView(
+        upserted as {
+          id: string;
+          requester_user_id: string;
+          status: string;
+          message: string | null;
+          decided_at: string | null;
+          created_at: string;
+        },
+        nameMap
+      ),
+    },
+  };
+}
+
+export async function listAccessRequests(
+  slug: string,
+  authorLineUserId: string,
+  statusFilter?: "pending" | "approved" | "denied"
+): Promise<TemplateResult<{ requests: AccessRequestView[] }>> {
+  const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
+  if (!tmpl.ok) return tmpl;
+
+  const db = createAdminClient();
+  let query = db
+    .from("template_access_requests")
+    .select("*")
+    .eq("template_id", tmpl.data.id)
+    .order("created_at", { ascending: false });
+  if (statusFilter) query = query.eq("status", statusFilter);
+
+  const { data: rows, error } = await query;
+  if (error) {
+    return { ok: false, error: "Failed to load requests", code: "DB_ERROR" };
+  }
+
+  const raw = (rows ?? []) as Array<{
+    id: string;
+    requester_user_id: string;
+    status: string;
+    message: string | null;
+    decided_at: string | null;
+    created_at: string;
+  }>;
+  const nameMap = await resolveDisplayNames(
+    db,
+    raw.map((r) => r.requester_user_id)
+  );
+  const requests = raw.map((r) => toAccessRequestView(r, nameMap));
+
+  return { ok: true, data: { requests } };
+}
+
+/**
+ * Author-only decision on a pending request. On approval, upserts a grant
+ * with source='request'. On failure to create the grant, rolls the status
+ * back to pending so the author can retry.
+ */
+export async function decideAccessRequest(
+  slug: string,
+  requestId: string,
+  authorLineUserId: string,
+  decision: "approved" | "denied"
+): Promise<TemplateResult<{ request: AccessRequestView }>> {
+  const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
+  if (!tmpl.ok) return tmpl;
+
+  const db = createAdminClient();
+
+  const { data: existing } = await db
+    .from("template_access_requests")
+    .select("*")
+    .eq("id", requestId)
+    .eq("template_id", tmpl.data.id)
+    .single();
+  if (!existing) {
+    return { ok: false, error: "Request not found", code: "NOT_FOUND" };
+  }
+  if ((existing.status as string) !== "pending") {
+    return {
+      ok: false,
+      error: "Request has already been decided",
+      code: "CONFLICT",
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: updated, error: updErr } = await db
+    .from("template_access_requests")
+    .update({ status: decision, decided_at: nowIso })
+    .eq("id", requestId)
+    .select("*")
+    .single();
+  if (updErr || !updated) {
+    return { ok: false, error: "Failed to update request", code: "DB_ERROR" };
+  }
+
+  if (decision === "approved") {
+    const { error: grantErr } = await db
+      .from("template_grants")
+      .upsert(
+        {
+          template_id: tmpl.data.id,
+          line_user_id: existing.requester_user_id as string,
+          granted_by: authorLineUserId,
+          source: "request",
+        },
+        { onConflict: "template_id,line_user_id" }
+      );
+    if (grantErr) {
+      // Roll the request status back so the author can retry
+      await db
+        .from("template_access_requests")
+        .update({ status: "pending", decided_at: null })
+        .eq("id", requestId);
+      return { ok: false, error: "Failed to grant access", code: "DB_ERROR" };
+    }
+  }
+
+  const nameMap = await resolveDisplayNames(db, [
+    updated.requester_user_id as string,
+  ]);
+  return {
+    ok: true,
+    data: {
+      request: toAccessRequestView(
+        updated as {
+          id: string;
+          requester_user_id: string;
+          status: string;
+          message: string | null;
+          decided_at: string | null;
+          created_at: string;
+        },
+        nameMap
+      ),
+    },
+  };
 }

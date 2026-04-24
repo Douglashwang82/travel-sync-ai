@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,17 @@ interface TemplateData {
   access: "full" | "preview";
   isAuthor: boolean;
   hasLiked: boolean;
+  requestStatus: "none" | "pending" | "approved" | "denied";
+}
+
+interface AccessRequestView {
+  id: string;
+  requester_user_id: string;
+  requester_display_name: string | null;
+  status: "pending" | "approved" | "denied";
+  message: string | null;
+  decided_at: string | null;
+  created_at: string;
 }
 
 interface Grant {
@@ -156,9 +168,13 @@ export function TemplateDetailClient({
             {canFork ? (
               <Button onClick={() => setForkOpen(true)}>Use this template</Button>
             ) : (
-              <Button variant="outline" disabled title="Request access stub — coming in step 7">
-                Request access
-              </Button>
+              <RequestAccessButton
+                slug={slug}
+                requestStatus={data.requestStatus}
+                onStatusChange={(newStatus) =>
+                  setData((prev) => (prev ? { ...prev, requestStatus: newStatus } : prev))
+                }
+              />
             )}
           </div>
         </div>
@@ -365,6 +381,7 @@ function AuthorControls({
       </div>
 
       {visibility !== "public" && <GrantsManager slug={slug} />}
+      {visibility === "request_only" && <RequestsInbox slug={slug} />}
     </section>
   );
 }
@@ -492,6 +509,204 @@ function GrantsManager({ slug }: { slug: string }) {
         </Button>
       </div>
       {addError && <p className="text-xs text-destructive">{addError}</p>}
+    </div>
+  );
+}
+
+function RequestAccessButton({
+  slug,
+  requestStatus,
+  onStatusChange,
+}: {
+  slug: string;
+  requestStatus: "none" | "pending" | "approved" | "denied";
+  onStatusChange: (status: "pending") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await appFetchJson<{ request: AccessRequestView }>(
+        `/api/app/templates/${slug}/access-requests`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message: message.trim() || null }),
+        }
+      );
+      onStatusChange("pending");
+      setOpen(false);
+      setMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit request");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (requestStatus === "pending") {
+    return (
+      <Button variant="outline" disabled>
+        Request pending
+      </Button>
+    );
+  }
+
+  const buttonLabel =
+    requestStatus === "denied" ? "Request access again" : "Request access";
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>{buttonLabel}</Button>
+      {open && (
+        <Dialog open onOpenChange={(v) => { if (!v) setOpen(false); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Request access</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2">
+              {requestStatus === "denied" && (
+                <p className="text-xs rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                  Your previous request was denied. You can resubmit with a new message.
+                </p>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="access-message">Message (optional)</Label>
+                <Textarea
+                  id="access-message"
+                  placeholder="Tell the author why you'd like to use this template…"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                />
+                <p className="text-[11px] text-[var(--muted-foreground)]">
+                  {message.length}/500
+                </p>
+              </div>
+              {error && <p className="text-xs text-destructive">{error}</p>}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={() => void submit()} disabled={submitting}>
+                {submitting ? "Sending…" : "Send request"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+function RequestsInbox({ slug }: { slug: string }) {
+  const [requests, setRequests] = useState<AccessRequestView[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await appFetchJson<{ requests: AccessRequestView[] }>(
+        `/api/app/templates/${slug}/access-requests?status=pending`
+      );
+      setRequests(res.requests);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load requests");
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function decide(id: string, decision: "approve" | "deny") {
+    setPendingId(id);
+    try {
+      await appFetchJson(
+        `/api/app/templates/${slug}/access-requests/${id}/${decision}`,
+        { method: "POST" }
+      );
+      // Remove from pending list
+      setRequests((prev) => (prev ?? []).filter((r) => r.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to decide");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  return (
+    <div className="space-y-3 border-t border-[var(--border)] pt-5">
+      <div>
+        <h3 className="text-sm font-semibold">Access requests</h3>
+        <p className="text-xs text-[var(--muted-foreground)]">
+          Approving a request grants the user access and creates an invite entry above.
+        </p>
+      </div>
+
+      {loadError && <p className="text-xs text-destructive">{loadError}</p>}
+
+      {requests === null ? (
+        <div className="h-16 animate-pulse rounded-lg bg-[var(--secondary)]" />
+      ) : requests.length === 0 ? (
+        <p className="text-xs text-[var(--muted-foreground)]">No pending requests.</p>
+      ) : (
+        <ul className="divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
+          {requests.map((r) => (
+            <li key={r.id} className="space-y-2 px-3 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="text-sm font-medium truncate">
+                    {r.requester_display_name ?? "Unknown"}
+                  </div>
+                  <div className="text-[11px] font-mono text-[var(--muted-foreground)] truncate">
+                    {r.requester_user_id}
+                  </div>
+                  <div className="text-[11px] text-[var(--muted-foreground)]">
+                    Requested {formatDate(r.created_at)}
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void decide(r.id, "approve")}
+                    disabled={pendingId === r.id}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void decide(r.id, "deny")}
+                    disabled={pendingId === r.id}
+                  >
+                    Deny
+                  </Button>
+                </div>
+              </div>
+              {r.message && (
+                <p className="text-xs text-[var(--muted-foreground)] whitespace-pre-wrap rounded bg-[var(--secondary)]/40 p-2">
+                  {r.message}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
