@@ -951,7 +951,7 @@ async function loadTemplateNotificationContext(
     .is("deleted_at", null)
     .single();
   if (!data) return null;
-  const version = data.trip_template_versions as { title: string } | null;
+  const version = data.trip_template_versions as unknown as { title: string } | null;
   return {
     slug: data.slug as string,
     title: version?.title ?? "Untitled",
@@ -1133,7 +1133,7 @@ export async function updateComment(
 
   if (!existing) return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
 
-  const joinedSlug = (existing.trip_templates as { slug: string } | null)?.slug;
+  const joinedSlug = (existing.trip_templates as unknown as { slug: string } | null)?.slug;
   if (joinedSlug !== slug) {
     return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
   }
@@ -1188,7 +1188,7 @@ export async function deleteComment(
 
   if (!existing) return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
 
-  const tmpl = existing.trip_templates as
+  const tmpl = existing.trip_templates as unknown as
     | { slug: string; author_line_user_id: string }
     | null;
   if (tmpl?.slug !== slug) {
@@ -1593,7 +1593,7 @@ export async function reportComment(
     .single();
   if (!existing) return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
 
-  const joinedSlug = (existing.trip_templates as { slug: string } | null)?.slug;
+  const joinedSlug = (existing.trip_templates as unknown as { slug: string } | null)?.slug;
   if (joinedSlug !== slug) {
     return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
   }

@@ -19,7 +19,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   type GroupRow = { id: string; name: string | null; line_group_id: string };
   type MemberRow = { role: unknown; line_groups: GroupRow | null };
-  const groups = (data as MemberRow[] ?? []).map((m) => {
+  const groups = (data as unknown as MemberRow[] ?? []).map((m) => {
     const g = m.line_groups;
     return {
       id: g?.id ?? "",
