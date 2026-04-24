@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { BoardData, ItemType, TripItem } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
-import type {
-  AppExpensesResponse,
-} from "@/app/api/app/trips/[tripId]/expenses/route";
+import type { AppExpensesResponse } from "@/lib/app-trip-expenses";
 import type {
   ItineraryResponse,
 } from "@/app/api/app/trips/[tripId]/itinerary/route";

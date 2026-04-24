@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 type Locale = "en" | "zh-TW";
 
@@ -282,9 +283,10 @@ export default function HomePageClient() {
     <div className="flex min-h-screen flex-col bg-white dark:bg-[#0a0a0a]">
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/80 backdrop-blur-md dark:bg-[#0a0a0a]/80">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
-          <span className="text-base font-bold tracking-tight text-[var(--foreground)]">
-            ✈️ {copy.brand}
-          </span>
+          <Link href="/" className="flex items-center gap-2 text-base font-bold tracking-tight text-[var(--foreground)]">
+            <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-auto logo-animated" priority />
+            <span>{copy.brand}</span>
+          </Link>
           <nav className="flex items-center gap-3 text-sm text-[var(--muted-foreground)] sm:gap-6">
             <a href="#features" className="hidden transition-colors hover:text-[var(--foreground)] sm:block">
               {copy.nav.features}
@@ -303,7 +305,7 @@ export default function HomePageClient() {
                 aria-pressed={locale === "en"}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                   locale === "en"
-                    ? "bg-[var(--foreground)] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 }`}
               >
@@ -315,7 +317,7 @@ export default function HomePageClient() {
                 aria-pressed={locale === "zh-TW"}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                   locale === "zh-TW"
-                    ? "bg-[var(--foreground)] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 }`}
               >
@@ -328,6 +330,12 @@ export default function HomePageClient() {
             >
               {copy.nav.addToLine}
             </a>
+            <Link
+              href="/app"
+              className="rounded-full border border-[var(--border)] px-4 py-1.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
+            >
+              Log in
+            </Link>
           </nav>
         </div>
       </header>
@@ -354,6 +362,12 @@ export default function HomePageClient() {
                 {copy.hero.primaryCta}
                 <span aria-hidden>{"->"}</span>
               </a>
+              <Link
+                href="/app"
+                className="inline-flex items-center justify-center rounded-full border border-[var(--primary)] bg-white px-6 py-3 text-sm font-semibold text-[var(--primary)] shadow-sm transition-colors hover:bg-[#f0fdf0] dark:bg-[#0a0a0a] dark:hover:bg-[#111]"
+              >
+                Log in to web app
+              </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex items-center justify-center rounded-full border border-[var(--border)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
@@ -480,12 +494,20 @@ export default function HomePageClient() {
           <div className="mx-auto max-w-xl space-y-5">
             <h2 className="text-2xl font-bold sm:text-3xl">{copy.cta.heading}</h2>
             <p className="leading-relaxed text-white/80">{copy.cta.description}</p>
-            <a
-              href="#"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 text-sm font-bold text-[var(--primary)] shadow transition-colors hover:bg-white/90"
-            >
-              {copy.cta.button}
-            </a>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <a
+                href="#commands"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3 text-sm font-bold text-[var(--primary)] shadow transition-colors hover:bg-white/90"
+              >
+                {copy.cta.button}
+              </a>
+              <Link
+                href="/app"
+                className="inline-flex items-center justify-center rounded-full border border-white/50 px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
+              >
+                Log in to web app
+              </Link>
+            </div>
           </div>
         </section>
       </main>

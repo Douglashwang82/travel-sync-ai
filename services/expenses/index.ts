@@ -29,6 +29,22 @@ export interface ExpenseSummary {
   settlements: Settlement[];
 }
 
+interface PostgrestLikeError {
+  code?: string | null;
+  message?: string | null;
+}
+
+export function isMissingExpenseSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as PostgrestLikeError;
+  return (
+    maybeError.code === "PGRST205" &&
+    typeof maybeError.message === "string" &&
+    (maybeError.message.includes("public.expenses") ||
+      maybeError.message.includes("public.expense_splits"))
+  );
+}
+
 // ─── Record ────────────────────────────────────────────────────────────────
 
 /**
@@ -52,6 +68,9 @@ export async function recordExpense(input: RecordExpenseInput): Promise<{ id: st
     .single();
 
   if (expErr || !expense) {
+    if (isMissingExpenseSchemaError(expErr)) {
+      throw new Error("Expense tracking is not available until the database migrations are applied.");
+    }
     throw new Error(`Failed to insert expense: ${expErr?.message}`);
   }
 
@@ -68,6 +87,9 @@ export async function recordExpense(input: RecordExpenseInput): Promise<{ id: st
 
   const { error: splitErr } = await db.from("expense_splits").insert(splits);
   if (splitErr) {
+    if (isMissingExpenseSchemaError(splitErr)) {
+      throw new Error("Expense tracking is not available until the database migrations are applied.");
+    }
     throw new Error(`Failed to insert splits: ${splitErr.message}`);
   }
 
@@ -93,16 +115,29 @@ export async function getExpenseSummary(
 
   if (tripId) query = query.eq("trip_id", tripId);
 
-  const { data: expenseRows } = await query;
+  const { data: expenseRows, error: expenseError } = await query;
+  if (expenseError) {
+    if (isMissingExpenseSchemaError(expenseError)) {
+      return { totalAmount: 0, balances: [], settlements: [] };
+    }
+    throw new Error(`Failed to load expenses for summary: ${expenseError.message}`);
+  }
   if (!expenseRows?.length) {
     return { totalAmount: 0, balances: [], settlements: [] };
   }
 
   const expenseIds = expenseRows.map((e) => e.id);
-  const { data: splitRows } = await db
+  const totalAmount = expenseRows.reduce((s, e) => s + Number(e.amount), 0);
+  const { data: splitRows, error: splitError } = await db
     .from("expense_splits")
     .select("expense_id, user_id, display_name, share_amount")
     .in("expense_id", expenseIds);
+  if (splitError) {
+    if (isMissingExpenseSchemaError(splitError)) {
+      return { totalAmount: round2(totalAmount), balances: [], settlements: [] };
+    }
+    throw new Error(`Failed to load expense splits: ${splitError.message}`);
+  }
 
   // net[userId] = { displayName, net }  (positive = owed money, negative = owes money)
   const net = new Map<string, { displayName: string; net: number }>();
@@ -110,8 +145,6 @@ export async function getExpenseSummary(
   const touch = (userId: string, displayName: string) => {
     if (!net.has(userId)) net.set(userId, { displayName, net: 0 });
   };
-
-  const totalAmount = expenseRows.reduce((s, e) => s + Number(e.amount), 0);
 
   // Credit the payer
   for (const e of expenseRows) {

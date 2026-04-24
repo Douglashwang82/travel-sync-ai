@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/db";
 import { APP_SESSION_COOKIE } from "@/lib/app-server";
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             href="/app"
             className="flex items-center gap-2 text-sm font-bold tracking-tight text-[var(--foreground)]"
           >
+            <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-auto logo-animated" priority />
             <span className="text-[var(--primary)]">TravelSync</span>
             <span className="hidden text-[var(--muted-foreground)] sm:inline">·</span>
             <span className="hidden text-[var(--muted-foreground)] sm:inline">Workspace</span>
