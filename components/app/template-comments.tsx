@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
+import { ReportDialog } from "@/components/app/report-dialog";
 
 interface CommentView {
   id: string;
@@ -196,10 +197,12 @@ function CommentItem({
   const [draft, setDraft] = useState(comment.body ?? "");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const isDeleted = comment.deleted_at != null;
   const isMine = !isDeleted && comment.line_user_id === viewerLineUserId;
   const canDelete = !isDeleted && (isMine || isTemplateAuthor);
+  const canReport = !isDeleted && !isMine;
 
   async function handleSave() {
     const body = draft.trim();
@@ -250,7 +253,7 @@ function CommentItem({
             )}
           </span>
         </div>
-        {!isDeleted && (isMine || canDelete) && !editing && (
+        {!isDeleted && (isMine || canDelete || canReport) && !editing && (
           <div className="flex items-center gap-2">
             {isMine && (
               <button
@@ -271,6 +274,15 @@ function CommentItem({
                 className="text-[11px] text-[var(--muted-foreground)] hover:text-destructive"
               >
                 Delete
+              </button>
+            )}
+            {canReport && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="text-[11px] text-[var(--muted-foreground)] hover:text-destructive"
+              >
+                Report
               </button>
             )}
           </div>
@@ -319,6 +331,13 @@ function CommentItem({
           {isDeleted ? "This comment has been deleted." : comment.body}
         </p>
       )}
+
+      <ReportDialog
+        open={reportOpen}
+        title="comment"
+        endpoint={`/api/app/templates/${slug}/comments/${comment.id}/report`}
+        onClose={() => setReportOpen(false)}
+      />
     </div>
   );
 }

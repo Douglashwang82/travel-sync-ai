@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { appFetchJson } from "@/lib/app-client";
 import { TemplateCommentsSection } from "@/components/app/template-comments";
+import { ReportDialog } from "@/components/app/report-dialog";
 import type {
   TripTemplate,
   TripTemplateVersion,
@@ -78,6 +79,7 @@ export function TemplateDetailClient({
   viewerLineUserId: string;
 }) {
   const [data, setData] = useState<TemplateData | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [forkOpen, setForkOpen] = useState(false);
 
@@ -188,6 +190,16 @@ export function TemplateDetailClient({
           />
           <span>v{version.version_number}</span>
           <span>Published {formatDate(version.published_at)}</span>
+          {!isAuthor && (
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="ml-auto text-[var(--muted-foreground)] hover:text-destructive"
+              title="Report this template"
+            >
+              Report
+            </button>
+          )}
         </div>
       </header>
 
@@ -232,6 +244,13 @@ export function TemplateDetailClient({
           onClose={() => setForkOpen(false)}
         />
       )}
+
+      <ReportDialog
+        open={reportOpen}
+        title="template"
+        endpoint={`/api/app/templates/${slug}/report`}
+        onClose={() => setReportOpen(false)}
+      />
     </div>
   );
 }

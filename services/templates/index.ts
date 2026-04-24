@@ -120,6 +120,20 @@ export async function publishTemplate(
     if (((todayCount as number | null) ?? 0) >= 3) {
       return { ok: false, error: "Daily template limit reached (3 per day)", code: "RATE_LIMITED" };
     }
+
+    // And the total soft cap: ≤50 active templates per author
+    const { count: authorTotal } = await db
+      .from("trip_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("author_line_user_id", input.authorLineUserId)
+      .is("deleted_at", null);
+    if ((authorTotal ?? 0) >= 50) {
+      return {
+        ok: false,
+        error: "You have reached the limit of 50 active templates. Delete some first.",
+        code: "RATE_LIMITED",
+      };
+    }
   } else {
     // Adding version to existing template: verify ownership
     const { data: existing } = await db
@@ -1473,4 +1487,133 @@ export async function decideAccessRequest(
       ),
     },
   };
+}
+
+// ─── Reports (moderation queue) ──────────────────────────────────────────────
+
+/**
+ * Per-user report rate limit: 10/day. Uses the existing rate_limit_windows
+ * infrastructure — 24h calendar-day window keyed on "report:{lineUserId}".
+ */
+async function checkReportRateLimit(
+  db: ReturnType<typeof createAdminClient>,
+  reporterLineUserId: string
+): Promise<TemplateResult<true>> {
+  const windowStart = new Date(
+    Math.floor(Date.now() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+  ).toISOString();
+  const { data: count } = await db.rpc("rate_limit_increment", {
+    p_key: `report:${reporterLineUserId}`,
+    p_window_start: windowStart,
+    p_max_requests: 10,
+  });
+  if (((count as number | null) ?? 0) > 10) {
+    return {
+      ok: false,
+      error: "Too many reports today. Try again tomorrow.",
+      code: "RATE_LIMITED",
+    };
+  }
+  return { ok: true, data: true };
+}
+
+export async function reportTemplate(
+  slug: string,
+  reporterLineUserId: string,
+  reason: string
+): Promise<TemplateResult<{ reported: true }>> {
+  const trimmed = reason.trim();
+  if (trimmed.length === 0 || trimmed.length > 1000) {
+    return {
+      ok: false,
+      error: "Reason must be 1–1000 characters",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const db = createAdminClient();
+
+  const rate = await checkReportRateLimit(db, reporterLineUserId);
+  if (!rate.ok) return rate;
+
+  const { data: template } = await db
+    .from("trip_templates")
+    .select("id, author_line_user_id")
+    .eq("slug", slug)
+    .is("deleted_at", null)
+    .single();
+  if (!template) return { ok: false, error: "Template not found", code: "NOT_FOUND" };
+  if ((template.author_line_user_id as string) === reporterLineUserId) {
+    return {
+      ok: false,
+      error: "You cannot report your own template",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { error } = await db.from("template_reports").insert({
+    template_id: template.id as string,
+    comment_id: null,
+    reporter_user_id: reporterLineUserId,
+    reason: trimmed,
+  });
+  if (error) {
+    return { ok: false, error: "Failed to submit report", code: "DB_ERROR" };
+  }
+
+  return { ok: true, data: { reported: true } };
+}
+
+export async function reportComment(
+  slug: string,
+  commentId: string,
+  reporterLineUserId: string,
+  reason: string
+): Promise<TemplateResult<{ reported: true }>> {
+  const trimmed = reason.trim();
+  if (trimmed.length === 0 || trimmed.length > 1000) {
+    return {
+      ok: false,
+      error: "Reason must be 1–1000 characters",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const db = createAdminClient();
+
+  const rate = await checkReportRateLimit(db, reporterLineUserId);
+  if (!rate.ok) return rate;
+
+  // Verify the comment belongs to this slug (prevents cross-template reports
+  // from leaking comment existence) and isn't the reporter's own.
+  const { data: existing } = await db
+    .from("template_comments")
+    .select("id, line_user_id, trip_templates!inner(slug)")
+    .eq("id", commentId)
+    .single();
+  if (!existing) return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
+
+  const joinedSlug = (existing.trip_templates as { slug: string } | null)?.slug;
+  if (joinedSlug !== slug) {
+    return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
+  }
+  if ((existing.line_user_id as string) === reporterLineUserId) {
+    return {
+      ok: false,
+      error: "You cannot report your own comment",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const { error } = await db.from("template_reports").insert({
+    template_id: null,
+    comment_id: commentId,
+    reporter_user_id: reporterLineUserId,
+    reason: trimmed,
+  });
+  if (error) {
+    return { ok: false, error: "Failed to submit report", code: "DB_ERROR" };
+  }
+
+  return { ok: true, data: { reported: true } };
 }
