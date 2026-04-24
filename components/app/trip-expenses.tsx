@@ -15,10 +15,16 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { appFetch, appFetchJson } from "@/lib/app-client";
-import type { AppExpensesResponse } from "@/app/api/app/trips/[tripId]/expenses/route";
+import type { AppExpensesResponse } from "@/lib/app-trip-expenses";
 
-export function TripExpensesClient({ tripId }: { tripId: string }) {
-  const [data, setData] = useState<AppExpensesResponse | null>(null);
+export function TripExpensesClient({
+  tripId,
+  initialData,
+}: {
+  tripId: string;
+  initialData?: AppExpensesResponse;
+}) {
+  const [data, setData] = useState<AppExpensesResponse | null>(initialData ?? null);
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -40,8 +46,9 @@ export function TripExpensesClient({ tripId }: { tripId: string }) {
   }, [tripId]);
 
   useEffect(() => {
+    if (initialData) return;
     void load();
-  }, [load]);
+  }, [initialData, load]);
 
   async function handleSubmit() {
     const value = Number.parseFloat(amount);
