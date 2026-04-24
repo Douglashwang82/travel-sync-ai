@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { appFetchJson } from "@/lib/app-client";
+import { TemplateCommentsSection } from "@/components/app/template-comments";
 import type {
   TripTemplate,
   TripTemplateVersion,
@@ -57,7 +58,13 @@ const VISIBILITY_LABELS: Record<TemplateVisibility, string> = {
   request_only: "Request only",
 };
 
-export function TemplateDetailClient({ slug }: { slug: string }) {
+export function TemplateDetailClient({
+  slug,
+  viewerLineUserId,
+}: {
+  slug: string;
+  viewerLineUserId: string;
+}) {
   const [data, setData] = useState<TemplateData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [forkOpen, setForkOpen] = useState(false);
@@ -194,6 +201,12 @@ export function TemplateDetailClient({ slug }: { slug: string }) {
           )}
         </section>
       )}
+
+      <TemplateCommentsSection
+        slug={slug}
+        viewerLineUserId={viewerLineUserId}
+        isTemplateAuthor={isAuthor}
+      />
 
       {forkOpen && (
         <ForkModal

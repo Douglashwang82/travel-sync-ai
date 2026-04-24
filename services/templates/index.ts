@@ -841,3 +841,278 @@ export async function unlikeTemplate(
     data: { liked: false, likeCount: (fresh?.like_count as number | undefined) ?? 0 },
   };
 }
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+export interface CommentView {
+  id: string;
+  line_user_id: string | null;       // nulled if deleted
+  author_display_name: string | null; // nulled if deleted
+  body: string | null;                // nulled if deleted
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+}
+
+async function resolveDisplayNames(
+  db: ReturnType<typeof createAdminClient>,
+  lineUserIds: string[]
+): Promise<Record<string, string | null>> {
+  const unique = Array.from(new Set(lineUserIds));
+  if (unique.length === 0) return {};
+  const { data } = await db
+    .from("group_members")
+    .select("line_user_id, display_name")
+    .in("line_user_id", unique)
+    .is("left_at", null);
+  const map: Record<string, string | null> = {};
+  for (const row of data ?? []) {
+    const uid = row.line_user_id as string;
+    if (!(uid in map)) map[uid] = (row.display_name as string | null) ?? null;
+  }
+  for (const uid of unique) if (!(uid in map)) map[uid] = null;
+  return map;
+}
+
+function maskDeleted(row: {
+  id: string;
+  line_user_id: string;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+}, nameMap: Record<string, string | null>): CommentView {
+  if (row.deleted_at) {
+    return {
+      id: row.id,
+      line_user_id: null,
+      author_display_name: null,
+      body: null,
+      created_at: row.created_at,
+      edited_at: row.edited_at,
+      deleted_at: row.deleted_at,
+    };
+  }
+  return {
+    id: row.id,
+    line_user_id: row.line_user_id,
+    author_display_name: nameMap[row.line_user_id] ?? null,
+    body: row.body,
+    created_at: row.created_at,
+    edited_at: row.edited_at,
+    deleted_at: null,
+  };
+}
+
+export async function listComments(
+  slug: string,
+  viewerLineUserId: string,
+  limit = 20,
+  offset = 0
+): Promise<
+  TemplateResult<{
+    comments: CommentView[];
+    hasMore: boolean;
+    nextOffset: number;
+  }>
+> {
+  const resolved = await resolveAccessibleTemplate(slug, viewerLineUserId);
+  if (!resolved.ok) return resolved;
+
+  const db = createAdminClient();
+  const pageSize = Math.min(Math.max(limit, 1), 100);
+
+  const { data: rows, error } = await db
+    .from("template_comments")
+    .select("id, line_user_id, body, created_at, edited_at, deleted_at")
+    .eq("template_id", resolved.data.id)
+    .order("created_at", { ascending: true })
+    .range(offset, offset + pageSize);
+
+  if (error) {
+    return { ok: false, error: "Failed to load comments", code: "DB_ERROR" };
+  }
+
+  const raw = (rows ?? []) as Array<{
+    id: string;
+    line_user_id: string;
+    body: string;
+    created_at: string;
+    edited_at: string | null;
+    deleted_at: string | null;
+  }>;
+  const hasMore = raw.length > pageSize;
+  const page = hasMore ? raw.slice(0, pageSize) : raw;
+
+  const nameMap = await resolveDisplayNames(
+    db,
+    page.filter((r) => !r.deleted_at).map((r) => r.line_user_id)
+  );
+  const comments = page.map((r) => maskDeleted(r, nameMap));
+
+  return {
+    ok: true,
+    data: {
+      comments,
+      hasMore,
+      nextOffset: offset + page.length,
+    },
+  };
+}
+
+export async function addComment(
+  slug: string,
+  lineUserId: string,
+  body: string
+): Promise<TemplateResult<{ comment: CommentView }>> {
+  const trimmed = body.trim();
+  if (trimmed.length === 0 || trimmed.length > 2000) {
+    return {
+      ok: false,
+      error: "Comment must be 1–2000 characters",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const resolved = await resolveAccessibleTemplate(slug, lineUserId);
+  if (!resolved.ok) return resolved;
+
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("template_comments")
+    .insert({
+      template_id: resolved.data.id,
+      line_user_id: lineUserId,
+      body: trimmed,
+    })
+    .select("id, line_user_id, body, created_at, edited_at, deleted_at")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: "Failed to post comment", code: "DB_ERROR" };
+  }
+
+  const nameMap = await resolveDisplayNames(db, [lineUserId]);
+  const comment = maskDeleted(
+    data as {
+      id: string;
+      line_user_id: string;
+      body: string;
+      created_at: string;
+      edited_at: string | null;
+      deleted_at: string | null;
+    },
+    nameMap
+  );
+
+  return { ok: true, data: { comment } };
+}
+
+export async function updateComment(
+  slug: string,
+  commentId: string,
+  lineUserId: string,
+  body: string
+): Promise<TemplateResult<{ comment: CommentView }>> {
+  const trimmed = body.trim();
+  if (trimmed.length === 0 || trimmed.length > 2000) {
+    return {
+      ok: false,
+      error: "Comment must be 1–2000 characters",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  const db = createAdminClient();
+
+  // Look up comment + its template to verify slug and ownership
+  const { data: existing } = await db
+    .from("template_comments")
+    .select("id, template_id, line_user_id, deleted_at, trip_templates!inner(slug)")
+    .eq("id", commentId)
+    .single();
+
+  if (!existing) return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
+
+  const joinedSlug = (existing.trip_templates as { slug: string } | null)?.slug;
+  if (joinedSlug !== slug) {
+    return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
+  }
+  if ((existing.line_user_id as string) !== lineUserId) {
+    return { ok: false, error: "You can only edit your own comments", code: "FORBIDDEN" };
+  }
+  if (existing.deleted_at) {
+    return { ok: false, error: "Cannot edit a deleted comment", code: "CONFLICT" };
+  }
+
+  const { data: updated, error } = await db
+    .from("template_comments")
+    .update({ body: trimmed, edited_at: new Date().toISOString() })
+    .eq("id", commentId)
+    .select("id, line_user_id, body, created_at, edited_at, deleted_at")
+    .single();
+  if (error || !updated) {
+    return { ok: false, error: "Failed to update comment", code: "DB_ERROR" };
+  }
+
+  const nameMap = await resolveDisplayNames(db, [lineUserId]);
+  return {
+    ok: true,
+    data: {
+      comment: maskDeleted(
+        updated as {
+          id: string;
+          line_user_id: string;
+          body: string;
+          created_at: string;
+          edited_at: string | null;
+          deleted_at: string | null;
+        },
+        nameMap
+      ),
+    },
+  };
+}
+
+export async function deleteComment(
+  slug: string,
+  commentId: string,
+  lineUserId: string
+): Promise<TemplateResult<{ deleted: boolean }>> {
+  const db = createAdminClient();
+
+  const { data: existing } = await db
+    .from("template_comments")
+    .select("id, line_user_id, deleted_at, trip_templates!inner(slug, author_line_user_id)")
+    .eq("id", commentId)
+    .single();
+
+  if (!existing) return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
+
+  const tmpl = existing.trip_templates as
+    | { slug: string; author_line_user_id: string }
+    | null;
+  if (tmpl?.slug !== slug) {
+    return { ok: false, error: "Comment not found", code: "NOT_FOUND" };
+  }
+
+  const isCommenter = (existing.line_user_id as string) === lineUserId;
+  const isTemplateAuthor = tmpl.author_line_user_id === lineUserId;
+  if (!isCommenter && !isTemplateAuthor) {
+    return { ok: false, error: "Not allowed to delete this comment", code: "FORBIDDEN" };
+  }
+
+  if (existing.deleted_at) {
+    // Already deleted — treat as success (idempotent)
+    return { ok: true, data: { deleted: true } };
+  }
+
+  const { error } = await db
+    .from("template_comments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", commentId);
+  if (error) {
+    return { ok: false, error: "Failed to delete comment", code: "DB_ERROR" };
+  }
+  return { ok: true, data: { deleted: true } };
+}
