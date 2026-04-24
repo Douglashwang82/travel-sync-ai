@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -210,6 +211,20 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
           </div>
         )}
       </form>
+
+      {isOrganizer && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-semibold">Publish as template</h3>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Share this trip&apos;s itinerary so others can use it as a starting point.
+            </p>
+          </div>
+          <Link href={`/app/trips/${tripId}/publish`}>
+            <Button variant="outline" size="sm">Publish</Button>
+          </Link>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
         <h3 className="text-sm font-semibold">Resolved destination</h3>
