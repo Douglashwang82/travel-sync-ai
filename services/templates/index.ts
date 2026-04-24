@@ -1,5 +1,12 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createAdminClient } from "@/lib/db";
+import {
+  notifyAccessRequested,
+  notifyAccessDecided,
+  notifyInvited,
+  notifyNewComment,
+  notifyForked,
+} from "@/services/notifications";
 import type {
   TripTemplate,
   TripTemplateVersion,
@@ -425,6 +432,16 @@ export async function forkTemplate(
     .update({ fork_count: template.fork_count + 1 })
     .eq("id", template.id);
 
+  // Notify the template author of the fork (best-effort; skips self-notify)
+  const forkerNameMap = await resolveDisplayNames(db, [input.lineUserId]);
+  await notifyForked({
+    authorLineUserId: template.author_line_user_id,
+    forkerLineUserId: input.lineUserId,
+    forkerDisplayName: forkerNameMap[input.lineUserId] ?? null,
+    slug: template.slug,
+    templateTitle: version.title,
+  });
+
   return { ok: true, data: { tripId: newTrip.id as string } };
 }
 
@@ -617,6 +634,18 @@ export async function addTemplateGrant(
     .is("left_at", null)
     .limit(1)
     .maybeSingle();
+
+  // Notify the invitee (best-effort)
+  const ctx = await loadTemplateNotificationContext(db, tmpl.data.id);
+  if (ctx) {
+    const authorNameMap = await resolveDisplayNames(db, [authorLineUserId]);
+    await notifyInvited({
+      inviteeLineUserId,
+      slug: ctx.slug,
+      templateTitle: ctx.title,
+      authorDisplayName: authorNameMap[authorLineUserId] ?? null,
+    });
+  }
 
   return {
     ok: true,
@@ -889,6 +918,33 @@ async function resolveDisplayNames(
   return map;
 }
 
+/**
+ * Look up the slug, current-version title, and author of a template by id.
+ * Used to build notification payloads without duplicating the fetch in each
+ * event site. Returns null if the template was deleted or has no current
+ * version.
+ */
+async function loadTemplateNotificationContext(
+  db: ReturnType<typeof createAdminClient>,
+  templateId: string
+): Promise<{ slug: string; title: string; authorLineUserId: string } | null> {
+  const { data } = await db
+    .from("trip_templates")
+    .select(
+      "slug, author_line_user_id, trip_template_versions!trip_templates_current_version_id_fkey(title)"
+    )
+    .eq("id", templateId)
+    .is("deleted_at", null)
+    .single();
+  if (!data) return null;
+  const version = data.trip_template_versions as { title: string } | null;
+  return {
+    slug: data.slug as string,
+    title: version?.title ?? "Untitled",
+    authorLineUserId: data.author_line_user_id as string,
+  };
+}
+
 function maskDeleted(row: {
   id: string;
   line_user_id: string;
@@ -1019,6 +1075,20 @@ export async function addComment(
     },
     nameMap
   );
+
+  // Notify the template author of a new comment (best-effort; skips self-notify)
+  const ctx = await loadTemplateNotificationContext(db, resolved.data.id);
+  if (ctx) {
+    await notifyNewComment({
+      authorLineUserId: ctx.authorLineUserId,
+      commenterLineUserId: lineUserId,
+      commenterDisplayName: nameMap[lineUserId] ?? null,
+      slug: ctx.slug,
+      templateTitle: ctx.title,
+      commentId: comment.id,
+      bodyExcerpt: trimmed.slice(0, 140),
+    });
+  }
 
   return { ok: true, data: { comment } };
 }
@@ -1234,6 +1304,20 @@ export async function requestTemplateAccess(
   }
 
   const nameMap = await resolveDisplayNames(db, [lineUserId]);
+
+  // Notify the template author (best-effort)
+  const ctx = await loadTemplateNotificationContext(db, template.id as string);
+  if (ctx) {
+    await notifyAccessRequested({
+      authorLineUserId: ctx.authorLineUserId,
+      requesterLineUserId: lineUserId,
+      requesterDisplayName: nameMap[lineUserId] ?? null,
+      slug: ctx.slug,
+      templateTitle: ctx.title,
+      message: trimmed || null,
+    });
+  }
+
   return {
     ok: true,
     data: {
@@ -1358,7 +1442,21 @@ export async function decideAccessRequest(
 
   const nameMap = await resolveDisplayNames(db, [
     updated.requester_user_id as string,
+    authorLineUserId,
   ]);
+
+  // Notify the requester (best-effort)
+  const ctx = await loadTemplateNotificationContext(db, tmpl.data.id);
+  if (ctx) {
+    await notifyAccessDecided({
+      requesterLineUserId: updated.requester_user_id as string,
+      decision,
+      slug: ctx.slug,
+      templateTitle: ctx.title,
+      authorDisplayName: nameMap[authorLineUserId] ?? null,
+    });
+  }
+
   return {
     ok: true,
     data: {

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/db";
 import { APP_SESSION_COOKIE } from "@/lib/app-server";
 import { AppHeaderUser } from "@/components/app/app-header-user";
+import { InboxNavLink } from "@/components/app/inbox-nav-link";
 
 export const metadata = {
   title: "TravelSync — Trip workspace",
@@ -69,6 +70,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             >
               Home
             </Link>
+            {user && <InboxNavLink />}
             <AppHeaderUser user={user} />
           </nav>
         </div>
