@@ -30,6 +30,26 @@ const TYPE_LABEL: Record<string, string> = {
   other: "Item",
 };
 
+const TYPE_ICON: Record<string, string> = {
+  hotel: "🏨",
+  restaurant: "🍽️",
+  activity: "🎯",
+  transport: "🚌",
+  flight: "✈️",
+  insurance: "🛡️",
+  other: "📌",
+};
+
+const TYPE_PLACEHOLDER_BG: Record<string, string> = {
+  hotel: "bg-blue-50 dark:bg-blue-950/40",
+  restaurant: "bg-orange-50 dark:bg-orange-950/40",
+  activity: "bg-emerald-50 dark:bg-emerald-950/40",
+  transport: "bg-slate-100 dark:bg-slate-800/60",
+  flight: "bg-sky-50 dark:bg-sky-950/40",
+  insurance: "bg-violet-50 dark:bg-violet-950/40",
+  other: "bg-[var(--secondary)]",
+};
+
 const STAGE_TONE: Record<string, string> = {
   confirmed: "bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]",
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
@@ -140,12 +160,24 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         <div className="space-y-8">
           {grouped.map((day) => (
             <section key={day.key} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[var(--border)]" />
-                <span className="rounded-full bg-[var(--background)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                  {day.label}
-                </span>
-                <div className="h-px flex-1 bg-[var(--border)]" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[var(--border)]" />
+                  <span className="rounded-full bg-[var(--background)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                    {day.label}
+                  </span>
+                  <div className="h-px flex-1 bg-[var(--border)]" />
+                </div>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {day.types.map((type) => (
+                    <span
+                      key={type}
+                      className="rounded-full bg-[var(--secondary)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)]"
+                    >
+                      {TYPE_ICON[type] ?? "📌"} {TYPE_LABEL[type] ?? "Item"}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -169,7 +201,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
 }
 
 function groupByDay(items: ItineraryEntry[]) {
-  const buckets = new Map<string, { label: string; items: ItineraryEntry[] }>();
+  const buckets = new Map<string, { label: string; items: ItineraryEntry[]; typeSet: Set<string> }>();
 
   for (const item of items) {
     let key = "zzz-unscheduled";
@@ -183,13 +215,20 @@ function groupByDay(items: ItineraryEntry[]) {
         day: "numeric",
       });
     }
-    if (!buckets.has(key)) buckets.set(key, { label, items: [] });
-    buckets.get(key)!.items.push(item);
+    if (!buckets.has(key)) buckets.set(key, { label, items: [], typeSet: new Set() });
+    const bucket = buckets.get(key)!;
+    bucket.items.push(item);
+    bucket.typeSet.add(item.item_type);
   }
 
   return Array.from(buckets.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, v]) => ({ key, ...v }));
+    .map(([key, { label, items, typeSet }]) => ({
+      key,
+      label,
+      items,
+      types: Array.from(typeSet),
+    }));
 }
 
 function ItineraryRow({
@@ -241,13 +280,26 @@ function ItineraryRow({
 
   return (
     <article className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
-      {option?.image_url && (
+      {option?.image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={option.image_url}
           alt={option.name}
-          className="h-40 w-full object-cover"
+          className="h-44 w-full object-cover"
+          loading="lazy"
         />
+      ) : (
+        <div
+          className={cn(
+            "flex h-20 w-full items-center justify-center gap-2",
+            TYPE_PLACEHOLDER_BG[item.item_type] ?? TYPE_PLACEHOLDER_BG.other
+          )}
+        >
+          <span className="text-2xl">{TYPE_ICON[item.item_type] ?? TYPE_ICON.other}</span>
+          <span className="text-xs font-medium text-[var(--muted-foreground)]">
+            {TYPE_LABEL[item.item_type] ?? "Item"}
+          </span>
+        </div>
       )}
 
       <div className="space-y-3 p-4 sm:p-5">
