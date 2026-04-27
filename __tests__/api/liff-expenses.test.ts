@@ -132,8 +132,11 @@ describe("GET /api/liff/expenses — with data", () => {
 
     expect(body.totalAmount).toBe(4500);
     expect(body.expenses).toHaveLength(2);
-    expect(body.expenses[0].description).toBe("Dinner");
-    expect(body.expenses[0].amount).toBe(3000);
+    // Route orders by created_at desc — Taxi (2026-05-02) is newer than Dinner (2026-05-01).
+    expect(body.expenses[0].description).toBe("Taxi");
+    expect(body.expenses[0].amount).toBe(1500);
+    expect(body.expenses[1].description).toBe("Dinner");
+    expect(body.expenses[1].amount).toBe(3000);
 
     // Alice paid 3000 + 0 = 3000, spent 1500 + 750 = 2250 → net +750
     // Bob paid 0 + 1500 = 1500, spent 1500 + 750 = 2250 → net -750
