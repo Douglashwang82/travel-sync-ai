@@ -24,6 +24,8 @@ import type {
   SuggestDayResponse,
 } from "@/app/api/app/trips/[tripId]/suggest-day/route";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const TYPE_LABEL: Record<string, string> = {
   hotel: "Hotel",
   restaurant: "Food",
@@ -62,6 +64,8 @@ const STAGE_TONE: Record<string, string> = {
 
 const UNASSIGNED = "__unassigned__";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function toInputLocal(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -83,24 +87,54 @@ function generateDateRange(startDate: string, endDate: string): string[] {
 
 function dayLabel(dateStr: string): string {
   return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, {
-    weekday: "long",
+    weekday: "short",
     month: "short",
     day: "numeric",
   });
 }
 
+function groupByDay(items: ItineraryEntry[]) {
+  const buckets = new Map<
+    string,
+    { label: string; items: ItineraryEntry[]; typeSet: Set<string> }
+  >();
+  for (const item of items) {
+    let key = "zzz-unscheduled";
+    let label = "Unscheduled";
+    if (item.deadline_at) {
+      const d = new Date(item.deadline_at);
+      key = d.toISOString().split("T")[0];
+      label = dayLabel(key);
+    }
+    if (!buckets.has(key)) buckets.set(key, { label, items: [], typeSet: new Set() });
+    const bucket = buckets.get(key)!;
+    bucket.items.push(item);
+    bucket.typeSet.add(item.item_type);
+  }
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, { label, items, typeSet }]) => ({
+      key,
+      label,
+      items,
+      types: Array.from(typeSet),
+    }));
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type DayEntry =
   | { key: string; label: string; items: ItineraryEntry[]; types: string[]; isEmpty: false }
   | { key: string; label: string; items: []; types: []; isEmpty: true };
+
+// ─── Root component ───────────────────────────────────────────────────────────
 
 export function TripItineraryClient({ tripId }: { tripId: string }) {
   const [data, setData] = useState<ItineraryResponse | null>(null);
   const [members, setMembers] = useState<AppMember[]>([]);
   const [role, setRole] = useState<"organizer" | "member">("member");
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "todo">(
-    "confirmed"
-  );
+  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "todo">("all");
 
   const load = useCallback(async () => {
     try {
@@ -119,15 +153,12 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
   }, [tripId]);
 
   useEffect(() => {
-    void (async () => {
-      await load();
-    })();
+    void load();
   }, [load]);
 
   const allDays = useMemo((): DayEntry[] => {
     if (!data) return [];
 
-    // Grouped days for the current filter
     const filtered = data.items.filter((i) =>
       filter === "all" ? true : i.stage === filter
     );
@@ -138,7 +169,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
 
     if (!data.trip.start_date || !data.trip.end_date) return itemDays;
 
-    // Dates in the trip range that have zero items scheduled (any stage)
+    // Dates in the trip range with zero items of any stage
     const occupiedKeys = new Set(
       data.items
         .filter((i) => i.deadline_at)
@@ -166,11 +197,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
         {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
+        <button type="button" onClick={() => void load()} className="ml-2 underline underline-offset-2">
           Retry
         </button>
       </div>
@@ -178,20 +205,27 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
   }
 
   if (!data) {
-    return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
+    return (
+      <div className="flex gap-3 overflow-hidden">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-80 w-[17rem] shrink-0 animate-pulse rounded-2xl bg-[var(--secondary)]" />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Itinerary</h2>
           <p className="text-xs text-[var(--muted-foreground)]">
-            Everything with a deadline, ordered by day.
+            {allDays.length} day{allDays.length !== 1 ? "s" : ""} · scroll to see all
           </p>
         </div>
         <div className="flex rounded-full border border-[var(--border)] p-0.5 text-xs">
-          {(["confirmed", "pending", "todo", "all"] as const).map((f) => (
+          {(["all", "confirmed", "pending", "todo"] as const).map((f) => (
             <button
               key={f}
               type="button"
@@ -209,72 +243,340 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         </div>
       </div>
 
+      {/* Kanban board — horizontal scroll */}
       {allDays.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
+        <div className="rounded-2xl border border-dashed border-[var(--border)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
           Nothing to show for this filter yet.
         </div>
       ) : (
-        <div className="space-y-8">
-          {allDays.map((day) => (
-            <section key={day.key} className="space-y-3">
-              {day.isEmpty ? (
-                <>
-                  <DayDivider label={day.label} />
-                  <EmptyDaySection
-                    date={day.key}
-                    tripId={tripId}
-                    isOrganizer={role === "organizer"}
-                    onAdded={() => void load()}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <DayDivider label={day.label} />
-                    <div className="flex flex-wrap justify-center gap-1.5">
-                      {day.types.map((type) => (
-                        <span
-                          key={type}
-                          className="rounded-full bg-[var(--secondary)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)]"
-                        >
-                          {TYPE_ICON[type] ?? "📌"} {TYPE_LABEL[type] ?? "Item"}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {day.items.map((item) => (
-                      <ItineraryRow
-                        key={item.id}
-                        item={item}
-                        tripId={tripId}
-                        members={members}
-                        isOrganizer={role === "organizer"}
-                        onUpdated={() => void load()}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </section>
-          ))}
+        <div className="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6">
+          <div className="flex gap-3" style={{ minWidth: "max-content" }}>
+            {allDays.map((day) => (
+              <KanbanColumn
+                key={day.key}
+                day={day}
+                tripId={tripId}
+                members={members}
+                isOrganizer={role === "organizer"}
+                onUpdated={() => void load()}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function DayDivider({ label }: { label: string }) {
+// ─── Kanban column ────────────────────────────────────────────────────────────
+
+function KanbanColumn({
+  day,
+  tripId,
+  members,
+  isOrganizer,
+  onUpdated,
+}: {
+  day: DayEntry;
+  tripId: string;
+  members: AppMember[];
+  isOrganizer: boolean;
+  onUpdated: () => void;
+}) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-px flex-1 bg-[var(--border)]" />
-      <span className="rounded-full bg-[var(--background)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-        {label}
-      </span>
-      <div className="h-px flex-1 bg-[var(--border)]" />
+    <div className="flex w-[17rem] shrink-0 flex-col rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/30">
+      {/* Column header */}
+      <div className="space-y-1.5 border-b border-[var(--border)] px-3 py-2.5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+          {day.label}
+        </p>
+        {!day.isEmpty && day.types.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {day.types.map((type) => (
+              <span
+                key={type}
+                className="rounded-full bg-[var(--background)] px-2 py-0.5 text-[9px] font-medium text-[var(--muted-foreground)]"
+              >
+                {TYPE_ICON[type] ?? "📌"} {TYPE_LABEL[type] ?? "Item"}
+              </span>
+            ))}
+          </div>
+        )}
+        {!day.isEmpty && (
+          <span className="inline-block rounded-full bg-[var(--border)] px-2 py-0.5 text-[9px] font-semibold text-[var(--muted-foreground)]">
+            {day.items.length} item{day.items.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {/* Cards area */}
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5" style={{ maxHeight: "72vh" }}>
+        {day.isEmpty ? (
+          <EmptyDaySection
+            date={day.key}
+            tripId={tripId}
+            isOrganizer={isOrganizer}
+            onAdded={onUpdated}
+          />
+        ) : (
+          day.items.map((item) => (
+            <KanbanCard
+              key={item.id}
+              item={item}
+              tripId={tripId}
+              members={members}
+              isOrganizer={isOrganizer}
+              onUpdated={onUpdated}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
+
+// ─── Kanban card ──────────────────────────────────────────────────────────────
+
+function KanbanCard({
+  item,
+  tripId,
+  members,
+  isOrganizer,
+  onUpdated,
+}: {
+  item: ItineraryEntry;
+  tripId: string;
+  members: AppMember[];
+  isOrganizer: boolean;
+  onUpdated: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [deadline, setDeadline] = useState(toInputLocal(item.deadline_at));
+  const [assignee, setAssignee] = useState(item.assigned_to_line_user_id ?? UNASSIGNED);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/items`, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "update",
+          itemId: item.id,
+          deadlineAt: deadline ? new Date(deadline).toISOString() : null,
+          assignedTo: assignee === UNASSIGNED ? null : assignee,
+        }),
+      });
+      setEditing(false);
+      onUpdated();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const option = item.confirmed_option;
+  const assigneeName = item.assigned_to_line_user_id
+    ? (members.find((m) => m.lineUserId === item.assigned_to_line_user_id)?.displayName ??
+        item.assigned_to_line_user_id)
+    : null;
+
+  return (
+    <article className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--background)]">
+      {/* Image / placeholder */}
+      {option?.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={option.image_url}
+          alt={option.name}
+          className="h-32 w-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div
+          className={cn(
+            "flex h-14 w-full items-center justify-center",
+            TYPE_PLACEHOLDER_BG[item.item_type] ?? TYPE_PLACEHOLDER_BG.other
+          )}
+        >
+          <span className="text-xl">{TYPE_ICON[item.item_type] ?? TYPE_ICON.other}</span>
+        </div>
+      )}
+
+      <div className="space-y-2 p-2.5">
+        {/* Badges row */}
+        <div className="flex flex-wrap items-center gap-1">
+          <Badge variant="secondary" className="text-[9px] uppercase">
+            {TYPE_LABEL[item.item_type] ?? "Item"}
+          </Badge>
+          <span
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[9px] font-semibold capitalize",
+              STAGE_TONE[item.stage] ?? STAGE_TONE.todo
+            )}
+          >
+            {item.stage === "pending" ? "pending vote" : item.stage}
+          </span>
+          {item.booking_status === "needed" && (
+            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              Book
+            </span>
+          )}
+          {item.booking_status === "booked" && (
+            <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9px] font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
+              ✓ Booked
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <p className="text-sm font-semibold leading-snug">{item.title}</p>
+
+        {/* Option name if different */}
+        {option && option.name !== item.title && (
+          <p className="text-[11px] text-[var(--muted-foreground)]">{option.name}</p>
+        )}
+
+        {/* Description */}
+        {item.description && (
+          <p className="text-[11px] leading-relaxed text-[var(--muted-foreground)] line-clamp-2">
+            {item.description}
+          </p>
+        )}
+
+        {/* Address */}
+        {option?.address && (
+          <p className="text-[11px] text-[var(--muted-foreground)]">📍 {option.address}</p>
+        )}
+
+        {/* Meta row: time + assignee */}
+        <div className="flex flex-wrap items-center gap-1 text-[10px]">
+          {item.deadline_at && (
+            <span className="rounded-full bg-[var(--secondary)] px-1.5 py-0.5 font-medium text-[var(--muted-foreground)]">
+              {new Date(item.deadline_at).toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+          {assigneeName && (
+            <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              {assigneeName}
+            </span>
+          )}
+        </div>
+
+        {/* Rating / links */}
+        {(option?.rating || option?.price_level || option?.google_maps_url || option?.booking_url) && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            {option.rating && (
+              <span className="text-[var(--muted-foreground)]">★ {option.rating}</span>
+            )}
+            {option.price_level && (
+              <span className="text-[var(--muted-foreground)]">{option.price_level}</span>
+            )}
+            {option.google_maps_url && (
+              <a
+                href={option.google_maps_url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-[var(--primary)] underline underline-offset-2"
+              >
+                Maps
+              </a>
+            )}
+            {option.booking_url && (
+              <a
+                href={option.booking_url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-[var(--primary)] underline underline-offset-2"
+              >
+                Book
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Organizer edit */}
+        {isOrganizer && (
+          <div className="border-t border-[var(--border)] pt-2">
+            {editing ? (
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label htmlFor={`it-dl-${item.id}`} className="text-[10px]">
+                    Deadline / time
+                  </Label>
+                  <Input
+                    id={`it-dl-${item.id}`}
+                    type="datetime-local"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Assigned to</Label>
+                  <Select value={assignee} onValueChange={setAssignee}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                      {members.map((m) => (
+                        <SelectItem key={m.lineUserId} value={m.lineUserId}>
+                          {m.displayName ?? m.lineUserId}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {saveError && <p className="text-[10px] text-destructive">{saveError}</p>}
+                <div className="flex justify-end gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={() => {
+                      setEditing(false);
+                      setDeadline(toInputLocal(item.deadline_at));
+                      setAssignee(item.assigned_to_line_user_id ?? UNASSIGNED);
+                      setSaveError(null);
+                    }}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={() => void handleSave()}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="w-full text-left text-[10px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+              >
+                Edit deadline / assignment
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+// ─── Empty day section ────────────────────────────────────────────────────────
 
 function EmptyDaySection({
   date,
@@ -322,7 +624,7 @@ function EmptyDaySection({
       });
       onAdded();
     } catch {
-      // leave suggestion visible so user can retry
+      // keep suggestions visible so user can retry
     } finally {
       setAddingTitle(null);
     }
@@ -333,15 +635,15 @@ function EmptyDaySection({
       <button
         type="button"
         onClick={() => void handleSuggest()}
-        className="group w-full space-y-2 rounded-2xl border border-dashed border-[var(--border)] px-5 py-4 text-left transition-colors hover:border-[var(--primary)]/50 hover:bg-[var(--secondary)]/40"
+        className="group flex w-full flex-col gap-2 rounded-xl border border-dashed border-[var(--border)] p-3 text-left transition-colors hover:border-[var(--primary)]/40 hover:bg-[var(--secondary)]/40"
       >
-        <div className="space-y-2">
-          <div className="h-3 w-3/4 rounded-full bg-[var(--secondary)]" />
-          <div className="h-3 w-1/2 rounded-full bg-[var(--secondary)]" />
-          <div className="h-3 w-2/3 rounded-full bg-[var(--secondary)]" />
+        <div className="space-y-1.5">
+          <div className="h-2.5 w-3/4 rounded-full bg-[var(--secondary)]" />
+          <div className="h-2.5 w-1/2 rounded-full bg-[var(--secondary)]" />
+          <div className="h-2.5 w-2/3 rounded-full bg-[var(--secondary)]" />
         </div>
-        <p className="text-[11px] font-medium text-[var(--primary)] opacity-70 transition-opacity group-hover:opacity-100">
-          ✨ Nothing planned — click to get AI suggestions
+        <p className="text-[10px] font-medium text-[var(--primary)] opacity-60 transition-opacity group-hover:opacity-100">
+          ✨ Nothing planned — tap for AI suggestions
         </p>
       </button>
     );
@@ -349,20 +651,20 @@ function EmptyDaySection({
 
   if (phase === "loading") {
     return (
-      <div className="space-y-2 rounded-2xl border border-[var(--border)] px-5 py-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="space-y-2">
+        {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 rounded-xl bg-[var(--secondary)] p-3 animate-pulse"
+            className="flex animate-pulse items-center gap-2 rounded-xl bg-[var(--secondary)] p-2.5"
           >
-            <div className="h-8 w-8 rounded-lg bg-[var(--border)]" />
+            <div className="h-7 w-7 shrink-0 rounded-lg bg-[var(--border)]" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-2/3 rounded-full bg-[var(--border)]" />
-              <div className="h-2.5 w-1/2 rounded-full bg-[var(--border)]" />
+              <div className="h-2.5 w-2/3 rounded-full bg-[var(--border)]" />
+              <div className="h-2 w-1/2 rounded-full bg-[var(--border)]" />
             </div>
           </div>
         ))}
-        <p className="pt-1 text-center text-[10px] text-[var(--muted-foreground)]">
+        <p className="text-center text-[10px] text-[var(--muted-foreground)]">
           Getting AI suggestions…
         </p>
       </div>
@@ -371,7 +673,7 @@ function EmptyDaySection({
 
   if (phase === "error") {
     return (
-      <div className="rounded-2xl border border-dashed border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+      <div className="rounded-xl border border-dashed border-red-200 bg-red-50 p-3 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
         {errorMsg}{" "}
         <button
           type="button"
@@ -386,319 +688,51 @@ function EmptyDaySection({
 
   // done
   return (
-    <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-5 py-4">
-      <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+    <div className="space-y-1.5">
+      <p className="text-[9px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
         ✨ AI Suggestions
       </p>
       {suggestions.map((s) => (
         <div
           key={s.title}
-          className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 p-3"
+          className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-2.5"
         >
-          <span className="mt-0.5 text-xl">
-            {TYPE_ICON[s.item_type] ?? TYPE_ICON.other}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium leading-snug">{s.title}</p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-              {s.description}
-            </p>
-            {s.reason && (
-              <p className="mt-0.5 text-[10px] italic text-[var(--muted-foreground)]/70">
-                {s.reason}
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 text-base">{TYPE_ICON[s.item_type] ?? TYPE_ICON.other}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold leading-snug">{s.title}</p>
+              <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-[var(--muted-foreground)]">
+                {s.description}
               </p>
-            )}
+              {s.reason && (
+                <p className="mt-0.5 text-[9px] italic text-[var(--muted-foreground)]/70">
+                  {s.reason}
+                </p>
+              )}
+            </div>
           </div>
           {isOrganizer && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void handleAdd(s)}
-              disabled={addingTitle !== null}
-              className="shrink-0 text-xs"
-            >
-              {addingTitle === s.title ? "Adding…" : "Add"}
-            </Button>
+            <div className="mt-1.5 flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void handleAdd(s)}
+                disabled={addingTitle !== null}
+                className="h-6 px-2 text-[10px]"
+              >
+                {addingTitle === s.title ? "Adding…" : "Add"}
+              </Button>
+            </div>
           )}
         </div>
       ))}
-      <div className="flex justify-end pt-1">
-        <button
-          type="button"
-          onClick={() => void handleSuggest()}
-          className="text-[10px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
-        >
-          Refresh suggestions
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => void handleSuggest()}
+        className="w-full pt-0.5 text-center text-[9px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+      >
+        Refresh suggestions
+      </button>
     </div>
-  );
-}
-
-function groupByDay(items: ItineraryEntry[]) {
-  const buckets = new Map<
-    string,
-    { label: string; items: ItineraryEntry[]; typeSet: Set<string> }
-  >();
-
-  for (const item of items) {
-    let key = "zzz-unscheduled";
-    let label = "Unscheduled";
-    if (item.deadline_at) {
-      const d = new Date(item.deadline_at);
-      key = d.toISOString().split("T")[0];
-      label = d.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-      });
-    }
-    if (!buckets.has(key)) buckets.set(key, { label, items: [], typeSet: new Set() });
-    const bucket = buckets.get(key)!;
-    bucket.items.push(item);
-    bucket.typeSet.add(item.item_type);
-  }
-
-  return Array.from(buckets.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, { label, items, typeSet }]) => ({
-      key,
-      label,
-      items,
-      types: Array.from(typeSet),
-    }));
-}
-
-function ItineraryRow({
-  item,
-  tripId,
-  members,
-  isOrganizer,
-  onUpdated,
-}: {
-  item: ItineraryEntry;
-  tripId: string;
-  members: AppMember[];
-  isOrganizer: boolean;
-  onUpdated: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [deadline, setDeadline] = useState(toInputLocal(item.deadline_at));
-  const [assignee, setAssignee] = useState(item.assigned_to_line_user_id ?? UNASSIGNED);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSave() {
-    setSaving(true);
-    setError(null);
-    try {
-      await appFetchJson(`/api/app/trips/${tripId}/items`, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "update",
-          itemId: item.id,
-          deadlineAt: deadline ? new Date(deadline).toISOString() : null,
-          assignedTo: assignee === UNASSIGNED ? null : assignee,
-        }),
-      });
-      setEditing(false);
-      onUpdated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const option = item.confirmed_option;
-  const assigneeName = item.assigned_to_line_user_id
-    ? (members.find((m) => m.lineUserId === item.assigned_to_line_user_id)?.displayName ??
-      item.assigned_to_line_user_id)
-    : null;
-
-  return (
-    <article className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
-      {option?.image_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={option.image_url}
-          alt={option.name}
-          className="h-44 w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div
-          className={cn(
-            "flex h-20 w-full items-center justify-center gap-2",
-            TYPE_PLACEHOLDER_BG[item.item_type] ?? TYPE_PLACEHOLDER_BG.other
-          )}
-        >
-          <span className="text-2xl">{TYPE_ICON[item.item_type] ?? TYPE_ICON.other}</span>
-          <span className="text-xs font-medium text-[var(--muted-foreground)]">
-            {TYPE_LABEL[item.item_type] ?? "Item"}
-          </span>
-        </div>
-      )}
-
-      <div className="space-y-3 p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="text-[10px] uppercase">
-                {TYPE_LABEL[item.item_type] ?? "Item"}
-              </Badge>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
-                  STAGE_TONE[item.stage] ?? STAGE_TONE.todo
-                )}
-              >
-                {item.stage === "pending" ? "pending vote" : item.stage}
-              </span>
-              {item.booking_status === "needed" && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                  Book
-                </span>
-              )}
-              {item.booking_status === "booked" && (
-                <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
-                  ✓ Booked
-                </span>
-              )}
-            </div>
-
-            <p className="mt-1.5 text-base font-semibold leading-snug">{item.title}</p>
-            {option && option.name !== item.title && (
-              <p className="text-xs text-[var(--muted-foreground)]">{option.name}</p>
-            )}
-            {item.description && (
-              <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                {item.description}
-              </p>
-            )}
-            {option?.address && (
-              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                📍 {option.address}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col items-end gap-1 text-right text-xs text-[var(--muted-foreground)]">
-            {item.deadline_at && (
-              <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 font-medium">
-                {new Date(item.deadline_at).toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            )}
-            {assigneeName && (
-              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                {assigneeName}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {(option?.booking_url || option?.google_maps_url || option?.rating) && (
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            {option?.rating && (
-              <span className="text-[var(--muted-foreground)]">★ {option.rating}</span>
-            )}
-            {option?.price_level && (
-              <span className="text-[var(--muted-foreground)]">{option.price_level}</span>
-            )}
-            {option?.google_maps_url && (
-              <a
-                href={option.google_maps_url}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-[var(--primary)] underline underline-offset-2"
-              >
-                Open in Maps
-              </a>
-            )}
-            {option?.booking_url && (
-              <a
-                href={option.booking_url}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-[var(--primary)] underline underline-offset-2"
-              >
-                Book
-              </a>
-            )}
-          </div>
-        )}
-
-        {isOrganizer && (
-          <div className="border-t border-[var(--border)] pt-3">
-            {editing ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`it-deadline-${item.id}`} className="text-xs">
-                      Deadline / time
-                    </Label>
-                    <Input
-                      id={`it-deadline-${item.id}`}
-                      type="datetime-local"
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Assigned to</Label>
-                    <Select value={assignee} onValueChange={setAssignee}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Unassigned" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
-                        {members.map((m) => (
-                          <SelectItem key={m.lineUserId} value={m.lineUserId}>
-                            {m.displayName ?? m.lineUserId}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {error && <p className="text-xs text-destructive">{error}</p>}
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setEditing(false);
-                      setDeadline(toInputLocal(item.deadline_at));
-                      setAssignee(item.assigned_to_line_user_id ?? UNASSIGNED);
-                      setError(null);
-                    }}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
-                    {saving ? "Saving…" : "Save"}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditing(true)}
-                  className="text-xs"
-                >
-                  Edit deadline / assignment
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </article>
   );
 }
