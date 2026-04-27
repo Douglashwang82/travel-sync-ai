@@ -19,6 +19,10 @@ import type {
   ItineraryResponse,
 } from "@/app/api/app/trips/[tripId]/itinerary/route";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
+import type {
+  DaySuggestion,
+  SuggestDayResponse,
+} from "@/app/api/app/trips/[tripId]/suggest-day/route";
 
 const TYPE_LABEL: Record<string, string> = {
   hotel: "Hotel",
@@ -66,6 +70,29 @@ function toInputLocal(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function generateDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  const current = new Date(startDate + "T00:00:00");
+  const end = new Date(endDate + "T00:00:00");
+  while (current <= end) {
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+function dayLabel(dateStr: string): string {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+type DayEntry =
+  | { key: string; label: string; items: ItineraryEntry[]; types: string[]; isEmpty: false }
+  | { key: string; label: string; items: []; types: []; isEmpty: true };
+
 export function TripItineraryClient({ tripId }: { tripId: string }) {
   const [data, setData] = useState<ItineraryResponse | null>(null);
   const [members, setMembers] = useState<AppMember[]>([]);
@@ -97,12 +124,42 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
     })();
   }, [load]);
 
-  const grouped = useMemo(() => {
+  const allDays = useMemo((): DayEntry[] => {
     if (!data) return [];
+
+    // Grouped days for the current filter
     const filtered = data.items.filter((i) =>
       filter === "all" ? true : i.stage === filter
     );
-    return groupByDay(filtered);
+    const itemDays: DayEntry[] = groupByDay(filtered).map((d) => ({
+      ...d,
+      isEmpty: false as const,
+    }));
+
+    if (!data.trip.start_date || !data.trip.end_date) return itemDays;
+
+    // Dates in the trip range that have zero items scheduled (any stage)
+    const occupiedKeys = new Set(
+      data.items
+        .filter((i) => i.deadline_at)
+        .map((i) => new Date(i.deadline_at!).toISOString().split("T")[0])
+    );
+    const itemDayKeys = new Set(itemDays.map((d) => d.key));
+
+    const emptyDays: DayEntry[] = generateDateRange(
+      data.trip.start_date,
+      data.trip.end_date
+    )
+      .filter((date) => !occupiedKeys.has(date) && !itemDayKeys.has(date))
+      .map((date) => ({
+        key: date,
+        label: dayLabel(date),
+        items: [] as [],
+        types: [] as [],
+        isEmpty: true as const,
+      }));
+
+    return [...itemDays, ...emptyDays].sort((a, b) => a.key.localeCompare(b.key));
   }, [data, filter]);
 
   if (error) {
@@ -152,46 +209,53 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         </div>
       </div>
 
-      {grouped.length === 0 ? (
+      {allDays.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
           Nothing to show for this filter yet.
         </div>
       ) : (
         <div className="space-y-8">
-          {grouped.map((day) => (
+          {allDays.map((day) => (
             <section key={day.key} className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-[var(--border)]" />
-                  <span className="rounded-full bg-[var(--background)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                    {day.label}
-                  </span>
-                  <div className="h-px flex-1 bg-[var(--border)]" />
-                </div>
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {day.types.map((type) => (
-                    <span
-                      key={type}
-                      className="rounded-full bg-[var(--secondary)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)]"
-                    >
-                      {TYPE_ICON[type] ?? "📌"} {TYPE_LABEL[type] ?? "Item"}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {day.items.map((item) => (
-                  <ItineraryRow
-                    key={item.id}
-                    item={item}
+              {day.isEmpty ? (
+                <>
+                  <DayDivider label={day.label} />
+                  <EmptyDaySection
+                    date={day.key}
                     tripId={tripId}
-                    members={members}
                     isOrganizer={role === "organizer"}
-                    onUpdated={() => void load()}
+                    onAdded={() => void load()}
                   />
-                ))}
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <DayDivider label={day.label} />
+                    <div className="flex flex-wrap justify-center gap-1.5">
+                      {day.types.map((type) => (
+                        <span
+                          key={type}
+                          className="rounded-full bg-[var(--secondary)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)]"
+                        >
+                          {TYPE_ICON[type] ?? "📌"} {TYPE_LABEL[type] ?? "Item"}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {day.items.map((item) => (
+                      <ItineraryRow
+                        key={item.id}
+                        item={item}
+                        tripId={tripId}
+                        members={members}
+                        isOrganizer={role === "organizer"}
+                        onUpdated={() => void load()}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </section>
           ))}
         </div>
@@ -200,8 +264,182 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
   );
 }
 
+function DayDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-px flex-1 bg-[var(--border)]" />
+      <span className="rounded-full bg-[var(--background)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-[var(--border)]" />
+    </div>
+  );
+}
+
+function EmptyDaySection({
+  date,
+  tripId,
+  isOrganizer,
+  onAdded,
+}: {
+  date: string;
+  tripId: string;
+  isOrganizer: boolean;
+  onAdded: () => void;
+}) {
+  const [phase, setPhase] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [suggestions, setSuggestions] = useState<DaySuggestion[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [addingTitle, setAddingTitle] = useState<string | null>(null);
+
+  async function handleSuggest() {
+    setPhase("loading");
+    setErrorMsg(null);
+    try {
+      const res = await appFetchJson<SuggestDayResponse>(
+        `/api/app/trips/${tripId}/suggest-day?date=${date}`
+      );
+      setSuggestions(res.suggestions ?? []);
+      setPhase("done");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to get suggestions");
+      setPhase("error");
+    }
+  }
+
+  async function handleAdd(s: DaySuggestion) {
+    setAddingTitle(s.title);
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/items`, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "create",
+          title: s.title,
+          itemType: s.item_type,
+          description: s.description,
+          deadlineAt: `${date}T12:00:00.000Z`,
+        }),
+      });
+      onAdded();
+    } catch {
+      // leave suggestion visible so user can retry
+    } finally {
+      setAddingTitle(null);
+    }
+  }
+
+  if (phase === "idle") {
+    return (
+      <button
+        type="button"
+        onClick={() => void handleSuggest()}
+        className="group w-full space-y-2 rounded-2xl border border-dashed border-[var(--border)] px-5 py-4 text-left transition-colors hover:border-[var(--primary)]/50 hover:bg-[var(--secondary)]/40"
+      >
+        <div className="space-y-2">
+          <div className="h-3 w-3/4 rounded-full bg-[var(--secondary)]" />
+          <div className="h-3 w-1/2 rounded-full bg-[var(--secondary)]" />
+          <div className="h-3 w-2/3 rounded-full bg-[var(--secondary)]" />
+        </div>
+        <p className="text-[11px] font-medium text-[var(--primary)] opacity-70 transition-opacity group-hover:opacity-100">
+          ✨ Nothing planned — click to get AI suggestions
+        </p>
+      </button>
+    );
+  }
+
+  if (phase === "loading") {
+    return (
+      <div className="space-y-2 rounded-2xl border border-[var(--border)] px-5 py-4">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-xl bg-[var(--secondary)] p-3 animate-pulse"
+          >
+            <div className="h-8 w-8 rounded-lg bg-[var(--border)]" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3 w-2/3 rounded-full bg-[var(--border)]" />
+              <div className="h-2.5 w-1/2 rounded-full bg-[var(--border)]" />
+            </div>
+          </div>
+        ))}
+        <p className="pt-1 text-center text-[10px] text-[var(--muted-foreground)]">
+          Getting AI suggestions…
+        </p>
+      </div>
+    );
+  }
+
+  if (phase === "error") {
+    return (
+      <div className="rounded-2xl border border-dashed border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        {errorMsg}{" "}
+        <button
+          type="button"
+          onClick={() => void handleSuggest()}
+          className="ml-1 underline underline-offset-2"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // done
+  return (
+    <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-5 py-4">
+      <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+        ✨ AI Suggestions
+      </p>
+      {suggestions.map((s) => (
+        <div
+          key={s.title}
+          className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 p-3"
+        >
+          <span className="mt-0.5 text-xl">
+            {TYPE_ICON[s.item_type] ?? TYPE_ICON.other}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium leading-snug">{s.title}</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+              {s.description}
+            </p>
+            {s.reason && (
+              <p className="mt-0.5 text-[10px] italic text-[var(--muted-foreground)]/70">
+                {s.reason}
+              </p>
+            )}
+          </div>
+          {isOrganizer && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void handleAdd(s)}
+              disabled={addingTitle !== null}
+              className="shrink-0 text-xs"
+            >
+              {addingTitle === s.title ? "Adding…" : "Add"}
+            </Button>
+          )}
+        </div>
+      ))}
+      <div className="flex justify-end pt-1">
+        <button
+          type="button"
+          onClick={() => void handleSuggest()}
+          className="text-[10px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+        >
+          Refresh suggestions
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function groupByDay(items: ItineraryEntry[]) {
-  const buckets = new Map<string, { label: string; items: ItineraryEntry[]; typeSet: Set<string> }>();
+  const buckets = new Map<
+    string,
+    { label: string; items: ItineraryEntry[]; typeSet: Set<string> }
+  >();
 
   for (const item of items) {
     let key = "zzz-unscheduled";
@@ -442,7 +680,7 @@ function ItineraryRow({
                     Cancel
                   </Button>
                   <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
-                    {saving ? "Saving..." : "Save"}
+                    {saving ? "Saving…" : "Save"}
                   </Button>
                 </div>
               </div>
