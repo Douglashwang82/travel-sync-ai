@@ -11,25 +11,38 @@
 
 export type Row = Record<string, unknown>;
 
+function matchFilter(row: Row, op: string, col: string, val: unknown): boolean {
+  if (op === "eq") return row[col] === val;
+  if (op === "neq") return row[col] !== val;
+  if (op === "in") return (val as unknown[]).includes(row[col]);
+  if (op === "is") {
+    if (val === null) return row[col] == null;
+    return row[col] === val;
+  }
+  if (op === "lte") {
+    return String(row[col] ?? "") <= String(val ?? "");
+  }
+  if (op === "ilike") {
+    const rowVal = String(row[col] ?? "").toLowerCase();
+    const pattern = String(val ?? "").toLowerCase();
+    return rowVal === pattern;
+  }
+  if (op === "like") {
+    // Convert SQL LIKE pattern (% wildcard) to a RegExp anchored at both ends.
+    const pattern = String(val ?? "").replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*");
+    return new RegExp(`^${pattern}$`).test(String(row[col] ?? ""));
+  }
+  return true;
+}
+
 function applyFilters(rows: Row[], filters: Array<{ col: string; op: string; val: unknown }>): Row[] {
   return rows.filter((row) =>
     filters.every((f) => {
-      if (f.op === "eq") return row[f.col] === f.val;
-      if (f.op === "neq") return row[f.col] !== f.val;
-      if (f.op === "in") return (f.val as unknown[]).includes(row[f.col]);
-      if (f.op === "is") {
-        if (f.val === null) return row[f.col] == null;
-        return row[f.col] === f.val;
+      if (f.op.startsWith("not.")) {
+        const innerOp = f.op.slice("not.".length);
+        return !matchFilter(row, innerOp, f.col, f.val);
       }
-      if (f.op === "lte") {
-        return String(row[f.col] ?? "") <= String(f.val ?? "");
-      }
-      if (f.op === "ilike") {
-        const rowVal = String(row[f.col] ?? "").toLowerCase();
-        const pattern = String(f.val ?? "").toLowerCase();
-        return rowVal === pattern;
-      }
-      return true;
+      return matchFilter(row, f.op, f.col, f.val);
     })
   );
 }
@@ -128,10 +141,15 @@ class QueryBuilder {
     return this;
   }
 
-  order(_col: string, _opts?: { ascending?: boolean }) {
-    void _col;
-    void _opts;
-    // Preserve insertion order by default (fine for tests)
+  private _orderBy: { col: string; ascending: boolean } | null = null;
+
+  order(col: string, opts?: { ascending?: boolean }) {
+    this._orderBy = { col, ascending: opts?.ascending !== false };
+    return this;
+  }
+
+  not(col: string, op: string, val: unknown) {
+    this._filters.push({ col, op: `not.${op}`, val });
     return this;
   }
 
@@ -174,7 +192,20 @@ class QueryBuilder {
     const table = this.tables.get(this.tableName) ?? [];
 
     if (this._op === "select") {
-      const rows = applyFilters(table, this._filters);
+      let rows = applyFilters(table, this._filters);
+
+      if (this._orderBy) {
+        const { col, ascending } = this._orderBy;
+        rows = [...rows].sort((a, b) => {
+          const av = a[col];
+          const bv = b[col];
+          if (av === bv) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          if (av < bv) return ascending ? -1 : 1;
+          return ascending ? 1 : -1;
+        });
+      }
 
       if (this._head) {
         const count = this._countMode === "exact" ? rows.length : null;

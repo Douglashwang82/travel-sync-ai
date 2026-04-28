@@ -56,7 +56,7 @@ export default function HelpPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm" variant="outline">
-                <Link href="/liff/dashboard">Board</Link>
+                <Link href="/liff/dashboard">Trips</Link>
               </Button>
               <Button asChild size="sm" variant="outline">
                 <Link href="/liff/readiness">Readiness</Link>

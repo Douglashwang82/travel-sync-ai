@@ -104,6 +104,8 @@ describe("GET /api/liff/board", () => {
     expect(body.todo.map((i: { title: string }) => i.title)).toContain("Book flight");
     expect(body.pending[0].title).toBe("Choose hotel");
     expect(body.confirmed[0].title).toBe("Reserve restaurant");
+
+    expect(body.currentUser).toEqual({ lineUserId: "Utest", role: "organizer" });
   });
 
   it("returns empty board when trip has no items", async () => {

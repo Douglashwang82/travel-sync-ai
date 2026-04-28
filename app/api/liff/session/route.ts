@@ -77,19 +77,33 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
     group = data;
   } else {
-    // Private chat / browser context: find the user's most recently active group
-    const { data } = await db
+    // Private chat / browser context: find the user's most recently active real
+    // group. Mirrors services/private-chat/index.ts so the LIFF and bot DM paths
+    // resolve to the same group:
+    //  - exclude fake 1:1 "groups" the webhook upserts for DMs (line_group_id
+    //    is the user's own LINE userId, which starts with 'U')
+    //  - exclude removed/archived groups
+    //  - rank by line_groups.last_seen_at directly (the previous attempt to
+    //    order by a joined column via .order("line_groups(last_seen_at)", ...)
+    //    is not valid supabase-js syntax and silently no-ops, which let .limit(1)
+    //    return an arbitrary membership and made LIFF show "no trips")
+    const { data: memberships } = await db
       .from("group_members")
-      .select("group_id, line_groups!inner(id, line_group_id, name, status, last_seen_at)")
+      .select("group_id")
       .eq("line_user_id", lineUserId)
-      .is("left_at", null)
-      .order("line_groups(last_seen_at)", { ascending: false })
-      .limit(1)
-      .single();
+      .is("left_at", null);
 
-    if (data) {
-      const lg = Array.isArray(data.line_groups) ? data.line_groups[0] : data.line_groups;
-      group = lg as { id: string; line_group_id: string; name: string | null; status: string };
+    if (memberships && memberships.length > 0) {
+      const { data: lg } = await db
+        .from("line_groups")
+        .select("id, line_group_id, name, status")
+        .in("id", memberships.map((m) => m.group_id))
+        .eq("status", "active")
+        .not("line_group_id", "like", "U%")
+        .order("last_seen_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lg) group = lg;
     }
   }
 

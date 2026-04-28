@@ -400,7 +400,7 @@ export default function ReadinessPage() {
               it as booked.
             </p>
             <Button asChild size="sm" variant="outline" className="mt-3 w-full">
-              <Link href="/liff/dashboard">Go to trip board</Link>
+              <Link href={`/liff/trips/${snapshot.tripId}`}>Go to trip board</Link>
             </Button>
           </section>
         )}

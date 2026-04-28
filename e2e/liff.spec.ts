@@ -18,28 +18,38 @@ test.beforeEach(async ({ page }) => {
   }, liffContext);
 });
 
-test("redirects /liff to the dashboard", async ({ page }) => {
-  await page.route("**/api/liff/session**", async (route) => {
+test("redirects /liff to the trip list, then opens a trip's board", async ({ page }) => {
+  const TRIP_ID = "11111111-1111-4111-8111-111111111111";
+
+  await page.route("**/api/liff/trips**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        group: {
-          id: "group-e2e-1",
-          lineGroupId: "C_E2E_001",
-          name: "Trip Crew",
-        },
-        member: {
-          lineUserId: "U_E2E_001",
-          role: "organizer",
-        },
-        activeTrip: {
-          id: "11111111-1111-4111-8111-111111111111",
-          destination_name: "Kyoto",
-          start_date: "2026-06-01",
-          end_date: "2026-06-07",
-          status: "active",
-        },
+        trips: [
+          {
+            id: TRIP_ID,
+            groupId: "group-e2e-1",
+            groupName: "Trip Crew",
+            destinationName: "Kyoto",
+            startDate: "2026-06-01",
+            endDate: "2026-06-07",
+            status: "active",
+            itemCount: 3,
+            createdAt: "2026-04-01T10:00:00.000Z",
+          },
+          {
+            id: "22222222-2222-4222-8222-222222222222",
+            groupId: "group-e2e-1",
+            groupName: "Trip Crew",
+            destinationName: "Sapporo",
+            startDate: "2026-01-01",
+            endDate: "2026-01-05",
+            status: "completed",
+            itemCount: 5,
+            createdAt: "2026-01-10T10:00:00.000Z",
+          },
+        ],
       }),
     });
   });
@@ -50,7 +60,7 @@ test("redirects /liff to the dashboard", async ({ page }) => {
       contentType: "application/json",
       body: JSON.stringify({
         trip: {
-          id: "11111111-1111-4111-8111-111111111111",
+          id: TRIP_ID,
           group_id: "group-e2e-1",
           title: null,
           destination_name: "Kyoto",
@@ -65,7 +75,7 @@ test("redirects /liff to the dashboard", async ({ page }) => {
         todo: [
           {
             id: "item-1",
-            trip_id: "11111111-1111-4111-8111-111111111111",
+            trip_id: TRIP_ID,
             item_type: "hotel",
             item_kind: "task",
             title: "Book hotel",
@@ -83,7 +93,7 @@ test("redirects /liff to the dashboard", async ({ page }) => {
         pending: [
           {
             id: "item-2",
-            trip_id: "11111111-1111-4111-8111-111111111111",
+            trip_id: TRIP_ID,
             item_type: "flight",
             item_kind: "decision",
             title: "Vote on flight",
@@ -101,7 +111,7 @@ test("redirects /liff to the dashboard", async ({ page }) => {
         confirmed: [
           {
             id: "item-3",
-            trip_id: "11111111-1111-4111-8111-111111111111",
+            trip_id: TRIP_ID,
             item_type: "transport",
             item_kind: "task",
             title: "Meet at station",
@@ -116,13 +126,24 @@ test("redirects /liff to the dashboard", async ({ page }) => {
             updated_at: "2026-04-01T10:00:00.000Z",
           },
         ],
+        currentUser: { lineUserId: "U_E2E_001", role: "organizer" },
       }),
     });
   });
 
   await page.goto("/liff");
 
+  // Trip list at /liff/dashboard
   await expect(page).toHaveURL(/\/liff\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Your trips" })).toBeVisible();
+  await expect(page.getByText("Active & drafts")).toBeVisible();
+  await expect(page.getByText("Past trips")).toBeVisible();
+  await expect(page.getByText("Kyoto")).toBeVisible();
+  await expect(page.getByText("Sapporo")).toBeVisible();
+
+  // Tap into the active trip → board view
+  await page.getByRole("link", { name: /Kyoto/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/liff/trips/${TRIP_ID}$`));
   await expect(page.getByRole("heading", { name: "Kyoto" })).toBeVisible();
   await expect(page.getByText("Book hotel")).toBeVisible();
   await expect(page.getByText("Vote on flight")).toBeVisible();
@@ -234,7 +255,7 @@ test("renders the help page command and LIFF navigation guidance", async ({ page
   await expect(page.getByRole("heading", { name: "LIFF Views" })).toBeVisible();
   const liffViewsSection = page.locator("section").filter({ hasText: "LIFF Views" });
   const commandsSection = page.locator("section").filter({ hasText: "Commands" });
-  await expect(liffViewsSection.getByRole("link", { name: "Board" })).toBeVisible();
+  await expect(liffViewsSection.getByRole("link", { name: "Trips" })).toBeVisible();
   await expect(liffViewsSection.getByRole("link", { name: "Readiness" })).toBeVisible();
   await expect(liffViewsSection.getByRole("link", { name: "Operations" })).toBeVisible();
   await expect(commandsSection.getByText("/help").first()).toBeVisible();

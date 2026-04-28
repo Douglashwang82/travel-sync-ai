@@ -350,4 +350,8 @@ export interface BoardData {
   todo: TripItem[];
   pending: TripItem[];
   confirmed: TripItem[];
+  currentUser: {
+    lineUserId: string;
+    role: string;
+  };
 }
