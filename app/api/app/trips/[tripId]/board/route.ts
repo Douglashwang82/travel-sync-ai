@@ -45,6 +45,10 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     todo: all.filter((i) => i.stage === "todo"),
     pending: all.filter((i) => i.stage === "pending"),
     confirmed: all.filter((i) => i.stage === "confirmed"),
+    currentUser: {
+      lineUserId: auth.lineUserId,
+      role: auth.role,
+    },
   };
   return NextResponse.json(board);
 }

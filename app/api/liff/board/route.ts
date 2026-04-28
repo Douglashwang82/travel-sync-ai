@@ -75,6 +75,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     todo: allItems.filter((i) => i.stage === "todo"),
     pending: allItems.filter((i) => i.stage === "pending"),
     confirmed: allItems.filter((i) => i.stage === "confirmed"),
+    currentUser: {
+      lineUserId: membership.lineUserId,
+      role: membership.membership.role,
+    },
   };
 
   return NextResponse.json(board);

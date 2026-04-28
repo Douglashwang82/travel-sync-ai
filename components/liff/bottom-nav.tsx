@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/liff/dashboard", label: "Board", shortLabel: "Board" },
+  { href: "/liff/dashboard", label: "Trips", shortLabel: "Trips" },
   { href: "/liff/itinerary", label: "Itinerary", shortLabel: "Plan" },
   { href: "/liff/route", label: "Route", shortLabel: "Route" },
   { href: "/liff/tickets", label: "Tickets", shortLabel: "Tickets" },
