@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createAdminClient } from "@/lib/db";
+import { validateActiveMember } from "@/lib/members";
+import type { Result } from "@/lib/result";
 import {
   notifyAccessRequested,
   notifyAccessDecided,
@@ -14,12 +16,6 @@ import type {
   TemplateVisibility,
   ItemType,
 } from "@/lib/types";
-
-// ─── Result type ──────────────────────────────────────────────────────────────
-
-export type TemplateResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: string; code: string };
 
 // ─── Publish ──────────────────────────────────────────────────────────────────
 
@@ -42,7 +38,7 @@ export interface PublishOutput {
 
 export async function publishTemplate(
   input: PublishInput
-): Promise<TemplateResult<PublishOutput>> {
+): Promise<Result<PublishOutput>> {
   const db = createAdminClient();
 
   const { data: trip } = await db
@@ -263,7 +259,7 @@ export interface TemplateWithAccess {
 export async function getTemplate(
   slug: string,
   viewerLineUserId: string
-): Promise<TemplateResult<TemplateWithAccess>> {
+): Promise<Result<TemplateWithAccess>> {
   const db = createAdminClient();
 
   const { data: template } = await db
@@ -365,7 +361,7 @@ export interface ForkInput {
 
 export async function forkTemplate(
   input: ForkInput
-): Promise<TemplateResult<{ tripId: string }>> {
+): Promise<Result<{ tripId: string }>> {
   const db = createAdminClient();
 
   const result = await getTemplate(input.slug, input.lineUserId);
@@ -381,15 +377,7 @@ export async function forkTemplate(
     };
   }
 
-  // Verify the user is an active member of the target group
-  const { data: membership } = await db
-    .from("group_members")
-    .select("role")
-    .eq("group_id", input.groupId)
-    .eq("line_user_id", input.lineUserId)
-    .is("left_at", null)
-    .single();
-  if (!membership) {
+  if (!await validateActiveMember(db, input.groupId, input.lineUserId)) {
     return { ok: false, error: "You are not a member of the selected group", code: "FORBIDDEN" };
   }
 
@@ -515,7 +503,7 @@ export interface UpdateTemplateInput {
 
 export async function updateTemplate(
   input: UpdateTemplateInput
-): Promise<TemplateResult<{ template: TripTemplate }>> {
+): Promise<Result<{ template: TripTemplate }>> {
   const db = createAdminClient();
 
   const { data: template } = await db
@@ -560,7 +548,7 @@ export interface GrantWithDisplayName {
 async function loadTemplateAsAuthor(
   slug: string,
   authorLineUserId: string
-): Promise<TemplateResult<{ id: string }>> {
+): Promise<Result<{ id: string }>> {
   const db = createAdminClient();
   const { data: template } = await db
     .from("trip_templates")
@@ -578,7 +566,7 @@ async function loadTemplateAsAuthor(
 export async function listTemplateGrants(
   slug: string,
   authorLineUserId: string
-): Promise<TemplateResult<{ grants: GrantWithDisplayName[] }>> {
+): Promise<Result<{ grants: GrantWithDisplayName[] }>> {
   const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
   if (!tmpl.ok) return tmpl;
 
@@ -617,7 +605,7 @@ export async function addTemplateGrant(
   slug: string,
   authorLineUserId: string,
   inviteeLineUserId: string
-): Promise<TemplateResult<{ grant: GrantWithDisplayName }>> {
+): Promise<Result<{ grant: GrantWithDisplayName }>> {
   const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
   if (!tmpl.ok) return tmpl;
 
@@ -678,7 +666,7 @@ export async function removeTemplateGrant(
   slug: string,
   authorLineUserId: string,
   inviteeLineUserId: string
-): Promise<TemplateResult<{ removed: boolean }>> {
+): Promise<Result<{ removed: boolean }>> {
   const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
   if (!tmpl.ok) return tmpl;
 
@@ -732,7 +720,7 @@ export interface SearchResult {
 
 export async function searchTemplates(
   input: SearchTemplatesInput
-): Promise<TemplateResult<SearchResult>> {
+): Promise<Result<SearchResult>> {
   const db = createAdminClient();
   const limit = Math.min(Math.max(input.limit ?? 20, 1), 60);
   const offset = Math.max(input.offset ?? 0, 0);
@@ -810,7 +798,7 @@ export interface LikeResult {
 async function resolveAccessibleTemplate(
   slug: string,
   viewerLineUserId: string
-): Promise<TemplateResult<{ id: string }>> {
+): Promise<Result<{ id: string }>> {
   const db = createAdminClient();
 
   const { data: template } = await db
@@ -840,7 +828,7 @@ async function resolveAccessibleTemplate(
 export async function likeTemplate(
   slug: string,
   lineUserId: string
-): Promise<TemplateResult<LikeResult>> {
+): Promise<Result<LikeResult>> {
   const resolved = await resolveAccessibleTemplate(slug, lineUserId);
   if (!resolved.ok) return resolved;
 
@@ -873,7 +861,7 @@ export async function likeTemplate(
 export async function unlikeTemplate(
   slug: string,
   lineUserId: string
-): Promise<TemplateResult<LikeResult>> {
+): Promise<Result<LikeResult>> {
   const resolved = await resolveAccessibleTemplate(slug, lineUserId);
   if (!resolved.ok) return resolved;
 
@@ -995,7 +983,7 @@ export async function listComments(
   limit = 20,
   offset = 0
 ): Promise<
-  TemplateResult<{
+  Result<{
     comments: CommentView[];
     hasMore: boolean;
     nextOffset: number;
@@ -1049,7 +1037,7 @@ export async function addComment(
   slug: string,
   lineUserId: string,
   body: string
-): Promise<TemplateResult<{ comment: CommentView }>> {
+): Promise<Result<{ comment: CommentView }>> {
   const trimmed = body.trim();
   if (trimmed.length === 0 || trimmed.length > 2000) {
     return {
@@ -1112,7 +1100,7 @@ export async function updateComment(
   commentId: string,
   lineUserId: string,
   body: string
-): Promise<TemplateResult<{ comment: CommentView }>> {
+): Promise<Result<{ comment: CommentView }>> {
   const trimmed = body.trim();
   if (trimmed.length === 0 || trimmed.length > 2000) {
     return {
@@ -1177,7 +1165,7 @@ export async function deleteComment(
   slug: string,
   commentId: string,
   lineUserId: string
-): Promise<TemplateResult<{ deleted: boolean }>> {
+): Promise<Result<{ deleted: boolean }>> {
   const db = createAdminClient();
 
   const { data: existing } = await db
@@ -1262,7 +1250,7 @@ export async function requestTemplateAccess(
   slug: string,
   lineUserId: string,
   message: string | null
-): Promise<TemplateResult<{ request: AccessRequestView }>> {
+): Promise<Result<{ request: AccessRequestView }>> {
   const db = createAdminClient();
 
   const { data: template } = await db
@@ -1354,7 +1342,7 @@ export async function listAccessRequests(
   slug: string,
   authorLineUserId: string,
   statusFilter?: "pending" | "approved" | "denied"
-): Promise<TemplateResult<{ requests: AccessRequestView[] }>> {
+): Promise<Result<{ requests: AccessRequestView[] }>> {
   const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
   if (!tmpl.ok) return tmpl;
 
@@ -1398,7 +1386,7 @@ export async function decideAccessRequest(
   requestId: string,
   authorLineUserId: string,
   decision: "approved" | "denied"
-): Promise<TemplateResult<{ request: AccessRequestView }>> {
+): Promise<Result<{ request: AccessRequestView }>> {
   const tmpl = await loadTemplateAsAuthor(slug, authorLineUserId);
   if (!tmpl.ok) return tmpl;
 
@@ -1498,7 +1486,7 @@ export async function decideAccessRequest(
 async function checkReportRateLimit(
   db: ReturnType<typeof createAdminClient>,
   reporterLineUserId: string
-): Promise<TemplateResult<true>> {
+): Promise<Result<true>> {
   const windowStart = new Date(
     Math.floor(Date.now() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
   ).toISOString();
@@ -1521,7 +1509,7 @@ export async function reportTemplate(
   slug: string,
   reporterLineUserId: string,
   reason: string
-): Promise<TemplateResult<{ reported: true }>> {
+): Promise<Result<{ reported: true }>> {
   const trimmed = reason.trim();
   if (trimmed.length === 0 || trimmed.length > 1000) {
     return {
@@ -1569,7 +1557,7 @@ export async function reportComment(
   commentId: string,
   reporterLineUserId: string,
   reason: string
-): Promise<TemplateResult<{ reported: true }>> {
+): Promise<Result<{ reported: true }>> {
   const trimmed = reason.trim();
   if (trimmed.length === 0 || trimmed.length > 1000) {
     return {

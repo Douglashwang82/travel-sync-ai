@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/db";
+import { getActiveMembers } from "@/lib/members";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -189,13 +190,7 @@ export async function resolveBeneficiaries(
   }
 
   const db = createAdminClient();
-  const { data: members } = await db
-    .from("group_members")
-    .select("line_user_id, display_name")
-    .eq("group_id", groupId)
-    .is("left_at", null);
-
-  const memberList = members ?? [];
+  const memberList = await getActiveMembers(db, groupId);
 
   const resolved: Beneficiary[] = mentions.map((raw) => {
     const name = raw.replace(/^@/, "").toLowerCase();
@@ -216,13 +211,9 @@ export async function resolveBeneficiaries(
  */
 export async function getAllMemberBeneficiaries(groupId: string): Promise<Beneficiary[]> {
   const db = createAdminClient();
-  const { data: members } = await db
-    .from("group_members")
-    .select("line_user_id, display_name")
-    .eq("group_id", groupId)
-    .is("left_at", null);
+  const members = await getActiveMembers(db, groupId);
 
-  return (members ?? []).map((m) => ({
+  return members.map((m) => ({
     userId: m.line_user_id,
     displayName: m.display_name ?? m.line_user_id,
   }));
