@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/db";
+import { validateActiveMember } from "@/lib/members";
 import { confirmItem } from "@/services/trip-state";
 import { track } from "@/lib/analytics";
 import { getPlaceDetails } from "@/services/decisions/places";
@@ -66,16 +67,7 @@ export async function castVote(input: CastVoteInput): Promise<VoteResult> {
     };
   }
 
-  // Verify the voter is an active member of the group
-  const { data: membership } = await db
-    .from("group_members")
-    .select("id")
-    .eq("group_id", input.groupId)
-    .eq("line_user_id", input.lineUserId)
-    .is("left_at", null)
-    .single();
-
-  if (!membership) {
+  if (!await validateActiveMember(db, input.groupId, input.lineUserId)) {
     return {
       accepted: false,
       error: "You are not a member of this group",
