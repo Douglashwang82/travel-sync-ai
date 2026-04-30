@@ -117,6 +117,8 @@ export function buildReadinessSnapshot(
   const hotelItems = findByTypes(confirmedItems, ["hotel"]);
   const transportItems = findByTypes(confirmedItems, ["transport", "flight"]);
   const returnTransportItems = transportItems.length >= 2 ? transportItems.slice(1) : [];
+  const restaurantItems = findByTypes(confirmedItems, ["restaurant"]);
+  const activityItems = findByTypes(confirmedItems, ["activity"]);
 
   const items: ReadinessItem[] = [
     {
@@ -213,6 +215,38 @@ export function buildReadinessSnapshot(
       sourceKind: "system",
       evidence: returnTransportItems.map((item) => item.title),
     },
+    // Only emit restaurant readiness when there are confirmed restaurant items —
+    // missing restaurant data is not a blocker for trips without dining reservations.
+    ...(restaurantItems.length > 0
+      ? [{
+          id: "restaurant-reservations",
+          tripId: trip.id,
+          category: "reservations" as const,
+          title: "Restaurant reservations confirmed",
+          description: buildItemsDescription(restaurantItems, "", "stay"),
+          severity: "medium" as const,
+          status: aggregateBookingStatus(restaurantItems),
+          dueAt: trip.start_date,
+          sourceKind: "system" as const,
+          evidence: restaurantItems.map((item) => item.title),
+        }]
+      : []),
+    // Activity items that need tickets flagged as medium severity — a missed
+    // activity is recoverable unlike transport, but still warrants tracking.
+    ...(activityItems.length > 0
+      ? [{
+          id: "activity-tickets",
+          tripId: trip.id,
+          category: "reservations" as const,
+          title: "Activity tickets and entries confirmed",
+          description: buildItemsDescription(activityItems, "", "stay"),
+          severity: "medium" as const,
+          status: aggregateBookingStatus(activityItems),
+          dueAt: trip.start_date,
+          sourceKind: "system" as const,
+          evidence: activityItems.map((item) => item.title),
+        }]
+      : []),
   ];
 
   const completedCount = items.filter((item) => item.status === "completed").length;

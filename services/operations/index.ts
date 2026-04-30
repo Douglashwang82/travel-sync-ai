@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
-import type { ItemType, Trip, TripItem, TripItemOption } from "@/lib/types";
+import type { BookingStatus, ItemType, Trip, TripItem, TripItemOption } from "@/lib/types";
+import { TripItemMetadataSchema, type TripItemMetadata } from "@/lib/trip-item-metadata";
 import { getReadinessSnapshot, type ReadinessSnapshot } from "@/services/readiness";
 
 export type TripPhase =
@@ -36,9 +37,12 @@ export interface OperationsSummary {
     itemId: string;
     title: string;
     itemType: ItemType;
+    bookingStatus: BookingStatus;
     googleMapsUrl: string | null;
     bookingUrl: string | null;
+    metadataSummary: string | null;
   }>;
+  needsBookingCount: number;
   sourceOfTruth: string[];
   freshness: {
     generatedAt: string;
@@ -80,6 +84,8 @@ export async function getOperationsSummary(
       item_type,
       stage,
       deadline_at,
+      booking_status,
+      metadata,
       confirmed_option_id,
       trip_item_options!trip_items_confirmed_option_id_fkey (
         id,
@@ -106,23 +112,24 @@ export async function getOperationsSummary(
       | "end_date"
       | "status"
     >,
-    ((items ?? []) as Pick<
-      TripItem,
-      "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id"
-    >[]).map((item) => ({
+    ((items ?? []) as Array<
+      Pick<TripItem, "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id" | "booking_status"> & { metadata?: unknown }
+    >).map((item) => ({
       ...item,
       confirmed_option: extractConfirmedOption(item),
-    })) as Array<
-      Pick<
-        TripItem,
-        "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id"
-      > & {
-        confirmed_option: Pick<TripItemOption, "google_maps_url" | "booking_url"> | null;
-      }
-    >,
+      metadata: parseItemMetadata(item.metadata, item.item_type),
+    })),
     readiness
   );
 }
+
+type OpsItem = Pick<
+  TripItem,
+  "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id" | "booking_status"
+> & {
+  confirmed_option: Pick<TripItemOption, "google_maps_url" | "booking_url"> | null;
+  metadata: TripItemMetadata | null;
+};
 
 export function buildOperationsSummary(
   trip: Pick<
@@ -139,14 +146,7 @@ export function buildOperationsSummary(
     | "end_date"
     | "status"
   >,
-  items: Array<
-    Pick<
-      TripItem,
-      "id" | "title" | "item_type" | "stage" | "deadline_at" | "confirmed_option_id"
-    > & {
-      confirmed_option: Pick<TripItemOption, "google_maps_url" | "booking_url"> | null;
-    }
-  >,
+  items: OpsItem[],
   readiness: ReadinessSnapshot | null
 ): OperationsSummary {
   const phase = deriveTripPhase(trip);
@@ -154,9 +154,18 @@ export function buildOperationsSummary(
   const transportItems = confirmedItems.filter(
     (item) => item.item_type === "flight" || item.item_type === "transport"
   );
+  const needsBookingCount = confirmedItems.filter((i) => i.booking_status === "needed").length;
 
   const readinessBlockers = readiness?.blockers ?? [];
+
+  // Inject a booking nudge when items are confirmed but not yet booked
+  const bookingNudges: string[] =
+    needsBookingCount > 0
+      ? [`${needsBookingCount} confirmed item${needsBookingCount === 1 ? "" : "s"} still need${needsBookingCount === 1 ? "s" : ""} booking — use /booked [item] [ref].`]
+      : [];
+
   const nextActions = [
+    ...bookingNudges,
     ...(readiness?.missingInputs ?? []).slice(0, 3),
     ...deriveNextActionsFromPhase(phase, trip, transportItems),
   ].slice(0, 4);
@@ -183,9 +192,7 @@ export function buildOperationsSummary(
     activeRisks,
     transportStatus:
       transportItems.length > 0
-        ? transportItems.map(
-            (item) => `${formatItemType(item.item_type)} committed: ${item.title}`
-          )
+        ? transportItems.map((item) => buildTransportStatusLine(item))
         : ["No committed transport is available for live operations yet."],
     confirmedToday: confirmedItems.slice(0, 4).map((item) => item.title),
     readiness: {
@@ -193,16 +200,20 @@ export function buildOperationsSummary(
       confidenceScore: readiness?.confidenceScore ?? 0,
       blockerCount: readinessBlockers.length,
     },
+    needsBookingCount,
+    // Include all confirmed items in confirmedLinks, not just those with option URLs.
+    // Items added manually via LIFF have no confirmed_option but still matter operationally.
     confirmedLinks: confirmedItems
       .map((item) => ({
         itemId: item.id,
         title: item.title,
         itemType: item.item_type,
+        bookingStatus: item.booking_status,
         googleMapsUrl: item.confirmed_option?.google_maps_url ?? null,
         bookingUrl: item.confirmed_option?.booking_url ?? null,
+        metadataSummary: buildMetadataSummary(item.metadata),
       }))
-      .filter((item) => item.googleMapsUrl || item.bookingUrl)
-      .slice(0, 6),
+      .slice(0, 8),
     sourceOfTruth: readiness?.committedSourceSummary ?? [],
     freshness: {
       generatedAt: new Date().toISOString(),
@@ -344,6 +355,66 @@ function daysBetween(fromIso: string, toIso: string): number {
   const from = Date.parse(fromIso);
   const to = Date.parse(toIso);
   return Math.round((to - from) / (1000 * 60 * 60 * 24));
+}
+
+function parseItemMetadata(raw: unknown, itemType: string): TripItemMetadata | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const withType = { type: itemType, ...(raw as Record<string, unknown>) };
+  const result = TripItemMetadataSchema.safeParse(withType);
+  return result.success ? result.data : null;
+}
+
+function buildTransportStatusLine(item: OpsItem): string {
+  const base = `${formatItemType(item.item_type)} committed: ${item.title}`;
+  if (!item.metadata) return base;
+
+  const parts: string[] = [];
+  if (item.metadata.type === "flight") {
+    if (item.metadata.flight_number) parts.push(item.metadata.flight_number);
+    if (item.metadata.departure_airport && item.metadata.arrival_airport) {
+      parts.push(`${item.metadata.departure_airport} → ${item.metadata.arrival_airport}`);
+    }
+    if (item.metadata.departure_time) {
+      parts.push(
+        new Date(item.metadata.departure_time).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      );
+    }
+  } else if (item.metadata.type === "transport") {
+    if (item.metadata.mode) parts.push(item.metadata.mode);
+    if (item.metadata.pickup_location) parts.push(item.metadata.pickup_location);
+    if (item.metadata.pickup_time) parts.push(item.metadata.pickup_time);
+  }
+
+  return parts.length > 0 ? `${base} (${parts.join(" · ")})` : base;
+}
+
+function buildMetadataSummary(metadata: TripItemMetadata | null): string | null {
+  if (!metadata) return null;
+  switch (metadata.type) {
+    case "flight": {
+      const parts = [
+        metadata.flight_number,
+        metadata.departure_airport && metadata.arrival_airport
+          ? `${metadata.departure_airport}→${metadata.arrival_airport}`
+          : null,
+      ].filter(Boolean);
+      return parts.length > 0 ? parts.join(" ") : null;
+    }
+    case "hotel":
+      return metadata.check_in_time ? `Check-in ${metadata.check_in_time}` : null;
+    case "restaurant":
+      return metadata.reservation_time ? `${metadata.reservation_time}${metadata.party_size ? ` · ${metadata.party_size} pax` : ""}` : null;
+    case "transport":
+      return metadata.mode ?? null;
+    case "activity":
+      return metadata.start_time ?? null;
+    default:
+      return null;
+  }
 }
 
 function extractConfirmedOption(
