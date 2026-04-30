@@ -1,3 +1,6 @@
+import type { TripItemMetadata } from "@/lib/trip-item-metadata";
+export type { TripItemMetadata };
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export type GroupStatus = "active" | "removed" | "archived";
@@ -122,6 +125,8 @@ export interface TripItem {
   booking_ref: string | null;
   booked_by_line_user_id: string | null;
   booked_at: string | null;
+  // Type-specific fields stored as jsonb — see lib/trip-item-metadata.ts
+  metadata: TripItemMetadata;
   created_at: string;
   updated_at: string;
 }
