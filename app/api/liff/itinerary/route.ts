@@ -1,36 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/db";
 import { requireTripMembership } from "@/lib/liff-server";
+import { createAdminClient } from "@/lib/db";
+import { TripItemMetadataSchema } from "@/lib/trip-item-metadata";
+import {
+  getConfirmedItems,
+  createTripItem,
+  updateBookingStatus,
+  updateTripItemMetadata,
+  deleteTripItem,
+} from "@/services/trip-items";
 import type { ApiError } from "@/lib/types";
+import type { ItineraryRow } from "@/services/trip-items";
+
+// Re-export so the UI page can import the shape from the route module.
+export type { ItineraryRow as ItineraryItem };
 
 const QuerySchema = z.object({
   tripId: z.string().uuid(),
 });
 
-export interface ItineraryItem {
-  id: string;
-  title: string;
-  item_type: string;
-  deadline_at: string | null;
-  confirmed_option: {
-    id: string;
-    name: string;
-    address: string | null;
-    image_url: string | null;
-    rating: number | null;
-    price_level: string | null;
-    booking_url: string | null;
-    google_maps_url: string | null;
-  } | null;
-}
+// ─── GET /api/liff/itinerary?tripId=... ──────────────────────────────────────
 
-/**
- * GET /api/liff/itinerary?tripId=...
- *
- * Returns confirmed items ordered by deadline_at (nulls last), with their
- * confirmed option details for the itinerary timeline view.
- */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
   const result = QuerySchema.safeParse({ tripId: searchParams.get("tripId") });
@@ -45,8 +36,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { tripId } = result.data;
   const membership = await requireTripMembership(req, tripId);
   if (!membership.ok) return membership.response;
-  const db = createAdminClient();
 
+  const db = createAdminClient();
   const { data: trip, error: tripError } = await db
     .from("trips")
     .select("id, destination_name, start_date, end_date")
@@ -60,59 +51,183 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { data: items, error: itemsError } = await db
-    .from("trip_items")
-    .select(`
-      id,
-      title,
-      item_type,
-      deadline_at,
-      confirmed_option_id,
-      trip_item_options!trip_items_confirmed_option_id_fkey (
-        id,
-        name,
-        address,
-        image_url,
-        rating,
-        price_level,
-        booking_url,
-        google_maps_url
-      )
-    `)
-    .eq("trip_id", tripId)
-    .eq("stage", "confirmed")
-    .order("deadline_at", { ascending: true, nullsFirst: false });
-
-  if (itemsError) {
+  try {
+    const items = await getConfirmedItems(tripId);
+    return NextResponse.json({ trip, items });
+  } catch {
     return NextResponse.json<ApiError>(
       { error: "Failed to load itinerary", code: "DB_ERROR" },
       { status: 500 }
     );
   }
+}
 
-  const itinerary: ItineraryItem[] = (items ?? []).map((item) => {
-    const opt = Array.isArray(item.trip_item_options)
-      ? item.trip_item_options[0]
-      : item.trip_item_options;
-    return {
-      id: item.id,
-      title: item.title,
-      item_type: item.item_type,
-      deadline_at: item.deadline_at,
-      confirmed_option: opt
-        ? {
-            id: opt.id,
-            name: opt.name,
-            address: opt.address,
-            image_url: opt.image_url,
-            rating: opt.rating,
-            price_level: opt.price_level,
-            booking_url: opt.booking_url,
-            google_maps_url: opt.google_maps_url,
-          }
-        : null,
-    };
+// ─── POST /api/liff/itinerary ─────────────────────────────────────────────────
+// Manually add a confirmed trip item from LIFF (source = 'manual').
+
+const CreateSchema = z.object({
+  tripId: z.string().uuid(),
+  item_type: z.enum(["hotel", "restaurant", "activity", "transport", "insurance", "flight", "other"]),
+  title: z.string().min(1).max(200),
+  description: z.string().max(500).optional(),
+  deadline_at: z.string().datetime({ offset: true }).optional(),
+  metadata: TripItemMetadataSchema.optional(),
+});
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json<ApiError>(
+      { error: "Invalid JSON body", code: "VALIDATION_ERROR" },
+      { status: 400 }
+    );
+  }
+
+  const result = CreateSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json<ApiError>(
+      { error: result.error.issues[0]?.message ?? "Invalid input", code: "VALIDATION_ERROR" },
+      { status: 400 }
+    );
+  }
+
+  const { tripId, item_type, title, description, deadline_at, metadata } = result.data;
+  const membership = await requireTripMembership(req, tripId);
+  if (!membership.ok) return membership.response;
+
+  try {
+    const id = await createTripItem({
+      tripId,
+      itemType: item_type,
+      title,
+      description,
+      deadlineAt: deadline_at,
+      metadata,
+      addedByLineUserId: membership.lineUserId,
+    });
+    return NextResponse.json({ id }, { status: 201 });
+  } catch {
+    return NextResponse.json<ApiError>(
+      { error: "Failed to create item", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+}
+
+// ─── PATCH /api/liff/itinerary ────────────────────────────────────────────────
+// Update booking status or metadata on an existing item.
+
+const PatchSchema = z.object({
+  tripId: z.string().uuid(),
+  itemId: z.string().uuid(),
+  action: z.enum(["booking", "metadata"]),
+  // action = "booking"
+  booking_status: z.enum(["not_required", "needed", "booked"]).optional(),
+  booking_ref: z.string().max(200).nullable().optional(),
+  // action = "metadata"
+  metadata: TripItemMetadataSchema.optional(),
+});
+
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json<ApiError>(
+      { error: "Invalid JSON body", code: "VALIDATION_ERROR" },
+      { status: 400 }
+    );
+  }
+
+  const result = PatchSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json<ApiError>(
+      { error: result.error.issues[0]?.message ?? "Invalid input", code: "VALIDATION_ERROR" },
+      { status: 400 }
+    );
+  }
+
+  const { tripId, itemId, action } = result.data;
+  const membership = await requireTripMembership(req, tripId);
+  if (!membership.ok) return membership.response;
+
+  try {
+    if (action === "booking") {
+      if (!result.data.booking_status) {
+        return NextResponse.json<ApiError>(
+          { error: "booking_status is required for action=booking", code: "VALIDATION_ERROR" },
+          { status: 400 }
+        );
+      }
+      await updateBookingStatus(
+        itemId,
+        result.data.booking_status,
+        result.data.booking_ref ?? null,
+        membership.lineUserId
+      );
+    } else {
+      if (!result.data.metadata) {
+        return NextResponse.json<ApiError>(
+          { error: "metadata is required for action=metadata", code: "VALIDATION_ERROR" },
+          { status: 400 }
+        );
+      }
+      await updateTripItemMetadata(itemId, result.data.metadata);
+    }
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json<ApiError>(
+      { error: "Failed to update item", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+}
+
+// ─── DELETE /api/liff/itinerary ───────────────────────────────────────────────
+// Only manually-added items can be deleted; vote-decided items stay for audit.
+
+const DeleteSchema = z.object({
+  tripId: z.string().uuid(),
+  itemId: z.string().uuid(),
+});
+
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const { searchParams } = new URL(req.url);
+  const result = DeleteSchema.safeParse({
+    tripId: searchParams.get("tripId"),
+    itemId: searchParams.get("itemId"),
   });
 
-  return NextResponse.json({ trip, items: itinerary });
+  if (!result.success) {
+    return NextResponse.json<ApiError>(
+      { error: "tripId and itemId are required", code: "VALIDATION_ERROR" },
+      { status: 400 }
+    );
+  }
+
+  const { tripId, itemId } = result.data;
+  const membership = await requireTripMembership(req, tripId);
+  if (!membership.ok) return membership.response;
+
+  try {
+    const outcome = await deleteTripItem(itemId, tripId);
+    if (!outcome.deleted) {
+      const message =
+        outcome.reason === "not_found"
+          ? "Item not found"
+          : "Only manually added items can be removed here. Use the board to reject vote-decided items.";
+      return NextResponse.json<ApiError>(
+        { error: message, code: "FORBIDDEN" },
+        { status: outcome.reason === "not_found" ? 404 : 403 }
+      );
+    }
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json<ApiError>(
+      { error: "Failed to delete item", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
 }
