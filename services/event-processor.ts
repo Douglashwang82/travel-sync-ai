@@ -68,11 +68,22 @@ export async function processLineEvent(
     logger.error("event failed", { eventId: lineEventId, context: eventType, groupId: ctx.dbGroupId ?? undefined });
     const failureReason = err instanceof Error ? err.message : String(err);
 
+    const { data: row } = await db
+      .from("line_events")
+      .select("retry_count")
+      .eq("id", lineEventId)
+      .single();
+    const retryCount = row?.retry_count ?? 0;
+    // Exponential backoff: 2^(retry_count+1) seconds, capped at 1 hour.
+    const backoffSeconds = Math.min(Math.pow(2, retryCount + 1), 3600);
+    const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000).toISOString();
+
     await db
       .from("line_events")
       .update({
         processing_status: "failed",
         failure_reason: failureReason,
+        next_retry_at: nextRetryAt,
       })
       .eq("id", lineEventId);
   }

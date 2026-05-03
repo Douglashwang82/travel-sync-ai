@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/process-events",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/vote-deadlines",
       "schedule": "0 1 * * *"
     },

@@ -8,14 +8,18 @@ import { logger } from "@/lib/logger";
 
 const MAX_RETRIES = 5;
 const BATCH_SIZE = 20;
+// A row stuck in `processing` for longer than this is assumed to be from a
+// crashed worker (after() never returned) and is eligible for re-pickup.
+const STALL_THRESHOLD_MS = 5 * 60 * 1000;
 
 /**
  * GET /api/cron/process-events
  *
- * Runs every minute (vercel.json). Picks up events stuck in `pending` or
- * `failed` (below retry limit) and reprocesses them.
- * This is the recovery sweeper — it handles crashes, timeouts, and cold-start
- * failures in the original webhook fire-and-forget.
+ * Runs every minute (vercel.json). Recovery sweeper for the webhook's
+ * fire-and-forget after() path. Picks up:
+ *   - `pending` events (after() never started or crashed before mark)
+ *   - `processing` events older than STALL_THRESHOLD (worker died mid-flight)
+ *   - `failed` events under MAX_RETRIES whose backoff window has elapsed
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = verifyCronRequest(req);
@@ -23,10 +27,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const db = createAdminClient();
 
+  const now = new Date().toISOString();
+  const stallCutoff = new Date(Date.now() - STALL_THRESHOLD_MS).toISOString();
+
   const { data: events, error } = await db
     .from("line_events")
     .select("id, event_type, payload_json, group_id, retry_count")
-    .or("processing_status.eq.pending,and(processing_status.eq.failed,retry_count.lt." + MAX_RETRIES + ")")
+    .or(
+      [
+        "processing_status.eq.pending",
+        `and(processing_status.eq.processing,received_at.lt.${stallCutoff})`,
+        `and(processing_status.eq.failed,retry_count.lt.${MAX_RETRIES},or(next_retry_at.is.null,next_retry_at.lte.${now}))`,
+      ].join(",")
+    )
     .order("received_at", { ascending: true })
     .limit(BATCH_SIZE);
 
