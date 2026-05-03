@@ -74,9 +74,7 @@ export async function processLineEvent(
       .eq("id", lineEventId)
       .single();
     const retryCount = row?.retry_count ?? 0;
-    // Exponential backoff: 2^(retry_count+1) seconds, capped at 1 hour.
-    const backoffSeconds = Math.min(Math.pow(2, retryCount + 1), 3600);
-    const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000).toISOString();
+    const nextRetryAt = computeNextRetryAt(retryCount);
 
     await db
       .from("line_events")
@@ -87,6 +85,13 @@ export async function processLineEvent(
       })
       .eq("id", lineEventId);
   }
+}
+
+// Exponential backoff for failed-event reprocessing: 2^(n+1) seconds, capped at
+// 1 hour. Exported for unit tests.
+export function computeNextRetryAt(retryCount: number, now: number = Date.now()): string {
+  const seconds = Math.min(Math.pow(2, retryCount + 1), 3600);
+  return new Date(now + seconds * 1000).toISOString();
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
