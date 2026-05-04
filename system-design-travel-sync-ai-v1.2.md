@@ -346,11 +346,31 @@ The existing v1.1 schema remains the base. v1.2 adds operational tables instead 
 
 ## 9. Reliability and Failure Handling
 
+### 9.1 Domain-level fallbacks
+
 - If readiness generation fails, preserve prior items and mark recomputation as degraded.
 - If transport monitoring fails, keep the last known state and surface freshness indicators.
 - If LLM summarization fails for daily briefings, fall back to deterministic summaries from stored data.
 - If incident enrichment fails, return the base incident playbook without optional context.
 - If alert delivery fails, keep the alert persisted for retry and LIFF visibility.
+
+### 9.2 LINE event processing — durable queue
+
+The `line_events` table is the durable queue; the webhook is the producer; `after()` is the fast-path consumer; `app/api/cron/process-events` is the recovery sweeper. No external queue library is used.
+
+- **Producer (webhook).** `app/api/line/webhook/route.ts` persists every event with `processing_status='pending'` before returning 200 OK. Idempotency is enforced by the `line_event_uid` unique constraint, so LINE retries cannot double-process.
+- **Fast-path consumer.** Next.js `after()` hands the persisted event to `processLineEvent`. On success the row is marked `processed`; on exception it is marked `failed` and a backoff timestamp is written.
+- **Recovery sweeper.** The hourly `process-events` cron picks up rows in three states:
+  1. `pending` — `after()` never started or crashed before marking.
+  2. `processing` older than 5 minutes — worker died mid-flight; the row would otherwise leak forever.
+  3. `failed` with `retry_count < 5` and `next_retry_at` elapsed — honors backoff so poison messages don't thrash the LLM and Sentry.
+- **Backoff.** `computeNextRetryAt(retry_count)` returns `2^(retry_count+1)` seconds out, capped at 1 hour. Mirrors the `outbound_messages` pattern.
+- **Atomic re-pickup.** The cron calls the `increment_retry_count` RPC before reprocessing so a second worker cannot double-process the same row.
+- **Reply-token caveat.** Retried events lose their reply-token freshness (LINE's reply window is short). Handlers reached via the cron path must use `pushText`/`pushFlex`, not `replyText`/`replyFlex`. This is enforced by convention; consider a lint or runtime guard if violations recur.
+
+### 9.3 Outbound delivery
+
+`lib/line.ts` is the only runtime caller of `@line/bot-sdk`. Every push is tracked in `outbound_messages` with `next_retry_at` exponential backoff; the same `process-events` cron drains the failed-outbound queue alongside failed events.
 
 ---
 

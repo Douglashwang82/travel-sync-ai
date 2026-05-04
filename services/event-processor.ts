@@ -68,14 +68,30 @@ export async function processLineEvent(
     logger.error("event failed", { eventId: lineEventId, context: eventType, groupId: ctx.dbGroupId ?? undefined });
     const failureReason = err instanceof Error ? err.message : String(err);
 
+    const { data: row } = await db
+      .from("line_events")
+      .select("retry_count")
+      .eq("id", lineEventId)
+      .single();
+    const retryCount = row?.retry_count ?? 0;
+    const nextRetryAt = computeNextRetryAt(retryCount);
+
     await db
       .from("line_events")
       .update({
         processing_status: "failed",
         failure_reason: failureReason,
+        next_retry_at: nextRetryAt,
       })
       .eq("id", lineEventId);
   }
+}
+
+// Exponential backoff for failed-event reprocessing: 2^(n+1) seconds, capped at
+// 1 hour. Exported for unit tests.
+export function computeNextRetryAt(retryCount: number, now: number = Date.now()): string {
+  const seconds = Math.min(Math.pow(2, retryCount + 1), 3600);
+  return new Date(now + seconds * 1000).toISOString();
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
