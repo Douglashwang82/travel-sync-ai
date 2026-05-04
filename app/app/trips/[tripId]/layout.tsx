@@ -1,12 +1,64 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/db";
+import { getIntlLocale, parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
 import { TripTabs } from "@/components/app/trip-tabs";
 
 export const dynamic = "force-dynamic";
+
+const COPY: Record<
+  AppLocale,
+  {
+    trips: string;
+    untitledTrip: string;
+    datesTbd: string;
+    you: string;
+    role: Record<"organizer" | "member", string>;
+    status: Record<string, string>;
+    openInMaps: string;
+  }
+> = {
+  en: {
+    trips: "Trips",
+    untitledTrip: "Untitled trip",
+    datesTbd: "Dates to be decided",
+    you: "You",
+    role: {
+      organizer: "organizer",
+      member: "member",
+    },
+    status: {
+      active: "active",
+      draft: "draft",
+      archived: "archived",
+      completed: "completed",
+      cancelled: "cancelled",
+    },
+    openInMaps: "Open in Maps",
+  },
+  "zh-TW": {
+    trips: "旅程",
+    untitledTrip: "未命名旅程",
+    datesTbd: "日期尚未決定",
+    you: "你的身分",
+    role: {
+      organizer: "發起人",
+      member: "成員",
+    },
+    status: {
+      active: "進行中",
+      draft: "草稿",
+      archived: "已封存",
+      completed: "已完成",
+      cancelled: "已取消",
+    },
+    openInMaps: "在地圖中開啟",
+  },
+};
 
 async function loadTripContext(tripId: string, lineUserId: string): Promise<
   | { trip: Trip; role: "organizer" | "member"; groupName: string | null }
@@ -54,24 +106,26 @@ export default async function TripLayout({
   const lineUserId = await readAppSessionCookie();
   if (!lineUserId) redirect(`/app/sign-in?next=/app/trips/${tripId}`);
 
+  const locale = parseAppLocale((await cookies()).get("travelsync-app-locale")?.value);
+  const copy = COPY[locale];
   const ctx = await loadTripContext(tripId, lineUserId);
   if (!ctx) notFound();
 
   const { trip, role, groupName } = ctx;
   const dateLabel =
     trip.start_date && trip.end_date
-      ? `${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`
-      : "Dates to be decided";
+      ? `${formatDate(trip.start_date, locale)} — ${formatDate(trip.end_date, locale)}`
+      : copy.datesTbd;
 
   return (
     <div className="space-y-6">
       <nav className="text-xs text-[var(--muted-foreground)]">
         <Link href="/app" className="hover:text-[var(--foreground)]">
-          Trips
+          {copy.trips}
         </Link>
         <span className="mx-1.5">/</span>
         <span className="text-[var(--foreground)]">
-          {trip.destination_name ?? "Untitled trip"}
+          {trip.destination_name ?? copy.untitledTrip}
         </span>
       </nav>
 
@@ -80,7 +134,7 @@ export default async function TripLayout({
           <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
               <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 capitalize">
-                {trip.status}
+                {copy.status[trip.status] ?? trip.status}
               </span>
               {groupName && (
                 <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 normal-case">
@@ -88,11 +142,11 @@ export default async function TripLayout({
                 </span>
               )}
               <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 capitalize">
-                You: {role}
+                {copy.you}: {copy.role[role]}
               </span>
             </div>
             <h1 className="text-2xl font-bold text-[var(--foreground)] sm:text-3xl">
-              {trip.destination_name ?? "Untitled trip"}
+              {trip.destination_name ?? copy.untitledTrip}
               {trip.title && trip.title !== trip.destination_name && (
                 <span className="ml-2 text-base font-normal text-[var(--muted-foreground)]">
                   · {trip.title}
@@ -114,7 +168,7 @@ export default async function TripLayout({
               rel="noreferrer"
               className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
             >
-              Open in Maps
+              {copy.openInMaps}
             </a>
           )}
         </div>
@@ -127,10 +181,10 @@ export default async function TripLayout({
   );
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: AppLocale): string {
   const d = new Date(iso + "T00:00:00");
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString(getIntlLocale(locale), {
     weekday: "short",
     month: "short",
     day: "numeric",
