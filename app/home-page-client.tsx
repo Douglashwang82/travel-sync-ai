@@ -282,12 +282,12 @@ export default function HomePageClient() {
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-[#0a0a0a]">
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/80 backdrop-blur-md dark:bg-[#0a0a0a]/80">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-2 text-base font-bold tracking-tight text-[var(--foreground)]">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-0">
+          <Link href="/" className="flex min-w-0 items-center gap-2 text-base font-bold tracking-tight text-[var(--foreground)]">
             <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-auto logo-animated" priority />
-            <span>{copy.brand}</span>
+            <span className="truncate">{copy.brand}</span>
           </Link>
-          <nav className="flex items-center gap-3 text-sm text-[var(--muted-foreground)] sm:gap-6">
+          <nav className="flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--muted-foreground)] sm:flex-nowrap sm:justify-end sm:gap-6">
             <a href="#features" className="hidden transition-colors hover:text-[var(--foreground)] sm:block">
               {copy.nav.features}
             </a>
@@ -326,13 +326,13 @@ export default function HomePageClient() {
             </div>
             <a
               href="#commands"
-              className="rounded-full bg-[var(--primary)] px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              className="rounded-full bg-[var(--primary)] px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 sm:px-4"
             >
               {copy.nav.addToLine}
             </a>
             <Link
               href="/app"
-              className="rounded-full border border-[var(--border)] px-4 py-1.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
+              className="rounded-full border border-[var(--border)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)] sm:px-4"
             >
               Log in
             </Link>

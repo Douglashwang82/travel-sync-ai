@@ -2,32 +2,52 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAppLocale } from "@/components/app/app-locale-provider";
 import { cn } from "@/lib/utils";
+
+const COPY = {
+  en: {
+    overview: "Overview",
+    itinerary: "Itinerary",
+    votes: "Votes",
+    expenses: "Expenses",
+    settings: "Settings",
+  },
+  "zh-TW": {
+    overview: "總覽",
+    itinerary: "行程",
+    votes: "投票",
+    expenses: "費用",
+    settings: "設定",
+  },
+} as const;
 
 export function TripTabs({ tripId }: { tripId: string }) {
   const pathname = usePathname();
+  const { locale } = useAppLocale();
+  const copy = COPY[locale];
   const base = `/app/trips/${tripId}`;
 
   const tabs = [
-    { href: base, label: "Overview", match: (p: string) => p === base },
+    { href: base, label: copy.overview, match: (p: string) => p === base },
     {
       href: `${base}/itinerary`,
-      label: "Itinerary",
+      label: copy.itinerary,
       match: (p: string) => p.startsWith(`${base}/itinerary`),
     },
     {
       href: `${base}/votes`,
-      label: "Votes",
+      label: copy.votes,
       match: (p: string) => p.startsWith(`${base}/votes`),
     },
     {
       href: `${base}/expenses`,
-      label: "Expenses",
+      label: copy.expenses,
       match: (p: string) => p.startsWith(`${base}/expenses`),
     },
     {
       href: `${base}/settings`,
-      label: "Settings",
+      label: copy.settings,
       match: (p: string) => p.startsWith(`${base}/settings`),
     },
   ] as const;
