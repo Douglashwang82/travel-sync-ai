@@ -9,7 +9,7 @@ export function TripTabs({ tripId }: { tripId: string }) {
   const base = `/app/trips/${tripId}`;
 
   const tabs = [
-    { href: base, label: "Overview", match: (p: string) => p === base },
+    { href: base, label: "Workspace", match: (p: string) => p === base },
     {
       href: `${base}/itinerary`,
       label: "Itinerary",
@@ -24,6 +24,11 @@ export function TripTabs({ tripId }: { tripId: string }) {
       href: `${base}/expenses`,
       label: "Expenses",
       match: (p: string) => p.startsWith(`${base}/expenses`),
+    },
+    {
+      href: `${base}/board`,
+      label: "Board",
+      match: (p: string) => p.startsWith(`${base}/board`),
     },
     {
       href: `${base}/settings`,

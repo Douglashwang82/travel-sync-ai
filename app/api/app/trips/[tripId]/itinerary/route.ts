@@ -13,6 +13,8 @@ export interface ItineraryOption {
   price_level: string | null;
   booking_url: string | null;
   google_maps_url: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface ItineraryEntry {
@@ -62,7 +64,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     .select(
       `id, title, item_type, description, stage, deadline_at, assigned_to_line_user_id, booking_status, booking_ref, confirmed_option_id,
        trip_item_options!trip_items_confirmed_option_id_fkey (
-         id, name, address, image_url, rating, price_level, booking_url, google_maps_url
+         id, name, address, image_url, rating, price_level, booking_url, google_maps_url, lat, lng
        )`
     )
     .eq("trip_id", tripId)
@@ -100,6 +102,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
             price_level: (opt.price_level as string | null) ?? null,
             booking_url: (opt.booking_url as string | null) ?? null,
             google_maps_url: (opt.google_maps_url as string | null) ?? null,
+            lat: opt.lat != null ? Number(opt.lat) : null,
+            lng: opt.lng != null ? Number(opt.lng) : null,
           }
         : null,
     };
