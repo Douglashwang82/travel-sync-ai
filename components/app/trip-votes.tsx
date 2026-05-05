@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,8 @@ import type {
   WebActiveVote,
   WebVotesResponse,
 } from "@/app/api/app/trips/[tripId]/votes/route";
+import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
+import type { NudgeResponse } from "@/app/api/app/trips/[tripId]/votes/[itemId]/nudge/route";
 
 const TYPE_LABEL: Record<string, string> = {
   hotel: "Hotel",
@@ -42,8 +44,10 @@ const TYPE_LABEL: Record<string, string> = {
 type OverviewState = {
   votes: WebActiveVote[];
   memberCount: number;
+  members: AppMember[];
   todo: BoardData["todo"];
   role: "organizer" | "member";
+  currentUserId: string;
 };
 
 export function TripVotesClient({ tripId }: { tripId: string }) {
@@ -57,17 +61,20 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const [votes, board, trip] = await Promise.all([
+      const [votes, board, trip, members] = await Promise.all([
         appFetchJson<WebVotesResponse>(`/api/app/trips/${tripId}/votes`),
         appFetchJson<BoardData>(`/api/app/trips/${tripId}/board`),
         appFetchJson<{ role: "organizer" | "member" }>(`/api/app/trips/${tripId}`),
+        appFetchJson<{ members: AppMember[] }>(`/api/app/trips/${tripId}/members`),
       ]);
       setError(null);
       setState({
         votes: votes.votes,
         memberCount: votes.memberCount,
+        members: members.members,
         todo: board.todo,
         role: trip.role,
+        currentUserId: board.currentUser.lineUserId,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load votes");
@@ -115,7 +122,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
     return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
   }
 
-  const { votes, memberCount, todo, role } = state;
+  const { votes, memberCount, members, todo, role, currentUserId } = state;
   const isOrganizer = role === "organizer";
 
   return (
@@ -149,6 +156,8 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
               key={v.item.id}
               vote={v}
               memberCount={memberCount}
+              members={members}
+              currentUserId={currentUserId}
               isOrganizer={isOrganizer}
               casting={casting}
               onCast={(optionId) => void handleCast(v.item.id, optionId)}
@@ -240,6 +249,8 @@ function majorityThreshold(memberCount: number): number {
 function VoteCard({
   vote,
   memberCount,
+  members,
+  currentUserId,
   isOrganizer,
   casting,
   onCast,
@@ -249,6 +260,8 @@ function VoteCard({
 }: {
   vote: WebActiveVote;
   memberCount: number;
+  members: AppMember[];
+  currentUserId: string;
   isOrganizer: boolean;
   casting: string | null;
   onCast: (optionId: string) => void;
@@ -258,44 +271,67 @@ function VoteCard({
 }) {
   const [addOpen, setAddOpen] = useState(false);
   const needed = majorityThreshold(memberCount);
+  const myVote = vote.options.find((o) => o.votedByMe);
+  const iHaventVoted = !myVote && members.some((m) => m.lineUserId === currentUserId);
+
+  const nonVoters = useMemo(() => {
+    const voted = new Set<string>();
+    for (const opt of vote.options) for (const v of opt.voters) voted.add(v.lineUserId);
+    return members.filter((m) => !voted.has(m.lineUserId));
+  }, [members, vote.options]);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border)] p-5">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="text-[10px] uppercase">
-              {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
-            </Badge>
-            <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              Pending vote
-            </Badge>
-            {vote.item.deadlineAt && (
-              <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] text-[var(--muted-foreground)]">
-                Closes {formatDeadline(vote.item.deadlineAt)}
-              </span>
+      <header className="space-y-3 border-b border-[var(--border)] p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="text-[10px] uppercase">
+                {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
+              </Badge>
+              <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                Pending vote
+              </Badge>
+              {iHaventVoted && (
+                <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+                  Your vote needed
+                </span>
+              )}
+              {vote.item.deadlineAt && (
+                <DeadlineCountdown deadlineAt={vote.item.deadlineAt} />
+              )}
+            </div>
+            <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
+            {vote.item.description && (
+              <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                {vote.item.description}
+              </p>
             )}
           </div>
-          <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
-          {vote.item.description && (
-            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-              {vote.item.description}
-            </p>
+          {isOrganizer && (
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+                Add option
+              </Button>
+              <Button size="sm" variant="outline" onClick={onCloseClick}>
+                Close vote
+              </Button>
+            </div>
           )}
-          <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-            {vote.totalVotes} of {memberCount} voted · needs {needed} for majority
-          </p>
         </div>
-        {isOrganizer && (
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-              Add option
-            </Button>
-            <Button size="sm" variant="outline" onClick={onCloseClick}>
-              Close vote
-            </Button>
-          </div>
-        )}
+
+        <VoteProgress
+          totalVotes={vote.totalVotes}
+          memberCount={memberCount}
+          needed={needed}
+        />
+
+        <NonVoterRow
+          tripId={tripId}
+          itemId={vote.item.id}
+          nonVoters={nonVoters}
+          currentUserId={currentUserId}
+        />
       </header>
 
       <ul className="divide-y divide-[var(--border)]">
@@ -413,17 +449,248 @@ function VoteCard({
   );
 }
 
-function formatDeadline(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const now = Date.now();
-  const diffMs = d.getTime() - now;
-  if (diffMs <= 0) return "overdue";
-  const hours = Math.round(diffMs / 3_600_000);
-  if (hours < 24) return `in ${hours}h`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `in ${days}d`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function DeadlineCountdown({ deadlineAt }: { deadlineAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const diffMs = new Date(deadlineAt).getTime() - now;
+  const overdue = diffMs <= 0;
+  const hours = Math.floor(Math.abs(diffMs) / 3_600_000);
+  const minutes = Math.floor((Math.abs(diffMs) % 3_600_000) / 60_000);
+
+  let label: string;
+  if (overdue) {
+    label = "Overdue";
+  } else if (hours < 1) {
+    label = `${minutes}m left`;
+  } else if (hours < 24) {
+    label = `${hours}h ${minutes}m left`;
+  } else {
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    label = `${days}d ${remHours}h left`;
+  }
+
+  const tone = overdue
+    ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+    : hours < 2
+      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+      : hours < 12
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+        : "bg-[var(--secondary)] text-[var(--muted-foreground)]";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        tone
+      )}
+      title={new Date(deadlineAt).toLocaleString()}
+    >
+      <span aria-hidden>⏱</span>
+      {label}
+    </span>
+  );
+}
+
+function VoteProgress({
+  totalVotes,
+  memberCount,
+  needed,
+}: {
+  totalVotes: number;
+  memberCount: number;
+  needed: number;
+}) {
+  if (memberCount <= 0) return null;
+  const pct = Math.min(100, (totalVotes / memberCount) * 100);
+  const majorityPct = Math.min(100, (needed / memberCount) * 100);
+  const reached = totalVotes >= needed;
+  return (
+    <div className="space-y-1">
+      <div className="relative h-1.5 overflow-hidden rounded-full bg-[var(--secondary)]">
+        <div
+          className={cn(
+            "h-full transition-all",
+            reached ? "bg-emerald-500" : "bg-[var(--primary)]"
+          )}
+          style={{ width: `${pct}%` }}
+        />
+        <div
+          aria-hidden
+          className="absolute top-0 h-full w-px bg-[var(--foreground)]/40"
+          style={{ left: `${majorityPct}%` }}
+          title="Majority threshold"
+        />
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+        <span>
+          <span className="font-semibold text-[var(--foreground)]">
+            {totalVotes}
+          </span>
+          <span> of {memberCount} voted</span>
+        </span>
+        <span>
+          {reached
+            ? "Majority reached"
+            : `${needed - totalVotes} more for majority`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface NudgeFeedback {
+  message: string;
+  tone: "success" | "info" | "error";
+}
+
+function NonVoterRow({
+  tripId,
+  itemId,
+  nonVoters,
+  currentUserId,
+}: {
+  tripId: string;
+  itemId: string;
+  nonVoters: AppMember[];
+  currentUserId: string;
+}) {
+  const [nudging, setNudging] = useState<string | "all" | null>(null);
+  const [feedback, setFeedback] = useState<NudgeFeedback | null>(null);
+
+  if (nonVoters.length === 0) {
+    return (
+      <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+        Everyone has voted ✓
+      </p>
+    );
+  }
+
+  const others = nonVoters.filter((m) => m.lineUserId !== currentUserId);
+  const includesMe = nonVoters.some((m) => m.lineUserId === currentUserId);
+
+  async function nudge(targetIds: string[] | undefined, key: string | "all") {
+    if (nudging) return;
+    setNudging(key);
+    setFeedback(null);
+    try {
+      const res = await appFetchJson<NudgeResponse>(
+        `/api/app/trips/${tripId}/votes/${itemId}/nudge`,
+        {
+          method: "POST",
+          body: JSON.stringify(targetIds ? { lineUserIds: targetIds } : {}),
+        }
+      );
+      const nudgedCount = res.nudged.length;
+      const cooldownCount = res.skipped.filter(
+        (s) => s.reason === "cooldown"
+      ).length;
+      if (nudgedCount === 0 && cooldownCount > 0) {
+        setFeedback({
+          message: `Already nudged in the last 30 min — try again later.`,
+          tone: "info",
+        });
+      } else if (nudgedCount === 0) {
+        setFeedback({
+          message: "No one to nudge right now.",
+          tone: "info",
+        });
+      } else {
+        const names = res.nudged
+          .map((n) => n.displayName ?? "?")
+          .slice(0, 3)
+          .join(", ");
+        const more = res.nudged.length > 3 ? ` +${res.nudged.length - 3} more` : "";
+        setFeedback({
+          message:
+            cooldownCount > 0
+              ? `Nudged ${names}${more} · ${cooldownCount} on cooldown`
+              : `Nudged ${names}${more}`,
+          tone: "success",
+        });
+      }
+    } catch (err) {
+      setFeedback({
+        message: err instanceof Error ? err.message : "Failed to nudge",
+        tone: "error",
+      });
+    } finally {
+      setNudging(null);
+    }
+  }
+
+  const otherIds = others.map((m) => m.lineUserId);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          Waiting on
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          {includesMe && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--primary)]">
+              You
+            </span>
+          )}
+          {others.map((m) => (
+            <button
+              key={m.lineUserId}
+              type="button"
+              onClick={() => void nudge([m.lineUserId], m.lineUserId)}
+              disabled={nudging !== null}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-200 disabled:opacity-60 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60",
+                nudging === m.lineUserId && "animate-pulse"
+              )}
+              title={`Nudge ${m.displayName ?? "this member"} via LINE`}
+            >
+              <span aria-hidden className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-200 text-[8px] font-bold dark:bg-amber-900">
+                {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
+              </span>
+              {m.displayName ?? m.lineUserId.slice(0, 6)}
+              {nudging === m.lineUserId ? (
+                <span className="text-[10px]">…</span>
+              ) : (
+                <span aria-hidden className="text-[10px] opacity-70">
+                  🔔
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        {others.length > 1 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[11px]"
+            disabled={nudging !== null}
+            onClick={() => void nudge(otherIds, "all")}
+          >
+            {nudging === "all" ? "Nudging…" : "Nudge all"}
+          </Button>
+        )}
+      </div>
+      {feedback && (
+        <p
+          className={cn(
+            "text-[11px]",
+            feedback.tone === "success"
+              ? "text-emerald-700 dark:text-emerald-300"
+              : feedback.tone === "error"
+                ? "text-red-700 dark:text-red-300"
+                : "text-[var(--muted-foreground)]"
+          )}
+        >
+          {feedback.message}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function defaultDeadlineLocal(): string {
