@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -61,9 +62,11 @@ interface MappedItem extends ItineraryEntry {
 }
 
 export function TripMapPanel({
+  tripId,
   itinerary,
   destination,
 }: {
+  tripId: string;
   itinerary: ItineraryResponse;
   destination: {
     name: string | null;
@@ -155,6 +158,12 @@ export function TripMapPanel({
             )}
           </p>
         </div>
+        <Link
+          href={`/app/trips/${tripId}/map`}
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)]"
+        >
+          🗺 Open full map
+        </Link>
       </header>
 
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--border)] px-4 py-2.5 sm:px-5">

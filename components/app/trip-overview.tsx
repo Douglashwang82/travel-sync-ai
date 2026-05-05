@@ -125,8 +125,9 @@ export function TripOverview({ tripId }: { tripId: string }) {
           </div>
         )}
 
-        {/* Map — full-page primary surface */}
+        {/* Map preview — full interactive map lives at /map */}
         <TripMapPanel
+          tripId={tripId}
           itinerary={itinerary}
           destination={{
             name: trip.destination_name,

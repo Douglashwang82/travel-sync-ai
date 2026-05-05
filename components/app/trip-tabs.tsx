@@ -11,6 +11,11 @@ export function TripTabs({ tripId }: { tripId: string }) {
   const tabs = [
     { href: base, label: "Workspace", match: (p: string) => p === base },
     {
+      href: `${base}/map`,
+      label: "Map",
+      match: (p: string) => p.startsWith(`${base}/map`),
+    },
+    {
       href: `${base}/itinerary`,
       label: "Itinerary",
       match: (p: string) => p.startsWith(`${base}/itinerary`),

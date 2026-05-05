@@ -16,6 +16,8 @@ export interface WebVoteOption {
   priceLevel: string | null;
   bookingUrl: string | null;
   googleMapsUrl: string | null;
+  lat: number | null;
+  lng: number | null;
   notes: string | null;
   notesUpdatedAt: string | null;
   notesUpdatedBy: string | null;
@@ -92,7 +94,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     db
       .from("trip_item_options")
       .select(
-        "id, trip_item_id, name, address, image_url, rating, price_level, booking_url, google_maps_url, metadata_json"
+        "id, trip_item_id, name, address, image_url, rating, price_level, booking_url, google_maps_url, lat, lng, metadata_json"
       )
       .in("trip_item_id", itemIds),
     db
@@ -158,6 +160,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
         priceLevel: (o.price_level as string | null) ?? null,
         bookingUrl: (o.booking_url as string | null) ?? null,
         googleMapsUrl: (o.google_maps_url as string | null) ?? null,
+        lat: o.lat != null ? Number(o.lat) : null,
+        lng: o.lng != null ? Number(o.lng) : null,
         notes: (meta.notes as string | undefined) ?? null,
         notesUpdatedAt:
           (meta.notesUpdatedAt as string | undefined) ?? null,
