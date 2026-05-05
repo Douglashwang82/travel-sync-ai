@@ -30,6 +30,7 @@ import type {
 } from "@/app/api/app/trips/[tripId]/votes/route";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 import type { NudgeResponse } from "@/app/api/app/trips/[tripId]/votes/[itemId]/nudge/route";
+import { OptionDetailDialog } from "@/components/app/option-detail-dialog";
 
 const TYPE_LABEL: Record<string, string> = {
   hotel: "Hotel",
@@ -270,6 +271,10 @@ function VoteCard({
   tripId: string;
 }) {
   const [addOpen, setAddOpen] = useState(false);
+  const [detailOptionId, setDetailOptionId] = useState<string | null>(null);
+  const detailOption = detailOptionId
+    ? vote.options.find((o) => o.id === detailOptionId) ?? null
+    : null;
   const needed = majorityThreshold(memberCount);
   const myVote = vote.options.find((o) => o.votedByMe);
   const iHaventVoted = !myVote && members.some((m) => m.lineUserId === currentUserId);
@@ -338,21 +343,35 @@ function VoteCard({
         {vote.options.map((opt) => {
           const castingThis = casting === `${vote.item.id}:${opt.id}`;
           const share = memberCount > 0 ? (opt.voteCount / memberCount) * 100 : 0;
+          const hasDetail =
+            !!opt.address ||
+            !!opt.notes ||
+            !!opt.priceLevel ||
+            opt.rating != null;
           return (
             <li key={opt.id}>
-              <button
-                type="button"
-                onClick={() => onCast(opt.id)}
-                disabled={casting !== null}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailOptionId(opt.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailOptionId(opt.id);
+                  }
+                }}
                 className={cn(
-                  "group relative w-full text-left transition-colors",
+                  "group relative w-full cursor-pointer text-left transition-colors",
                   opt.votedByMe
                     ? "bg-[var(--primary)]/5"
-                    : "hover:bg-[var(--secondary)]/50",
-                  casting !== null && "opacity-60"
+                    : "hover:bg-[var(--secondary)]/50"
                 )}
               >
-                <div className="absolute inset-y-0 left-0 bg-[var(--primary)]/10 transition-all" style={{ width: `${Math.min(100, share)}%` }} aria-hidden />
+                <div
+                  className="absolute inset-y-0 left-0 bg-[var(--primary)]/10 transition-all"
+                  style={{ width: `${Math.min(100, share)}%` }}
+                  aria-hidden
+                />
                 <div className="relative flex items-start gap-3 p-4">
                   {opt.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -380,50 +399,60 @@ function VoteCard({
                           {opt.priceLevel}
                         </span>
                       )}
+                      {opt.notes && (
+                        <span
+                          className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                          title="Group notes available"
+                        >
+                          ✏ Notes
+                        </span>
+                      )}
                     </div>
                     {opt.address && (
                       <p className="truncate text-xs text-[var(--muted-foreground)]">
                         📍 {opt.address}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-3 text-xs">
-                      {opt.googleMapsUrl && (
-                        <a
-                          href={opt.googleMapsUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
-                        >
-                          Map
-                        </a>
-                      )}
-                      {opt.bookingUrl && (
-                        <a
-                          href={opt.bookingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
-                        >
-                          Book
-                        </a>
-                      )}
-                    </div>
                     {opt.voters.length > 0 && (
                       <VoterAvatars voters={opt.voters} />
                     )}
+                    <p className="text-[11px] text-[var(--primary)] opacity-70 group-hover:opacity-100">
+                      {hasDetail ? "Tap for details" : "Tap to add price, location, notes"}
+                    </p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-xl font-bold tabular-nums">
-                      {opt.voteCount}
-                    </span>
-                    <span className="text-[10px] text-[var(--muted-foreground)]">
-                      {castingThis ? "Saving..." : opt.votedByMe ? "Tap again to change" : "Tap to vote"}
-                    </span>
+                  <div
+                    className="flex shrink-0 flex-col items-stretch gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex flex-col items-end">
+                      <span className="text-xl font-bold tabular-nums leading-none">
+                        {opt.voteCount}
+                      </span>
+                      <span className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                        vote{opt.voteCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={opt.votedByMe ? "default" : "outline"}
+                      onClick={() => onCast(opt.id)}
+                      disabled={casting !== null}
+                      className={cn(
+                        "h-7 px-2.5 text-[11px]",
+                        opt.votedByMe &&
+                          "bg-emerald-600 text-white hover:bg-emerald-700"
+                      )}
+                    >
+                      {castingThis
+                        ? "Saving…"
+                        : opt.votedByMe
+                          ? "✓ Voted"
+                          : "Vote"}
+                    </Button>
                   </div>
                 </div>
-              </button>
+              </div>
             </li>
           );
         })}
@@ -440,6 +469,17 @@ function VoteCard({
           }}
         />
       )}
+
+      <OptionDetailDialog
+        tripId={tripId}
+        vote={vote}
+        option={detailOption}
+        onClose={() => setDetailOptionId(null)}
+        onVote={(optionId) => onCast(optionId)}
+        onUpdated={() => {
+          onAddOption();
+        }}
+      />
     </article>
   );
 }

@@ -16,6 +16,10 @@ export interface WebVoteOption {
   priceLevel: string | null;
   bookingUrl: string | null;
   googleMapsUrl: string | null;
+  notes: string | null;
+  notesUpdatedAt: string | null;
+  notesUpdatedBy: string | null;
+  notesUpdatedByName: string | null;
   voteCount: number;
   voters: Array<{ lineUserId: string; displayName: string | null }>;
   votedByMe: boolean;
@@ -88,7 +92,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     db
       .from("trip_item_options")
       .select(
-        "id, trip_item_id, name, address, image_url, rating, price_level, booking_url, google_maps_url"
+        "id, trip_item_id, name, address, image_url, rating, price_level, booking_url, google_maps_url, metadata_json"
       )
       .in("trip_item_id", itemIds),
     db
@@ -140,19 +144,32 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     const myVote = itemVotes.find((v) => v.line_user_id === auth.lineUserId);
     const myOptionId = myVote ? (myVote.option_id as string) : null;
 
-    const options: WebVoteOption[] = itemOptions.map((o) => ({
-      id: o.id as string,
-      name: o.name as string,
-      address: (o.address as string | null) ?? null,
-      imageUrl: (o.image_url as string | null) ?? null,
-      rating: o.rating != null ? Number(o.rating) : null,
-      priceLevel: (o.price_level as string | null) ?? null,
-      bookingUrl: (o.booking_url as string | null) ?? null,
-      googleMapsUrl: (o.google_maps_url as string | null) ?? null,
-      voteCount: tally.get(o.id as string) ?? 0,
-      voters: votersByOption.get(o.id as string) ?? [],
-      votedByMe: myOptionId === (o.id as string),
-    }));
+    const options: WebVoteOption[] = itemOptions.map((o) => {
+      const meta =
+        (o.metadata_json as Record<string, unknown> | null) ?? {};
+      const updatedBy =
+        (meta.notesUpdatedBy as string | undefined) ?? null;
+      return {
+        id: o.id as string,
+        name: o.name as string,
+        address: (o.address as string | null) ?? null,
+        imageUrl: (o.image_url as string | null) ?? null,
+        rating: o.rating != null ? Number(o.rating) : null,
+        priceLevel: (o.price_level as string | null) ?? null,
+        bookingUrl: (o.booking_url as string | null) ?? null,
+        googleMapsUrl: (o.google_maps_url as string | null) ?? null,
+        notes: (meta.notes as string | undefined) ?? null,
+        notesUpdatedAt:
+          (meta.notesUpdatedAt as string | undefined) ?? null,
+        notesUpdatedBy: updatedBy,
+        notesUpdatedByName: updatedBy
+          ? memberById.get(updatedBy) ?? null
+          : null,
+        voteCount: tally.get(o.id as string) ?? 0,
+        voters: votersByOption.get(o.id as string) ?? [],
+        votedByMe: myOptionId === (o.id as string),
+      };
+    });
 
     return {
       item: {
