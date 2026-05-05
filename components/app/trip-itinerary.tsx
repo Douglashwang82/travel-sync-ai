@@ -15,6 +15,7 @@ import {
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
 import type {
+  DayNoteEntry,
   ItineraryEntry,
   ItineraryResponse,
 } from "@/app/api/app/trips/[tripId]/itinerary/route";
@@ -130,6 +131,7 @@ interface TimelineDay {
   isUnscheduled: boolean;
   isEmpty: boolean;
   items: ItineraryEntry[];
+  note: DayNoteEntry | null;
 }
 
 // ─── Root component ───────────────────────────────────────────────────────────
@@ -220,6 +222,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         isUnscheduled: false,
         isEmpty: items.length === 0,
         items,
+        note: data.trip.day_notes?.[key] ?? null,
       };
     });
 
@@ -233,6 +236,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         isUnscheduled: true,
         isEmpty: false,
         items: buckets.get(UNSCHEDULED_KEY)!,
+        note: null,
       });
     }
 
@@ -294,6 +298,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
           tripId={tripId}
           members={members}
           isOrganizer={role === "organizer"}
+          currency={data.trip.budget_currency || "TWD"}
           onUpdated={() => void load()}
         />
       )}
@@ -406,12 +411,14 @@ function Timeline({
   tripId,
   members,
   isOrganizer,
+  currency,
   onUpdated,
 }: {
   days: TimelineDay[];
   tripId: string;
   members: AppMember[];
   isOrganizer: boolean;
+  currency: string;
   onUpdated: () => void;
 }) {
   return (
@@ -430,12 +437,234 @@ function Timeline({
             tripId={tripId}
             members={members}
             isOrganizer={isOrganizer}
+            currency={currency}
             onUpdated={onUpdated}
           />
         ))}
       </div>
     </div>
   );
+}
+
+// ─── Day heading (note + stats) ──────────────────────────────────────────────
+
+function DayHeading({
+  day,
+  tripId,
+  currency,
+  onSaved,
+}: {
+  day: TimelineDay;
+  tripId: string;
+  currency: string;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(day.note?.note ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Keep draft in sync if the note is updated by another client
+  useEffect(() => {
+    if (!editing) setDraft(day.note?.note ?? "");
+  }, [day.note?.note, editing]);
+
+  async function save(noteOrNull: string | null) {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/day-notes`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          date: day.key,
+          note: noteOrNull,
+        }),
+      });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save note");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const stats = useMemo(() => buildDayStats(day, currency), [day, currency]);
+  const canEdit = !day.isUnscheduled;
+
+  return (
+    <div className="mb-3 space-y-1.5">
+      {/* Pill row — Day N · Today */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {day.dayNumber != null && (
+          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+            Day {day.dayNumber}
+          </span>
+        )}
+        {day.isToday && (
+          <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
+            Today
+          </span>
+        )}
+        {day.isUnscheduled && (
+          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+            Unscheduled
+          </span>
+        )}
+        {stats.typeIcons.length > 0 && (
+          <span
+            aria-label="Item types"
+            className="text-sm leading-none"
+            title={stats.typeIcons.map((t) => t.label).join(", ")}
+          >
+            {stats.typeIcons.map((t) => t.icon).join(" ")}
+          </span>
+        )}
+      </div>
+
+      {/* Editable note OR auto stats line */}
+      {editing ? (
+        <div className="space-y-1.5">
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="One-line summary, e.g. ‘Travel day: Osaka → Kyoto’"
+            maxLength={140}
+            autoFocus
+            disabled={saving}
+            className="h-8 text-sm"
+          />
+          {saveError && (
+            <p className="text-[11px] text-destructive">{saveError}</p>
+          )}
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              size="sm"
+              className="h-7 px-2.5 text-[11px]"
+              onClick={() => void save(draft.trim() || null)}
+              disabled={saving}
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 text-[11px]"
+              onClick={() => {
+                setEditing(false);
+                setDraft(day.note?.note ?? "");
+                setSaveError(null);
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            {day.note && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2.5 text-[11px] text-[var(--muted-foreground)]"
+                onClick={() => void save(null)}
+                disabled={saving}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : day.note ? (
+        <button
+          type="button"
+          onClick={() => canEdit && setEditing(true)}
+          className={cn(
+            "block w-full rounded-lg border-l-2 border-[var(--primary)] bg-[var(--primary)]/5 px-3 py-1.5 text-left transition-colors",
+            canEdit ? "hover:bg-[var(--primary)]/10" : "cursor-default"
+          )}
+          title={
+            day.note.updatedByName
+              ? `Last edited by ${day.note.updatedByName}`
+              : undefined
+          }
+        >
+          <p className="text-sm font-medium leading-snug">{day.note.note}</p>
+          <p className="mt-0.5 text-[10px] text-[var(--muted-foreground)]">
+            {day.note.updatedByName ? `${day.note.updatedByName} · ` : ""}
+            {stats.line}
+          </p>
+        </button>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
+          <span>{stats.line}</span>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-[11px] font-medium text-[var(--primary)] hover:underline"
+            >
+              + Add summary
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface DayStats {
+  line: string;
+  typeIcons: Array<{ icon: string; label: string }>;
+}
+
+function buildDayStats(day: TimelineDay, currency: string): DayStats {
+  if (day.items.length === 0) {
+    return { line: "Nothing planned yet", typeIcons: [] };
+  }
+  const counts = { confirmed: 0, pending: 0, todo: 0 };
+  const types = new Set<string>();
+  for (const item of day.items) {
+    if (item.stage === "confirmed") counts.confirmed++;
+    else if (item.stage === "pending") counts.pending++;
+    else counts.todo++;
+    types.add(item.item_type);
+  }
+  const parts: string[] = [];
+  if (counts.confirmed > 0) parts.push(`${counts.confirmed} confirmed`);
+  if (counts.pending > 0) parts.push(`${counts.pending} pending`);
+  if (counts.todo > 0) parts.push(`${counts.todo} to-do`);
+
+  const totalCost = estimateDayCost(day.items);
+  if (totalCost != null) {
+    parts.push(`~${currency} ${totalCost.toLocaleString()}`);
+  }
+
+  const typeIcons = Array.from(types)
+    .slice(0, 5)
+    .map((t) => ({
+      icon: TYPE_ICON[t] ?? TYPE_ICON.other,
+      label: TYPE_LABEL[t] ?? "Item",
+    }));
+
+  return {
+    line: parts.length > 0 ? parts.join(" · ") : "No status yet",
+    typeIcons,
+  };
+}
+
+function estimateDayCost(items: ItineraryEntry[]): number | null {
+  let total = 0;
+  let any = false;
+  for (const item of items) {
+    const raw = item.confirmed_option?.price_level;
+    if (!raw) continue;
+    const match = String(raw).match(/[\d,]+(\.\d+)?/);
+    if (!match) continue;
+    const num = Number(match[0].replace(/,/g, ""));
+    if (Number.isFinite(num) && num > 0) {
+      total += num;
+      any = true;
+    }
+  }
+  return any ? Math.round(total) : null;
 }
 
 // ─── Day block ────────────────────────────────────────────────────────────────
@@ -445,12 +674,14 @@ function DayBlock({
   tripId,
   members,
   isOrganizer,
+  currency,
   onUpdated,
 }: {
   day: TimelineDay;
   tripId: string;
   members: AppMember[];
   isOrganizer: boolean;
+  currency: string;
   onUpdated: () => void;
 }) {
   return (
@@ -459,7 +690,7 @@ function DayBlock({
       className="relative scroll-mt-24 sm:pl-[5.5rem]"
     >
       {/* Date marker — pinned to the spine on desktop */}
-      <header className="mb-3 flex items-end gap-3 sm:absolute sm:left-0 sm:top-0 sm:mb-0 sm:w-[4.5rem] sm:flex-col sm:items-center sm:gap-1">
+      <header className="mb-3 sm:absolute sm:left-0 sm:top-0 sm:mb-0 sm:w-[4.5rem]">
         <div
           className={cn(
             "flex h-14 w-14 flex-col items-center justify-center rounded-2xl border text-center shadow-sm",
@@ -488,37 +719,15 @@ function DayBlock({
             </>
           )}
         </div>
-        <div className="sm:hidden">
-          <p className="text-base font-semibold">
-            {day.isUnscheduled ? "Unscheduled" : `${day.weekday}, ${day.monthDay}`}
-          </p>
-          {day.dayNumber != null && (
-            <p className="text-xs text-[var(--muted-foreground)]">
-              Day {day.dayNumber}
-              {day.isToday && " · Today"}
-            </p>
-          )}
-        </div>
       </header>
 
-      {/* Day title (desktop) */}
-      <div className="hidden sm:mb-3 sm:flex sm:items-center sm:gap-2">
-        <h3 className="text-base font-semibold">
-          {day.isUnscheduled
-            ? "Unscheduled"
-            : `${day.weekday}, ${day.monthDay}`}
-        </h3>
-        {day.dayNumber != null && (
-          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-            Day {day.dayNumber}
-          </span>
-        )}
-        {day.isToday && (
-          <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
-            Today
-          </span>
-        )}
-      </div>
+      {/* Day heading: Day pill row + editable note + auto stats line */}
+      <DayHeading
+        day={day}
+        tripId={tripId}
+        currency={currency}
+        onSaved={onUpdated}
+      />
 
       {/* Body */}
       {day.isEmpty ? (

@@ -30,12 +30,21 @@ export interface ItineraryEntry {
   confirmed_option: ItineraryOption | null;
 }
 
+export interface DayNoteEntry {
+  note: string;
+  updatedBy: string;
+  updatedByName: string | null;
+  updatedAt: string;
+}
+
 export interface ItineraryResponse {
   trip: {
     id: string;
     destination_name: string | null;
     start_date: string | null;
     end_date: string | null;
+    budget_currency: string;
+    day_notes: Record<string, DayNoteEntry>;
   };
   items: ItineraryEntry[];
 }
@@ -48,7 +57,9 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const db = createAdminClient();
   const { data: trip } = await db
     .from("trips")
-    .select("id, destination_name, start_date, end_date")
+    .select(
+      "id, destination_name, start_date, end_date, budget_currency, day_notes"
+    )
     .eq("id", tripId)
     .single();
 
@@ -115,6 +126,9 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       destination_name: (trip.destination_name as string | null) ?? null,
       start_date: (trip.start_date as string | null) ?? null,
       end_date: (trip.end_date as string | null) ?? null,
+      budget_currency: (trip.budget_currency as string | null) ?? "TWD",
+      day_notes:
+        (trip.day_notes as Record<string, DayNoteEntry> | null) ?? {},
     },
     items,
   });
