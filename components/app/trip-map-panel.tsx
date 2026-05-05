@@ -192,10 +192,10 @@ export function TripMapPanel({
         })}
       </div>
 
-      <div className="grid gap-0 lg:grid-cols-5">
-        <div className="lg:col-span-3 lg:border-r lg:border-[var(--border)]">
+      <div className="grid gap-0 lg:grid-cols-3" style={{ height: "min(72vh, 720px)" }}>
+        <div className="lg:col-span-2 lg:border-r lg:border-[var(--border)]">
           {hasMappable && mapEmbedUrl ? (
-            <div className="relative h-72 w-full bg-[var(--secondary)] sm:h-96 lg:h-[28rem]">
+            <div className="relative h-72 w-full bg-[var(--secondary)] sm:h-96 lg:h-full">
               <iframe
                 title="Trip map"
                 src={mapEmbedUrl}
@@ -224,7 +224,7 @@ export function TripMapPanel({
               )}
             </div>
           ) : (
-            <div className="flex h-72 flex-col items-center justify-center gap-2 bg-[var(--secondary)]/40 px-6 text-center sm:h-96 lg:h-[28rem]">
+            <div className="flex h-72 flex-col items-center justify-center gap-2 bg-[var(--secondary)]/40 px-6 text-center sm:h-96 lg:h-full">
               <span className="text-3xl" aria-hidden>
                 🗺️
               </span>
@@ -237,7 +237,7 @@ export function TripMapPanel({
           )}
         </div>
 
-        <div className="max-h-[28rem] overflow-y-auto lg:col-span-2">
+        <div className="overflow-y-auto lg:col-span-1 lg:h-full">
           {filtered.length === 0 ? (
             <p className="px-4 py-6 text-center text-xs italic text-[var(--muted-foreground)]">
               No locations match this filter.

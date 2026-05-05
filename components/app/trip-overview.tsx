@@ -125,27 +125,22 @@ export function TripOverview({ tripId }: { tripId: string }) {
           </div>
         )}
 
-        {/* Main workspace: map + timeline */}
-        <div className="grid gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <TripMapPanel
-              itinerary={itinerary}
-              destination={{
-                name: trip.destination_name,
-                lat: trip.destination_lat,
-                lng: trip.destination_lng,
-              }}
-            />
-          </div>
+        {/* Map — full-page primary surface */}
+        <TripMapPanel
+          itinerary={itinerary}
+          destination={{
+            name: trip.destination_name,
+            lat: trip.destination_lat,
+            lng: trip.destination_lng,
+          }}
+        />
 
-          <div className="lg:col-span-4">
-            <NextUpTimeline
-              tripId={tripId}
-              items={nextItinerary}
-              total={itinerary.items.length}
-            />
-          </div>
-        </div>
+        {/* Timeline */}
+        <NextUpTimeline
+          tripId={tripId}
+          items={nextItinerary}
+          total={itinerary.items.length}
+        />
 
         {/* Decision center */}
         <TripDecisionCenter
@@ -232,7 +227,7 @@ function NextUpTimeline({
           Nothing confirmed with a date yet. Confirm an item to see it here.
         </div>
       ) : (
-        <ul className="mt-4 flex flex-col gap-3">
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item) => (
             <li
               key={item.id}
