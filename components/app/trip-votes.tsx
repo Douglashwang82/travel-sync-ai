@@ -411,12 +411,7 @@ function VoteCard({
                       )}
                     </div>
                     {opt.voters.length > 0 && (
-                      <p className="text-[11px] text-[var(--muted-foreground)]">
-                        Voted by{" "}
-                        {opt.voters
-                          .map((v) => v.displayName ?? v.lineUserId.slice(0, 6))
-                          .join(", ")}
-                      </p>
+                      <VoterAvatars voters={opt.voters} />
                     )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
@@ -446,6 +441,78 @@ function VoteCard({
         />
       )}
     </article>
+  );
+}
+
+const AVATAR_PALETTES = [
+  "bg-rose-200 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+  "bg-amber-200 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  "bg-emerald-200 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  "bg-sky-200 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
+  "bg-violet-200 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+  "bg-fuchsia-200 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200",
+  "bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  "bg-cyan-200 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+];
+
+function avatarPalette(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(hash) % AVATAR_PALETTES.length;
+  return AVATAR_PALETTES[idx];
+}
+
+function avatarInitial(name: string | null, fallback: string): string {
+  const source = name?.trim() || fallback;
+  return source.slice(0, 1).toUpperCase();
+}
+
+function VoterAvatars({
+  voters,
+}: {
+  voters: Array<{ lineUserId: string; displayName: string | null }>;
+}) {
+  const visible = voters.slice(0, 5);
+  const overflow = voters.length - visible.length;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex -space-x-1.5">
+        {visible.map((v) => {
+          const label = v.displayName ?? v.lineUserId.slice(0, 6);
+          return (
+            <span
+              key={v.lineUserId}
+              title={`${label} voted`}
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-[var(--background)]",
+                avatarPalette(v.lineUserId)
+              )}
+              aria-label={`${label} voted`}
+            >
+              {avatarInitial(v.displayName, v.lineUserId)}
+            </span>
+          );
+        })}
+        {overflow > 0 && (
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--secondary)] text-[10px] font-semibold text-[var(--muted-foreground)] ring-2 ring-[var(--background)]"
+            title={voters
+              .slice(5)
+              .map((v) => v.displayName ?? v.lineUserId.slice(0, 6))
+              .join(", ")}
+          >
+            +{overflow}
+          </span>
+        )}
+      </div>
+      <span className="text-[11px] text-[var(--muted-foreground)]">
+        {voters.length === 1
+          ? voters[0].displayName ?? voters[0].lineUserId.slice(0, 6)
+          : `${voters.length} voted`}
+      </span>
+    </div>
   );
 }
 
