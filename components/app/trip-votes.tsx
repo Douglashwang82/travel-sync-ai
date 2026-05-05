@@ -277,6 +277,8 @@ function VoteCard({
     : null;
   const needed = majorityThreshold(memberCount);
   const myVote = vote.options.find((o) => o.votedByMe);
+  // Default to collapsed if I've already voted — keeps unresolved votes in focus.
+  const [collapsed, setCollapsed] = useState<boolean>(() => !!myVote);
   const iHaventVoted = !myVote && members.some((m) => m.lineUserId === currentUserId);
 
   const nonVoters = useMemo(() => {
@@ -286,34 +288,73 @@ function VoteCard({
   }, [members, vote.options]);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
-      <header className="space-y-3 border-b border-[var(--border)] p-5">
+    <article
+      className={cn(
+        "overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)] transition-shadow",
+        !collapsed && "shadow-sm"
+      )}
+    >
+      <header
+        className={cn(
+          "space-y-3 p-5",
+          !collapsed && "border-b border-[var(--border)]"
+        )}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="text-[10px] uppercase">
-                {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
-              </Badge>
-              <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                Pending vote
-              </Badge>
-              {iHaventVoted && (
-                <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
-                  Your vote needed
-                </span>
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-expanded={!collapsed}
+            aria-controls={`vote-body-${vote.item.id}`}
+            className="-m-1 flex min-w-0 flex-1 items-start gap-2 rounded-lg p-1 text-left transition-colors hover:bg-[var(--secondary)]/40"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-transform",
+                collapsed ? "rotate-0" : "rotate-90"
               )}
-              {vote.item.deadlineAt && (
-                <DeadlineCountdown deadlineAt={vote.item.deadlineAt} />
+            >
+              ▶
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] uppercase">
+                  {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
+                </Badge>
+                <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  Pending vote
+                </Badge>
+                {iHaventVoted && (
+                  <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+                    Your vote needed
+                  </span>
+                )}
+                {vote.item.deadlineAt && (
+                  <DeadlineCountdown deadlineAt={vote.item.deadlineAt} />
+                )}
+              </div>
+              <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
+              {vote.item.description && !collapsed && (
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {vote.item.description}
+                </p>
+              )}
+              {collapsed && (
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {vote.options.length} option
+                  {vote.options.length === 1 ? "" : "s"} ·{" "}
+                  {vote.totalVotes}/{memberCount} voted
+                  {myVote && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+                      ✓ {myVote.name}
+                    </span>
+                  )}
+                </p>
               )}
             </div>
-            <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
-            {vote.item.description && (
-              <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                {vote.item.description}
-              </p>
-            )}
-          </div>
-          {isOrganizer && (
+          </button>
+          {isOrganizer && !collapsed && (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
                 Add option
@@ -325,21 +366,29 @@ function VoteCard({
           )}
         </div>
 
-        <VoteProgress
-          totalVotes={vote.totalVotes}
-          memberCount={memberCount}
-          needed={needed}
-        />
+        {!collapsed && (
+          <VoteProgress
+            totalVotes={vote.totalVotes}
+            memberCount={memberCount}
+            needed={needed}
+          />
+        )}
 
-        <NonVoterRow
-          tripId={tripId}
-          itemId={vote.item.id}
-          nonVoters={nonVoters}
-          currentUserId={currentUserId}
-        />
+        {!collapsed && (
+          <NonVoterRow
+            tripId={tripId}
+            itemId={vote.item.id}
+            nonVoters={nonVoters}
+            currentUserId={currentUserId}
+          />
+        )}
       </header>
 
-      <ul className="divide-y divide-[var(--border)]">
+      <ul
+        id={`vote-body-${vote.item.id}`}
+        hidden={collapsed}
+        className="divide-y divide-[var(--border)]"
+      >
         {vote.options.map((opt) => {
           const castingThis = casting === `${vote.item.id}:${opt.id}`;
           const share = memberCount > 0 ? (opt.voteCount / memberCount) * 100 : 0;
