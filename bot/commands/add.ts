@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import type { CommandContext } from "../router";
 import type { ItemType } from "@/lib/types";
+import { getActiveTrip } from "../command-guards";
 
 const ArgsSchema = z.array(z.string()).min(1);
 
@@ -36,12 +37,7 @@ export async function handleAdd(
   const itemType = inferItemType(title);
   const db = createAdminClient();
 
-  const { data: trip } = await db
-    .from("trips")
-    .select("id")
-    .eq("group_id", ctx.dbGroupId)
-    .in("status", ["draft", "active"])
-    .single();
+  const trip = await getActiveTrip(db, ctx.dbGroupId);
 
   if (!trip) {
     await reply("No active trip. Use /start to create one first.");
@@ -65,6 +61,6 @@ export async function handleAdd(
 
   await reply(
     `Added to To-Do: "${title}"\n\n` +
-      `This is a planning item. When the group is ready to choose, use /decide ${itemType === "other" ? title : itemType}.`
+      `This is a task. Use /decide only when the group needs to choose between options.`
   );
 }

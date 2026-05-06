@@ -1,221 +1,321 @@
+export type CommandCategory =
+  | "trip"
+  | "planning"
+  | "decisions"
+  | "readiness"
+  | "operations"
+  | "finance"
+  | "privacy"
+  | "support";
+
 export type CommandCatalogEntry = {
   command: string;
   usage?: string;
   example: string;
+  purpose: string;
   description: string;
-  emoji: string;
+  icon: string;
+  category: CommandCategory;
+  helpVisible?: boolean;
   liffVisible?: boolean;
+  rateLimitExempt?: boolean;
 };
 
-export const COMMAND_CATALOG: CommandCatalogEntry[] = [
+export const COMMAND_CATALOG = [
   {
     command: "/start",
     usage: "[destination?] [dates?]",
-    example: "/start",
+    example: "/start Osaka 7/15-7/20",
+    purpose: "Create the active trip context for a LINE group.",
     description:
-      "Start a new trip. Destination, dates, and participants can all be decided later — pass them now only if you already know.",
-    emoji: "🚀",
-    liffVisible: true,
+      "Start a new trip. Destination, dates, and participants can all be refined later.",
+    icon: ">>",
+    category: "trip",
   },
   {
     command: "/status",
     example: "/status",
-    description: "Show the trip board grouped into To-Do, Pending, and Confirmed.",
-    emoji: "📋",
-    liffVisible: true,
+    purpose: "Show the current planning board.",
+    description: "Show trip items grouped by To-Do, Pending, and Confirmed.",
+    icon: "[]",
+    category: "trip",
   },
   {
-    command: "/decide",
-    usage: "[item]",
-    example: "/decide restaurant",
-    description: "Create a decision item so the group can vote on it later.",
-    emoji: "🧭",
-    liffVisible: true,
-  },
-  {
-    command: "/vote",
-    usage: "[item]",
-    example: "/vote restaurant",
-    description: "Start a vote for a decision item and post options for the group.",
-    emoji: "🗳️",
-    liffVisible: true,
-  },
-  {
-    command: "/option",
-    usage: "[decision-item] | [option-name]",
-    example: "/option restaurant | Ramen Shop Osaka",
-    description: "Add a voting option to a decision item so the group can vote on it.",
-    emoji: "🔤",
-    liffVisible: true,
+    command: "/itinerary",
+    usage: "[date?]",
+    example: "/itinerary 2026-07-15",
+    purpose: "Retrieve the current confirmed itinerary.",
+    description:
+      "Show the whole confirmed itinerary, or only one day's plan when a date is provided.",
+    icon: "CAL",
+    category: "trip",
   },
   {
     command: "/add",
-    usage: "[item]",
-    example: "/add Book travel insurance",
-    description: "Add a planning item to the trip board.",
-    emoji: "➕",
-    liffVisible: true,
-  },
-  {
-    command: "/share",
-    usage: "[url]",
-    example: "/share https://booking.com/hotel/xyz",
-    description: "Save a hotel, restaurant, flight, or activity link as trip knowledge.",
-    emoji: "🔗",
-    liffVisible: true,
-  },
-  {
-    command: "/recommend",
-    usage: "[type]",
-    example: "/recommend restaurant",
-    description: "Recommend remembered places from the group's chat history first.",
-    emoji: "✨",
-    liffVisible: true,
-  },
-  {
-    command: "/ready",
-    example: "/ready",
-    description: "Show a readiness summary using committed trip details only.",
-    emoji: "✅",
-    liffVisible: true,
-  },
-  {
-    command: "/ops",
-    example: "/ops",
-    description: "Show the trip operations summary based on committed execution data.",
-    emoji: "🛠️",
-    liffVisible: true,
-  },
-  {
-    command: "/incident",
-    usage: "[what happened]",
-    example: "/incident I lost my passport",
-    description: "Open a verified incident playbook for disruptions like delays or lost documents.",
-    emoji: "🚨",
-    liffVisible: true,
-  },
-  {
-    command: "/nudge",
-    example: "/nudge",
-    description: "Remind the group about pending votes or stale open items.",
-    emoji: "🔔",
-    liffVisible: true,
-  },
-  {
-    command: "/exp",
-    usage: "[amount] [description] [for @name1 @name2 | for all]",
-    example: "/exp 1200 dinner for @Alice @Bob",
-    description: "Record a payment and split it across selected members or the whole group.",
-    emoji: "💰",
-    liffVisible: true,
-  },
-  {
-    command: "/exp-summary",
-    example: "/exp-summary",
-    description: "Show who owes whom and the minimum settlements needed.",
-    emoji: "💸",
-    liffVisible: true,
-  },
-  {
-    command: "/budget",
-    usage: "[amount] [currency?]",
-    example: "/budget 50000 JPY",
-    description: "Set or update the trip's total planned budget. Currency defaults to TWD.",
-    emoji: "🎯",
-    liffVisible: true,
+    usage: "[task]",
+    example: "/add Renew passport",
+    purpose: "Add a concrete planning task that must be done.",
+    description: "Add a non-voting task to the trip board.",
+    icon: "+",
+    category: "planning",
   },
   {
     command: "/idea",
     usage: "[category?] [text]",
     example: "/idea restaurant Any ramen near Shinjuku",
-    description: "Drop a brainstorm idea onto the trip idea board. Categories: destination, hotel, activity, restaurant, general.",
-    emoji: "💡",
-    liffVisible: true,
+    purpose: "Capture a loose brainstorm idea with low commitment.",
+    description:
+      "Drop a brainstorm idea onto the idea board without creating a planning task or vote.",
+    icon: "*",
+    category: "planning",
   },
   {
     command: "/ideas",
     example: "/ideas",
-    description: "List all open brainstorm ideas for the active trip, grouped by category.",
-    emoji: "📝",
-    liffVisible: true,
+    purpose: "Review brainstorm ideas for the active trip.",
+    description: "List open brainstorm ideas grouped by category.",
+    icon: "**",
+    category: "planning",
   },
   {
-    command: "/docs",
-    usage: "add [type] [label?] [expires YYYY-MM-DD?] | list",
-    example: "/docs add passport expires 2028-03-15",
-    description: "Record and review travel documents (passport, visa, insurance) with expiry warnings.",
-    emoji: "📑",
-    liffVisible: true,
+    command: "/decide",
+    usage: "[topic]",
+    example: "/decide restaurant",
+    purpose: "Open a decision topic the group needs to choose.",
+    description: "Create a decision item before options and voting begin.",
+    icon: "?",
+    category: "decisions",
   },
   {
-    command: "/pack",
-    usage: "add [category?] [item] | list | check [#]",
-    example: "/pack add clothing rain jacket",
-    description: "Manage the group packing checklist. Categories: documents, clothing, toiletries, electronics, safety, general.",
-    emoji: "🎒",
-    liffVisible: true,
+    command: "/option",
+    usage: "[decision-topic] | [option-name]",
+    example: "/option restaurant | Ramen Shop Osaka",
+    purpose: "Add a candidate option to an existing decision.",
+    description: "Attach a manual option to a decision item.",
+    icon: "|",
+    category: "decisions",
+  },
+  {
+    command: "/vote",
+    usage: "[decision-topic]",
+    example: "/vote restaurant",
+    purpose: "Start voting for a decision that already exists.",
+    description: "Open or refresh voting for a decision item and post vote controls.",
+    icon: "X",
+    category: "decisions",
+  },
+  {
+    command: "/nudge",
+    example: "/nudge",
+    purpose: "Remind the group about blocked or stale work.",
+    description:
+      "Identify pending votes, stale tasks, missing bookings, or other open blockers and send a prioritized reminder.",
+    icon: "!",
+    category: "operations",
+  },
+  {
+    command: "/ready",
+    example: "/ready",
+    purpose: "Answer whether the group is ready to go.",
+    description:
+      "Show pre-trip readiness across committed dates, bookings, documents, and blockers.",
+    icon: "OK",
+    category: "readiness",
+  },
+  {
+    command: "/ops",
+    example: "/ops",
+    purpose: "Show operational attention items for trip execution.",
+    description:
+      "Summarize day-of execution needs such as upcoming plans, booking gaps, and incidents.",
+    icon: "!!",
+    category: "operations",
+  },
+  {
+    command: "/incident",
+    usage: "[what happened]",
+    example: "/incident I lost my passport",
+    purpose: "Start an incident workflow from a real disruption.",
+    description: "Classify a disruption, create response tasks, and return an immediate playbook.",
+    icon: "SOS",
+    category: "operations",
+  },
+  {
+    command: "/booked",
+    usage: "[item name] [confirmation ref]",
+    example: "/booked hotel AX-12345",
+    purpose: "Manually mark a known trip item as booked.",
+    description: "Record a booking reference or link for a confirmed trip item.",
+    icon: "#",
+    category: "operations",
   },
   {
     command: "/confirm",
     usage: "[forwarded booking text]",
     example: "/confirm Booking confirmed! Ref AX-12345 Hotel Sunshine check-in July 15",
-    description: "Parse a forwarded booking confirmation and mark the matching trip item as booked.",
-    emoji: "📩",
-    liffVisible: true,
+    purpose: "Parse pasted booking text and mark the matching item booked.",
+    description:
+      "Use AI-assisted parsing to extract booking details from a forwarded confirmation.",
+    icon: "@",
+    category: "operations",
   },
   {
-    command: "/cancel",
-    example: "/cancel",
-    description: "Cancel the current active trip.",
-    emoji: "🚫",
-    liffVisible: true,
+    command: "/docs",
+    usage: "add [type] [label?] [expires YYYY-MM-DD?] | list",
+    example: "/docs add passport expires 2028-03-15",
+    purpose: "Manage travel document readiness.",
+    description:
+      "Record and review passport, visa, insurance, and other document status with expiry warnings.",
+    icon: "ID",
+    category: "readiness",
   },
   {
-    command: "/complete",
-    example: "/complete",
-    description: "Mark the current active trip as complete.",
-    emoji: "🏁",
-    liffVisible: true,
+    command: "/pack",
+    usage: "add [category?] [item] | list | check [#]",
+    example: "/pack add clothing rain jacket",
+    purpose: "Manage the group packing checklist.",
+    description:
+      "Add, list, and check off packing items for documents, clothing, toiletries, electronics, safety, or general needs.",
+    icon: "PK",
+    category: "readiness",
+  },
+  {
+    command: "/budget",
+    usage: "[amount] [currency?]",
+    example: "/budget 50000 JPY",
+    purpose: "Set the trip budget envelope.",
+    description: "Set or update the trip's total planned budget. Currency defaults to TWD.",
+    icon: "$",
+    category: "finance",
+  },
+  {
+    command: "/exp",
+    usage: "[amount] [description] [for @name1 @name2 | for all]",
+    example: "/exp 1200 dinner for @Alice @Bob",
+    purpose: "Record a paid expense and split it.",
+    description: "Record a payment and split it across selected members or the whole group.",
+    icon: "$+",
+    category: "finance",
+  },
+  {
+    command: "/exp-summary",
+    example: "/exp-summary",
+    purpose: "Show balances, settlements, and budget progress.",
+    description: "Show who owes whom, minimum settlements, and budget usage when available.",
+    icon: "$=",
+    category: "finance",
+  },
+  {
+    command: "/ask",
+    usage: "[question]",
+    example: "/ask what hotels have we confirmed?",
+    purpose: "Answer read-only questions over the current trip state.",
+    description:
+      "Use the trip board, bookings, documents, expenses, and ideas to answer without mutating data.",
+    icon: "AI",
+    category: "support",
+  },
+  {
+    command: "/share",
+    usage: "[url]",
+    example: "/share https://booking.com/hotel/xyz",
+    purpose: "Save a travel link as trip knowledge.",
+    description: "Save a hotel, restaurant, flight, or activity link for later recommendations.",
+    icon: "->",
+    category: "planning",
+  },
+  {
+    command: "/recommend",
+    usage: "[restaurant|hotel|activity] [keywords?]",
+    example: "/recommend restaurant",
+    purpose: "Recall remembered places before searching externally.",
+    description: "Recommend places from the group's chat and shared links first.",
+    icon: "~",
+    category: "planning",
   },
   {
     command: "/track",
     usage: "[add <url>|run]",
     example: "/track add https://www.timeout.com/tokyo restaurant",
-    description: "Follow a website or RSS feed for daily travel & restaurant updates.",
-    emoji: "📡",
-    liffVisible: true,
+    purpose: "Follow websites or RSS feeds for travel updates.",
+    description: "Follow a source for daily travel and restaurant updates.",
+    icon: "RSS",
+    category: "support",
+  },
+  {
+    command: "/cancel",
+    example: "/cancel",
+    purpose: "Cancel the current active trip.",
+    description: "Cancel the current active trip.",
+    icon: "--",
+    category: "trip",
+  },
+  {
+    command: "/complete",
+    example: "/complete",
+    purpose: "Mark the current active trip complete.",
+    description: "Close out the trip and send final settlement/feedback prompts.",
+    icon: "END",
+    category: "trip",
+  },
+  {
+    command: "/delete-my-data",
+    example: "/delete-my-data",
+    purpose: "Request deletion of the caller's stored user data.",
+    description: "Start personal data deletion for the LINE user who invokes it.",
+    icon: "DEL",
+    category: "privacy",
+    helpVisible: false,
+    liffVisible: false,
+    rateLimitExempt: true,
   },
   {
     command: "/optout",
     example: "/optout",
+    purpose: "Disable message parsing for the user.",
     description: "Stop TravelSync from parsing your messages for trip planning.",
-    emoji: "🔇",
-    liffVisible: true,
+    icon: "OFF",
+    category: "privacy",
+    rateLimitExempt: true,
   },
   {
     command: "/optin",
     example: "/optin",
+    purpose: "Re-enable message parsing for the user.",
     description: "Re-enable message parsing after opting out.",
-    emoji: "🔊",
-    liffVisible: true,
+    icon: "ON",
+    category: "privacy",
+    rateLimitExempt: true,
   },
   {
     command: "/help",
     example: "/help",
-    description: "Show the full command list.",
-    emoji: "❓",
-    liffVisible: true,
+    purpose: "Show the command list.",
+    description: "Show available commands and examples.",
+    icon: "?",
+    category: "support",
+    rateLimitExempt: true,
   },
-];
+] as const satisfies CommandCatalogEntry[];
+
+export type CommandName = (typeof COMMAND_CATALOG)[number]["command"];
+
+export const PUBLIC_COMMAND_CATALOG: readonly CommandCatalogEntry[] = COMMAND_CATALOG.filter(
+  (entry: CommandCatalogEntry) => entry.helpVisible !== false
+);
 
 export function getCommandUsage(entry: CommandCatalogEntry): string {
   return entry.usage ? `${entry.command} ${entry.usage}` : entry.command;
 }
 
+export function getCommandCatalogEntry(command: string): CommandCatalogEntry | undefined {
+  return COMMAND_CATALOG.find((entry) => entry.command === command);
+}
+
 export function buildBotHelpText(): string {
   const lines: string[] = ["TravelSync AI - Commands", ""];
 
-  for (const entry of COMMAND_CATALOG) {
+  for (const entry of PUBLIC_COMMAND_CATALOG) {
     lines.push(getCommandUsage(entry));
     lines.push(`  ${entry.description}`);
     lines.push(`  Example: ${entry.example}`);

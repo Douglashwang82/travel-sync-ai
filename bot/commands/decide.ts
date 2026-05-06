@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/db";
 import { createItem } from "@/services/trip-state";
 import type { CommandContext } from "../router";
 import { inferItemType } from "./add";
+import { getActiveTrip } from "../command-guards";
 
 const ArgsSchema = z.array(z.string()).min(1);
 
@@ -29,12 +30,7 @@ export async function handleDecide(
   const title = normalizeDecisionTitle(rawTitle, itemType);
   const db = createAdminClient();
 
-  const { data: trip } = await db
-    .from("trips")
-    .select("id")
-    .eq("group_id", ctx.dbGroupId)
-    .in("status", ["draft", "active"])
-    .single();
+  const trip = await getActiveTrip(db, ctx.dbGroupId);
 
   if (!trip) {
     await reply("No active trip. Use /start to create one first.");
@@ -73,6 +69,6 @@ export async function handleDecide(
 
   await reply(
     `Created decision item: "${result.item.title}"\n\n` +
-      `I'll use remembered knowledge and fresh search when you run /vote ${itemType === "other" ? result.item.title : itemType}.`
+      `Add options with /option ${itemType === "other" ? result.item.title : itemType} | [option], then start voting with /vote ${itemType === "other" ? result.item.title : itemType}.`
   );
 }

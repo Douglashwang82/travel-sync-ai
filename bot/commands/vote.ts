@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
 import { startDecision } from "@/services/decisions";
 import type { CommandContext } from "../router";
+import { findBestTripItemMatch, getActiveTrip } from "../command-guards";
 
 const ArgsSchema = z.array(z.string()).min(1);
 
@@ -19,12 +20,7 @@ export async function handleVote(
   const itemQuery = args.join(" ").toLowerCase();
   const db = createAdminClient();
 
-  const { data: trip } = await db
-    .from("trips")
-    .select("id, destination_name")
-    .eq("group_id", ctx.dbGroupId)
-    .in("status", ["draft", "active"])
-    .single();
+  const trip = await getActiveTrip(db, ctx.dbGroupId, "id, destination_name");
 
   if (!trip) {
     await reply("No active trip. Use /start to create one first.");
@@ -38,22 +34,7 @@ export async function handleVote(
     .eq("trip_id", trip.id)
     .in("stage", ["todo", "pending"]);
 
-  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const normalizedQuery = normalize(itemQuery);
-
-  const matches = (items ?? []).filter((i) => {
-    const normalizedTitle = normalize(i.title);
-    return (
-      normalizedTitle.includes(normalizedQuery) ||
-      normalizedQuery.includes(normalizedTitle) ||
-      normalize(i.item_type ?? "") === normalizedQuery
-    );
-  });
-
-  const match = matches.sort((a, b) => {
-    if (a.item_kind === b.item_kind) return 0;
-    return a.item_kind === "decision" ? -1 : 1;
-  })[0];
+  const match = findBestTripItemMatch(items, itemQuery, "decision");
 
   if (!match) {
     await reply(
@@ -86,7 +67,7 @@ export async function handleVote(
     tripId: trip.id,
     groupId: ctx.dbGroupId,
     lineGroupId: ctx.lineGroupId,
-    destination: trip.destination_name,
+    destination: trip.destination_name ?? "",
   }).catch(async (err) => {
     console.error("[vote command] startDecision error", err);
     try {
