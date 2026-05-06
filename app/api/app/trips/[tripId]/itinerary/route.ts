@@ -13,6 +13,8 @@ export interface ItineraryOption {
   price_level: string | null;
   booking_url: string | null;
   google_maps_url: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface ItineraryEntry {
@@ -28,12 +30,21 @@ export interface ItineraryEntry {
   confirmed_option: ItineraryOption | null;
 }
 
+export interface DayNoteEntry {
+  note: string;
+  updatedBy: string;
+  updatedByName: string | null;
+  updatedAt: string;
+}
+
 export interface ItineraryResponse {
   trip: {
     id: string;
     destination_name: string | null;
     start_date: string | null;
     end_date: string | null;
+    budget_currency: string;
+    day_notes: Record<string, DayNoteEntry>;
   };
   items: ItineraryEntry[];
 }
@@ -46,7 +57,9 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const db = createAdminClient();
   const { data: trip } = await db
     .from("trips")
-    .select("id, destination_name, start_date, end_date")
+    .select(
+      "id, destination_name, start_date, end_date, budget_currency, day_notes"
+    )
     .eq("id", tripId)
     .single();
 
@@ -62,7 +75,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     .select(
       `id, title, item_type, description, stage, deadline_at, assigned_to_line_user_id, booking_status, booking_ref, confirmed_option_id,
        trip_item_options!trip_items_confirmed_option_id_fkey (
-         id, name, address, image_url, rating, price_level, booking_url, google_maps_url
+         id, name, address, image_url, rating, price_level, booking_url, google_maps_url, lat, lng
        )`
     )
     .eq("trip_id", tripId)
@@ -100,6 +113,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
             price_level: (opt.price_level as string | null) ?? null,
             booking_url: (opt.booking_url as string | null) ?? null,
             google_maps_url: (opt.google_maps_url as string | null) ?? null,
+            lat: opt.lat != null ? Number(opt.lat) : null,
+            lng: opt.lng != null ? Number(opt.lng) : null,
           }
         : null,
     };
@@ -111,6 +126,9 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       destination_name: (trip.destination_name as string | null) ?? null,
       start_date: (trip.start_date as string | null) ?? null,
       end_date: (trip.end_date as string | null) ?? null,
+      budget_currency: (trip.budget_currency as string | null) ?? "TWD",
+      day_notes:
+        (trip.day_notes as Record<string, DayNoteEntry> | null) ?? {},
     },
     items,
   });

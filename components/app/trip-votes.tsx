@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,9 @@ import type {
   WebActiveVote,
   WebVotesResponse,
 } from "@/app/api/app/trips/[tripId]/votes/route";
+import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
+import type { NudgeResponse } from "@/app/api/app/trips/[tripId]/votes/[itemId]/nudge/route";
+import { OptionDetailDialog } from "@/components/app/option-detail-dialog";
 
 const TYPE_LABEL: Record<string, string> = {
   hotel: "Hotel",
@@ -42,8 +45,10 @@ const TYPE_LABEL: Record<string, string> = {
 type OverviewState = {
   votes: WebActiveVote[];
   memberCount: number;
+  members: AppMember[];
   todo: BoardData["todo"];
   role: "organizer" | "member";
+  currentUserId: string;
 };
 
 export function TripVotesClient({ tripId }: { tripId: string }) {
@@ -57,17 +62,20 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const [votes, board, trip] = await Promise.all([
+      const [votes, board, trip, members] = await Promise.all([
         appFetchJson<WebVotesResponse>(`/api/app/trips/${tripId}/votes`),
         appFetchJson<BoardData>(`/api/app/trips/${tripId}/board`),
         appFetchJson<{ role: "organizer" | "member" }>(`/api/app/trips/${tripId}`),
+        appFetchJson<{ members: AppMember[] }>(`/api/app/trips/${tripId}/members`),
       ]);
       setError(null);
       setState({
         votes: votes.votes,
         memberCount: votes.memberCount,
+        members: members.members,
         todo: board.todo,
         role: trip.role,
+        currentUserId: board.currentUser.lineUserId,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load votes");
@@ -115,7 +123,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
     return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
   }
 
-  const { votes, memberCount, todo, role } = state;
+  const { votes, memberCount, members, todo, role, currentUserId } = state;
   const isOrganizer = role === "organizer";
 
   return (
@@ -149,6 +157,8 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
               key={v.item.id}
               vote={v}
               memberCount={memberCount}
+              members={members}
+              currentUserId={currentUserId}
               isOrganizer={isOrganizer}
               casting={casting}
               onCast={(optionId) => void handleCast(v.item.id, optionId)}
@@ -240,6 +250,8 @@ function majorityThreshold(memberCount: number): number {
 function VoteCard({
   vote,
   memberCount,
+  members,
+  currentUserId,
   isOrganizer,
   casting,
   onCast,
@@ -249,6 +261,8 @@ function VoteCard({
 }: {
   vote: WebActiveVote;
   memberCount: number;
+  members: AppMember[];
+  currentUserId: string;
   isOrganizer: boolean;
   casting: string | null;
   onCast: (optionId: string) => void;
@@ -257,66 +271,156 @@ function VoteCard({
   tripId: string;
 }) {
   const [addOpen, setAddOpen] = useState(false);
+  const [detailOptionId, setDetailOptionId] = useState<string | null>(null);
+  const detailOption = detailOptionId
+    ? vote.options.find((o) => o.id === detailOptionId) ?? null
+    : null;
   const needed = majorityThreshold(memberCount);
+  const myVote = vote.options.find((o) => o.votedByMe);
+  // Default to collapsed if I've already voted — keeps unresolved votes in focus.
+  const [collapsed, setCollapsed] = useState<boolean>(() => !!myVote);
+  const iHaventVoted = !myVote && members.some((m) => m.lineUserId === currentUserId);
+
+  const nonVoters = useMemo(() => {
+    const voted = new Set<string>();
+    for (const opt of vote.options) for (const v of opt.voters) voted.add(v.lineUserId);
+    return members.filter((m) => !voted.has(m.lineUserId));
+  }, [members, vote.options]);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border)] p-5">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="text-[10px] uppercase">
-              {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
-            </Badge>
-            <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              Pending vote
-            </Badge>
-            {vote.item.deadlineAt && (
-              <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] text-[var(--muted-foreground)]">
-                Closes {formatDeadline(vote.item.deadlineAt)}
-              </span>
-            )}
-          </div>
-          <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
-          {vote.item.description && (
-            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-              {vote.item.description}
-            </p>
+    <article
+      className={cn(
+        "overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)] transition-shadow",
+        !collapsed && "shadow-sm"
+      )}
+    >
+      <header
+        className={cn(
+          "space-y-3 p-5",
+          !collapsed && "border-b border-[var(--border)]"
+        )}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-expanded={!collapsed}
+            aria-controls={`vote-body-${vote.item.id}`}
+            className="-m-1 flex min-w-0 flex-1 items-start gap-2 rounded-lg p-1 text-left transition-colors hover:bg-[var(--secondary)]/40"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-transform",
+                collapsed ? "rotate-0" : "rotate-90"
+              )}
+            >
+              ▶
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] uppercase">
+                  {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
+                </Badge>
+                <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  Pending vote
+                </Badge>
+                {iHaventVoted && (
+                  <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+                    Your vote needed
+                  </span>
+                )}
+                {vote.item.deadlineAt && (
+                  <DeadlineCountdown deadlineAt={vote.item.deadlineAt} />
+                )}
+              </div>
+              <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
+              {vote.item.description && !collapsed && (
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {vote.item.description}
+                </p>
+              )}
+              {collapsed && (
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {vote.options.length} option
+                  {vote.options.length === 1 ? "" : "s"} ·{" "}
+                  {vote.totalVotes}/{memberCount} voted
+                  {myVote && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+                      ✓ {myVote.name}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+          </button>
+          {isOrganizer && !collapsed && (
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+                Add option
+              </Button>
+              <Button size="sm" variant="outline" onClick={onCloseClick}>
+                Close vote
+              </Button>
+            </div>
           )}
-          <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-            {vote.totalVotes} of {memberCount} voted · needs {needed} for majority
-          </p>
         </div>
-        {isOrganizer && (
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-              Add option
-            </Button>
-            <Button size="sm" variant="outline" onClick={onCloseClick}>
-              Close vote
-            </Button>
-          </div>
+
+        {!collapsed && (
+          <VoteProgress
+            totalVotes={vote.totalVotes}
+            memberCount={memberCount}
+            needed={needed}
+          />
+        )}
+
+        {!collapsed && (
+          <NonVoterRow
+            tripId={tripId}
+            itemId={vote.item.id}
+            nonVoters={nonVoters}
+            currentUserId={currentUserId}
+          />
         )}
       </header>
 
-      <ul className="divide-y divide-[var(--border)]">
+      <ul
+        id={`vote-body-${vote.item.id}`}
+        hidden={collapsed}
+        className="divide-y divide-[var(--border)]"
+      >
         {vote.options.map((opt) => {
           const castingThis = casting === `${vote.item.id}:${opt.id}`;
           const share = memberCount > 0 ? (opt.voteCount / memberCount) * 100 : 0;
+          const hasDetail =
+            !!opt.address ||
+            !!opt.notes ||
+            !!opt.priceLevel ||
+            opt.rating != null;
           return (
             <li key={opt.id}>
-              <button
-                type="button"
-                onClick={() => onCast(opt.id)}
-                disabled={casting !== null}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailOptionId(opt.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailOptionId(opt.id);
+                  }
+                }}
                 className={cn(
-                  "group relative w-full text-left transition-colors",
+                  "group relative w-full cursor-pointer text-left transition-colors",
                   opt.votedByMe
                     ? "bg-[var(--primary)]/5"
-                    : "hover:bg-[var(--secondary)]/50",
-                  casting !== null && "opacity-60"
+                    : "hover:bg-[var(--secondary)]/50"
                 )}
               >
-                <div className="absolute inset-y-0 left-0 bg-[var(--primary)]/10 transition-all" style={{ width: `${Math.min(100, share)}%` }} aria-hidden />
+                <div
+                  className="absolute inset-y-0 left-0 bg-[var(--primary)]/10 transition-all"
+                  style={{ width: `${Math.min(100, share)}%` }}
+                  aria-hidden
+                />
                 <div className="relative flex items-start gap-3 p-4">
                   {opt.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -344,55 +448,60 @@ function VoteCard({
                           {opt.priceLevel}
                         </span>
                       )}
+                      {opt.notes && (
+                        <span
+                          className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                          title="Group notes available"
+                        >
+                          ✏ Notes
+                        </span>
+                      )}
                     </div>
                     {opt.address && (
                       <p className="truncate text-xs text-[var(--muted-foreground)]">
                         📍 {opt.address}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-3 text-xs">
-                      {opt.googleMapsUrl && (
-                        <a
-                          href={opt.googleMapsUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
-                        >
-                          Map
-                        </a>
-                      )}
-                      {opt.bookingUrl && (
-                        <a
-                          href={opt.bookingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
-                        >
-                          Book
-                        </a>
-                      )}
-                    </div>
                     {opt.voters.length > 0 && (
-                      <p className="text-[11px] text-[var(--muted-foreground)]">
-                        Voted by{" "}
-                        {opt.voters
-                          .map((v) => v.displayName ?? v.lineUserId.slice(0, 6))
-                          .join(", ")}
-                      </p>
+                      <VoterAvatars voters={opt.voters} />
                     )}
+                    <p className="text-[11px] text-[var(--primary)] opacity-70 group-hover:opacity-100">
+                      {hasDetail ? "Tap for details" : "Tap to add price, location, notes"}
+                    </p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-xl font-bold tabular-nums">
-                      {opt.voteCount}
-                    </span>
-                    <span className="text-[10px] text-[var(--muted-foreground)]">
-                      {castingThis ? "Saving..." : opt.votedByMe ? "Tap again to change" : "Tap to vote"}
-                    </span>
+                  <div
+                    className="flex shrink-0 flex-col items-stretch gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex flex-col items-end">
+                      <span className="text-xl font-bold tabular-nums leading-none">
+                        {opt.voteCount}
+                      </span>
+                      <span className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                        vote{opt.voteCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={opt.votedByMe ? "default" : "outline"}
+                      onClick={() => onCast(opt.id)}
+                      disabled={casting !== null}
+                      className={cn(
+                        "h-7 px-2.5 text-[11px]",
+                        opt.votedByMe &&
+                          "bg-emerald-600 text-white hover:bg-emerald-700"
+                      )}
+                    >
+                      {castingThis
+                        ? "Saving…"
+                        : opt.votedByMe
+                          ? "✓ Voted"
+                          : "Vote"}
+                    </Button>
                   </div>
                 </div>
-              </button>
+              </div>
             </li>
           );
         })}
@@ -409,21 +518,335 @@ function VoteCard({
           }}
         />
       )}
+
+      <OptionDetailDialog
+        tripId={tripId}
+        vote={vote}
+        option={detailOption}
+        onClose={() => setDetailOptionId(null)}
+        onVote={(optionId) => onCast(optionId)}
+        onUpdated={() => {
+          onAddOption();
+        }}
+      />
     </article>
   );
 }
 
-function formatDeadline(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const now = Date.now();
-  const diffMs = d.getTime() - now;
-  if (diffMs <= 0) return "overdue";
-  const hours = Math.round(diffMs / 3_600_000);
-  if (hours < 24) return `in ${hours}h`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `in ${days}d`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const AVATAR_PALETTES = [
+  "bg-rose-200 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+  "bg-amber-200 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  "bg-emerald-200 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  "bg-sky-200 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
+  "bg-violet-200 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+  "bg-fuchsia-200 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200",
+  "bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  "bg-cyan-200 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+];
+
+function avatarPalette(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(hash) % AVATAR_PALETTES.length;
+  return AVATAR_PALETTES[idx];
+}
+
+function avatarInitial(name: string | null, fallback: string): string {
+  const source = name?.trim() || fallback;
+  return source.slice(0, 1).toUpperCase();
+}
+
+function VoterAvatars({
+  voters,
+}: {
+  voters: Array<{ lineUserId: string; displayName: string | null }>;
+}) {
+  const visible = voters.slice(0, 5);
+  const overflow = voters.length - visible.length;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex -space-x-1.5">
+        {visible.map((v) => {
+          const label = v.displayName ?? v.lineUserId.slice(0, 6);
+          return (
+            <span
+              key={v.lineUserId}
+              title={`${label} voted`}
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-[var(--background)]",
+                avatarPalette(v.lineUserId)
+              )}
+              aria-label={`${label} voted`}
+            >
+              {avatarInitial(v.displayName, v.lineUserId)}
+            </span>
+          );
+        })}
+        {overflow > 0 && (
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--secondary)] text-[10px] font-semibold text-[var(--muted-foreground)] ring-2 ring-[var(--background)]"
+            title={voters
+              .slice(5)
+              .map((v) => v.displayName ?? v.lineUserId.slice(0, 6))
+              .join(", ")}
+          >
+            +{overflow}
+          </span>
+        )}
+      </div>
+      <span className="text-[11px] text-[var(--muted-foreground)]">
+        {voters.length === 1
+          ? voters[0].displayName ?? voters[0].lineUserId.slice(0, 6)
+          : `${voters.length} voted`}
+      </span>
+    </div>
+  );
+}
+
+function DeadlineCountdown({ deadlineAt }: { deadlineAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const diffMs = new Date(deadlineAt).getTime() - now;
+  const overdue = diffMs <= 0;
+  const hours = Math.floor(Math.abs(diffMs) / 3_600_000);
+  const minutes = Math.floor((Math.abs(diffMs) % 3_600_000) / 60_000);
+
+  let label: string;
+  if (overdue) {
+    label = "Overdue";
+  } else if (hours < 1) {
+    label = `${minutes}m left`;
+  } else if (hours < 24) {
+    label = `${hours}h ${minutes}m left`;
+  } else {
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    label = `${days}d ${remHours}h left`;
+  }
+
+  const tone = overdue
+    ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+    : hours < 2
+      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+      : hours < 12
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+        : "bg-[var(--secondary)] text-[var(--muted-foreground)]";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        tone
+      )}
+      title={new Date(deadlineAt).toLocaleString()}
+    >
+      <span aria-hidden>⏱</span>
+      {label}
+    </span>
+  );
+}
+
+function VoteProgress({
+  totalVotes,
+  memberCount,
+  needed,
+}: {
+  totalVotes: number;
+  memberCount: number;
+  needed: number;
+}) {
+  if (memberCount <= 0) return null;
+  const pct = Math.min(100, (totalVotes / memberCount) * 100);
+  const majorityPct = Math.min(100, (needed / memberCount) * 100);
+  const reached = totalVotes >= needed;
+  return (
+    <div className="space-y-1">
+      <div className="relative h-1.5 overflow-hidden rounded-full bg-[var(--secondary)]">
+        <div
+          className={cn(
+            "h-full transition-all",
+            reached ? "bg-emerald-500" : "bg-[var(--primary)]"
+          )}
+          style={{ width: `${pct}%` }}
+        />
+        <div
+          aria-hidden
+          className="absolute top-0 h-full w-px bg-[var(--foreground)]/40"
+          style={{ left: `${majorityPct}%` }}
+          title="Majority threshold"
+        />
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+        <span>
+          <span className="font-semibold text-[var(--foreground)]">
+            {totalVotes}
+          </span>
+          <span> of {memberCount} voted</span>
+        </span>
+        <span>
+          {reached
+            ? "Majority reached"
+            : `${needed - totalVotes} more for majority`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface NudgeFeedback {
+  message: string;
+  tone: "success" | "info" | "error";
+}
+
+function NonVoterRow({
+  tripId,
+  itemId,
+  nonVoters,
+  currentUserId,
+}: {
+  tripId: string;
+  itemId: string;
+  nonVoters: AppMember[];
+  currentUserId: string;
+}) {
+  const [nudging, setNudging] = useState<string | "all" | null>(null);
+  const [feedback, setFeedback] = useState<NudgeFeedback | null>(null);
+
+  if (nonVoters.length === 0) {
+    return (
+      <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+        Everyone has voted ✓
+      </p>
+    );
+  }
+
+  const others = nonVoters.filter((m) => m.lineUserId !== currentUserId);
+  const includesMe = nonVoters.some((m) => m.lineUserId === currentUserId);
+
+  async function nudge(targetIds: string[] | undefined, key: string | "all") {
+    if (nudging) return;
+    setNudging(key);
+    setFeedback(null);
+    try {
+      const res = await appFetchJson<NudgeResponse>(
+        `/api/app/trips/${tripId}/votes/${itemId}/nudge`,
+        {
+          method: "POST",
+          body: JSON.stringify(targetIds ? { lineUserIds: targetIds } : {}),
+        }
+      );
+      const nudgedCount = res.nudged.length;
+      const cooldownCount = res.skipped.filter(
+        (s) => s.reason === "cooldown"
+      ).length;
+      if (nudgedCount === 0 && cooldownCount > 0) {
+        setFeedback({
+          message: `Already nudged in the last 30 min — try again later.`,
+          tone: "info",
+        });
+      } else if (nudgedCount === 0) {
+        setFeedback({
+          message: "No one to nudge right now.",
+          tone: "info",
+        });
+      } else {
+        const names = res.nudged
+          .map((n) => n.displayName ?? "?")
+          .slice(0, 3)
+          .join(", ");
+        const more = res.nudged.length > 3 ? ` +${res.nudged.length - 3} more` : "";
+        setFeedback({
+          message:
+            cooldownCount > 0
+              ? `Nudged ${names}${more} · ${cooldownCount} on cooldown`
+              : `Nudged ${names}${more}`,
+          tone: "success",
+        });
+      }
+    } catch (err) {
+      setFeedback({
+        message: err instanceof Error ? err.message : "Failed to nudge",
+        tone: "error",
+      });
+    } finally {
+      setNudging(null);
+    }
+  }
+
+  const otherIds = others.map((m) => m.lineUserId);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          Waiting on
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          {includesMe && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--primary)]">
+              You
+            </span>
+          )}
+          {others.map((m) => (
+            <button
+              key={m.lineUserId}
+              type="button"
+              onClick={() => void nudge([m.lineUserId], m.lineUserId)}
+              disabled={nudging !== null}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-200 disabled:opacity-60 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60",
+                nudging === m.lineUserId && "animate-pulse"
+              )}
+              title={`Nudge ${m.displayName ?? "this member"} via LINE`}
+            >
+              <span aria-hidden className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-200 text-[8px] font-bold dark:bg-amber-900">
+                {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
+              </span>
+              {m.displayName ?? m.lineUserId.slice(0, 6)}
+              {nudging === m.lineUserId ? (
+                <span className="text-[10px]">…</span>
+              ) : (
+                <span aria-hidden className="text-[10px] opacity-70">
+                  🔔
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        {others.length > 1 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[11px]"
+            disabled={nudging !== null}
+            onClick={() => void nudge(otherIds, "all")}
+          >
+            {nudging === "all" ? "Nudging…" : "Nudge all"}
+          </Button>
+        )}
+      </div>
+      {feedback && (
+        <p
+          className={cn(
+            "text-[11px]",
+            feedback.tone === "success"
+              ? "text-emerald-700 dark:text-emerald-300"
+              : feedback.tone === "error"
+                ? "text-red-700 dark:text-red-300"
+                : "text-[var(--muted-foreground)]"
+          )}
+        >
+          {feedback.message}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function defaultDeadlineLocal(): string {
