@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { COMMAND_CATALOG, getCommandUsage } from "@/lib/command-catalog";
+import { PUBLIC_COMMAND_CATALOG, getCommandUsage } from "@/lib/command-catalog";
 import { cn } from "@/lib/utils";
 
 const FAQ = [
@@ -29,7 +29,7 @@ const FAQ = [
   },
 ];
 
-const COMMANDS = COMMAND_CATALOG.filter((entry) => entry.liffVisible !== false);
+const COMMANDS = PUBLIC_COMMAND_CATALOG.filter((entry) => entry.liffVisible !== false);
 
 export default function HelpPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -80,7 +80,9 @@ export default function HelpPage() {
           <div className="overflow-hidden rounded-2xl border border-[var(--border)] divide-y divide-[var(--border)]">
             {COMMANDS.map((command) => (
               <div key={command.command} className="flex items-start gap-3 px-4 py-3">
-                <span className="mt-0.5 shrink-0 text-lg">{command.emoji}</span>
+                <span className="mt-0.5 w-8 shrink-0 font-mono text-xs font-bold text-[var(--muted-foreground)]">
+                  {command.icon}
+                </span>
                 <div className="min-w-0 flex-1">
                   <code className="text-xs font-bold text-[var(--primary)]">
                     {command.command}
