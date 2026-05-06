@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
+import { readAppBrowserCache, writeAppBrowserCache } from "@/lib/app-browser-cache";
 import { Button } from "@/components/ui/button";
 import type { BoardData, TripItem, Trip } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
@@ -25,8 +26,13 @@ interface OverviewData {
   role: "organizer" | "member";
 }
 
+const OVERVIEW_CACHE_BUCKET = "trip-overview";
+const OVERVIEW_CACHE_MAX_AGE_MS = 60 * 1000;
+
 export function TripOverview({ tripId }: { tripId: string }) {
-  const [data, setData] = useState<OverviewData | null>(null);
+  const [data, setData] = useState<OverviewData | null>(() =>
+    readAppBrowserCache<OverviewData>(OVERVIEW_CACHE_BUCKET, tripId, OVERVIEW_CACHE_MAX_AGE_MS)
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<TripItem | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -51,7 +57,7 @@ export function TripOverview({ tripId }: { tripId: string }) {
           appFetchJson<WebVotesResponse>(`/api/app/trips/${tripId}/votes`),
         ]);
       setLoadError(null);
-      setData({
+      const nextData = {
         board,
         members: members.members,
         expenses,
@@ -59,13 +65,15 @@ export function TripOverview({ tripId }: { tripId: string }) {
         votes,
         trip: tripRes.trip,
         role: tripRes.role,
-      });
+      } satisfies OverviewData;
+      setData(nextData);
+      writeAppBrowserCache(OVERVIEW_CACHE_BUCKET, tripId, nextData);
     } catch (err) {
-      setLoadError(
+      const message =
         err instanceof AppApiFetchError
           ? err.message
-          : "Failed to load trip overview"
-      );
+          : "Failed to load trip overview";
+      setLoadError(message);
     }
   }, [tripId]);
 
@@ -75,7 +83,7 @@ export function TripOverview({ tripId }: { tripId: string }) {
     })();
   }, [loadAll]);
 
-  if (loadError) {
+  if (loadError && !data) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
         {loadError}{" "}

@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/db";
+import { getIntlLocale, parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
 import { TripTabs } from "@/components/app/trip-tabs";
@@ -85,6 +87,8 @@ export default async function TripLayout({
   const lineUserId = await readAppSessionCookie();
   if (!lineUserId) redirect(`/app/sign-in?next=/app/trips/${tripId}`);
 
+  const locale = parseAppLocale((await cookies()).get("travelsync-app-locale")?.value);
+  const copy = COPY[locale];
   const ctx = await loadTripContext(tripId, lineUserId);
   if (!ctx) notFound();
 
@@ -99,8 +103,8 @@ export default async function TripLayout({
   } = ctx;
   const dateLabel =
     trip.start_date && trip.end_date
-      ? `${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`
-      : "Dates to be decided";
+      ? `${formatDate(trip.start_date, locale)} — ${formatDate(trip.end_date, locale)}`
+      : copy.datesTbd;
 
   const lineDeepLink = lineGroupId
     ? `https://line.me/R/oaMessage/${encodeURIComponent("@travel-sync")}/?${encodeURIComponent(`Open trip ${trip.destination_name ?? ""}`)}`
@@ -110,11 +114,11 @@ export default async function TripLayout({
     <div className="space-y-5">
       <nav className="text-xs text-[var(--muted-foreground)]">
         <Link href="/app" className="hover:text-[var(--foreground)]">
-          Trips
+          {copy.trips}
         </Link>
         <span className="mx-1.5">/</span>
         <span className="text-[var(--foreground)]">
-          {trip.destination_name ?? "Untitled trip"}
+          {trip.destination_name ?? copy.untitledTrip}
         </span>
       </nav>
 
@@ -137,11 +141,11 @@ export default async function TripLayout({
                 </span>
               )}
               <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 capitalize">
-                You: {role}
+                {copy.you}: {copy.role[role]}
               </span>
             </div>
             <h1 className="text-2xl font-bold text-[var(--foreground)] sm:text-3xl">
-              {trip.destination_name ?? "Untitled trip"}
+              {trip.destination_name ?? copy.untitledTrip}
               {trip.title && trip.title !== trip.destination_name && (
                 <span className="ml-2 text-base font-normal text-[var(--muted-foreground)]">
                   · {trip.title}
@@ -211,10 +215,10 @@ export default async function TripLayout({
   );
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: AppLocale): string {
   const d = new Date(iso + "T00:00:00");
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString(getIntlLocale(locale), {
     weekday: "short",
     month: "short",
     day: "numeric",
