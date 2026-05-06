@@ -1,24 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { BoardData, ItemType, TripItem } from "@/lib/types";
+import type { BoardData, TripItem, Trip } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 import type { AppExpensesResponse } from "@/lib/app-trip-expenses";
-import type {
-  ItineraryResponse,
-} from "@/app/api/app/trips/[tripId]/itinerary/route";
+import type { ItineraryResponse } from "@/app/api/app/trips/[tripId]/itinerary/route";
 import type { WebVotesResponse } from "@/app/api/app/trips/[tripId]/votes/route";
 import { ItemDetailDialog } from "@/components/app/item-detail-dialog";
 import { AddItemDialog } from "@/components/app/add-item-dialog";
-import { ITEM_TYPE_LABELS } from "@/components/app/board-columns";
-import { TripMapPanel } from "@/components/app/trip-map-panel";
-import { TripDecisionCenter } from "@/components/app/trip-decision-center";
 import { TripAIUpdates } from "@/components/app/trip-ai-updates";
 import { TripFinancePanel } from "@/components/app/trip-finance-panel";
+import { TripKpiStrip, type KpiTileSpec } from "@/components/app/trip-kpi-strip";
+import { TripActionQueue } from "@/components/app/trip-action-queue";
 
 interface OverviewData {
   board: BoardData;
@@ -26,11 +21,7 @@ interface OverviewData {
   expenses: AppExpensesResponse;
   itinerary: ItineraryResponse;
   votes: WebVotesResponse;
-  trip: {
-    destination_name: string | null;
-    destination_lat: number | null;
-    destination_lng: number | null;
-  };
+  trip: Trip;
   role: "organizer" | "member";
 }
 
@@ -44,14 +35,9 @@ export function TripOverview({ tripId }: { tripId: string }) {
     try {
       const [tripRes, board, members, expenses, itinerary, votes] =
         await Promise.all([
-          appFetchJson<{
-            trip: {
-              destination_name: string | null;
-              destination_lat: number | null;
-              destination_lng: number | null;
-            };
-            role: "organizer" | "member";
-          }>(`/api/app/trips/${tripId}`),
+          appFetchJson<{ trip: Trip; role: "organizer" | "member" }>(
+            `/api/app/trips/${tripId}`
+          ),
           appFetchJson<BoardData>(`/api/app/trips/${tripId}/board`),
           appFetchJson<{ members: AppMember[] }>(
             `/api/app/trips/${tripId}/members`
@@ -105,14 +91,20 @@ export function TripOverview({ tripId }: { tripId: string }) {
   }
 
   if (!data) {
-    return <OverviewSkeleton />;
+    return <CommandCenterSkeleton />;
   }
 
   const { board, members, expenses, itinerary, votes, trip, role } = data;
   const isOrganizer = role === "organizer";
-  const nextItinerary = itinerary.items
-    .filter((i) => i.stage === "confirmed" && i.deadline_at)
-    .slice(0, 4);
+  const currentUserId = board.currentUser.lineUserId;
+
+  const tiles = computeKpiTiles({
+    trip,
+    board,
+    expenses,
+    members,
+    votes: votes.votes,
+  });
 
   return (
     <>
@@ -125,34 +117,21 @@ export function TripOverview({ tripId }: { tripId: string }) {
           </div>
         )}
 
-        {/* Map preview — full interactive map lives at /map */}
-        <TripMapPanel
-          tripId={tripId}
-          itinerary={itinerary}
-          destination={{
-            name: trip.destination_name,
-            lat: trip.destination_lat,
-            lng: trip.destination_lng,
-          }}
-        />
+        {/* Vital signs */}
+        <TripKpiStrip tiles={tiles} />
 
-        {/* Timeline */}
-        <NextUpTimeline
-          tripId={tripId}
-          items={nextItinerary}
-          total={itinerary.items.length}
-        />
-
-        {/* Decision center */}
-        <TripDecisionCenter
+        {/* Primary command surface */}
+        <TripActionQueue
           tripId={tripId}
           board={board}
-          members={members}
           votes={votes.votes}
+          members={members}
+          currentUserId={currentUserId}
           onItemClick={setSelectedItem}
+          onAfterNudge={() => void loadAll()}
         />
 
-        {/* AI updates + finance summary */}
+        {/* Secondary panels */}
         <div className="grid gap-5 lg:grid-cols-2">
           <TripAIUpdates board={board} onItemClick={setSelectedItem} />
           <TripFinancePanel
@@ -162,8 +141,13 @@ export function TripOverview({ tripId }: { tripId: string }) {
           />
         </div>
 
-        {/* Members strip */}
-        <MembersStrip members={members} />
+        {/* Tiny travelers footer — remains compact since header already shows
+            the count and Settings tab manages the roster. */}
+        <p className="text-center text-[11px] text-[var(--muted-foreground)]">
+          {itinerary.items.length} item
+          {itinerary.items.length === 1 ? "" : "s"} on the timeline ·{" "}
+          {members.length} traveler{members.length === 1 ? "" : "s"} on this trip
+        </p>
       </div>
 
       <AddItemDialog
@@ -197,146 +181,187 @@ export function TripOverview({ tripId }: { tripId: string }) {
   );
 }
 
-function NextUpTimeline({
-  tripId,
-  items,
-  total,
-}: {
-  tripId: string;
-  items: ItineraryResponse["items"];
-  total: number;
-}) {
-  return (
-    <section className="flex h-full flex-col rounded-3xl border border-[var(--border)] bg-[var(--background)] p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold">Next up</h2>
-          <p className="text-[11px] text-[var(--muted-foreground)]">
-            Upcoming confirmed stops · {total} total
-          </p>
-        </div>
-        <Link
-          href={`/app/trips/${tripId}/itinerary`}
-          className="text-xs font-medium text-[var(--primary)] hover:underline"
-        >
-          Full timeline →
-        </Link>
-      </div>
+// ─── KPI computation ──────────────────────────────────────────────────────────
 
-      {items.length === 0 ? (
-        <div className="mt-4 flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-xs text-[var(--muted-foreground)]">
-          Nothing confirmed with a date yet. Confirm an item to see it here.
-        </div>
-      ) : (
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-start gap-3 rounded-xl bg-[var(--secondary)]/40 px-3 py-2.5"
-            >
-              <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-[var(--background)] text-center shadow-sm">
-                <span className="text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">
-                  {formatMonth(item.deadline_at)}
-                </span>
-                <span className="text-sm font-bold leading-none">
-                  {formatDay(item.deadline_at)}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.title}</p>
-                {item.confirmed_option?.address && (
-                  <p className="truncate text-[11px] text-[var(--muted-foreground)]">
-                    📍 {item.confirmed_option.address}
-                  </p>
-                )}
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  <Badge
-                    variant="secondary"
-                    className="text-[9px] uppercase"
-                  >
-                    {ITEM_TYPE_LABELS[item.item_type as ItemType] ?? "Item"}
-                  </Badge>
-                  {item.deadline_at && (
-                    <span className="text-[10px] text-[var(--muted-foreground)]">
-                      {new Date(item.deadline_at).toLocaleTimeString(
-                        undefined,
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+interface KpiArgs {
+  trip: Trip;
+  board: BoardData;
+  expenses: AppExpensesResponse;
+  members: AppMember[];
+  votes: WebVotesResponse["votes"];
 }
 
-function MembersStrip({ members }: { members: AppMember[] }) {
-  return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--background)] px-5 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold">Travelers</h3>
-          <p className="text-[11px] text-[var(--muted-foreground)]">
-            {members.length} member{members.length === 1 ? "" : "s"} on this trip
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {members.map((m) => (
-            <span
-              key={m.lineUserId}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--secondary)]/60 px-2 py-1 text-xs"
-            >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--primary)]/10 text-[10px] font-semibold text-[var(--primary)]">
-                {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
-              </span>
-              <span className="font-medium">
-                {m.displayName ?? "Unknown"}
-              </span>
-              {m.role === "organizer" && (
-                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                  Lead
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+function computeKpiTiles({
+  trip,
+  board,
+  expenses,
+  votes,
+}: KpiArgs): KpiTileSpec[] {
+  const tiles: KpiTileSpec[] = [];
+
+  // 1. Days to trip start (or "in trip" / "ended")
+  if (trip.start_date) {
+    const startMs = new Date(trip.start_date + "T00:00:00").getTime();
+    const endMs = trip.end_date
+      ? new Date(trip.end_date + "T23:59:59").getTime()
+      : startMs;
+    const now = Date.now();
+    if (now < startMs) {
+      const days = Math.ceil((startMs - now) / 86_400_000);
+      tiles.push({
+        label: "Trip starts",
+        value: days === 0 ? "Today" : `${days}d`,
+        hint: new Date(trip.start_date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+        icon: "✈",
+        tone: days <= 7 ? "primary" : "default",
+      });
+    } else if (now <= endMs) {
+      tiles.push({
+        label: "Status",
+        value: "In trip",
+        hint: "Currently traveling",
+        icon: "🌍",
+        tone: "emerald",
+      });
+    } else {
+      tiles.push({
+        label: "Status",
+        value: "Wrapped",
+        hint: "Trip ended",
+        icon: "🏁",
+      });
+    }
+  } else {
+    tiles.push({
+      label: "Trip dates",
+      value: "TBD",
+      hint: "Pick start/end dates",
+      icon: "📅",
+      tone: "amber",
+    });
+  }
+
+  // 2. Confirmed %
+  const total =
+    board.todo.length + board.pending.length + board.confirmed.length;
+  const confirmedPct = total > 0
+    ? Math.round((board.confirmed.length / total) * 100)
+    : 0;
+  tiles.push({
+    label: "Confirmed",
+    value: total > 0 ? `${confirmedPct}%` : "—",
+    hint: `${board.confirmed.length}/${total} items`,
+    icon: "✓",
+    tone:
+      confirmedPct >= 80
+        ? "emerald"
+        : confirmedPct >= 40
+          ? "primary"
+          : "default",
+  });
+
+  // 3. My open votes
+  const myOpenVotes = votes.filter((v) => {
+    const voted = v.options.some((o) => o.votedByMe);
+    return !voted;
+  }).length;
+  tiles.push({
+    label: "My votes",
+    value: String(myOpenVotes),
+    hint: myOpenVotes === 0 ? "All caught up" : "Need your vote",
+    icon: "🗳",
+    tone: myOpenVotes > 0 ? "amber" : "emerald",
+  });
+
+  // 4. Group blockers — votes still missing voters, plus to-dos w/o owner
+  const blockingVotes = votes.filter((v) => v.totalVotes < v.memberCount).length;
+  const ownerlessTodos = board.todo.filter(
+    (i) => i.assigned_to_line_user_id == null
+  ).length;
+  const blockers = blockingVotes + ownerlessTodos;
+  tiles.push({
+    label: "Group blockers",
+    value: String(blockers),
+    hint:
+      blockers === 0
+        ? "Nothing waiting"
+        : `${blockingVotes} vote${blockingVotes === 1 ? "" : "s"} · ${ownerlessTodos} unassigned`,
+    icon: "⚠",
+    tone: blockers > 0 ? "amber" : "emerald",
+  });
+
+  // 5. Bookings outstanding
+  const bookingNeeded = board.confirmed.filter(
+    (i) => i.booking_status === "needed"
+  ).length;
+  const bookingTotal = board.confirmed.filter(
+    (i) => i.booking_status !== "not_required"
+  ).length;
+  tiles.push({
+    label: "Bookings",
+    value:
+      bookingTotal > 0
+        ? `${bookingTotal - bookingNeeded}/${bookingTotal}`
+        : "—",
+    hint: bookingNeeded === 0 ? "All booked" : `${bookingNeeded} to book`,
+    icon: "📅",
+    tone:
+      bookingTotal === 0
+        ? "default"
+        : bookingNeeded === 0
+          ? "emerald"
+          : "primary",
+  });
+
+  // 6. Budget
+  if (expenses.budgetAmount != null && expenses.budgetAmount > 0) {
+    const pct = Math.min(
+      999,
+      Math.round((expenses.totalAmount / expenses.budgetAmount) * 100)
+    );
+    tiles.push({
+      label: "Budget",
+      value: `${pct}%`,
+      hint: `${expenses.budgetCurrency} ${Math.round(expenses.totalAmount).toLocaleString()} / ${Math.round(expenses.budgetAmount).toLocaleString()}`,
+      icon: "💰",
+      tone: pct > 100 ? "red" : pct > 80 ? "amber" : "emerald",
+    });
+  } else {
+    tiles.push({
+      label: "Spent",
+      value: `${expenses.budgetCurrency} ${Math.round(expenses.totalAmount).toLocaleString()}`,
+      hint:
+        expenses.settlements.length > 0
+          ? `${expenses.settlements.length} unsettled`
+          : "Everyone settled",
+      icon: "💰",
+      tone: expenses.settlements.length > 0 ? "amber" : "default",
+    });
+  }
+
+  return tiles;
 }
 
-function formatMonth(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short" });
-}
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
-function formatDay(iso: string | null): string {
-  if (!iso) return "—";
-  return String(new Date(iso).getDate());
-}
-
-function OverviewSkeleton() {
+function CommandCenterSkeleton() {
   return (
     <div className="space-y-5">
-      <div className="grid animate-pulse gap-5 lg:grid-cols-12">
-        <div className="lg:col-span-8">
-          <div className="h-[28rem] rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/30" />
-        </div>
-        <div className="lg:col-span-4">
-          <div className="h-[28rem] rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/30" />
-        </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="h-20 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/40"
+          />
+        ))}
       </div>
-      <div className="h-48 animate-pulse rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/30" />
+      <div className="h-72 animate-pulse rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/40" />
       <div className="grid animate-pulse gap-5 lg:grid-cols-2">
-        <div className="h-56 rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/30" />
-        <div className="h-56 rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/30" />
+        <div className="h-56 rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/40" />
+        <div className="h-56 rounded-3xl border border-[var(--border)] bg-[var(--secondary)]/40" />
       </div>
     </div>
   );
