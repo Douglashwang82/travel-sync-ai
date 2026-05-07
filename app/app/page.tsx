@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 interface TripRow {
   id: string;
-  group_id: string;
+  group_id: string | null;
   destination_name: string | null;
   start_date: string | null;
   end_date: string | null;
@@ -89,6 +89,15 @@ const COPY: Record<
 async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
   const db = createAdminClient();
 
+  // 1) Resolve the app_users row so we can also pull trip_members trips.
+  const { data: appUser } = await db
+    .from("app_users")
+    .select("id")
+    .eq("line_user_id", lineUserId)
+    .maybeSingle();
+  const appUserId = (appUser?.id as string | null) ?? null;
+
+  // 2) Trips reachable via LINE group_members.
   const { data: memberships } = await db
     .from("group_members")
     .select("group_id, line_groups!inner(id, name, status)")
@@ -102,40 +111,75 @@ async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
     })
     .filter((g): g is { id: string; name: string | null; status: string } => g !== null && g.status !== "removed");
 
-  if (groups.length === 0) return [];
-
-  const groupIds = groups.map((g) => g.id);
   const groupNameById = new Map(groups.map((g) => [g.id, g.name]));
+  const tripsById = new Map<string, TripRow>();
 
-  const { data: tripRows } = await db
-    .from("trips")
-    .select("id, group_id, destination_name, start_date, end_date, status, created_at")
-    .in("group_id", groupIds)
-    .order("created_at", { ascending: false });
+  if (groups.length > 0) {
+    const groupIds = groups.map((g) => g.id);
+    const { data: tripRows } = await db
+      .from("trips")
+      .select("id, group_id, destination_name, start_date, end_date, status, created_at")
+      .in("group_id", groupIds)
+      .order("created_at", { ascending: false });
 
-  const tripIds = (tripRows ?? []).map((t) => t.id as string);
-  const itemCounts = new Map<string, number>();
+    for (const t of tripRows ?? []) {
+      const id = t.id as string;
+      const gid = (t.group_id as string | null) ?? null;
+      tripsById.set(id, {
+        id,
+        group_id: gid,
+        destination_name: (t.destination_name as string | null) ?? null,
+        start_date: (t.start_date as string | null) ?? null,
+        end_date: (t.end_date as string | null) ?? null,
+        status: t.status as string,
+        itemCount: 0,
+        groupName: gid ? (groupNameById.get(gid) ?? null) : null,
+      });
+    }
+  }
+
+  // 3) Trips reachable via direct trip_members membership.
+  if (appUserId) {
+    const { data: directRows } = await db
+      .from("trip_members")
+      .select(
+        "trips!inner(id, group_id, destination_name, start_date, end_date, status, created_at, line_groups(id, name))"
+      )
+      .eq("app_user_id", appUserId)
+      .is("left_at", null);
+
+    for (const row of directRows ?? []) {
+      const t = Array.isArray(row.trips) ? row.trips[0] : row.trips;
+      if (!t) continue;
+      const id = t.id as string;
+      if (tripsById.has(id)) continue;
+      const lg = Array.isArray(t.line_groups) ? t.line_groups[0] : t.line_groups;
+      tripsById.set(id, {
+        id,
+        group_id: (t.group_id as string | null) ?? null,
+        destination_name: (t.destination_name as string | null) ?? null,
+        start_date: (t.start_date as string | null) ?? null,
+        end_date: (t.end_date as string | null) ?? null,
+        status: t.status as string,
+        itemCount: 0,
+        groupName: (lg?.name as string | null) ?? null,
+      });
+    }
+  }
+
+  const tripIds = Array.from(tripsById.keys());
   if (tripIds.length > 0) {
     const { data: itemRows } = await db
       .from("trip_items")
       .select("trip_id")
       .in("trip_id", tripIds);
     for (const item of itemRows ?? []) {
-      const key = item.trip_id as string;
-      itemCounts.set(key, (itemCounts.get(key) ?? 0) + 1);
+      const row = tripsById.get(item.trip_id as string);
+      if (row) row.itemCount += 1;
     }
   }
 
-  return (tripRows ?? []).map((t) => ({
-    id: t.id as string,
-    group_id: t.group_id as string,
-    destination_name: (t.destination_name as string | null) ?? null,
-    start_date: (t.start_date as string | null) ?? null,
-    end_date: (t.end_date as string | null) ?? null,
-    status: t.status as string,
-    itemCount: itemCounts.get(t.id as string) ?? 0,
-    groupName: groupNameById.get(t.group_id as string) ?? null,
-  }));
+  return Array.from(tripsById.values());
 }
 
 export default async function AppTripsPage() {

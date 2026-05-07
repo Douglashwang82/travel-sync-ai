@@ -11,7 +11,7 @@ export interface AppSessionGroup {
 
 export interface AppSessionTripSummary {
   id: string;
-  groupId: string;
+  groupId: string | null;
   destinationName: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -21,6 +21,8 @@ export interface AppSessionTripSummary {
 
 export interface AppSessionResponse {
   lineUserId: string;
+  appUserId: string;
+  email: string | null;
   displayName: string | null;
   groups: AppSessionGroup[];
   trips: AppSessionTripSummary[];
@@ -53,7 +55,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const groups: AppSessionGroup[] = [];
   const groupIds: string[] = [];
-  let displayName: string | null = null;
+  let displayName: string | null = auth.displayName;
 
   for (const row of memberships ?? []) {
     const group = Array.isArray(row.line_groups) ? row.line_groups[0] : row.line_groups;
@@ -70,7 +72,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (!displayName && row.display_name) displayName = row.display_name as string;
   }
 
-  let trips: AppSessionTripSummary[] = [];
+  // Trips reachable via LINE group_members.
+  const tripsById = new Map<string, AppSessionTripSummary>();
+
   if (groupIds.length > 0) {
     const { data: tripRows, error: tripErr } = await db
       .from("trips")
@@ -87,34 +91,62 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const tripIds = (tripRows ?? []).map((t) => t.id as string);
-    const countsByTrip = new Map<string, number>();
-    if (tripIds.length > 0) {
-      const { data: itemRows } = await db
-        .from("trip_items")
-        .select("trip_id")
-        .in("trip_id", tripIds);
-      for (const item of itemRows ?? []) {
-        const key = item.trip_id as string;
-        countsByTrip.set(key, (countsByTrip.get(key) ?? 0) + 1);
-      }
+    for (const t of tripRows ?? []) {
+      tripsById.set(t.id as string, {
+        id: t.id as string,
+        groupId: (t.group_id as string | null) ?? null,
+        destinationName: (t.destination_name as string | null) ?? null,
+        startDate: (t.start_date as string | null) ?? null,
+        endDate: (t.end_date as string | null) ?? null,
+        status: t.status as string,
+        itemCount: 0,
+      });
     }
+  }
 
-    trips = (tripRows ?? []).map((t) => ({
-      id: t.id as string,
-      groupId: t.group_id as string,
+  // Trips reachable via direct trip_members membership.
+  const { data: directRows } = await db
+    .from("trip_members")
+    .select(
+      "trip_id, trips!inner(id, group_id, destination_name, start_date, end_date, status, created_at)"
+    )
+    .eq("app_user_id", auth.appUserId)
+    .is("left_at", null);
+
+  for (const row of directRows ?? []) {
+    const t = Array.isArray(row.trips) ? row.trips[0] : row.trips;
+    if (!t) continue;
+    const id = t.id as string;
+    if (tripsById.has(id)) continue;
+    tripsById.set(id, {
+      id,
+      groupId: (t.group_id as string | null) ?? null,
       destinationName: (t.destination_name as string | null) ?? null,
       startDate: (t.start_date as string | null) ?? null,
       endDate: (t.end_date as string | null) ?? null,
       status: t.status as string,
-      itemCount: countsByTrip.get(t.id as string) ?? 0,
-    }));
+      itemCount: 0,
+    });
+  }
+
+  const tripIds = Array.from(tripsById.keys());
+  if (tripIds.length > 0) {
+    const { data: itemRows } = await db
+      .from("trip_items")
+      .select("trip_id")
+      .in("trip_id", tripIds);
+    for (const item of itemRows ?? []) {
+      const summary = tripsById.get(item.trip_id as string);
+      if (summary) summary.itemCount += 1;
+    }
   }
 
   return NextResponse.json<AppSessionResponse>({
     lineUserId: auth.lineUserId,
+    appUserId: auth.appUserId,
+    email: auth.email,
     displayName,
     groups,
-    trips,
+    trips: Array.from(tripsById.values()),
   });
 }

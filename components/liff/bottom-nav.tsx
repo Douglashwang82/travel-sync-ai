@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/liff/expenses", label: "Expenses", shortLabel: "Money" },
   { href: "/liff/votes", label: "Votes", shortLabel: "Votes" },
   { href: "/liff/readiness", label: "Readiness", shortLabel: "Ready" },
+  { href: "/liff/pack", label: "Pack", shortLabel: "Pack" },
   { href: "/liff/operations", label: "Operations", shortLabel: "Ops" },
   { href: "/liff/help", label: "Help", shortLabel: "Help" },
 ];

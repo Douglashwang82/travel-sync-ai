@@ -10,6 +10,7 @@ import {
   verifyLineIdToken,
 } from "@/lib/app-line-login";
 import { setAppSessionCookie } from "@/lib/app-server";
+import { ensureAppUserForLineId } from "@/lib/app-users";
 
 /**
  * GET /api/app/auth/line/callback?code=...&state=...
@@ -79,22 +80,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const lineUserId = claims.sub;
 
-  // Gate the session on actually belonging to a group. A user that signs in via
-  // LINE Login but has never interacted with the bot has no trips to manage.
-  const db = createAdminClient();
-  const { data: membership } = await db
-    .from("group_members")
-    .select("line_user_id")
-    .eq("line_user_id", lineUserId)
-    .is("left_at", null)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership) {
-    return redirectToSignInWithError(req, "not_a_member");
+  // Materialize the `app_users` row for this LINE identity so the session
+  // cookie (which carries `line_user_id`) always resolves to a known user.
+  // We no longer gate on group membership: a user that signed in via LINE
+  // Login but has never been in a group can still be added directly to a
+  // trip via `trip_members`.
+  const appUser = await ensureAppUserForLineId(lineUserId, claims.name ?? null);
+  if (!appUser) {
+    return redirectToSignInWithError(req, "token_exchange_failed");
   }
 
   // Opportunistically refresh the cached display name from LINE's profile claim.
+  const db = createAdminClient();
   if (claims.name) {
     await db
       .from("group_members")
@@ -102,6 +99,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .eq("line_user_id", lineUserId)
       .is("left_at", null)
       .is("display_name", null);
+    if (!appUser.display_name) {
+      await db
+        .from("app_users")
+        .update({ display_name: claims.name })
+        .eq("id", appUser.id);
+    }
   }
 
   const next = sanitizeNextPath(payload.next);

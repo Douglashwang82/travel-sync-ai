@@ -6,6 +6,7 @@ import {
   setAppSessionCookie,
 } from "@/lib/app-server";
 import { isLineLoginConfigured } from "@/lib/app-line-login";
+import { ensureAppUserForLineId } from "@/lib/app-users";
 
 /**
  * Dev sign-in helper for the browser /app experience.
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const db = createAdminClient();
   const { data: member } = await db
     .from("group_members")
-    .select("line_user_id")
+    .select("line_user_id, display_name")
     .eq("line_user_id", parsed.data.lineUserId)
     .is("left_at", null)
     .limit(1)
@@ -114,6 +115,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       { error: "User is not a member of any active group", code: "NOT_FOUND" },
       { status: 404 }
+    );
+  }
+
+  // Ensure a corresponding `app_users` row exists so `requireAppUser` can
+  // resolve the cookie back to a known identity.
+  const appUser = await ensureAppUserForLineId(
+    parsed.data.lineUserId,
+    (member.display_name as string | null) ?? null
+  );
+  if (!appUser) {
+    return NextResponse.json(
+      { error: "Failed to materialize app user", code: "DB_ERROR" },
+      { status: 500 }
     );
   }
 
