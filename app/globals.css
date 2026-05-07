@@ -3,32 +3,152 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ─── Design tokens ─────────────────────────────────────────────────────────── */
+/* Warm-technical, paper-soft. Light = paper-warm, Dark = warm-ink (designed
+   first, not inverted). LINE green is reserved as the single saturated accent
+   and used as punctuation, never decoration. */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Legacy tokens — preserved so existing surfaces keep rendering. */
+  --background: #fbfaf6;
+  --foreground: #14130f;
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #14130f;
   --primary: #00b900;
   --primary-foreground: #ffffff;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
-  --destructive: #ef4444;
+  --secondary: #f1efe8;
+  --secondary-foreground: #14130f;
+  --muted: #f1efe8;
+  --muted-foreground: #6e6a5f;
+  --accent: #f1efe8;
+  --accent-foreground: #14130f;
+  --destructive: #c2452f;
   --destructive-foreground: #ffffff;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
+  --border: #e8e4d8;
+  --input: #e8e4d8;
   --ring: #00b900;
   --radius: 0.5rem;
+
+  /* ─ Surfaces (semantic) */
+  --surface-base: #fbfaf6;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f5f3ec;
+  --surface-glass: rgb(255 252 245 / 0.72);
+  --surface-glass-edge: rgb(232 228 216 / 0.6);
+
+  /* ─ Text */
+  --text-primary: #14130f;
+  --text-secondary: #3a382f;
+  --text-muted: #6e6a5f;
+  --text-faint: #9a9485;
+
+  /* ─ Borders */
+  --border-hairline: #e8e4d8;
+  --border-strong: #cfcabb;
+
+  /* ─ Accent (single LINE-green axis) */
+  --accent-line: #00b900;
+  --accent-line-soft: #00b9001a;
+  --accent-line-glow: 0 0 28px -4px rgb(0 185 0 / 0.35);
+
+  /* ─ Status — desaturated to coexist with the green accent */
+  --status-needs-decision: #c08a26;
+  --status-needs-decision-soft: #f4ead0;
+  --status-blocked: #c2452f;
+  --status-blocked-soft: #f5dfd9;
+  --status-settled: #2f7a52;
+  --status-settled-soft: #d9ecdf;
+
+  /* ─ Radius */
+  --radius-sm: 0.5rem;     /* 8 */
+  --radius-md: 0.75rem;    /* 12 */
+  --radius-lg: 1rem;       /* 16 */
+  --radius-xl: 1.25rem;    /* 20 */
+  --radius-tile: 1.5rem;   /* 24 — bento tile */
+  --radius-pill: 999px;
+
+  /* ─ Shadow */
+  --shadow-flat: 0 0 0 1px rgb(20 19 15 / 0.04);
+  --shadow-raise: 0 1px 2px rgb(20 19 15 / 0.04), 0 12px 32px -16px rgb(20 19 15 / 0.08);
+  --shadow-deep: 0 24px 64px -28px rgb(20 19 15 / 0.16);
+  --shadow-inner-press: inset 0 2px 6px rgb(20 19 15 / 0.14);
+  --shadow-tactile: 0 1px 0 rgb(255 255 255 / 0.45) inset, 0 -2px 0 rgb(20 19 15 / 0.08) inset, 0 2px 6px rgb(20 19 15 / 0.06), 0 12px 24px -12px rgb(0 185 0 / 0.18);
+  --shadow-tactile-press: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 -1px 0 rgb(20 19 15 / 0.10) inset, 0 1px 2px rgb(20 19 15 / 0.10);
+
+  /* ─ Type */
+  --font-display: ui-serif, "Iowan Old Style", "Apple Garamond", "Source Serif Pro", "Noto Serif TC", Georgia, serif;
+  --font-text: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* ─ Motion */
+  --spring-snappy: linear(0, 0.36 8%, 0.78 18%, 1.04 28%, 1.07 38%, 1.0 50%, 0.99 65%, 1);
+  --spring-gentle: linear(0, 0.18 10%, 0.55 26%, 0.86 44%, 0.98 64%, 1);
+  --ease-confirm: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-confirm: 220ms;
+  --duration-morph: 380ms;
+  --duration-glow: 1200ms;
 }
 
-/* ─── Tailwind v4 theme mapping ──────────────────────────────────────────────
-   Maps CSS variables to Tailwind color utilities so that classes like
-   bg-primary, text-destructive, border-border, etc. all resolve correctly.
-*/
+.dark, html.dark {
+  /* Legacy tokens repointed for dark. */
+  --background: #0e0f0c;
+  --foreground: #efece2;
+  --card: #16170f;
+  --card-foreground: #efece2;
+  --primary: #2bd24a;
+  --primary-foreground: #0a0b08;
+  --secondary: #1c1d16;
+  --secondary-foreground: #efece2;
+  --muted: #1c1d16;
+  --muted-foreground: #98948a;
+  --accent: #1c1d16;
+  --accent-foreground: #efece2;
+  --destructive: #d96a52;
+  --destructive-foreground: #fff;
+  --border: #2a2b22;
+  --input: #2a2b22;
+  --ring: #2bd24a;
+
+  --surface-base: #0e0f0c;
+  --surface-raised: #16170f;
+  --surface-sunken: #0a0a08;
+  --surface-glass: rgb(22 23 15 / 0.66);
+  --surface-glass-edge: rgb(60 60 48 / 0.6);
+
+  --text-primary: #efece2;
+  --text-secondary: #c8c4b6;
+  --text-muted: #98948a;
+  --text-faint: #6c685d;
+
+  --border-hairline: #2a2b22;
+  --border-strong: #3d3e32;
+
+  --accent-line: #2bd24a;
+  --accent-line-soft: #2bd24a1f;
+  --accent-line-glow: 0 0 32px -2px rgb(43 210 74 / 0.42);
+
+  --status-needs-decision: #d8a04a;
+  --status-needs-decision-soft: #2a2113;
+  --status-blocked: #d96a52;
+  --status-blocked-soft: #2a1714;
+  --status-settled: #6cc193;
+  --status-settled-soft: #102218;
+
+  --shadow-flat: 0 0 0 1px rgb(0 0 0 / 0.4);
+  --shadow-raise: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 40px -18px rgb(0 0 0 / 0.6);
+  --shadow-deep: 0 32px 80px -28px rgb(0 0 0 / 0.7);
+  --shadow-inner-press: inset 0 2px 6px rgb(0 0 0 / 0.4);
+  --shadow-tactile: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 -2px 0 rgb(0 0 0 / 0.4) inset, 0 2px 8px rgb(0 0 0 / 0.4), 0 16px 32px -16px rgb(43 210 74 / 0.28);
+  --shadow-tactile-press: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 -1px 0 rgb(0 0 0 / 0.4) inset, 0 1px 2px rgb(0 0 0 / 0.5);
+}
+
+/* Honor system preference unless an explicit class is set elsewhere. */
+@media (prefers-color-scheme: dark) {
+  html:not(.light) {
+    color-scheme: dark;
+  }
+}
+
+/* ─── Tailwind v4 theme mapping ────────────────────────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,27 +167,28 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-}
 
-/* ─── Logo animation ────────────────────────────────────────────────────────*/
+  --color-surface-base: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-accent-line: var(--accent-line);
+  --color-status-decision: var(--status-needs-decision);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-settled: var(--status-settled);
 
-@keyframes logo-hue {
-  0%   { filter: hue-rotate(0deg) brightness(1); }
-  25%  { filter: hue-rotate(60deg) brightness(1.1); }
-  50%  { filter: hue-rotate(140deg) brightness(1); }
-  75%  { filter: hue-rotate(200deg) brightness(1.1); }
-  100% { filter: hue-rotate(360deg) brightness(1); }
-}
-
-.logo-animated {
-  animation: logo-hue 6s linear infinite;
+  --font-display: var(--font-display);
+  --font-sans: var(--font-text);
+  --font-mono: var(--font-mono);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────────*/
 
 html {
   scroll-behavior: smooth;
-  color-scheme: light;
+  color-scheme: light dark;
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
@@ -76,31 +197,219 @@ html {
 *,
 *::before,
 *::after {
-  /* Remove the blue flash on tap for mobile */
   -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-text);
+  font-feature-settings: "ss01", "cv11", "cv02";
   min-height: 100vh;
   width: 100%;
   max-width: 100%;
-  /* Prevent content jump when scrollbar appears */
   overflow-x: clip;
 }
 
-/* ─── LIFF / mobile utilities ────────────────────────────────────────────────*/
+/* ─── Reusable utilities (warm-technical surfaces) ───────────────────────── */
 
-/* Safe area padding for iOS home bar */
+.surface-tile {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-flat);
+}
+
+.surface-tile-raised {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-raise);
+}
+
+.surface-glass {
+  background: var(--surface-glass);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid var(--surface-glass-edge);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .surface-glass { background: var(--surface-raised); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .surface-glass {
+    background: var(--surface-raised);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.text-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  font-feature-settings: "ss01", "ss02";
+}
+
+.text-caps {
+  font-family: var(--font-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Tactile primary button — single-state glow, single-state press. */
+.btn-tactile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent-line) 100%, white 6%), var(--accent-line));
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-tactile);
+  transition: transform var(--duration-confirm) var(--ease-confirm),
+              box-shadow var(--duration-confirm) var(--ease-confirm);
+  cursor: pointer;
+}
+.btn-tactile:hover { transform: translateY(-1px); }
+.btn-tactile:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-tactile-press);
+}
+.btn-tactile:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 3px;
+}
+
+/* Hairline divider with optional accent caret. */
+.hairline { border-color: var(--border-hairline); }
+
+/* Skeleton shimmer (replaces spinners). */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    color-mix(in oklab, var(--surface-sunken) 70%, var(--surface-raised)) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+/* Hero mesh — slow, single. Used only on the destination hero tile. */
+@keyframes hero-mesh {
+  0%   { transform: translate3d(-2%, -1%, 0) scale(1); }
+  50%  { transform: translate3d(2%, 1%, 0) scale(1.04); }
+  100% { transform: translate3d(-2%, -1%, 0) scale(1); }
+}
+.hero-mesh {
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 32% at 18% 24%, color-mix(in oklab, var(--accent-line) 24%, transparent), transparent 70%),
+    radial-gradient(45% 36% at 82% 70%, color-mix(in oklab, var(--accent-line) 18%, transparent), transparent 72%),
+    radial-gradient(60% 50% at 50% 100%, color-mix(in oklab, var(--text-muted) 18%, transparent), transparent 80%);
+  filter: saturate(110%) blur(28px);
+  animation: hero-mesh 22s ease-in-out infinite;
+  opacity: 0.85;
+}
+
+/* Scroll-driven hero parallax (progressive enhancement). */
+@supports (animation-timeline: scroll()) {
+  .hero-parallax {
+    animation: hero-parallax linear both;
+    animation-timeline: scroll();
+    animation-range: 0 320px;
+  }
+  @keyframes hero-parallax {
+    to { transform: translateY(-12px); opacity: 0.92; }
+  }
+}
+
+/* Subtle accent pulse for "settled" / "passed" confirmations. */
+@keyframes accent-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--accent-line-soft); }
+  60%  { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.accent-pulse { animation: accent-pulse var(--duration-glow) ease-out; }
+
+/* Tile hover — small lift, kept calm. */
+.tile-interactive {
+  transition: transform var(--duration-confirm) var(--ease-confirm),
+              box-shadow var(--duration-confirm) var(--ease-confirm),
+              border-color var(--duration-confirm) var(--ease-confirm);
+}
+.tile-interactive:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-raise);
+}
+
+/* AIGhostCard — provenance-marked, dotted border, never sparkle. */
+.ghost-card {
+  position: relative;
+  border: 1px dashed color-mix(in oklab, var(--accent-line) 35%, var(--border-hairline));
+  background: color-mix(in oklab, var(--accent-line-soft) 60%, var(--surface-raised));
+  border-radius: var(--radius-lg);
+}
+
+/* Hero variant accents */
+.hero-stamp {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+/* Reduced motion — respect it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  .hero-mesh { animation: none; }
+}
+
+/* ─── LIFF / mobile utilities (legacy) ────────────────────────────────────── */
+
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Minimum touch target size (WCAG 2.5.5) */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
 }
+
+/* ─── Logo animation (legacy) ───────────────────────────────────────────────*/
+
+@keyframes logo-hue {
+  0%   { filter: hue-rotate(0deg) brightness(1); }
+  25%  { filter: hue-rotate(60deg) brightness(1.1); }
+  50%  { filter: hue-rotate(140deg) brightness(1); }
+  75%  { filter: hue-rotate(200deg) brightness(1.1); }
+  100% { filter: hue-rotate(360deg) brightness(1); }
+}
+.logo-animated { animation: logo-hue 6s linear infinite; }

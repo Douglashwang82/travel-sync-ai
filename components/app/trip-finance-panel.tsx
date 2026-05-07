@@ -1,154 +1,184 @@
 "use client";
 
 import Link from "next/link";
+import { useAppLocale } from "@/components/app/app-locale-provider";
 import { cn } from "@/lib/utils";
+import { IconArrowUpRight, IconCoin } from "@/components/app/icons";
 import type { AppExpensesResponse } from "@/lib/app-trip-expenses";
 
-export function TripFinancePanel({
-  tripId,
-  expenses,
-  memberCount,
-}: {
+const COPY = {
+  en: {
+    title: "Trip finance",
+    sub: "Live snapshot. Settle anytime.",
+    manage: "Manage",
+    total: "Total",
+    perPerson: "Per person",
+    unsettled: "Unsettled",
+    overBudget: "Over budget",
+    onTrack: "On track",
+    settled: "Everyone's settled.",
+    whoOwes: "Who owes whom",
+    settle: "Mark settled",
+    noBudget: "No budget set",
+  },
+  "zh-TW": {
+    title: "費用總覽",
+    sub: "即時更新，隨時可結算。",
+    manage: "管理",
+    total: "總額",
+    perPerson: "每人",
+    unsettled: "未結算",
+    overBudget: "超支",
+    onTrack: "預算內",
+    settled: "全部結清。",
+    whoOwes: "誰欠誰",
+    settle: "標記為已結",
+    noBudget: "尚未設定預算",
+  },
+} as const;
+
+interface FinanceTileProps {
   tripId: string;
   expenses: AppExpensesResponse;
   memberCount: number;
-}) {
-  const total = expenses.totalAmount;
-  const perPerson = memberCount > 0 ? total / memberCount : total;
-  const budget = expenses.budgetAmount;
-  const budgetPerPerson =
-    budget != null && memberCount > 0
-      ? budget / memberCount
-      : budget;
-  const budgetPct =
-    budget != null && budget > 0
-      ? Math.min(100, (total / budget) * 100)
-      : null;
-  const overBudget = budget != null && total > budget;
+  onSettleClick?: () => void;
+}
 
-  const unsettled = expenses.settlements.reduce(
-    (sum, s) => sum + s.amount,
-    0
-  );
+export function FinanceTile({ tripId, expenses, memberCount, onSettleClick }: FinanceTileProps) {
+  const { locale } = useAppLocale();
+  const copy = COPY[locale];
+  const { totalAmount, budgetAmount, budgetCurrency, settlements } = expenses;
+  const perPerson = memberCount > 0 ? totalAmount / memberCount : totalAmount;
+  const budgetPct =
+    budgetAmount != null && budgetAmount > 0
+      ? Math.min(120, (totalAmount / budgetAmount) * 100)
+      : null;
+  const overBudget = budgetAmount != null && totalAmount > budgetAmount;
+  const unsettled = settlements.reduce((sum, s) => sum + s.amount, 0);
 
   return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--background)] p-5">
-      <div className="flex items-center justify-between gap-2">
+    <section className="surface-tile flex h-full flex-col p-6">
+      <header className="flex items-baseline justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Trip finance</h2>
-          <p className="text-[11px] text-[var(--muted-foreground)]">
-            Live snapshot. Settle balances anytime.
-          </p>
+          <h2 className="text-display text-2xl text-[var(--text-primary)]">{copy.title}</h2>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.sub}</p>
         </div>
         <Link
           href={`/app/trips/${tripId}/expenses`}
-          className="text-xs font-medium text-[var(--primary)] hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent-line)] hover:underline"
         >
-          Manage →
+          {copy.manage}
+          <IconArrowUpRight size={12} />
         </Link>
-      </div>
+      </header>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <Stat
-          label="Total"
-          value={formatMoney(total, expenses.budgetCurrency)}
-        />
-        <Stat
-          label="Per person"
-          value={formatMoney(perPerson, expenses.budgetCurrency)}
-        />
-        <Stat
-          label="Unsettled"
-          value={formatMoney(unsettled, expenses.budgetCurrency)}
-          tone={unsettled > 0 ? "amber" : "muted"}
-        />
-      </div>
-
-      {budget != null && (
-        <div className="mt-4 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-[var(--muted-foreground)]">
-              Budget · {formatMoney(budgetPerPerson ?? budget, expenses.budgetCurrency)} / person
-            </span>
-            <span
-              className={cn(
-                "font-semibold",
-                overBudget
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-emerald-700 dark:text-emerald-300"
-              )}
-            >
-              {overBudget ? "Over budget" : "Under budget"}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--secondary)]">
-            <div
-              className={cn(
-                "h-full transition-all",
-                overBudget ? "bg-red-500" : "bg-emerald-500"
-              )}
-              style={{ width: `${budgetPct ?? 0}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {expenses.settlements.length > 0 ? (
-        <div className="mt-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-            Who owes whom
+      <div className="mt-6 flex items-center gap-5">
+        <BudgetRing pct={budgetPct} overBudget={overBudget} />
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="text-mono text-3xl font-semibold text-[var(--text-primary)]">
+            {formatMoney(totalAmount, budgetCurrency)}
           </p>
-          <ul className="mt-2 space-y-1">
-            {expenses.settlements.slice(0, 4).map((s, i) => (
+          <p className="text-xs text-[var(--text-muted)]">
+            {budgetAmount != null ? (
+              <>
+                {copy.perPerson} <span className="text-mono">{formatMoney(perPerson, budgetCurrency)}</span>
+                <span className="mx-1.5 text-[var(--border-strong)]">·</span>
+                <span className={overBudget ? "text-[var(--status-blocked)]" : "text-[var(--status-settled)]"}>
+                  {overBudget ? copy.overBudget : copy.onTrack}
+                </span>
+              </>
+            ) : (
+              copy.noBudget
+            )}
+          </p>
+        </div>
+      </div>
+
+      <output className="sr-only">
+        {budgetAmount != null
+          ? `${Math.round(budgetPct ?? 0)} percent of ${formatMoney(budgetAmount, budgetCurrency)} used`
+          : `${formatMoney(totalAmount, budgetCurrency)} spent`}
+      </output>
+
+      {settlements.length > 0 ? (
+        <div className="mt-6 flex-1">
+          <p className="text-caps">{copy.whoOwes}</p>
+          <ul className="mt-3 space-y-1.5">
+            {settlements.slice(0, 4).map((s, i) => (
               <li
                 key={i}
-                className="flex items-center justify-between gap-2 rounded-lg bg-[var(--secondary)]/60 px-2.5 py-1.5 text-xs"
+                className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-2 text-xs"
               >
-                <span className="truncate">
-                  <span className="font-medium">{s.from}</span>
-                  <span className="mx-1 text-[var(--muted-foreground)]">→</span>
-                  <span className="font-medium">{s.to}</span>
+                <span className="min-w-0 truncate">
+                  <span className="font-medium text-[var(--text-primary)]">{s.from}</span>
+                  <span className="mx-1.5 text-[var(--text-faint)]">→</span>
+                  <span className="font-medium text-[var(--text-primary)]">{s.to}</span>
                 </span>
-                <span className="font-semibold text-red-600 dark:text-red-400">
-                  {formatMoney(s.amount, expenses.budgetCurrency)}
+                <span className="text-mono font-semibold text-[var(--status-blocked)]">
+                  {formatMoney(s.amount, budgetCurrency)}
                 </span>
               </li>
             ))}
           </ul>
+          <div className="mt-4 flex justify-end">
+            <button type="button" onClick={onSettleClick} className="btn-tactile">
+              <IconCoin size={14} />
+              {copy.settle}
+            </button>
+          </div>
         </div>
       ) : (
-        <p className="mt-4 rounded-xl border border-dashed border-[var(--border)] px-3 py-3 text-center text-[11px] italic text-[var(--muted-foreground)]">
-          Everyone&apos;s settled.
-        </p>
+        <div className="mt-6 flex-1 rounded-xl border border-dashed border-[var(--border-hairline)] bg-[var(--surface-sunken)]/40 p-5 text-center">
+          <p className="text-mono text-2xl font-semibold text-[var(--status-settled)]">
+            {formatMoney(unsettled, budgetCurrency)}
+          </p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.settled}</p>
+        </div>
       )}
     </section>
   );
 }
 
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "amber" | "muted";
-}) {
-  const toneClass =
-    tone === "amber"
-      ? "text-amber-700 dark:text-amber-300"
-      : "text-[var(--foreground)]";
+function BudgetRing({ pct, overBudget }: { pct: number | null; overBudget: boolean }) {
+  const value = pct ?? 0;
+  const c = 2 * Math.PI * 36;
+  const offset = c - (Math.min(100, value) / 100) * c;
+  const ringColor = overBudget
+    ? "stroke-[var(--status-blocked)]"
+    : value > 80
+      ? "stroke-[var(--status-needs-decision)]"
+      : "stroke-[var(--accent-line)]";
   return (
-    <div className="rounded-xl bg-[var(--secondary)]/60 px-2.5 py-2">
-      <p className={cn("truncate text-base font-bold", toneClass)}>{value}</p>
-      <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-        {label}
-      </p>
+    <div className="relative h-20 w-20 shrink-0">
+      <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
+        <circle
+          cx="40"
+          cy="40"
+          r="36"
+          className="fill-none stroke-[var(--surface-sunken)]"
+          strokeWidth="6"
+        />
+        <circle
+          cx="40"
+          cy="40"
+          r="36"
+          className={cn("fill-none transition-[stroke-dashoffset] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]", ringColor)}
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={pct == null ? c : offset}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-mono text-sm font-semibold text-[var(--text-primary)]">
+        {pct == null ? "—" : `${Math.round(value)}%`}
+      </span>
     </div>
   );
 }
 
 function formatMoney(amount: number, currency: string): string {
-  const rounded = Math.round(amount);
-  return `${currency} ${rounded.toLocaleString()}`;
+  return `${currency} ${Math.round(amount).toLocaleString()}`;
 }
+
+// Backwards-compat alias.
+export const TripFinancePanel = FinanceTile;
