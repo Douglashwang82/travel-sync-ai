@@ -10,6 +10,32 @@ import { TripTabs } from "@/components/app/trip-tabs";
 
 export const dynamic = "force-dynamic";
 
+const COPY: Record<
+  AppLocale,
+  {
+    trips: string;
+    untitledTrip: string;
+    datesTbd: string;
+    you: string;
+    role: Record<"organizer" | "member", string>;
+  }
+> = {
+  en: {
+    trips: "Trips",
+    untitledTrip: "Untitled trip",
+    datesTbd: "Dates to be decided",
+    you: "You",
+    role: { organizer: "organizer", member: "member" },
+  },
+  "zh-TW": {
+    trips: "旅程",
+    untitledTrip: "未命名旅程",
+    datesTbd: "日期尚未決定",
+    you: "你的身分",
+    role: { organizer: "發起人", member: "成員" },
+  },
+};
+
 interface TripContextSummary {
   trip: Trip;
   role: "organizer" | "member";
