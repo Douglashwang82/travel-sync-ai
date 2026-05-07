@@ -5,14 +5,11 @@ import { createAdminClient } from "@/lib/db";
 /**
  * Cookie-based session for the `/app` web experience.
  *
- * This is an interim mechanism while proper auth (e.g. LINE Login on web) is
- * built out. The cookie holds a `lineUserId` previously stored via the sign-in
- * picker; the server trusts it only because we are pre-auth. DO NOT ship this
- * to production without replacing with a verified identity provider.
- *
- * The cookie is readable both from route handlers (via the `cookies()` helper)
- * and from server components, and can be set from route handlers via the
- * `NextResponse.cookies` API.
+ * The cookie holds a `line_user_id`. For users who signed in via LINE Login
+ * this is their real LINE id; for users who registered with email/password
+ * we generate a synthetic id (`app_<uuid>`) so all downstream tables that
+ * key on `line_user_id` keep working without branching. Identity is resolved
+ * to an `app_users` row via `requireAppUser`.
  */
 
 export const APP_SESSION_COOKIE = "ts_app_user";
@@ -76,28 +73,103 @@ function notFound(entity: string): NextResponse {
 }
 
 export type AppAuthResult =
-  | { ok: true; lineUserId: string }
+  | {
+      ok: true;
+      lineUserId: string;
+      appUserId: string;
+      email: string | null;
+      displayName: string | null;
+    }
   | { ok: false; response: NextResponse };
 
 export async function requireAppUser(req: NextRequest): Promise<AppAuthResult> {
   const lineUserId = await readAppSessionCookieFromRequest(req);
   if (!lineUserId) return { ok: false, response: unauthorized() };
-  return { ok: true, lineUserId };
+
+  const db = createAdminClient();
+  const { data: user } = await db
+    .from("app_users")
+    .select("id, email, display_name, line_user_id")
+    .eq("line_user_id", lineUserId)
+    .maybeSingle();
+
+  if (!user) return { ok: false, response: unauthorized() };
+
+  return {
+    ok: true,
+    lineUserId: user.line_user_id as string,
+    appUserId: user.id as string,
+    email: (user.email as string | null) ?? null,
+    displayName: (user.display_name as string | null) ?? null,
+  };
 }
 
 export type AppTripAuthResult =
   | {
       ok: true;
       lineUserId: string;
+      appUserId: string;
       groupId: string;
       role: "organizer" | "member";
     }
   | { ok: false; response: NextResponse };
 
+/**
+ * Authorize a user for a specific trip.
+ *
+ * Access is granted if the user belongs to the trip's LINE group via
+ * `group_members`, or if they were added directly via `trip_members`. The
+ * trip's `group_id` is required to be non-null here so existing feature
+ * routes (votes, expenses, day-notes, …) that key on `auth.groupId` keep
+ * their invariant. For routes that need to handle group-less trips, use
+ * `requireAppTripAccessAllowGroupless`.
+ */
 export async function requireAppTripAccess(
   req: NextRequest,
   tripId: string
 ): Promise<AppTripAuthResult> {
+  const auth = await requireAppTripAccessAllowGroupless(req, tripId);
+  if (!auth.ok) return auth;
+  if (!auth.groupId) {
+    return {
+      ok: false,
+      response: NextResponse.json<Json>(
+        {
+          error:
+            "This trip is not linked to a LINE group, so this feature is unavailable.",
+          code: "GROUP_REQUIRED",
+        },
+        { status: 400 }
+      ),
+    };
+  }
+  return {
+    ok: true,
+    lineUserId: auth.lineUserId,
+    appUserId: auth.appUserId,
+    groupId: auth.groupId,
+    role: auth.role,
+  };
+}
+
+export type AppTripAuthResultAny =
+  | {
+      ok: true;
+      lineUserId: string;
+      appUserId: string;
+      groupId: string | null;
+      role: "organizer" | "member";
+    }
+  | { ok: false; response: NextResponse };
+
+/**
+ * Like `requireAppTripAccess` but tolerates trips that have no LINE group.
+ * Use for endpoints that manage trip-level membership independent of LINE.
+ */
+export async function requireAppTripAccessAllowGroupless(
+  req: NextRequest,
+  tripId: string
+): Promise<AppTripAuthResultAny> {
   const auth = await requireAppUser(req);
   if (!auth.ok) return auth;
 
@@ -110,22 +182,47 @@ export async function requireAppTripAccess(
 
   if (!trip) return { ok: false, response: notFound("Trip") };
 
-  const { data: membership } = await db
-    .from("group_members")
-    .select("group_id, role")
-    .eq("group_id", trip.group_id)
-    .eq("line_user_id", auth.lineUserId)
+  const groupId = (trip.group_id as string | null) ?? null;
+
+  if (groupId) {
+    const { data: gm } = await db
+      .from("group_members")
+      .select("role")
+      .eq("group_id", groupId)
+      .eq("line_user_id", auth.lineUserId)
+      .is("left_at", null)
+      .maybeSingle();
+
+    if (gm) {
+      return {
+        ok: true,
+        lineUserId: auth.lineUserId,
+        appUserId: auth.appUserId,
+        groupId,
+        role: ((gm.role as string) === "organizer" ? "organizer" : "member"),
+      };
+    }
+  }
+
+  const { data: tm } = await db
+    .from("trip_members")
+    .select("role")
+    .eq("trip_id", tripId)
+    .eq("app_user_id", auth.appUserId)
     .is("left_at", null)
-    .single();
+    .maybeSingle();
 
-  if (!membership) return { ok: false, response: forbidden() };
+  if (tm) {
+    return {
+      ok: true,
+      lineUserId: auth.lineUserId,
+      appUserId: auth.appUserId,
+      groupId,
+      role: ((tm.role as string) === "organizer" ? "organizer" : "member"),
+    };
+  }
 
-  return {
-    ok: true,
-    lineUserId: auth.lineUserId,
-    groupId: trip.group_id,
-    role: (membership.role as "organizer" | "member") ?? "member",
-  };
+  return { ok: false, response: forbidden() };
 }
 
 export async function requireAppOrganizer(

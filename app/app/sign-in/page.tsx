@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppLocale } from "@/components/app/app-locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { LoadingSpinner, ErrorScreen } from "@/components/liff/shared";
 import { appFetch, appFetchJson } from "@/lib/app-client";
 import { clearAppBrowserCache } from "@/lib/app-browser-cache";
@@ -16,6 +17,8 @@ type MembersByGroup = Array<{
   lineGroupId: string;
   members: SignInMember[];
 }>;
+
+type FormMode = "login" | "register";
 
 const COPY = {
   en: {
@@ -51,6 +54,26 @@ const COPY = {
     organizer: "organizer",
     signingIn: "Signing in...",
     continue: "Continue",
+    or: "or",
+    emailSectionTitle: {
+      login: "Sign in with email",
+      register: "Create an account",
+    },
+    emailSectionBody: {
+      login: "Use the email and password you registered with.",
+      register: "Register with an email and password to be added to a trip.",
+    },
+    email: "Email",
+    password: "Password",
+    displayName: "Your name",
+    register: "Create account",
+    login: "Sign in",
+    haveAccount: "Already have an account?",
+    noAccount: "Don't have an account?",
+    switchToLogin: "Sign in",
+    switchToRegister: "Register",
+    submitting: "Submitting...",
+    passwordHint: "At least 8 characters.",
   },
   "zh-TW": {
     loading: "正在載入登入頁面...",
@@ -84,6 +107,26 @@ const COPY = {
     organizer: "發起人",
     signingIn: "登入中...",
     continue: "繼續",
+    or: "或",
+    emailSectionTitle: {
+      login: "使用 Email 登入",
+      register: "建立帳號",
+    },
+    emailSectionBody: {
+      login: "使用你註冊時的 Email 與密碼。",
+      register: "註冊 Email 與密碼，邀請者就能把你加入旅程。",
+    },
+    email: "Email",
+    password: "密碼",
+    displayName: "顯示名稱",
+    register: "建立帳號",
+    login: "登入",
+    haveAccount: "已經有帳號？",
+    noAccount: "還沒有帳號？",
+    switchToLogin: "登入",
+    switchToRegister: "註冊",
+    submitting: "送出中...",
+    passwordHint: "至少 8 個字元。",
   },
 } as const;
 
@@ -102,6 +145,13 @@ export default function SignInPage() {
   const [filter, setFilter] = useState("");
   const [signingInAs, setSigningInAs] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const [mode, setMode] = useState<FormMode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +245,36 @@ export default function SignInPage() {
     window.location.href = url;
   }
 
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      const path =
+        mode === "register" ? "/api/app/auth/register" : "/api/app/auth/login";
+      const payload =
+        mode === "register"
+          ? { email, password, displayName }
+          : { email, password };
+
+      const res = await appFetch(path, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Sign in failed");
+      }
+      clearAppBrowserCache();
+      router.push(next ?? "/app");
+      router.refresh();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Sign in failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (loading) return <LoadingSpinner message={copy.loading} />;
   if (loadError) return <ErrorScreen message={loadError} />;
 
@@ -227,6 +307,87 @@ export default function SignInPage() {
           </Button>
         </section>
       )}
+
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
+        <h2 className="text-sm font-semibold">{copy.emailSectionTitle[mode]}</h2>
+        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+          {copy.emailSectionBody[mode]}
+        </p>
+
+        <form onSubmit={handleEmailSubmit} className="mt-4 space-y-3">
+          {mode === "register" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="signin-displayName">{copy.displayName}</Label>
+              <Input
+                id="signin-displayName"
+                type="text"
+                autoComplete="name"
+                required
+                minLength={1}
+                maxLength={80}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="signin-email">{copy.email}</Label>
+            <Input
+              id="signin-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="signin-password">{copy.password}</Label>
+            <Input
+              id="signin-password"
+              type="password"
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              required
+              minLength={mode === "register" ? 8 : 1}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {mode === "register" && (
+              <p className="text-[11px] text-[var(--muted-foreground)]">
+                {copy.passwordHint}
+              </p>
+            )}
+          </div>
+
+          {formError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+              {formError}
+            </div>
+          )}
+
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting
+              ? copy.submitting
+              : mode === "register"
+                ? copy.register
+                : copy.login}
+          </Button>
+        </form>
+
+        <p className="mt-3 text-center text-xs text-[var(--muted-foreground)]">
+          {mode === "register" ? copy.haveAccount : copy.noAccount}{" "}
+          <button
+            type="button"
+            className="font-semibold text-[var(--primary)] hover:underline"
+            onClick={() => {
+              setMode(mode === "register" ? "login" : "register");
+              setFormError(null);
+            }}
+          >
+            {mode === "register" ? copy.switchToLogin : copy.switchToRegister}
+          </button>
+        </p>
+      </section>
 
       {!lineLoginConfigured && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
