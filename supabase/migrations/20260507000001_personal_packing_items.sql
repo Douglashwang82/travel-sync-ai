@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- TravelSync AI — Personal Packing Items
--- Migration: 20260507000000_personal_packing_items
+-- Migration: 20260507000001_personal_packing_items
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Private per-user packing checklist scoped to a single trip.
 -- Distinct from the group-shared `packing_items` table:
