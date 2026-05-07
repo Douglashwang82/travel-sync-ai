@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * @deprecated Replaced by the bento grid in `TripOverviewBento`. The 2→6 stat
+ * strip pattern is intentionally retired — each surface now uses tiles with a
+ * real job (Decision, Finance, Action Queue, Next Up, AI Updates). This file
+ * is kept only so unrelated callers can compile during the rollout window;
+ * remove once nothing imports it.
+ */
+
 import { cn } from "@/lib/utils";
 
 export interface KpiTileSpec {
