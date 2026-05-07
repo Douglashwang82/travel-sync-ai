@@ -48,12 +48,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           workspace: "工作區",
           trips: "旅程",
           templates: "範本",
+          ideas: "靈感",
           home: "首頁",
         }
       : {
           workspace: "Workspace",
           trips: "Trips",
           templates: "Templates",
+          ideas: "Ideas",
           home: "Home",
         };
 
@@ -84,6 +86,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
                 className="hidden text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] sm:block"
               >
                 {copy.templates}
+              </Link>
+              <Link
+                href="/app/ideas"
+                className="hidden text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] sm:block"
+              >
+                {copy.ideas}
               </Link>
               <Link
                 href="/"
