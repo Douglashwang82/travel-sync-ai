@@ -22,6 +22,7 @@ const BodySchema = z.object({
  *   - parsed_entities, analytics_events, optout_list: hard-delete rows
  *   - travel_documents: hard-delete rows for this user
  *   - packing_checks: hard-delete rows for this user
+ *   - personal_packing_items: hard-delete the user's private pack list
  *   - expenses: anonymise paid_by_display_name (keep amounts for group balance)
  *   - trip_ideas: hard-delete rows submitted by this user
  *
@@ -88,6 +89,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // 9. Remove packing items added by this user
     await db.from("packing_items").delete().eq("added_by", lineUserId);
+
+    // 10. Hard-delete the user's private packing list
+    await db.from("personal_packing_items").delete().eq("line_user_id", lineUserId);
 
     logger.info("user data deleted successfully", { userId: lineUserId });
 

@@ -25,14 +25,14 @@ const COPY: Record<
     untitledTrip: "Untitled trip",
     datesTbd: "Dates to be decided",
     you: "You",
-    role: { organizer: "organizer", member: "member" },
+    role: { organizer: "Organizer", member: "Member" },
   },
   "zh-TW": {
     trips: "旅程",
     untitledTrip: "未命名旅程",
     datesTbd: "日期尚未決定",
-    you: "你的身分",
-    role: { organizer: "發起人", member: "成員" },
+    you: "你",
+    role: { organizer: "主辦人", member: "成員" },
   },
 };
 
