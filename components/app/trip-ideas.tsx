@@ -19,7 +19,7 @@ import {
   type IdeaCategory,
   type TripIdea,
   type TripIdeasResponse,
-} from "@/app/api/app/trips/[tripId]/ideas/route";
+} from "@/lib/app-ideas";
 
 const CATEGORY_LABEL: Record<IdeaCategory, string> = {
   destination: "Destination",

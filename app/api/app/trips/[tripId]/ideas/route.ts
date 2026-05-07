@@ -3,34 +3,14 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { requireAppTripAccess } from "@/lib/app-server";
 import { track } from "@/lib/analytics";
+import {
+  IDEA_CATEGORIES,
+  type IdeaCategory,
+  type TripIdea,
+  type TripIdeasResponse,
+} from "@/lib/app-ideas";
 
 type RouteContext = { params: Promise<{ tripId: string }> };
-
-export const IDEA_CATEGORIES = [
-  "destination",
-  "hotel",
-  "activity",
-  "restaurant",
-  "general",
-] as const;
-
-export type IdeaCategory = (typeof IDEA_CATEGORIES)[number];
-
-export interface TripIdea {
-  id: string;
-  category: IdeaCategory;
-  text: string;
-  submittedBy: string;
-  displayName: string | null;
-  promoted: boolean;
-  promotedItemId: string | null;
-  createdAt: string;
-  isMine: boolean;
-}
-
-export interface TripIdeasResponse {
-  ideas: TripIdea[];
-}
 
 /**
  * GET /api/app/trips/:tripId/ideas — list brainstorm ideas for this trip.
