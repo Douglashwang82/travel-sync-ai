@@ -1093,6 +1093,7 @@ function EmptyDayBlock({
           itemType: s.item_type,
           description: s.description,
           deadlineAt: `${date}T12:00:00.000Z`,
+          fromSuggestion: true,
         }),
       });
       onAdded();

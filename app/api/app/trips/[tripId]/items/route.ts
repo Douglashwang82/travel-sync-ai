@@ -13,7 +13,16 @@ import {
   reopenItem,
   confirmBooking,
 } from "@/services/trip-state";
+import { rememberPlace } from "@/services/memory";
 import type { ItemType } from "@/lib/types";
+
+const PLACE_ITEM_TYPES: ReadonlyArray<ItemType> = [
+  "hotel",
+  "restaurant",
+  "activity",
+  "transport",
+  "flight",
+];
 
 type RouteContext = { params: Promise<{ tripId: string }> };
 
@@ -33,6 +42,7 @@ const CreateSchema = z.object({
   itemType: ItemTypeEnum.optional(),
   description: z.string().max(1000).optional(),
   deadlineAt: z.string().datetime().nullable().optional(),
+  fromSuggestion: z.boolean().optional(),
 });
 
 const UpdateSchema = z.object({
@@ -100,7 +110,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       const db = createAdminClient();
       const { data: trip } = await db
         .from("trips")
-        .select("id")
+        .select("id, group_id")
         .eq("id", tripId)
         .in("status", ["draft", "active"])
         .single();
@@ -118,7 +128,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
         itemType: data.itemType as ItemType | undefined,
         description: data.description,
         deadlineAt: data.deadlineAt ?? undefined,
-        source: "manual",
+        source: data.fromSuggestion ? "ai" : "manual",
       });
 
       if (!result.ok) {
@@ -127,6 +137,29 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
           { status: 500 }
         );
       }
+
+      // Once a suggested item is materialized, record it in trip_memories so
+      // future suggestion runs see it as part of the group's known places and
+      // avoid re-suggesting it.
+      if (
+        data.fromSuggestion &&
+        PLACE_ITEM_TYPES.includes(result.item.item_type as ItemType)
+      ) {
+        try {
+          await rememberPlace({
+            tripId,
+            groupId: trip.group_id as string,
+            itemType: result.item.item_type as ItemType,
+            title: result.item.title,
+            summary: result.item.description ?? undefined,
+            sourceLineUserId: auth.lineUserId,
+          });
+        } catch (err) {
+          // Memory write is best-effort; don't fail item creation on it.
+          console.error("[items.create] rememberPlace failed:", err);
+        }
+      }
+
       return NextResponse.json(result.item, { status: 201 });
     }
 
