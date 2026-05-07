@@ -3,6 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
 import type {
@@ -452,11 +462,15 @@ function DayHeading({
   day,
   tripId,
   currency,
+  canAddManualItem,
+  onAddManualItem,
   onSaved,
 }: {
   day: TimelineDay;
   tripId: string;
   currency: string;
+  canAddManualItem: boolean;
+  onAddManualItem: () => void;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -604,6 +618,15 @@ function DayHeading({
               + Add summary
             </button>
           )}
+          {canAddManualItem && (
+            <button
+              type="button"
+              onClick={onAddManualItem}
+              className="text-[11px] font-medium text-[var(--primary)] hover:underline"
+            >
+              + Add manually
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -684,6 +707,8 @@ function DayBlock({
   currency: string;
   onUpdated: () => void;
 }) {
+  const [manualOpen, setManualOpen] = useState(false);
+
   return (
     <section
       id={`day-${day.key}`}
@@ -726,6 +751,8 @@ function DayBlock({
         day={day}
         tripId={tripId}
         currency={currency}
+        canAddManualItem={isOrganizer && !day.isUnscheduled}
+        onAddManualItem={() => setManualOpen(true)}
         onSaved={onUpdated}
       />
 
@@ -750,6 +777,17 @@ function DayBlock({
             />
           ))}
         </div>
+      )}
+      {manualOpen && (
+        <ManualItineraryItemDialog
+          tripId={tripId}
+          date={day.key}
+          onClose={() => setManualOpen(false)}
+          onAdded={() => {
+            setManualOpen(false);
+            onUpdated();
+          }}
+        />
       )}
     </section>
   );
@@ -777,6 +815,7 @@ function TimelineEvent({
   );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [addOptionOpen, setAddOptionOpen] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -813,6 +852,8 @@ function TimelineEvent({
       })
     : null;
   const tod = timeOfDayBucket(item.deadline_at);
+  const canAddOption =
+    isOrganizer && item.item_kind === "decision" && item.stage !== "confirmed";
 
   return (
     <article className="relative">
@@ -1027,19 +1068,41 @@ function TimelineEvent({
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setEditing(true)}
-                    className="text-[11px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
-                  >
-                    Edit time / assignment
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(true)}
+                      className="text-[11px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+                    >
+                      Edit time / assignment
+                    </button>
+                    {canAddOption && (
+                      <button
+                        type="button"
+                        onClick={() => setAddOptionOpen(true)}
+                        className="text-[11px] font-medium text-[var(--primary)] underline underline-offset-2 hover:text-[var(--foreground)]"
+                      >
+                        Add option
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
           </div>
         </div>
       </div>
+      {addOptionOpen && (
+        <AddOptionDialog
+          tripId={tripId}
+          itemId={item.id}
+          onClose={() => setAddOptionOpen(false)}
+          onAdded={() => {
+            setAddOptionOpen(false);
+            onUpdated();
+          }}
+        />
+      )}
     </article>
   );
 }
@@ -1111,23 +1174,25 @@ function EmptyDayBlock({
         className="absolute -left-[2.6rem] top-5 hidden h-3 w-3 rounded-full bg-[var(--border)] ring-4 ring-[var(--background)] sm:block"
       />
       {phase === "idle" ? (
-        <button
-          type="button"
-          onClick={() => void handleSuggest()}
-          className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-[var(--border)] px-4 py-4 text-left transition-colors hover:border-[var(--primary)]/40 hover:bg-[var(--secondary)]/40"
-        >
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium text-[var(--muted-foreground)]">
-              Nothing planned
-            </p>
-            <p className="text-[11px] text-[var(--muted-foreground)]/80">
-              Tap for AI suggestions tailored to this day
-            </p>
-          </div>
-          <span className="text-[11px] font-semibold text-[var(--primary)] opacity-70 group-hover:opacity-100">
-            ✨ Suggest
-          </span>
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => void handleSuggest()}
+            className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-[var(--border)] px-4 py-4 text-left transition-colors hover:border-[var(--primary)]/40 hover:bg-[var(--secondary)]/40"
+          >
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                Nothing planned
+              </p>
+              <p className="text-[11px] text-[var(--muted-foreground)]/80">
+                Tap for AI suggestions tailored to this day
+              </p>
+            </div>
+            <span className="text-[11px] font-semibold text-[var(--primary)] opacity-70 group-hover:opacity-100">
+              ✨ Suggest
+            </span>
+          </button>
+        </div>
       ) : phase === "loading" ? (
         <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
           {[...Array(3)].map((_, i) => (
@@ -1210,5 +1275,303 @@ function EmptyDayBlock({
         </div>
       )}
     </div>
+  );
+}
+
+function ManualItineraryItemDialog({
+  tripId,
+  date,
+  onClose,
+  onAdded,
+}: {
+  tripId: string;
+  date: string;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [itemType, setItemType] = useState("activity");
+  const [description, setDescription] = useState("");
+  const [time, setTime] = useState(`${date}T12:00`);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleAdd() {
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      setError("Item needs a title.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/items`, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "create",
+          title: cleanTitle,
+          itemType,
+          description: description.trim() || undefined,
+          deadlineAt: time ? new Date(time).toISOString() : null,
+        }),
+      });
+      onAdded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add item");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add itinerary item</DialogTitle>
+          <DialogDescription>
+            Add a plan to this day without using AI suggestions.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="manual-item-title">Title</Label>
+            <Input
+              id="manual-item-title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Type</Label>
+              <Select value={itemType} onValueChange={setItemType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TYPE_LABEL).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-item-time">Time</Label>
+              <Input
+                id="manual-item-time"
+                type="datetime-local"
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="manual-item-description">Notes (optional)</Label>
+            <Textarea
+              id="manual-item-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              maxLength={1000}
+            />
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={submitting}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button onClick={() => void handleAdd()} disabled={submitting}>
+            {submitting ? "Adding..." : "Add item"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddOptionDialog({
+  tripId,
+  itemId,
+  onClose,
+  onAdded,
+}: {
+  tripId: string;
+  itemId: string;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
+  const [options, setOptions] = useState([
+    { name: "", address: "", imageUrl: "", bookingUrl: "" },
+  ]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function updateOption(
+    index: number,
+    patch: Partial<(typeof options)[number]>
+  ) {
+    setOptions((current) =>
+      current.map((option, i) =>
+        i === index ? { ...option, ...patch } : option
+      )
+    );
+  }
+
+  function addRow() {
+    if (options.length >= 10) return;
+    setOptions((current) => [
+      ...current,
+      { name: "", address: "", imageUrl: "", bookingUrl: "" },
+    ]);
+  }
+
+  function removeRow(index: number) {
+    if (options.length <= 1) return;
+    setOptions((current) => current.filter((_, i) => i !== index));
+  }
+
+  async function handleAdd() {
+    const payload = options
+      .map((option) => ({
+        name: option.name.trim(),
+        address: option.address.trim(),
+        imageUrl: option.imageUrl.trim(),
+        bookingUrl: option.bookingUrl.trim(),
+      }))
+      .filter((option) => option.name.length > 0);
+
+    if (payload.length === 0) {
+      setError("Enter at least one option.");
+      return;
+    }
+
+    const names = new Set<string>();
+    for (const option of payload) {
+      const key = option.name.toLowerCase();
+      if (names.has(key)) {
+        setError("Option names must be unique.");
+        return;
+      }
+      names.add(key);
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      for (const option of payload) {
+        await appFetchJson(`/api/app/trips/${tripId}/items/${itemId}/options`, {
+          method: "POST",
+          body: JSON.stringify({
+            name: option.name,
+            address: option.address || undefined,
+            imageUrl: option.imageUrl || undefined,
+            bookingUrl: option.bookingUrl || undefined,
+          }),
+        });
+      }
+      onAdded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add options");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add options</DialogTitle>
+          <DialogDescription>
+            Add one or more choices to this decision item.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+          {options.map((option, index) => (
+            <div
+              key={index}
+              className="space-y-2 rounded-lg border border-[var(--border)] p-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor={`it-option-name-${index}`}>
+                  Option {index + 1}
+                </Label>
+                {options.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeRow(index)}
+                    className="text-[11px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <Input
+                id={`it-option-name-${index}`}
+                value={option.name}
+                onChange={(event) =>
+                  updateOption(index, { name: event.target.value })
+                }
+                autoFocus={index === 0}
+                placeholder="Name"
+              />
+              <Input
+                value={option.address}
+                onChange={(event) =>
+                  updateOption(index, { address: event.target.value })
+                }
+                placeholder="Address (optional)"
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input
+                  value={option.imageUrl}
+                  onChange={(event) =>
+                    updateOption(index, { imageUrl: event.target.value })
+                  }
+                  placeholder="Image URL (optional)"
+                />
+                <Input
+                  value={option.bookingUrl}
+                  onChange={(event) =>
+                    updateOption(index, { bookingUrl: event.target.value })
+                  }
+                  placeholder="Booking URL (optional)"
+                />
+              </div>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            className="h-8 w-full text-xs"
+            onClick={addRow}
+            disabled={options.length >= 10 || submitting}
+          >
+            Add more
+          </Button>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={submitting}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button onClick={() => void handleAdd()} disabled={submitting}>
+            {submitting ? "Adding..." : "Add options"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -21,6 +21,38 @@ interface TripContextSummary {
   todoCount: number;
 }
 
+const COPY: Record<
+  AppLocale,
+  {
+    trips: string;
+    untitledTrip: string;
+    datesTbd: string;
+    you: string;
+    role: Record<TripContextSummary["role"], string>;
+  }
+> = {
+  en: {
+    trips: "Trips",
+    untitledTrip: "Untitled trip",
+    datesTbd: "Dates to be decided",
+    you: "You",
+    role: {
+      organizer: "organizer",
+      member: "member",
+    },
+  },
+  "zh-TW": {
+    trips: "Trips",
+    untitledTrip: "Untitled trip",
+    datesTbd: "Dates to be decided",
+    you: "You",
+    role: {
+      organizer: "organizer",
+      member: "member",
+    },
+  },
+};
+
 async function loadTripContext(
   tripId: string,
   lineUserId: string

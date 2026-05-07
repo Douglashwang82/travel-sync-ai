@@ -21,6 +21,7 @@ export interface ItineraryEntry {
   id: string;
   title: string;
   item_type: string;
+  item_kind: string;
   description: string | null;
   stage: string;
   deadline_at: string | null;
@@ -74,6 +75,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     .from("trip_items")
     .select(
       `id, title, item_type, description, stage, deadline_at, assigned_to_line_user_id, booking_status, booking_ref, confirmed_option_id,
+       item_kind,
        trip_item_options!trip_items_confirmed_option_id_fkey (
          id, name, address, image_url, rating, price_level, booking_url, google_maps_url, lat, lng
        )`
@@ -97,6 +99,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       id: row.id as string,
       title: row.title as string,
       item_type: row.item_type as string,
+      item_kind: (row.item_kind as string | null) ?? "task",
       description: (row.description as string | null) ?? null,
       stage: row.stage as string,
       deadline_at: (row.deadline_at as string | null) ?? null,
