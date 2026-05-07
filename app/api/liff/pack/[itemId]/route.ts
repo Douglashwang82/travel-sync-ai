@@ -15,7 +15,16 @@ const PatchSchema = z.object({
 
 const ParamsSchema = z.object({ itemId: z.string().uuid() });
 
-async function loadOwnedItem(itemId: string, lineUserId: string) {
+type OwnershipError = "DB_ERROR" | "NOT_FOUND" | "FORBIDDEN";
+
+type OwnershipResult =
+  | { ok: true; db: ReturnType<typeof createAdminClient> }
+  | { ok: false; error: OwnershipError };
+
+async function loadOwnedItem(
+  itemId: string,
+  lineUserId: string
+): Promise<OwnershipResult> {
   const db = createAdminClient();
   const { data, error } = await db
     .from("personal_packing_items")
@@ -23,10 +32,21 @@ async function loadOwnedItem(itemId: string, lineUserId: string) {
     .eq("id", itemId)
     .maybeSingle();
 
-  if (error) return { error: "DB_ERROR" as const };
-  if (!data) return { error: "NOT_FOUND" as const };
-  if (data.line_user_id !== lineUserId) return { error: "FORBIDDEN" as const };
-  return { db };
+  if (error) return { ok: false, error: "DB_ERROR" };
+  if (!data) return { ok: false, error: "NOT_FOUND" };
+  if (data.line_user_id !== lineUserId) return { ok: false, error: "FORBIDDEN" };
+  return { ok: true, db };
+}
+
+function ownershipErrorResponse(error: OwnershipError): NextResponse {
+  const status = error === "NOT_FOUND" ? 404 : error === "FORBIDDEN" ? 403 : 500;
+  const message =
+    error === "NOT_FOUND"
+      ? "Item not found"
+      : error === "FORBIDDEN"
+        ? "You do not own this item"
+        : "Database error";
+  return NextResponse.json<ApiError>({ error: message, code: error }, { status });
 }
 
 export async function PATCH(
@@ -64,22 +84,7 @@ export async function PATCH(
   }
 
   const owned = await loadOwnedItem(parsedParams.data.itemId, auth.lineUserId);
-  if ("error" in owned) {
-    const status =
-      owned.error === "NOT_FOUND" ? 404 : owned.error === "FORBIDDEN" ? 403 : 500;
-    return NextResponse.json<ApiError>(
-      {
-        error:
-          owned.error === "NOT_FOUND"
-            ? "Item not found"
-            : owned.error === "FORBIDDEN"
-              ? "You do not own this item"
-              : "Database error",
-        code: owned.error,
-      },
-      { status }
-    );
-  }
+  if (!owned.ok) return ownershipErrorResponse(owned.error);
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (parsedBody.data.label !== undefined) updates.label = parsedBody.data.label;
@@ -135,22 +140,7 @@ export async function DELETE(
   }
 
   const owned = await loadOwnedItem(parsedParams.data.itemId, auth.lineUserId);
-  if ("error" in owned) {
-    const status =
-      owned.error === "NOT_FOUND" ? 404 : owned.error === "FORBIDDEN" ? 403 : 500;
-    return NextResponse.json<ApiError>(
-      {
-        error:
-          owned.error === "NOT_FOUND"
-            ? "Item not found"
-            : owned.error === "FORBIDDEN"
-              ? "You do not own this item"
-              : "Database error",
-        code: owned.error,
-      },
-      { status }
-    );
-  }
+  if (!owned.ok) return ownershipErrorResponse(owned.error);
 
   const { error } = await owned.db
     .from("personal_packing_items")
