@@ -11,6 +11,7 @@ const COPY = {
     itinerary: "Itinerary",
     votes: "Votes",
     expenses: "Expenses",
+    pack: "Pack",
     ideas: "Ideas",
     settings: "Settings",
   },
@@ -19,6 +20,7 @@ const COPY = {
     itinerary: "行程",
     votes: "投票",
     expenses: "費用",
+    pack: "Pack",
     ideas: "靈感",
     settings: "設定",
   },
@@ -56,6 +58,11 @@ export function TripTabs({ tripId }: { tripId: string }) {
       href: `${base}/expenses`,
       label: copy.expenses,
       match: (p: string) => p.startsWith(`${base}/expenses`),
+    },
+    {
+      href: `${base}/pack`,
+      label: copy.pack,
+      match: (p: string) => p.startsWith(`${base}/pack`),
     },
     {
       href: `${base}/board`,
