@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
+import { PlacePicker, type PickedPlace } from "@/components/app/place-picker";
 import type { BoardData } from "@/lib/types";
 import type {
   WebActiveVote,
@@ -1139,11 +1140,21 @@ function AddOptionDialog({
   onAdded: () => void;
 }) {
   const [name, setName] = useState("");
+  const [place, setPlace] = useState<PickedPlace | null>(null);
   const [address, setAddress] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [bookingUrl, setBookingUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handlePlacePicked(p: PickedPlace | null) {
+    setPlace(p);
+    if (p) {
+      // Auto-fill name + address from the picked place when empty.
+      if (!name.trim()) setName(p.name);
+      if (!address.trim() && p.address) setAddress(p.address);
+    }
+  }
 
   async function handleAdd() {
     if (!name.trim()) {
@@ -1160,6 +1171,9 @@ function AddOptionDialog({
           address: address.trim() || undefined,
           imageUrl: imageUrl.trim() || undefined,
           bookingUrl: bookingUrl.trim() || undefined,
+          lat: place?.lat ?? undefined,
+          lng: place?.lng ?? undefined,
+          googleMapsUrl: place?.googleMapsUrl ?? undefined,
         }),
       });
       onAdded();
@@ -1189,6 +1203,18 @@ function AddOptionDialog({
               onChange={(e) => setName(e.target.value)}
               autoFocus
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="opt-place">Pick a place (optional)</Label>
+            <PlacePicker
+              inputId="opt-place"
+              value={place}
+              onChange={handlePlacePicked}
+              placeholder="Search Google for a place to put on the map"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Selecting a place attaches its location so this option shows on the trip map.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="opt-address">Address (optional)</Label>

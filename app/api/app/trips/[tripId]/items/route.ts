@@ -36,6 +36,14 @@ const ItemTypeEnum = z.enum([
   "other",
 ]);
 
+const PlaceSchema = z.object({
+  name: z.string().min(1).max(200),
+  address: z.string().max(400).optional().nullable(),
+  lat: z.number().gte(-90).lte(90).optional().nullable(),
+  lng: z.number().gte(-180).lte(180).optional().nullable(),
+  googleMapsUrl: z.string().url().max(1000).optional().nullable(),
+});
+
 const CreateSchema = z.object({
   action: z.literal("create"),
   title: z.string().min(1).max(200),
@@ -43,6 +51,7 @@ const CreateSchema = z.object({
   description: z.string().max(1000).optional(),
   deadlineAt: z.string().datetime().nullable().optional(),
   fromSuggestion: z.boolean().optional(),
+  place: PlaceSchema.optional(),
 });
 
 const UpdateSchema = z.object({
@@ -136,6 +145,37 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
           { error: result.error, code: result.code },
           { status: 500 }
         );
+      }
+
+      // If the caller attached a specific place, materialize it as a
+      // confirmed option so the new item is immediately mappable. We bypass
+      // `addOption` (which restricts to decision items) and write directly.
+      if (data.place) {
+        const { data: opt, error: optErr } = await db
+          .from("trip_item_options")
+          .insert({
+            trip_item_id: result.item.id,
+            provider: "manual",
+            name: data.place.name,
+            address: data.place.address ?? null,
+            lat: data.place.lat ?? null,
+            lng: data.place.lng ?? null,
+            google_maps_url: data.place.googleMapsUrl ?? null,
+          })
+          .select("id")
+          .single();
+
+        if (optErr || !opt) {
+          console.error("[items.create] failed to insert seed option", optErr);
+        } else {
+          const { error: linkErr } = await db
+            .from("trip_items")
+            .update({ confirmed_option_id: opt.id })
+            .eq("id", result.item.id);
+          if (linkErr) {
+            console.error("[items.create] failed to link confirmed option", linkErr);
+          }
+        }
       }
 
       // Once a suggested item is materialized, record it in trip_memories so
