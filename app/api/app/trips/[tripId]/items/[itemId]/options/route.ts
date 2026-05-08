@@ -11,6 +11,9 @@ const BodySchema = z.object({
   address: z.string().max(400).optional(),
   imageUrl: z.string().url().max(1000).optional(),
   bookingUrl: z.string().url().max(1000).optional(),
+  lat: z.number().gte(-90).lte(90).optional(),
+  lng: z.number().gte(-180).lte(180).optional(),
+  googleMapsUrl: z.string().url().max(1000).optional(),
 });
 
 /**
@@ -70,19 +73,29 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     );
   }
 
-  // If the caller supplied extra metadata (address, image, booking URL),
+  // If the caller supplied extra metadata (address, image, booking URL, geo),
   // patch it onto the just-inserted option row.
-  if (parsed.data.address || parsed.data.imageUrl || parsed.data.bookingUrl) {
+  const hasExtras =
+    parsed.data.address ||
+    parsed.data.imageUrl ||
+    parsed.data.bookingUrl ||
+    parsed.data.lat != null ||
+    parsed.data.lng != null ||
+    parsed.data.googleMapsUrl;
+  if (hasExtras) {
     const patch: Record<string, unknown> = {};
     if (parsed.data.address) patch.address = parsed.data.address.trim();
     if (parsed.data.imageUrl) patch.image_url = parsed.data.imageUrl;
     if (parsed.data.bookingUrl) patch.booking_url = parsed.data.bookingUrl;
+    if (parsed.data.lat != null) patch.lat = parsed.data.lat;
+    if (parsed.data.lng != null) patch.lng = parsed.data.lng;
+    if (parsed.data.googleMapsUrl) patch.google_maps_url = parsed.data.googleMapsUrl;
     await db.from("trip_item_options").update(patch).eq("id", result.optionId);
   }
 
   const { data: option } = await db
     .from("trip_item_options")
-    .select("id, name, address, image_url, booking_url")
+    .select("id, name, address, image_url, booking_url, lat, lng, google_maps_url")
     .eq("id", result.optionId)
     .single();
 

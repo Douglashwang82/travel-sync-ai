@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
+import { PlacePicker, type PickedPlace } from "@/components/app/place-picker";
 import type { ItemType } from "@/lib/types";
 
 const ITEM_TYPE_OPTIONS: { value: ItemType; label: string }[] = [
@@ -49,6 +50,7 @@ export function AddItemDialog({
   const [type, setType] = useState<ItemType>("other");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [place, setPlace] = useState<PickedPlace | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +59,13 @@ export function AddItemDialog({
     setType("other");
     setDescription("");
     setDeadline("");
+    setPlace(null);
     setError(null);
+  }
+
+  function handlePlacePicked(p: PickedPlace | null) {
+    setPlace(p);
+    if (p && !title.trim()) setTitle(p.name);
   }
 
   async function handleSubmit() {
@@ -75,6 +83,16 @@ export function AddItemDialog({
           itemType: type,
           description: description.trim() || undefined,
           deadlineAt: deadline ? new Date(deadline).toISOString() : null,
+          place:
+            place && place.lat != null && place.lng != null
+              ? {
+                  name: place.name,
+                  address: place.address,
+                  lat: place.lat,
+                  lng: place.lng,
+                  googleMapsUrl: place.googleMapsUrl,
+                }
+              : undefined,
         }),
       });
       reset();
@@ -113,6 +131,19 @@ export function AddItemDialog({
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="add-item-place">Pick a place (optional)</Label>
+            <PlacePicker
+              inputId="add-item-place"
+              value={place}
+              onChange={handlePlacePicked}
+              placeholder="Search Google for a hotel, restaurant, attraction…"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Attaching a place pins this item to the trip map.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
