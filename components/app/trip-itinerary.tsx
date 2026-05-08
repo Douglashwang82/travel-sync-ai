@@ -152,6 +152,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
   const [role, setRole] = useState<"organizer" | "member">("member");
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "todo">("all");
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -253,6 +254,16 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
     return result;
   }, [data, filter]);
 
+  useEffect(() => {
+    if (selectedDayKey && !days.some((day) => day.key === selectedDayKey)) {
+      setSelectedDayKey(null);
+    }
+  }, [days, selectedDayKey]);
+
+  const visibleDays = selectedDayKey
+    ? days.filter((day) => day.key === selectedDayKey)
+    : days;
+
   if (error) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
@@ -295,16 +306,18 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         setFilter={setFilter}
         counts={counts}
         days={days}
+        selectedDayKey={selectedDayKey}
+        onSelectDay={setSelectedDayKey}
       />
 
-      {days.length === 0 ? (
+      {visibleDays.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--border)] px-6 py-12 text-center text-sm text-[var(--muted-foreground)]">
           Nothing on the timeline yet. Add an item or set trip dates to start
           planning.
         </div>
       ) : (
         <Timeline
-          days={days}
+          days={visibleDays}
           tripId={tripId}
           members={members}
           isOrganizer={role === "organizer"}
@@ -323,19 +336,18 @@ function Toolbar({
   setFilter,
   counts,
   days,
+  selectedDayKey,
+  onSelectDay,
 }: {
   filter: "all" | "confirmed" | "pending" | "todo";
   setFilter: (f: "all" | "confirmed" | "pending" | "todo") => void;
   counts: { all: number; confirmed: number; pending: number; todo: number };
   days: TimelineDay[];
+  selectedDayKey: string | null;
+  onSelectDay: (key: string | null) => void;
 }) {
   const totalDays = days.filter((d) => !d.isUnscheduled).length;
   const itemsCount = days.reduce((s, d) => s + d.items.length, 0);
-
-  function jumpTo(key: string) {
-    const el = document.getElementById(`day-${key}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
   return (
     <div className="space-y-3">
@@ -385,14 +397,27 @@ function Toolbar({
 
       {days.length > 1 && (
         <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
+          {selectedDayKey && (
+            <button
+              type="button"
+              onClick={() => onSelectDay(null)}
+              aria-pressed={selectedDayKey === null}
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--foreground)] bg-[var(--foreground)] px-2.5 py-1 text-[11px] font-medium text-[var(--background)] transition-colors"
+            >
+              All days
+            </button>
+          )}
           {days.map((d) => (
             <button
               key={d.key}
               type="button"
-              onClick={() => jumpTo(d.key)}
+              onClick={() => onSelectDay(d.key)}
+              aria-pressed={selectedDayKey === d.key}
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                d.isToday
+                selectedDayKey === d.key
+                  ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
+                  : d.isToday
                   ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
                   : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
               )}
