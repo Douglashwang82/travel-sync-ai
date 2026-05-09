@@ -63,8 +63,7 @@ async function trackList(
   if (!data || data.length === 0) {
     await reply(
       "📡 You're not tracking anything yet.\n\n" +
-      "Add a source: /track add https://some-travel-blog.com\n" +
-      "Or open the Tracking page in LIFF for more options."
+      "Add a source: /track add https://some-travel-blog.com"
     );
     return;
   }
@@ -80,7 +79,7 @@ async function trackList(
       `   last: ${last}`
     );
   });
-  lines.push("\nAdd more with /track add <url>\nOpen the LIFF Tracking page to pause or delete.");
+  lines.push("\nAdd more with /track add <url>");
 
   await reply(lines.join("\n"));
 }
@@ -177,8 +176,6 @@ function usage(): string {
     "/track             list your sources",
     "/track add <url>   add a source (category optional)",
     "/track run         send today's digest to your DM",
-    "",
-    "Open the LIFF Tracking page to pause or delete sources.",
   ].join("\n");
 }
 

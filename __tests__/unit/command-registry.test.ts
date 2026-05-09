@@ -20,7 +20,6 @@ describe("command registry", () => {
     );
     expect(COMMAND_CATALOG.find((entry) => entry.command === "/delete-my-data")).toMatchObject({
       helpVisible: false,
-      liffVisible: false,
     });
   });
 

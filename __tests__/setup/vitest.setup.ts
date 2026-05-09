@@ -9,7 +9,6 @@
 // Minimal env stubs required by lib/env.ts validateEnv()
 process.env.LINE_CHANNEL_SECRET = "test-channel-secret";
 process.env.LINE_CHANNEL_ACCESS_TOKEN = "test-access-token";
-process.env.NEXT_PUBLIC_LIFF_ID = "test-liff-id";
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
 process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-anon-key";
 process.env.SUPABASE_SECRET_KEY = "test-service-role-key";

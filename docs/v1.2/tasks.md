@@ -15,7 +15,7 @@
 - [ ] T1.5 Add migration for `trip_incident_events`
 - [ ] T1.6 Add migration for `trip_daily_briefings`
 - [ ] T1.7 Add service modules for operations, readiness, alerts, incidents, and briefings
-- [ ] T1.8 Add LIFF route scaffolds for operations and readiness
+- [ ] T1.8 Add web app route scaffolds for operations and readiness
 - [ ] T1.9 Add cron route scaffolds for readiness refresh, daily briefings, transport monitor, and incident follow-up
 - [ ] T1.10 Refactor Google Places usage into search-first and detail-on-selection flows
 - [ ] T1.11 Add shared Google service wrappers under `services/google/`
@@ -27,9 +27,9 @@
 - [ ] T2.2 Implement readiness generation from trip and confirmed items
 - [ ] T2.3 Implement readiness item status transitions
 - [ ] T2.4 Add `/ready` command handler
-- [ ] T2.5 Implement `GET /api/liff/readiness`
-- [ ] T2.6 Implement `POST /api/liff/readiness` actions
-- [ ] T2.7 Build LIFF readiness checklist page
+- [ ] T2.5 Implement `GET /api/app/readiness`
+- [ ] T2.6 Implement `POST /api/app/readiness` actions
+- [ ] T2.7 Build web app readiness checklist page
 - [ ] T2.8 Track readiness analytics events
 
 ## Phase 3: Operations Summary
@@ -37,8 +37,8 @@
 - [ ] T3.1 Define operations summary response contract
 - [ ] T3.2 Implement operations aggregation service
 - [ ] T3.3 Add `/ops` command handler
-- [ ] T3.4 Implement `GET /api/liff/operations`
-- [ ] T3.5 Build LIFF operations page
+- [ ] T3.4 Implement `GET /api/app/operations`
+- [ ] T3.5 Build web app operations page
 - [ ] T3.6 Add freshness and degraded-state indicators
 
 ## Phase 4: Daily Briefings
@@ -68,7 +68,7 @@
 - [ ] T6.1 Define initial incident taxonomy
 - [ ] T6.2 Implement incident create/update service
 - [ ] T6.3 Add `/incident [type]` command handler
-- [ ] T6.4 Implement `POST /api/liff/incidents`
+- [ ] T6.4 Implement `POST /api/app/incidents`
 - [ ] T6.5 Build starter playbooks for delay, missed meetup, and lost document
 - [ ] T6.6 Create follow-up tasks or readiness items from incident actions
 - [ ] T6.7 Add incident analytics and audit logging

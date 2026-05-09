@@ -16,7 +16,7 @@ const BodySchema = z.object({
  *
  * Organizer-only. Closes a pending-stage vote early by confirming a winning
  * option. Uses the existing closeVote service so analytics/booking-status
- * handling stays identical to the LIFF and cron paths.
+ * handling stays identical to the bot postback and cron paths.
  */
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId, itemId } = await ctx.params;

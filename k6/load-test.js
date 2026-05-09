@@ -5,14 +5,11 @@
  *   BASE_URL=https://your-app.vercel.app k6 run k6/load-test.js
  *
  * Scenarios tested:
- *   1. webhook        — simulate LINE webhook event bursts (200 VUs, 1 min ramp)
- *   2. liff_session   — LIFF session fetch (50 VUs, steady)
- *   3. liff_expenses  — LIFF expenses endpoint read (50 VUs, steady)
- *   4. health         — healthcheck probe (10 VUs, constant)
+ *   1. webhook  — simulate LINE webhook event bursts (200 VUs, 1 min ramp)
+ *   2. health   — healthcheck probe (10 VUs, constant)
  *
  * Acceptance thresholds:
  *   - p(95) < 2000ms for webhook
- *   - p(95) < 1500ms for LIFF endpoints
  *   - error rate < 1%
  */
 
@@ -29,9 +26,7 @@ const LINE_USER_ID = __ENV.TEST_LINE_USER_ID || "Utest-user-0001";
 // ─── Custom metrics ───────────────────────────────────────────────────────────
 
 const webhookErrors = new Rate("webhook_errors");
-const liffErrors = new Rate("liff_errors");
 const webhookDuration = new Trend("webhook_duration_ms", true);
-const liffDuration = new Trend("liff_duration_ms", true);
 
 // ─── Scenarios ────────────────────────────────────────────────────────────────
 
@@ -48,20 +43,6 @@ export const options = {
       exec: "webhookScenario",
       tags: { scenario: "webhook" },
     },
-    liff_session: {
-      executor: "constant-vus",
-      vus: 30,
-      duration: "2m",
-      exec: "liffSessionScenario",
-      tags: { scenario: "liff_session" },
-    },
-    liff_expenses: {
-      executor: "constant-vus",
-      vus: 30,
-      duration: "2m",
-      exec: "liffExpensesScenario",
-      tags: { scenario: "liff_expenses" },
-    },
     health: {
       executor: "constant-vus",
       vus: 5,
@@ -72,9 +53,7 @@ export const options = {
   },
   thresholds: {
     webhook_duration_ms: ["p(95)<2000"],
-    liff_duration_ms: ["p(95)<1500"],
     webhook_errors: ["rate<0.01"],
-    liff_errors: ["rate<0.01"],
     http_req_failed: ["rate<0.05"],
   },
 };
@@ -138,52 +117,6 @@ export function webhookScenario() {
 
   webhookErrors.add(!ok);
   sleep(Math.random() * 0.5);
-}
-
-// ─── Scenario: LIFF session ───────────────────────────────────────────────────
-
-export function liffSessionScenario() {
-  const url =
-    `${BASE_URL}/api/liff/session` +
-    `?lineGroupId=${encodeURIComponent(LINE_GROUP_ID)}` +
-    `&lineUserId=${encodeURIComponent(LINE_USER_ID)}` +
-    `&displayName=LoadTest`;
-
-  const start = Date.now();
-  const res = http.get(url, {
-    headers: { Accept: "application/json" },
-  });
-  liffDuration.add(Date.now() - start);
-
-  const ok = check(res, {
-    "liff/session: 200 or 404": (r) => r.status === 200 || r.status === 404,
-    "liff/session: has JSON": (r) => r.headers["Content-Type"]?.includes("application/json"),
-  });
-
-  liffErrors.add(!ok);
-  sleep(0.5 + Math.random() * 0.5);
-}
-
-// ─── Scenario: LIFF expenses ─────────────────────────────────────────────────
-
-export function liffExpensesScenario() {
-  const url =
-    `${BASE_URL}/api/liff/expenses` +
-    `?lineGroupId=${encodeURIComponent(LINE_GROUP_ID)}` +
-    `&lineUserId=${encodeURIComponent(LINE_USER_ID)}`;
-
-  const start = Date.now();
-  const res = http.get(url, {
-    headers: { Accept: "application/json" },
-  });
-  liffDuration.add(Date.now() - start);
-
-  const ok = check(res, {
-    "liff/expenses: 200 or 404": (r) => r.status === 200 || r.status === 404,
-  });
-
-  liffErrors.add(!ok);
-  sleep(0.5 + Math.random() * 0.5);
 }
 
 // ─── Scenario: health check ───────────────────────────────────────────────────

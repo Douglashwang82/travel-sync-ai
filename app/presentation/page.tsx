@@ -51,7 +51,7 @@ const commandRows: CommandRow[] = [
   { category: "旅程生命週期", command: "/complete", timing: "旅程結束時", output: "標記目前旅程完成", note: "可搭配後續資料保留與清理策略", status: "公開" },
   { category: "隱私與支援", command: "/optout", timing: "成員不想被解析訊息時", output: "停止訊息解析", note: "尊重群組中的個人隱私選擇", status: "公開" },
   { category: "隱私與支援", command: "/optin", timing: "重新加入解析時", output: "恢復訊息解析", note: "與 /optout 配對", status: "公開" },
-  { category: "隱私與支援", command: "/help", timing: "想看完整指令時", output: "回傳指令總覽", note: "LIFF help 頁也使用同一份 command catalog", status: "公開" },
+  { category: "隱私與支援", command: "/help", timing: "想看完整指令時", output: "回傳指令總覽", note: "Web app 也使用同一份 command catalog", status: "公開" },
 ];
 
 const useCases: UseCaseCard[] = [
@@ -62,7 +62,7 @@ const useCases: UseCaseCard[] = [
       "主揪輸入 /start 建立旅程，系統建立旅程上下文。",
       "大家自然聊天或貼連結，TravelSync AI 解析資訊並加入看板。",
       "主揪用 /decide、/option、/vote 把住宿與餐廳收斂成正式決策。",
-      "旅程重要事項在 LIFF dashboard 上以待辦、投票中、已確認呈現。",
+      "旅程重要事項在 Web app 上以待辦、投票中、已確認呈現。",
     ],
     outcome: "把零散聊天轉成可執行的共同看板，降低群組資訊流失。",
   },
@@ -72,7 +72,7 @@ const useCases: UseCaseCard[] = [
     flow: [
       "主揪輸入 /ready，系統產出 readiness snapshot。",
       "畫面會列出 completed、blockers、missing inputs 與 confidence。",
-      "如果有已決定但未預訂的項目，可用 /booked 或 LIFF board 補上確認碼。",
+      "如果有已決定但未預訂的項目，可用 /booked 或 Web app 看板補上確認碼。",
       "接著用 /ops 看下一步、風險與當前旅行階段。",
     ],
     outcome: "把『好像差不多了』變成『哪些真的完成、哪些還有風險』。",
@@ -92,7 +92,7 @@ const useCases: UseCaseCard[] = [
 
 const surfaces = [
   { title: "LINE 群組聊天", bullets: ["接收 slash commands", "回覆摘要、提醒與 playbook", "保留最低學習成本"] },
-  { title: "LIFF Dashboard", bullets: ["看板管理", "Readiness 詳細檢查", "Operations 大局總覽"] },
+  { title: "Web App Dashboard", bullets: ["看板管理", "Readiness 詳細檢查", "Operations 大局總覽"] },
   { title: "Webhook + 背景處理", bullets: ["快速回應 LINE", "事件持久化", "非同步處理解析與通知"] },
   { title: "Supabase 狀態層", bullets: ["旅程資料", "事件紀錄", "readiness / incidents / alerts"] },
 ];
@@ -139,7 +139,7 @@ export default function PresentationPage() {
                 <span className="block text-[#0077b6]">變成可執行的共同旅程系統。</span>
               </h2>
               <p className="max-w-3xl text-lg leading-8 text-[#10233fcc]">
-                TravelSync AI 是一個結合 LINE Bot、LIFF Web App、AI 訊息解析、旅行看板、readiness 檢查、operations summary、incident playbook 與旅費分帳的團體旅行協作平台。
+                TravelSync AI 是一個結合 LINE Bot、Web App、AI 訊息解析、旅行看板、readiness 檢查、operations summary、incident playbook 與旅費分帳的團體旅行協作平台。
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
@@ -167,7 +167,7 @@ export default function PresentationPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <MiniSurfaceCard title="聊天中完成" copy="建立旅程、投票、提醒、incident 回覆" />
-              <MiniSurfaceCard title="LIFF 中深度查看" copy="看板、readiness、ops、旅費與行程" />
+              <MiniSurfaceCard title="Web app 中深度查看" copy="看板、readiness、ops、旅費與行程" />
             </div>
           </div>
         </section>
@@ -180,7 +180,7 @@ export default function PresentationPage() {
         </section>
 
         <section className="py-10">
-          <SectionHeader eyebrow="Channels" title="使用介面與責任分工" body="同一個應用，同時提供聊天協作介面與行動端 LIFF 視覺介面，後端則透過 webhook、排程與資料庫狀態維持一致。" />
+          <SectionHeader eyebrow="Channels" title="使用介面與責任分工" body="同一個應用，同時提供聊天協作介面與 Web app 視覺介面，後端則透過 webhook、排程與資料庫狀態維持一致。" />
           <div className="grid gap-4 xl:grid-cols-4">
             {surfaces.map((surface) => (
               <SurfaceCard key={surface.title} title={surface.title}>
@@ -271,7 +271,7 @@ export default function PresentationPage() {
         </section>
 
         <section id="flow" className="py-10">
-          <SectionHeader eyebrow="Flow" title="使用流程與系統流程" body="下面這張圖可以直接放進簡報中，說明使用者如何從 LINE 對話進入 TravelSync AI 的資料循環，再回到聊天與 LIFF 畫面。" />
+          <SectionHeader eyebrow="Flow" title="使用流程與系統流程" body="下面這張圖可以直接放進簡報中，說明使用者如何從 LINE 對話進入 TravelSync AI 的資料循環，再回到聊天與 Web app 畫面。" />
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
             <Panel className="overflow-hidden">
               <div className="mb-4 flex items-center justify-between">
@@ -295,7 +295,7 @@ export default function PresentationPage() {
                   "LINE webhook 先驗證簽章，再把事件寫入資料庫，確保可追蹤與可重試。",
                   "背景流程依事件類型處理：若是指令就 route 到對應 handler；若是普通訊息就交給 AI parsing pipeline。",
                   "服務層把資料轉成看板項目、readiness snapshot、operations summary、incident tasks 或 expense settlement。",
-                  "結果一方面回推到 LINE 群組，一方面同步到 LIFF dashboard / readiness / operations 視圖。",
+                  "結果一方面回推到 LINE 群組，一方面同步到 Web app dashboard / readiness / operations 視圖。",
                   "排程工作持續執行 daily briefings、stale reminders、transport monitoring 與 cleanup。",
                 ].map((item, index) => (
                   <TimelineItem key={item} number={index + 1}>{item}</TimelineItem>
@@ -306,7 +306,7 @@ export default function PresentationPage() {
         </section>
 
         <section id="use-cases" className="py-10">
-          <SectionHeader eyebrow="Use Cases" title="三個最容易理解產品價值的使用情境" body="這些情境對應目前程式中已存在的 commands、LIFF 頁面與 service 模組，適合在簡報中當作功能串講腳本。" />
+          <SectionHeader eyebrow="Use Cases" title="三個最容易理解產品價值的使用情境" body="這些情境對應目前程式中已存在的 commands、Web app 頁面與 service 模組，適合在簡報中當作功能串講腳本。" />
           <div className="mb-6 overflow-hidden rounded-[28px] border border-[#10233f18] bg-white p-5 shadow-[0_18px_60px_rgba(16,35,63,0.08)]">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -323,7 +323,7 @@ export default function PresentationPage() {
         </section>
 
         <section className="py-10">
-          <SectionHeader eyebrow="UI Story" title="從聊天到視覺畫面的產品敘事" body="TravelSync AI 並不是把所有事情都塞在同一個畫面，而是把不同旅行階段切到最適合的介面：聊天用來互動、LIFF 用來理解狀態。" />
+          <SectionHeader eyebrow="UI Story" title="從聊天到視覺畫面的產品敘事" body="TravelSync AI 並不是把所有事情都塞在同一個畫面，而是把不同旅行階段切到最適合的介面：聊天用來互動、Web app 用來理解狀態。" />
           <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
             <Panel>
               <div className="mb-6 flex items-center justify-between">
@@ -340,7 +340,7 @@ export default function PresentationPage() {
               <h3 className="text-2xl font-black">可這樣介紹介面切換</h3>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <NarrativeCard title="聊天介面做什麼" points={["快速輸入命令", "接收摘要、提醒、投票結果", "在低摩擦情境下推動群組前進"]} />
-                <NarrativeCard title="LIFF 介面做什麼" points={["把複雜狀態視覺化", "看到 readiness 與 ops 全貌", "適合在出發前與旅行中做深度檢查"]} />
+                <NarrativeCard title="Web app 介面做什麼" points={["把複雜狀態視覺化", "看到 readiness 與 ops 全貌", "適合在出發前與旅行中做深度檢查"]} />
                 <NarrativeCard title="後端服務做什麼" points={["持久化事件", "解析訊息與生成結構化資料", "排程處理摘要、提醒與監控"]} />
                 <NarrativeCard title="為什麼這樣設計" points={["避免資訊只停留在聊天紀錄中", "讓群組成員共享同一份事實", "在高風險時刻仍然能快速反應"]} />
               </div>
@@ -362,7 +362,7 @@ export default function PresentationPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-[#fffdf9]"><TableCell className="font-semibold text-[#0077b6]">前端入口</TableCell><TableCell>Landing page、LIFF dashboard、readiness、operations、help</TableCell><TableCell>聊天與視覺化體驗並存</TableCell></tr>
+                    <tr className="bg-[#fffdf9]"><TableCell className="font-semibold text-[#0077b6]">前端入口</TableCell><TableCell>Landing page、Web app dashboard、readiness、operations、help</TableCell><TableCell>聊天與視覺化體驗並存</TableCell></tr>
                     <tr className="bg-[#f8f4eb]"><TableCell className="font-semibold text-[#0077b6]">Bot 互動層</TableCell><TableCell>router + 20 個指令 handler</TableCell><TableCell>可自然融入 LINE 群組流程</TableCell></tr>
                     <tr className="bg-[#fffdf9]"><TableCell className="font-semibold text-[#0077b6]">服務層</TableCell><TableCell>parsing、memory、decisions、readiness、operations、incidents、expenses</TableCell><TableCell>讓功能可模組化擴張</TableCell></tr>
                     <tr className="bg-[#f8f4eb]"><TableCell className="font-semibold text-[#0077b6]">資料層</TableCell><TableCell>Supabase trip、events、raw messages、readiness、alerts 等表</TableCell><TableCell>保留狀態一致性與可追蹤性</TableCell></tr>

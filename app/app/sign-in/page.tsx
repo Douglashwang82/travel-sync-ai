@@ -6,7 +6,7 @@ import { useAppLocale } from "@/components/app/app-locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LoadingSpinner, ErrorScreen } from "@/components/liff/shared";
+import { LoadingSpinner, ErrorScreen } from "@/components/app/loading";
 import { appFetch, appFetchJson } from "@/lib/app-client";
 import { clearAppBrowserCache } from "@/lib/app-browser-cache";
 import type { SignInMember } from "@/app/api/app/sign-in/route";

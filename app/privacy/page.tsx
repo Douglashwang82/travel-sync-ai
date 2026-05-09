@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
       <Section title="6. Cookies and local storage">
         <p>
-          The LIFF web app uses browser local storage to cache your LINE session token. No
+          The web app uses an HTTP-only session cookie to keep you signed in. No
           third-party tracking cookies are set.
         </p>
       </Section>

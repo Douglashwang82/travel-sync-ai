@@ -204,8 +204,8 @@ const CastSchema = z.object({
 /**
  * POST /api/app/trips/:tripId/votes — cast or change a vote.
  *
- * Matches the LIFF behaviour: if the cast takes the option to majority, the
- * item is immediately confirmed and the booking flow opens.
+ * If the cast takes the option to majority, the item is immediately
+ * confirmed and the booking flow opens.
  */
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
