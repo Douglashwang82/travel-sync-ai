@@ -23,6 +23,14 @@ import {
 } from "@/components/ui/select";
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
+import {
+  TabPageHeader,
+  TabSurface,
+  TabSurfaceTitle,
+  TabError,
+  TabSkeleton,
+  TabEmptyState,
+} from "@/components/app/tab-shell";
 import { PlacePicker, type PickedPlace } from "@/components/app/place-picker";
 import type { BoardData } from "@/lib/types";
 import type {
@@ -106,22 +114,11 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
   }
 
   if (error) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={error} onRetry={() => void load()} />;
   }
 
   if (!state) {
-    return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
+    return <TabSkeleton />;
   }
 
   const { votes, memberCount, members, todo, role, currentUserId } = state;
@@ -129,28 +126,25 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Votes</h2>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Active group decisions. Majority of {majorityThreshold(memberCount)} of{" "}
-            {memberCount} auto-confirms a winner.
-          </p>
-        </div>
-      </div>
+      <TabPageHeader
+        title="Votes"
+        subtitle={`Active group decisions. Majority of ${majorityThreshold(memberCount)} of ${memberCount} auto-confirms a winner.`}
+      />
 
       {actionError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+        <div className="rounded-xl border border-[var(--status-blocked)] bg-[var(--status-blocked-soft)] px-3 py-2 text-xs text-[var(--status-blocked)]">
           {actionError}
         </div>
       )}
 
       {votes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
-          No active votes. {isOrganizer
-            ? "Start one from the To-Do list below."
-            : "Ask your organizer to start one."}
-        </div>
+        <TabEmptyState
+          message={
+            isOrganizer
+              ? "No active votes. Start one from the To-Do list below."
+              : "No active votes. Ask your organizer to start one."
+          }
+        />
       ) : (
         <div className="space-y-5">
           {votes.map((v) => (
@@ -172,32 +166,32 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
       )}
 
       {isOrganizer && (
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold">Start a new vote</h3>
-              <p className="text-xs text-[var(--muted-foreground)]">
-                Promote a To-Do item to a group decision with 2+ options and a deadline.
-              </p>
-            </div>
-            <span className="text-[11px] text-[var(--muted-foreground)]">
-              {todo.length} to-do item{todo.length === 1 ? "" : "s"}
-            </span>
-          </div>
+        <TabSurface>
+          <TabSurfaceTitle
+            title="Start a new vote"
+            subtitle="Promote a To-Do item to a group decision with 2+ options and a deadline."
+            trailing={
+              <span className="text-mono text-[11px] text-[var(--text-muted)]">
+                {todo.length} to-do item{todo.length === 1 ? "" : "s"}
+              </span>
+            }
+          />
           {todo.length === 0 ? (
-            <p className="mt-4 text-xs italic text-[var(--muted-foreground)]">
+            <p className="mt-4 text-xs italic text-[var(--text-muted)]">
               No to-do items available. Add one from the overview first.
             </p>
           ) : (
-            <ul className="mt-4 divide-y divide-[var(--border)]">
+            <ul className="mt-4 divide-y divide-[var(--border-hairline)]">
               {todo.map((item) => (
                 <li
                   key={item.id}
                   className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{item.title}</p>
-                    <p className="text-[11px] text-[var(--muted-foreground)]">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                      {item.title}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)]">
                       {TYPE_LABEL[item.item_type] ?? "Item"}
                     </p>
                   </div>
@@ -212,7 +206,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
               ))}
             </ul>
           )}
-        </section>
+        </TabSurface>
       )}
 
       {startItemId && (
@@ -291,14 +285,14 @@ function VoteCard({
   return (
     <article
       className={cn(
-        "overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)] transition-shadow",
-        !collapsed && "shadow-sm"
+        "surface-tile overflow-hidden transition-shadow",
+        !collapsed && "shadow-[var(--shadow-raise)]"
       )}
     >
       <header
         className={cn(
           "space-y-3 p-5",
-          !collapsed && "border-b border-[var(--border)]"
+          !collapsed && "border-b border-[var(--border-hairline)]"
         )}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -312,7 +306,7 @@ function VoteCard({
             <span
               aria-hidden
               className={cn(
-                "mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-transform",
+                "mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-transform",
                 collapsed ? "rotate-0" : "rotate-90"
               )}
             >
@@ -337,12 +331,12 @@ function VoteCard({
               </div>
               <h3 className="mt-1.5 text-base font-semibold">{vote.item.title}</h3>
               {vote.item.description && !collapsed && (
-                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                   {vote.item.description}
                 </p>
               )}
               {collapsed && (
-                <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                   {vote.options.length} option
                   {vote.options.length === 1 ? "" : "s"} ·{" "}
                   {vote.totalVotes}/{memberCount} voted
@@ -388,7 +382,7 @@ function VoteCard({
       <ul
         id={`vote-body-${vote.item.id}`}
         hidden={collapsed}
-        className="divide-y divide-[var(--border)]"
+        className="divide-y divide-[var(--border-hairline)]"
       >
         {vote.options.map((opt) => {
           const castingThis = casting === `${vote.item.id}:${opt.id}`;
@@ -440,12 +434,12 @@ function VoteCard({
                         </span>
                       )}
                       {opt.rating != null && (
-                        <span className="text-xs text-[var(--muted-foreground)]">
+                        <span className="text-xs text-[var(--text-muted)]">
                           ★ {opt.rating}
                         </span>
                       )}
                       {opt.priceLevel && (
-                        <span className="text-xs text-[var(--muted-foreground)]">
+                        <span className="text-xs text-[var(--text-muted)]">
                           {opt.priceLevel}
                         </span>
                       )}
@@ -459,7 +453,7 @@ function VoteCard({
                       )}
                     </div>
                     {opt.address && (
-                      <p className="truncate text-xs text-[var(--muted-foreground)]">
+                      <p className="truncate text-xs text-[var(--text-muted)]">
                         📍 {opt.address}
                       </p>
                     )}
@@ -479,7 +473,7 @@ function VoteCard({
                       <span className="text-xl font-bold tabular-nums leading-none">
                         {opt.voteCount}
                       </span>
-                      <span className="text-[9px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                      <span className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
                         vote{opt.voteCount === 1 ? "" : "s"}
                       </span>
                     </div>
@@ -587,7 +581,7 @@ function VoterAvatars({
         })}
         {overflow > 0 && (
           <span
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--secondary)] text-[10px] font-semibold text-[var(--muted-foreground)] ring-2 ring-[var(--background)]"
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--secondary)] text-[10px] font-semibold text-[var(--text-muted)] ring-2 ring-[var(--background)]"
             title={voters
               .slice(5)
               .map((v) => v.displayName ?? v.lineUserId.slice(0, 6))
@@ -597,7 +591,7 @@ function VoterAvatars({
           </span>
         )}
       </div>
-      <span className="text-[11px] text-[var(--muted-foreground)]">
+      <span className="text-[11px] text-[var(--text-muted)]">
         {voters.length === 1
           ? voters[0].displayName ?? voters[0].lineUserId.slice(0, 6)
           : `${voters.length} voted`}
@@ -637,7 +631,7 @@ function DeadlineCountdown({ deadlineAt }: { deadlineAt: string }) {
       ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
       : hours < 12
         ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-        : "bg-[var(--secondary)] text-[var(--muted-foreground)]";
+        : "bg-[var(--secondary)] text-[var(--text-muted)]";
 
   return (
     <span
@@ -683,7 +677,7 @@ function VoteProgress({
           title="Majority threshold"
         />
       </div>
-      <div className="flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+      <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
         <span>
           <span className="font-semibold text-[var(--foreground)]">
             {totalVotes}
@@ -840,7 +834,7 @@ function NonVoterRow({
               ? "text-emerald-700 dark:text-emerald-300"
               : feedback.tone === "error"
                 ? "text-red-700 dark:text-red-300"
-                : "text-[var(--muted-foreground)]"
+                : "text-[var(--text-muted)]"
           )}
         >
           {feedback.message}
@@ -978,17 +972,17 @@ function StartVoteDialog({
               {options.map((o, idx) => (
                 <div
                   key={idx}
-                  className="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 p-3"
+                  className="space-y-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--secondary)]/40 p-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                       Option {idx + 1}
                     </span>
                     {options.length > 2 && (
                       <button
                         type="button"
                         onClick={() => removeRow(idx)}
-                        className="text-[11px] text-[var(--muted-foreground)] hover:text-destructive"
+                        className="text-[11px] text-[var(--text-muted)] hover:text-destructive"
                       >
                         Remove
                       </button>

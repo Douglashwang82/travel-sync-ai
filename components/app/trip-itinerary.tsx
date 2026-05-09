@@ -24,6 +24,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
+import {
+  TabPageHeader,
+  TabError,
+  TabSkeleton,
+  TabEmptyState,
+} from "@/components/app/tab-shell";
 import type {
   DayNoteEntry,
   ItineraryEntry,
@@ -64,7 +70,7 @@ const TYPE_DOT: Record<string, string> = {
   transport: "bg-slate-500",
   flight: "bg-sky-500",
   insurance: "bg-violet-500",
-  other: "bg-[var(--muted-foreground)]",
+  other: "bg-[var(--text-muted)]",
 };
 
 const STAGE_TONE: Record<string, string> = {
@@ -72,7 +78,7 @@ const STAGE_TONE: Record<string, string> = {
     "bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]",
   pending:
     "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  todo: "bg-[var(--secondary)] text-[var(--muted-foreground)]",
+  todo: "bg-[var(--surface-sunken)] text-[var(--text-muted)]",
 };
 
 const UNASSIGNED = "__unassigned__";
@@ -265,28 +271,14 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
     : days;
 
   if (error) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={error} onRetry={() => void load()} />;
   }
 
   if (!data) {
     return (
       <div className="space-y-4">
         {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="h-32 animate-pulse rounded-2xl bg-[var(--secondary)]"
-          />
+          <TabSkeleton key={i} height={128} />
         ))}
       </div>
     );
@@ -311,10 +303,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
       />
 
       {visibleDays.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] px-6 py-12 text-center text-sm text-[var(--muted-foreground)]">
-          Nothing on the timeline yet. Add an item or set trip dates to start
-          planning.
-        </div>
+        <TabEmptyState message="Nothing on the timeline yet. Add an item or set trip dates to start planning." />
       ) : (
         <Timeline
           days={visibleDays}
@@ -351,49 +340,46 @@ function Toolbar({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Timeline</h2>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            {totalDays} day{totalDays === 1 ? "" : "s"} · {itemsCount} item
-            {itemsCount === 1 ? "" : "s"} on the timeline
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-[var(--border)] p-0.5 text-xs">
-          {(
-            [
-              { v: "all", label: "All", count: counts.all },
-              { v: "confirmed", label: "Confirmed", count: counts.confirmed },
-              { v: "pending", label: "Pending vote", count: counts.pending },
-              { v: "todo", label: "To-do", count: counts.todo },
-            ] as const
-          ).map((f) => (
-            <button
-              key={f.v}
-              type="button"
-              onClick={() => setFilter(f.v)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors",
-                filter === f.v
-                  ? "bg-[var(--foreground)] text-[var(--background)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              )}
-            >
-              {f.label}
-              <span
+      <TabPageHeader
+        title="Timeline"
+        subtitle={`${totalDays} day${totalDays === 1 ? "" : "s"} · ${itemsCount} item${itemsCount === 1 ? "" : "s"} on the timeline`}
+        actions={
+          <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-[var(--border-hairline)] p-0.5 text-xs">
+            {(
+              [
+                { v: "all", label: "All", count: counts.all },
+                { v: "confirmed", label: "Confirmed", count: counts.confirmed },
+                { v: "pending", label: "Pending vote", count: counts.pending },
+                { v: "todo", label: "To-do", count: counts.todo },
+              ] as const
+            ).map((f) => (
+              <button
+                key={f.v}
+                type="button"
+                onClick={() => setFilter(f.v)}
                 className={cn(
-                  "rounded-full px-1.5 text-[10px] font-semibold",
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors",
                   filter === f.v
-                    ? "bg-[var(--background)]/20"
-                    : "bg-[var(--secondary)]"
+                    ? "bg-[var(--text-primary)] text-[var(--surface-raised)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
               >
-                {f.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+                {f.label}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 text-[10px] font-semibold",
+                    filter === f.v
+                      ? "bg-[var(--surface-raised)]/20"
+                      : "bg-[var(--surface-sunken)]"
+                  )}
+                >
+                  {f.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {days.length > 1 && (
         <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
@@ -402,7 +388,7 @@ function Toolbar({
               type="button"
               onClick={() => onSelectDay(null)}
               aria-pressed={selectedDayKey === null}
-              className="inline-flex items-center gap-1 rounded-full border border-[var(--foreground)] bg-[var(--foreground)] px-2.5 py-1 text-[11px] font-medium text-[var(--background)] transition-colors"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--text-primary)] bg-[var(--text-primary)] px-2.5 py-1 text-[11px] font-medium text-[var(--surface-raised)] transition-colors"
             >
               All days
             </button>
@@ -416,10 +402,10 @@ function Toolbar({
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
                 selectedDayKey === d.key
-                  ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
+                  ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-raised)]"
                   : d.isToday
-                  ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
-                  : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                    ? "border-[var(--accent-line)] bg-[var(--accent-line-soft)] text-[var(--accent-line)]"
+                    : "border-[var(--border-hairline)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
               )}
             >
               {d.dayNumber != null && (
@@ -427,7 +413,7 @@ function Toolbar({
               )}
               <span>{d.monthDay}</span>
               {d.items.length > 0 && (
-                <span className="rounded-full bg-[var(--secondary)] px-1.5 text-[10px] font-semibold text-[var(--muted-foreground)]">
+                <span className="rounded-full bg-[var(--surface-sunken)] px-1.5 text-[10px] font-semibold text-[var(--text-muted)]">
                   {d.items.length}
                 </span>
               )}
@@ -461,7 +447,7 @@ function Timeline({
       {/* Vertical spine */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-[3.25rem] top-0 bottom-0 hidden w-px bg-[var(--border)] sm:block"
+        className="pointer-events-none absolute left-[3.25rem] top-0 bottom-0 hidden w-px bg-[var(--border-hairline)] sm:block"
       />
 
       <div className="space-y-8">
@@ -536,7 +522,7 @@ function DayHeading({
       {/* Pill row — Day N · Today */}
       <div className="flex flex-wrap items-center gap-1.5">
         {day.dayNumber != null && (
-          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
             Day {day.dayNumber}
           </span>
         )}
@@ -546,7 +532,7 @@ function DayHeading({
           </span>
         )}
         {day.isUnscheduled && (
-          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+          <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
             Unscheduled
           </span>
         )}
@@ -602,7 +588,7 @@ function DayHeading({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 px-2.5 text-[11px] text-[var(--muted-foreground)]"
+                className="h-7 px-2.5 text-[11px] text-[var(--text-muted)]"
                 onClick={() => void save(null)}
                 disabled={saving}
               >
@@ -626,13 +612,13 @@ function DayHeading({
           }
         >
           <p className="text-sm font-medium leading-snug">{day.note.note}</p>
-          <p className="mt-0.5 text-[10px] text-[var(--muted-foreground)]">
+          <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
             {day.note.updatedByName ? `${day.note.updatedByName} · ` : ""}
             {stats.line}
           </p>
         </button>
       ) : (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
           <span>{stats.line}</span>
           {canEdit && (
             <button
@@ -747,7 +733,7 @@ function DayBlock({
             day.isToday
               ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
               : day.isUnscheduled
-                ? "border-dashed border-[var(--border)] bg-[var(--secondary)]/40 text-[var(--muted-foreground)]"
+                ? "border-dashed border-[var(--border)] bg-[var(--secondary)]/40 text-[var(--text-muted)]"
                 : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]"
           )}
         >
@@ -891,7 +877,7 @@ function TimelineEvent({
         )}
       />
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)] transition-shadow hover:shadow-sm">
+      <div className="surface-tile tile-interactive overflow-hidden">
         <div className="flex flex-col sm:flex-row">
           {/* Time gutter */}
           <div className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-4 py-2 text-xs sm:w-32 sm:flex-col sm:items-start sm:justify-center sm:gap-0.5 sm:border-b-0 sm:border-r sm:py-3">
@@ -900,12 +886,12 @@ function TimelineEvent({
                 <span className="text-base font-bold text-[var(--foreground)] tabular-nums">
                   {time}
                 </span>
-                <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
                   {tod}
                 </span>
               </>
             ) : (
-              <span className="text-xs italic text-[var(--muted-foreground)]">
+              <span className="text-xs italic text-[var(--text-muted)]">
                 Anytime
               </span>
             )}
@@ -956,7 +942,7 @@ function TimelineEvent({
                   {item.title}
                 </p>
                 {option && option.name !== item.title && (
-                  <p className="text-[11px] text-[var(--muted-foreground)]">
+                  <p className="text-[11px] text-[var(--text-muted)]">
                     {option.name}
                   </p>
                 )}
@@ -972,13 +958,13 @@ function TimelineEvent({
             </div>
 
             {item.description && (
-              <p className="text-[12px] leading-relaxed text-[var(--muted-foreground)]">
+              <p className="text-[12px] leading-relaxed text-[var(--text-muted)]">
                 {item.description}
               </p>
             )}
 
             {option?.address && (
-              <p className="text-[11px] text-[var(--muted-foreground)]">
+              <p className="text-[11px] text-[var(--text-muted)]">
                 📍 {option.address}
               </p>
             )}
@@ -989,12 +975,12 @@ function TimelineEvent({
               option?.booking_url) && (
               <div className="flex flex-wrap items-center gap-3 text-[11px]">
                 {option.rating != null && (
-                  <span className="text-[var(--muted-foreground)]">
+                  <span className="text-[var(--text-muted)]">
                     ★ {option.rating}
                   </span>
                 )}
                 {option.price_level && (
-                  <span className="text-[var(--muted-foreground)]">
+                  <span className="text-[var(--text-muted)]">
                     {option.price_level}
                   </span>
                 )}
@@ -1097,7 +1083,7 @@ function TimelineEvent({
                     <button
                       type="button"
                       onClick={() => setEditing(true)}
-                      className="text-[11px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+                      className="text-[11px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
                     >
                       Edit time / assignment
                     </button>
@@ -1207,10 +1193,10 @@ function EmptyDayBlock({
             className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-[var(--border)] px-4 py-4 text-left transition-colors hover:border-[var(--primary)]/40 hover:bg-[var(--secondary)]/40"
           >
             <div className="space-y-0.5">
-              <p className="text-sm font-medium text-[var(--muted-foreground)]">
+              <p className="text-sm font-medium text-[var(--text-muted)]">
                 Nothing planned
               </p>
-              <p className="text-[11px] text-[var(--muted-foreground)]/80">
+              <p className="text-[11px] text-[var(--text-muted)]/80">
                 Tap for AI suggestions tailored to this day
               </p>
             </div>
@@ -1220,7 +1206,7 @@ function EmptyDayBlock({
           </button>
         </div>
       ) : phase === "loading" ? (
-        <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+        <div className="surface-tile space-y-2 p-4">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
@@ -1233,7 +1219,7 @@ function EmptyDayBlock({
               </div>
             </div>
           ))}
-          <p className="text-center text-[11px] text-[var(--muted-foreground)]">
+          <p className="text-center text-[11px] text-[var(--text-muted)]">
             Getting AI suggestions…
           </p>
         </div>
@@ -1249,15 +1235,15 @@ function EmptyDayBlock({
           </button>
         </div>
       ) : (
-        <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+        <div className="surface-tile space-y-2 p-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               ✨ AI suggestions
             </p>
             <button
               type="button"
               onClick={() => void handleSuggest()}
-              className="text-[10px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+              className="text-[10px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
             >
               Refresh
             </button>
@@ -1275,11 +1261,11 @@ function EmptyDayBlock({
                   <p className="text-[12px] font-semibold leading-snug">
                     {s.title}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-[var(--text-muted)]">
                     {s.description}
                   </p>
                   {s.reason && (
-                    <p className="mt-0.5 text-[10px] italic text-[var(--muted-foreground)]/70">
+                    <p className="mt-0.5 text-[10px] italic text-[var(--text-muted)]/70">
                       {s.reason}
                     </p>
                   )}
@@ -1535,7 +1521,7 @@ function AddOptionDialog({
                   <button
                     type="button"
                     onClick={() => removeRow(index)}
-                    className="text-[11px] text-[var(--muted-foreground)] underline underline-offset-2 hover:text-[var(--foreground)]"
+                    className="text-[11px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
                   >
                     Remove
                   </button>

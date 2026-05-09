@@ -8,6 +8,7 @@ import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 import { BoardColumns } from "@/components/app/board-columns";
 import { ItemDetailDialog } from "@/components/app/item-detail-dialog";
 import { AddItemDialog } from "@/components/app/add-item-dialog";
+import { TabPageHeader, TabError, TabSkeleton } from "@/components/app/tab-shell";
 
 interface BoardViewData {
   board: BoardData;
@@ -54,28 +55,14 @@ export function TripBoardView({ tripId }: { tripId: string }) {
   }, [loadAll]);
 
   if (loadError) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {loadError}{" "}
-        <button
-          type="button"
-          onClick={() => void loadAll()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={loadError} onRetry={() => void loadAll()} />;
   }
 
   if (!data) {
     return (
-      <div className="grid animate-pulse gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="h-64 rounded-2xl border border-[var(--border)] bg-[var(--background)]"
-          />
+          <TabSkeleton key={i} />
         ))}
       </div>
     );
@@ -88,20 +75,17 @@ export function TripBoardView({ tripId }: { tripId: string }) {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Advanced board</h2>
-            <p className="text-xs text-[var(--muted-foreground)]">
-              {total} item{total === 1 ? "" : "s"} across To-Do, Pending vote
-              and Confirmed. Use the Workspace tab for the map-first view.
-            </p>
-          </div>
-          {isOrganizer && (
-            <Button size="sm" onClick={() => setAddOpen(true)}>
-              + Add item
-            </Button>
-          )}
-        </div>
+        <TabPageHeader
+          title="Advanced board"
+          subtitle={`${total} item${total === 1 ? "" : "s"} across To-Do, Pending vote and Confirmed. Use the Workspace tab for the map-first view.`}
+          actions={
+            isOrganizer ? (
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                + Add item
+              </Button>
+            ) : undefined
+          }
+        />
 
         <BoardColumns
           board={board}

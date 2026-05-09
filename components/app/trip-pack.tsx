@@ -34,6 +34,11 @@ import {
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
 import {
+  TabPageHeader,
+  TabError,
+  TabSkeleton,
+} from "@/components/app/tab-shell";
+import {
   APP_PACK_CATEGORIES,
   type AppGroupPackItem,
   type AppPackCategory,
@@ -59,7 +64,7 @@ const CATEGORY_BADGE: Record<AppPackCategory, string> = {
   electronics: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
   health: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
   safety: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  general: "bg-[var(--secondary)] text-[var(--muted-foreground)]",
+  general: "bg-[var(--surface-sunken)] text-[var(--text-muted)]",
 };
 
 type Filter = AppPackCategory | "all";
@@ -187,51 +192,38 @@ export function TripPackClient({ tripId }: { tripId: string }) {
   }
 
   if (error && !data) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={error} onRetry={() => void load()} />;
   }
 
   if (!data) {
-    return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
+    return <TabSkeleton />;
   }
 
   const currentProgress = scope === "group" ? groupProgress : personalProgress;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Pack</h2>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Track the group checklist and your private bag list for this trip.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => void load()}
-            title="Refresh packing list"
-          >
-            <RefreshCw />
-          </Button>
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus />
-            Add item
-          </Button>
-        </div>
-      </div>
+      <TabPageHeader
+        title="Pack"
+        subtitle="Track the group checklist and your private bag list for this trip."
+        actions={
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void load()}
+              title="Refresh packing list"
+            >
+              <RefreshCw />
+            </Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus />
+              Add item
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <ProgressPanel
@@ -271,38 +263,38 @@ export function TripPackClient({ tripId }: { tripId: string }) {
           ))}
         </div>
 
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
+        <section className="surface-tile p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-hairline)] pb-4">
             <div>
-              <h3 className="text-sm font-semibold">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                 {scope === "group" ? "Group packing list" : "My packing list"}
               </h3>
-              <p className="text-xs text-[var(--muted-foreground)]">
+              <p className="text-mono text-xs text-[var(--text-muted)]">
                 {currentProgress.packed}/{currentProgress.total} packed
               </p>
             </div>
-            <div className="h-2 w-36 overflow-hidden rounded-full bg-[var(--secondary)]">
+            <div className="h-2 w-36 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
               <div
-                className="h-full rounded-full bg-[var(--primary)] transition-all"
+                className="h-full rounded-full bg-[var(--accent-line)] transition-all"
                 style={{ width: `${currentProgress.pct}%` }}
               />
             </div>
           </div>
 
           {actionError && (
-            <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+            <p className="mt-3 rounded-xl border border-[var(--status-blocked)] bg-[var(--status-blocked-soft)] px-3 py-2 text-xs text-[var(--status-blocked)]">
               {actionError}
             </p>
           )}
 
           {activeItems.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-[var(--muted-foreground)]">
+            <div className="px-4 py-12 text-center text-sm text-[var(--text-muted)]">
               {counts.all === 0
                 ? "No packing items yet."
                 : "No packing items in this category."}
             </div>
           ) : (
-            <ul className="divide-y divide-[var(--border)]">
+            <ul className="divide-y divide-[var(--border-hairline)]">
               {activeItems.map((item) =>
                 scope === "group" ? (
                   <GroupPackRow
@@ -324,7 +316,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
               )}
             </ul>
           )}
-        </div>
+        </section>
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -338,15 +330,15 @@ export function TripPackClient({ tripId }: { tripId: string }) {
             </DialogHeader>
 
             <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-2 rounded-lg bg-[var(--secondary)] p-1">
+              <div className="grid grid-cols-2 gap-2 rounded-lg bg-[var(--surface-sunken)] p-1">
                 <button
                   type="button"
                   onClick={() => setScope("group")}
                   className={cn(
                     "inline-flex h-9 items-center justify-center gap-2 rounded-md text-sm font-medium",
                     scope === "group"
-                      ? "bg-[var(--background)] text-[var(--foreground)] shadow-sm"
-                      : "text-[var(--muted-foreground)]"
+                      ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-sm"
+                      : "text-[var(--text-muted)]"
                   )}
                 >
                   <Users className="size-4" />
@@ -358,8 +350,8 @@ export function TripPackClient({ tripId }: { tripId: string }) {
                   className={cn(
                     "inline-flex h-9 items-center justify-center gap-2 rounded-md text-sm font-medium",
                     scope === "mine"
-                      ? "bg-[var(--background)] text-[var(--foreground)] shadow-sm"
-                      : "text-[var(--muted-foreground)]"
+                      ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-sm"
+                      : "text-[var(--text-muted)]"
                   )}
                 >
                   <User className="size-4" />
@@ -400,7 +392,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
             </div>
 
             {actionError && (
-              <p className="mt-3 text-xs text-destructive">{actionError}</p>
+              <p className="mt-3 text-xs text-[var(--status-blocked)]">{actionError}</p>
             )}
 
             <DialogFooter className="mt-6">
@@ -444,27 +436,27 @@ function ProgressPanel({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-2xl border bg-[var(--background)] p-4 text-left transition-colors",
+        "surface-tile tile-interactive p-5 text-left",
         active
-          ? "border-[var(--primary)]"
-          : "border-[var(--border)] hover:bg-[var(--secondary)]/50"
+          ? "border-[var(--accent-line)] shadow-[var(--shadow-raise)]"
+          : ""
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-sm font-semibold">
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
             {icon}
             {title}
           </div>
-          <p className="mt-1 text-xs text-[var(--muted-foreground)]">{subtitle}</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">{subtitle}</p>
         </div>
-        <span className="text-lg font-semibold">
+        <span className="text-mono text-display text-lg text-[var(--text-primary)]">
           {packed}/{total}
         </span>
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--secondary)]">
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
         <div
-          className="h-full rounded-full bg-[var(--primary)] transition-all"
+          className="h-full rounded-full bg-[var(--accent-line)] transition-all"
           style={{ width: `${p.pct}%` }}
         />
       </div>
@@ -488,8 +480,8 @@ function FilterChip({
       className={cn(
         "rounded-full border px-3 py-1 font-medium transition-colors",
         active
-          ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
-          : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          ? "border-[var(--accent-line)] bg-[var(--accent-line-soft)] text-[var(--accent-line)]"
+          : "border-[var(--border-hairline)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
       )}
     >
       {label}
@@ -521,7 +513,7 @@ function GroupPackRow({
           <span
             className={cn(
               "truncate text-sm font-medium",
-              item.isPackedByMe && "text-[var(--muted-foreground)] line-through"
+              item.isPackedByMe && "text-[var(--text-muted)] line-through"
             )}
           >
             {item.label}
@@ -533,7 +525,7 @@ function GroupPackRow({
             {CATEGORY_LABEL[item.category]}
           </Badge>
         </div>
-        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
           {item.packedCount} packed
           {item.addedByName ? ` / added by ${item.addedByName}` : ""}
         </p>
@@ -573,7 +565,7 @@ function PersonalPackRow({
           <span
             className={cn(
               "truncate text-sm font-medium",
-              item.isPacked && "text-[var(--muted-foreground)] line-through"
+              item.isPacked && "text-[var(--text-muted)] line-through"
             )}
           >
             {item.label}
@@ -585,7 +577,7 @@ function PersonalPackRow({
             {CATEGORY_LABEL[item.category]}
           </Badge>
         </div>
-        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
           {item.isPacked ? "Packed" : "Not packed"}
         </p>
       </div>
@@ -614,8 +606,8 @@ function PackToggle({
       className={cn(
         "flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
         packed
-          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-          : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          ? "border-[var(--accent-line)] bg-[var(--accent-line)] text-[var(--primary-foreground)]"
+          : "border-[var(--border-hairline)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
       )}
     >
       {busy ? (
@@ -644,7 +636,7 @@ function IconButton({
       title={title}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-9 shrink-0 items-center justify-center rounded-md text-[var(--muted-foreground)] transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950"
+      className="flex size-9 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--status-blocked-soft)] hover:text-[var(--status-blocked)] disabled:opacity-50"
     >
       <Trash2 className="size-4" />
     </button>
