@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Lazy singleton for browser (LIFF) client — respects Row Level Security
+// Lazy singleton for the browser client — respects Row Level Security
 let _browserClient: SupabaseClient | null = null;
 export function getSupabaseClient(): SupabaseClient {
   if (!_browserClient) {

@@ -7,7 +7,6 @@ type AnalyticsEventName =
   | "vote_initiated"
   | "vote_cast"
   | "vote_completed"
-  | "liff_opened"
   | "nudge_sent"
   | "nudge_conversion"
   | "bot_removed"

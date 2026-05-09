@@ -7,7 +7,7 @@ Ship the first execution-stage version of TravelSync AI by layering operations, 
 ## Principles
 
 - Keep v1.1 planning flows stable while building v1.2 in parallel
-- Materialize operational state in storage so chat and LIFF can stay fast
+- Materialize operational state in storage so chat and the web app can stay fast
 - Deliver incrementally from lowest-risk/highest-value features first
 - Prefer deterministic fallbacks over LLM-only behavior for critical flows
 
@@ -23,13 +23,13 @@ Ship the first execution-stage version of TravelSync AI by layering operations, 
 
 - Build readiness generation heuristics from trip, board, and memory data
 - Add organizer/member completion flows
-- Add `/ready` summary and LIFF readiness page
+- Add `/ready` summary and web app readiness page
 
 ### 3. Operations MVP
 
 - Build live operations summary aggregator
 - Add `/ops` summary command
-- Add LIFF operations page
+- Add web app operations page
 
 ### 4. Daily Briefings
 
@@ -52,7 +52,7 @@ Ship the first execution-stage version of TravelSync AI by layering operations, 
 ## Recommended Build Order
 
 1. Schema + service scaffolding
-2. Readiness generation and LIFF checklist
+2. Readiness generation and web app checklist
 3. Operations summary and `/ops`
 4. Daily briefings and cron delivery
 5. Flight monitoring and alerts
@@ -60,7 +60,7 @@ Ship the first execution-stage version of TravelSync AI by layering operations, 
 
 ## Definition of Done for v1.2 MVP
 
-- Organizer can open operations and readiness views in LIFF
+- Organizer can open operations and readiness views in the web app
 - `/ops`, `/ready`, and `/brief` work end-to-end
 - The system can generate and store readiness items
 - The system can generate a daily briefing from current trip state

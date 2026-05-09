@@ -202,7 +202,7 @@ export function buildOperationsSummary(
     },
     needsBookingCount,
     // Include all confirmed items in confirmedLinks, not just those with option URLs.
-    // Items added manually via LIFF have no confirmed_option but still matter operationally.
+    // Manually added items have no confirmed_option but still matter operationally.
     confirmedLinks: confirmedItems
       .map((item) => ({
         itemId: item.id,

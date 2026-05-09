@@ -6,27 +6,26 @@
  *   1. Organizer sends /vote hotel → item moves to pending
  *   2. Group members vote
  *   3. Majority is reached → item auto-confirmed
- *   4. LIFF board reflects the confirmed item
+ *   4. The trip board reflects the confirmed item
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
 import { createMockDb, resetIdCounter } from "../setup/mocks/db";
 
 vi.mock("@/lib/db");
 vi.mock("@/lib/analytics", () => ({ track: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("@/lib/liff-server", () => ({
-  requireTripMembership: vi.fn().mockResolvedValue({
-    ok: true,
-    lineUserId: "user-0",
-    membership: { groupId: "group-flow-001", role: "organizer" },
-  }),
-}));
 
 import { createAdminClient } from "@/lib/db";
 import { startVote, reopenItem } from "@/services/trip-state";
 import { castVote, closeVote } from "@/services/vote";
-import { GET as getBoardGET } from "@/app/api/liff/board/route";
+
+type ItemRow = { id: string; stage: string; confirmed_option_id: string | null; trip_id: string };
+
+function readItems(db: ReturnType<typeof createMockDb>, tripId: string): ItemRow[] {
+  return ((db._tables.get("trip_items") ?? []) as ItemRow[]).filter(
+    (row) => row.trip_id === tripId
+  );
+}
 
 const GROUP_ID = "group-flow-001";
 const TRIP_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -113,18 +112,13 @@ describe("Vote lifecycle flow", () => {
     const closeResult = await closeVote(ITEM_ID, OPTION_A, GROUP_ID, vote3.totalVotes);
     expect(closeResult.closed).toBe(true);
 
-    // ── Step 4: Verify LIFF board shows confirmed item ──────────────────────
-    const req = new NextRequest(`http://localhost/api/liff/board?tripId=${TRIP_ID}`);
-    const res = await getBoardGET(req);
-    const board = await res.json();
-
-    expect(board.confirmed).toHaveLength(1);
-    expect(board.confirmed[0].title).toBe("Choose hotel");
-    expect(board.confirmed[0].stage).toBe("confirmed");
-    expect(board.confirmed[0].confirmed_option_id).toBe(OPTION_A);
-
-    expect(board.pending).toHaveLength(0);
-    expect(board.todo).toHaveLength(0);
+    // ── Step 4: Verify the board state shows confirmed item ────────────────
+    const items = readItems(db, TRIP_ID);
+    const confirmed = items.filter((i) => i.stage === "confirmed");
+    expect(confirmed).toHaveLength(1);
+    expect(confirmed[0].confirmed_option_id).toBe(OPTION_A);
+    expect(items.filter((i) => i.stage === "pending")).toHaveLength(0);
+    expect(items.filter((i) => i.stage === "todo")).toHaveLength(0);
   });
 
   it("concurrent close: second closeVote returns closed:false and does not re-confirm", async () => {
@@ -192,12 +186,9 @@ describe("Vote lifecycle flow", () => {
     expect(result.item.stage).toBe("todo");
     expect(result.item.confirmed_option_id).toBeNull();
 
-    // LIFF board should now show item in todo
-    const req = new NextRequest(`http://localhost/api/liff/board?tripId=${TRIP_ID}`);
-    const res = await getBoardGET(req);
-    const board = await res.json();
-    expect(board.todo).toHaveLength(1);
-    expect(board.confirmed).toHaveLength(0);
+    const items = readItems(db, TRIP_ID);
+    expect(items.filter((i) => i.stage === "todo")).toHaveLength(1);
+    expect(items.filter((i) => i.stage === "confirmed")).toHaveLength(0);
   });
 
   it("reopen after tied vote resets tie_extension_count so next vote starts fresh", async () => {

@@ -11,8 +11,8 @@ LINE-native group travel planning bot. Parses group chat, maintains a three-stag
 Single Next.js app on Vercel + Supabase. Three surfaces:
 
 1. **Webhook** — `POST /api/line/webhook`: validate signature → persist event → 200 OK → async process
-2. **LIFF Web App** — Dashboard (board), Itinerary (confirmed timeline), Help
-3. **Internal APIs** — `/api/liff/*` endpoints serving the LIFF pages
+2. **Web App** — `/app/*`: dashboard, itinerary, votes, expenses, operations, readiness
+3. **Internal APIs** — `/api/app/*` endpoints serving the web app
 
 ## Bot Commands
 
@@ -55,7 +55,7 @@ Trip item lifecycle: `todo` → `pending` → `confirmed`
 
 ## Analytics Events
 
-`bot_added_to_group`, `trip_created`, `message_parsed`, `vote_initiated`, `vote_cast`, `vote_completed`, `liff_opened`, `nudge_sent`, `nudge_conversion`, `bot_removed`
+`bot_added_to_group`, `trip_created`, `message_parsed`, `vote_initiated`, `vote_cast`, `vote_completed`, `nudge_sent`, `nudge_conversion`, `bot_removed`
 
 ## Performance Targets
 
@@ -64,7 +64,7 @@ Trip item lifecycle: `todo` → `pending` → `confirmed`
 | Webhook response | < 1s |
 | Bot command response | < 2s |
 | Chat parsing (background) | < 3s |
-| LIFF load | < 2s |
+| Web app first load | < 2s |
 
 ## Environment Variables Required
 
@@ -76,5 +76,4 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 GEMINI_API_KEY=
 GOOGLE_PLACES_API_KEY=
-LIFF_ID=
 ```

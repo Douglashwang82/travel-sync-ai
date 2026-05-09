@@ -1,6 +1,6 @@
 # Deployment Runbook — Travel Sync AI
 
-**Stack:** Next.js 16 · Supabase · Vercel · LINE Bot + LIFF · Gemini 2.0-flash  
+**Stack:** Next.js 16 · Supabase · Vercel · LINE Bot + Web app · Gemini 2.0-flash  
 **Target:** Stage 1 — up to 100 users
 
 ---
@@ -12,7 +12,7 @@
 | Node.js 20+ | Local development | `nvm install 20` |
 | Supabase CLI | Database migrations | `npm i -g supabase` |
 | Vercel CLI | Deploy & env vars | `npm i -g vercel` |
-| LINE Developer Console | Webhook & LIFF config | [developers.line.biz](https://developers.line.biz) |
+| LINE Developer Console | Webhook & Login config | [developers.line.biz](https://developers.line.biz) |
 | Google Cloud Console | Gemini & Places keys | [console.cloud.google.com](https://console.cloud.google.com) |
 
 ---
@@ -42,12 +42,10 @@
    npm run setup:rich-menu
    ```
 
-### 2c. LINE — LIFF App
+### 2c. LINE — Login channel (optional, for /app sign-in)
 
-1. In the same channel (or a new Login channel), create a LIFF app.
-2. Set the endpoint URL to: `https://your-domain.vercel.app/liff`
-3. Set scope: `profile openid`
-4. Note the **LIFF ID**.
+See `docs/line-login-setup.md` for the full LINE Login channel walkthrough used
+by the browser-based `/app` workspace.
 
 ### 2d. Google Cloud
 
@@ -76,8 +74,6 @@ vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
 vercel env add SUPABASE_SECRET_KEY production
 vercel env add GEMINI_API_KEY production
 vercel env add GOOGLE_PLACES_API_KEY production
-vercel env add NEXT_PUBLIC_LIFF_ID production
-vercel env add LIFF_CHANNEL_ID production
 vercel env add CRON_SECRET production
 vercel env add SENTRY_DSN production
 vercel env add NEXT_PUBLIC_SENTRY_DSN production
@@ -224,9 +220,6 @@ Set up billing alerts for each service:
 ```bash
 # Run unit tests
 npm test
-
-# Run E2E tests
-npm run test:e2e
 
 # Check TypeScript
 npx tsc --noEmit

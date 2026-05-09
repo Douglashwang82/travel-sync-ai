@@ -190,8 +190,8 @@ export async function deleteTripItem(
 
   if (!item) return { deleted: false, reason: "not_found" };
 
-  // Only manually-added items can be deleted from LIFF; vote-decided items
-  // must be rejected on the board to preserve audit trail.
+  // Only manually-added items can be deleted; vote-decided items must be
+  // rejected on the board to preserve audit trail.
   if (item.source !== "manual") {
     return { deleted: false, reason: "not_manual" };
   }

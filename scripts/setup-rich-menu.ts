@@ -7,7 +7,7 @@
  *
  * Requires these env vars to be set (copy from .env.local or export them):
  *   LINE_CHANNEL_ACCESS_TOKEN
- *   NEXT_PUBLIC_LIFF_ID
+ *   NEXT_PUBLIC_APP_URL  (e.g. https://your-app.vercel.app)
  */
 
 import * as line from "@line/bot-sdk";
@@ -15,23 +15,20 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
 
 if (!channelAccessToken) {
   console.error("❌ LINE_CHANNEL_ACCESS_TOKEN is not set");
   process.exit(1);
 }
-if (!liffId) {
-  console.warn("⚠️  NEXT_PUBLIC_LIFF_ID is not set — LIFF URLs will be placeholders");
+if (!appBaseUrl) {
+  console.warn("⚠️  NEXT_PUBLIC_APP_URL is not set — rich menu URLs will be placeholders");
 }
 
 const client = new line.messagingApi.MessagingApiClient({ channelAccessToken });
 
-// The LIFF app's Endpoint URL is configured as `/liff/`, so child pages should
-// be referenced relative to that endpoint rather than duplicating `/liff`.
-const dashboardUrl = liffId ? `https://liff.line.me/${liffId}/dashboard` : "https://example.com/dashboard";
-const itineraryUrl = liffId ? `https://liff.line.me/${liffId}/itinerary` : "https://example.com/itinerary";
-const helpUrl     = liffId ? `https://liff.line.me/${liffId}/help`      : "https://example.com/help";
+const dashboardUrl = appBaseUrl ? `${appBaseUrl}/app` : "https://example.com/app";
+const itineraryUrl = appBaseUrl ? `${appBaseUrl}/app` : "https://example.com/app";
 
 const richMenuBody: line.messagingApi.RichMenuRequest = {
   size: { width: 2500, height: 843 },

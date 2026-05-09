@@ -1,18 +1,8 @@
 # LINE Login for the browser /app workspace
 
-The `/app` web workspace uses **LINE Login** (not LIFF) to let travelers sign
-in from any browser. This doc walks through the one-time setup in the LINE
-Developers console and the env vars the app expects.
-
-## Why a separate channel?
-
-- **LIFF** (`LIFF_CHANNEL_ID`) authenticates the mobile webview inside the
-  LINE app. LIFF tokens are short-lived and tied to the LINE app's host.
-- **LINE Login** authenticates a standard browser via OAuth2 / OIDC. It's
-  the right choice for desktop and non-LINE mobile browsers.
-
-Both channels live under the same **Provider**, but they are different
-channels with different IDs and secrets.
+The `/app` web workspace uses **LINE Login** to let travelers sign in from
+any browser via OAuth2 / OIDC. This doc walks through the one-time setup in
+the LINE Developers console and the env vars the app expects.
 
 ## 1. Create the channel
 

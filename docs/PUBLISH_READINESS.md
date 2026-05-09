@@ -34,7 +34,7 @@
 
 ### 0.4 Audit Supabase RLS policies
 - **Problem:** Most backend access uses the service role; RLS on user-facing tables is sparse. Current migrations show only minimal policies.
-- **Files:** `supabase/migrations/`, any LIFF route under `app/api/liff/*`, `lib/db.ts`
+- **Files:** `supabase/migrations/`, any app route under `app/api/app/*`, `lib/db.ts`
 - **Acceptance:**
   - Every table reachable from the browser-RLS client has explicit SELECT/INSERT/UPDATE/DELETE policies keyed to group/trip membership.
   - A new migration adds missing policies; documented in `docs/runbook.md`.
@@ -42,18 +42,18 @@
 
 ### 0.5 Enforce organizer-only destructive actions
 - **Problem:** Any group member can delete trip items or cancel the trip.
-- **Files:** `app/api/liff/items/route.ts`, `bot/commands/cancel.ts`, `bot/commands/complete.ts`, `services/trip-state/index.ts`
+- **Files:** `app/api/app/items/route.ts`, `bot/commands/cancel.ts`, `bot/commands/complete.ts`, `services/trip-state/index.ts`
 - **Acceptance:**
   - Delete/cancel/complete paths check `group_members.role === 'organizer'`.
-  - Return 403 on LIFF; reply friendly error on bot.
+  - Return 403 on the web app; reply friendly error on bot.
   - Unit tests cover allow/deny paths.
 
 ---
 
 ## Phase 1 — Security & Reliability Hardening
 
-### 1.1 Complete Zod validation coverage on LIFF routes
-- **Files:** `app/api/liff/incidents/route.ts`, `app/api/liff/readiness/route.ts`, `app/api/liff/tracking/route.ts`, `app/api/liff/itinerary/route.ts`
+### 1.1 Complete Zod validation coverage on the web app routes
+- **Files:** `app/api/app/incidents/route.ts`, `app/api/app/readiness/route.ts`, `app/api/app/tracking/route.ts`, `app/api/app/itinerary/route.ts`
 - **Acceptance:** Every POST/PATCH body parsed through Zod. Malformed requests return 400 with structured error.
 
 ### 1.2 Generate typed Supabase client
@@ -64,7 +64,7 @@
   - `any` casts removed from all service files; `tsc` passes.
 
 ### 1.3 Expand E2E test coverage
-- **Files:** `e2e/` (currently only `liff.spec.ts`), `playwright.config.ts`
+- **Files:** new `e2e/` directory, `playwright.config.ts`
 - **Acceptance:** New Playwright specs for:
   - Vote lifecycle (start → cast → majority → confirm).
   - Expense lifecycle (record → split → settlement).
@@ -101,7 +101,7 @@
 - **Files:** `README.md`, `docs/DEPLOYMENT.md` (new)
 - **Acceptance:**
   - README covers: what the product is, local dev setup, test commands, deploy URL.
-  - DEPLOYMENT.md covers: Vercel env vars, Supabase bootstrap, LINE channel setup, LIFF registration, cron secret rotation.
+  - DEPLOYMENT.md covers: Vercel env vars, Supabase bootstrap, LINE channel setup, n/a, cron secret rotation.
 
 ---
 
@@ -109,14 +109,14 @@
 
 ### 3.1 Budget tracking
 - **Problem:** Budget is parsed from chat but never enforced; no "spent vs. planned" view.
-- **Files:** `services/expenses/index.ts`, `services/parsing/extractor.ts`, `app/liff/expenses/page.tsx`, new migration for `trips.budget_amount`/`budget_currency`
+- **Files:** `services/expenses/index.ts`, `services/parsing/extractor.ts`, `app/app/expenses/page.tsx`, new migration for `trips.budget_amount`/`budget_currency`
 - **Acceptance:**
   - `/start` or `/budget` can set a trip budget.
   - Expenses page shows % used, warns at 80%, blocks at 100% (or warns loudly).
   - Bot posts digest when budget threshold crossed.
 
 ### 3.2 Brainstorm board (structured ideation)
-- **Files:** `bot/commands/idea.ts` (new), `app/liff/ideas/page.tsx` (new), migration for `trip_ideas`
+- **Files:** `bot/commands/idea.ts` (new), `app/app/ideas/page.tsx` (new), migration for `trip_ideas`
 - **Acceptance:** Group members can drop ideas (`/idea [text]`) that stack under destinations/themes before `/decide` promotes them to voting.
 
 ---
@@ -124,13 +124,13 @@
 ## Phase 4 — Pre-trip Preparation Feature Gaps
 
 ### 4.1 Travel documents tracking
-- **Files:** new `bot/commands/docs.ts`, `app/liff/docs/page.tsx`, migration for `travel_documents`
+- **Files:** new `bot/commands/docs.ts`, `app/app/docs/page.tsx`, migration for `travel_documents`
 - **Acceptance:**
   - Track passport expiry, visa status, insurance per member.
   - Nudge reminders at 6 months / 30 days pre-trip for expiring passports.
 
 ### 4.2 Packing checklist
-- **Files:** `services/readiness/index.ts` (extend), `app/liff/readiness/page.tsx`
+- **Files:** `services/readiness/index.ts` (extend), `app/app/readiness/page.tsx`
 - **Acceptance:**
   - Destination-aware default packing list (weather, season) seeded from Gemini.
   - Per-member check-off, shown in readiness summary.
@@ -158,10 +158,10 @@
   - For each confirmed flight/train, poll status; push to group when delayed/cancelled/gate-changed.
 
 ### 5.3 Emergency contact card
-- **Files:** `app/liff/readiness/page.tsx` (extend) or new `app/liff/emergency/page.tsx`
+- **Files:** `app/app/readiness/page.tsx` (extend) or new `app/app/emergency/page.tsx`
 - **Acceptance:**
   - Per-destination: embassy phone, local emergency number, insurance hotline, nearest hospital.
-  - Available offline (cached in LIFF).
+  - Available offline (cached in the web app).
 
 ### 5.4 Incident playbook completion
 - **Problem:** `/incident` is scaffolded; playbooks stubbed.
@@ -181,7 +181,7 @@
   - Settlement calculated in base currency.
 
 ### 6.2 Receipt image upload
-- **Files:** `app/liff/expenses/page.tsx`, `services/expenses/index.ts`, Supabase Storage bucket
+- **Files:** `app/app/expenses/page.tsx`, `services/expenses/index.ts`, Supabase Storage bucket
 - **Acceptance:**
   - Attach image to expense; stored in Supabase Storage with signed URLs.
   - Optional Gemini Vision extraction of amount/merchant to pre-fill fields.
@@ -191,7 +191,7 @@
 - **Acceptance:** When trip marked `complete`, bot posts final settlement with per-person transfer instructions. Members confirm paid → balances close.
 
 ### 6.4 Post-trip recap
-- **Files:** `app/liff/recap/page.tsx` (new), `services/memory/index.ts`
+- **Files:** `app/app/recap/page.tsx` (new), `services/memory/index.ts`
 - **Acceptance:**
   - Trip recap view: timeline of confirmed items, expense summary, photos from `trip_memories`.
   - Shareable link back into LINE.
@@ -206,7 +206,7 @@
 
 ### 7.1 Privacy policy & terms of service
 - **Files:** `app/(marketing)/privacy/page.tsx`, `app/(marketing)/terms/page.tsx`
-- **Acceptance:** Published pages linked from README, LINE channel description, and LIFF footer. Covers data retention, LINE/Gemini/Google API data flow, GDPR-lite rights.
+- **Acceptance:** Published pages linked from README, LINE channel description, and web app footer. Covers data retention, LINE/Gemini/Google API data flow, GDPR-lite rights.
 
 ### 7.2 Data retention & deletion
 - **Files:** `app/api/cron/cleanup/route.ts` (extend), new `/api/user/delete` or equivalent

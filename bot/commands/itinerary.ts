@@ -89,7 +89,7 @@ function formatItinerary(
   if (items.length === 0) {
     return requestedDate
       ? `${title}\n\nNo confirmed plans for this date yet.`
-      : `${title}\n\nNo confirmed itinerary items yet. Use /decide, /vote, or add confirmed plans in LIFF.`;
+      : `${title}\n\nNo confirmed itinerary items yet. Use /decide, /vote, or add confirmed plans from the web app.`;
   }
 
   const lines = [title];

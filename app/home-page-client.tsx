@@ -517,9 +517,6 @@ export default function HomePageClient() {
           <span className="font-medium text-[var(--foreground)]">✈️ {copy.brand}</span>
           <span>{copy.footer.copyright}</span>
           <nav className="flex gap-4">
-            <Link href="/liff/help" className="transition-colors hover:text-[var(--foreground)]">
-              {copy.footer.help}
-            </Link>
             <Link href="/app" className="transition-colors hover:text-[var(--foreground)]">
               {copy.footer.openApp}
             </Link>

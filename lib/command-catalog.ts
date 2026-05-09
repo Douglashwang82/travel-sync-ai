@@ -17,7 +17,6 @@ export type CommandCatalogEntry = {
   icon: string;
   category: CommandCategory;
   helpVisible?: boolean;
-  liffVisible?: boolean;
   rateLimitExempt?: boolean;
 };
 
@@ -266,7 +265,6 @@ export const COMMAND_CATALOG = [
     icon: "DEL",
     category: "privacy",
     helpVisible: false,
-    liffVisible: false,
     rateLimitExempt: true,
   },
   {

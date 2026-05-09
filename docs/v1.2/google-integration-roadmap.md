@@ -4,7 +4,7 @@
 
 Turn the high-level Google API recommendations into a repo-specific implementation plan that fits the current TravelSync AI architecture:
 
-- LINE-first bot and LIFF experience
+- LINE-first bot and web app experience
 - Next.js monolith on Vercel
 - Supabase as the operational store
 - Gemini already in use for extraction and summarization
@@ -66,7 +66,7 @@ That means:
 
 ### 2. Store normalized references once
 
-External Google lookups should enrich stored trip records rather than being re-run every time a user opens LIFF or uses a command.
+External Google lookups should enrich stored trip records rather than being re-run every time a user opens the web app or uses a command.
 
 ### 3. Keep critical ops deterministic
 
@@ -119,7 +119,7 @@ That pattern can move requests into more expensive Places SKUs than needed for a
 - fetch photos, rating, and richer metadata only after:
   - the organizer opens a candidate detail
   - the app confirms a selected option
-  - a confirmed option needs LIFF presentation enrichment
+  - a confirmed option needs web app presentation enrichment
 
 #### Product impact
 
@@ -160,7 +160,7 @@ Suggested functions:
 #### Call sites
 
 - place suggestion flows under `services/decisions/`
-- LIFF itinerary enrichment
+- web app itinerary enrichment
 - shared-link consolidation in [services/share/extractor.ts](E:\Projects\travel-sync-ai\services\share\extractor.ts)
 - memory normalization in [services/memory/index.ts](E:\Projects\travel-sync-ai\services\memory\index.ts)
 
@@ -208,7 +208,7 @@ Recommended usage pattern:
 
 - search when organizer actively looks for places
 - detail fetch only when a place is selected or promoted into itinerary
-- photo fetch only in LIFF detail-heavy views
+- photo fetch only in the web app detail-heavy views
 
 Expected early-stage usage:
 
@@ -288,7 +288,7 @@ Suggested columns:
 
 Why cache this:
 
-- keeps `/ops` and LIFF fast
+- keeps `/ops` and web app fast
 - avoids recomputing the same route repeatedly
 - makes cron-generated daily briefings cheaper and more predictable
 
@@ -307,7 +307,7 @@ If you use a single Maps Platform key:
 Recommended usage pattern:
 
 - compute routes in cron or on important state changes
-- do not calculate on every LIFF page view
+- do not calculate on every web app page view
 - refresh route estimates near departure or same-day execution windows
 
 Planning assumption for monthly modeling:
@@ -445,7 +445,7 @@ Suggested functions:
 
 #### Main integration points
 
-- LIFF settings or organizer tools page
+- web app settings or organizer tools page
 - itinerary export action
 
 ### Schema changes
@@ -519,7 +519,7 @@ Optional:
 
 ### Goal
 
-Render simple map previews in LIFF for itinerary items and meetup context.
+Render simple map previews in the web app for itinerary items and meetup context.
 
 ### Best use cases
 
