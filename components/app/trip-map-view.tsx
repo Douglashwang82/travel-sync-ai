@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { TabError, TabSkeleton } from "@/components/app/tab-shell";
 import type {
   ItineraryEntry,
   ItineraryResponse,
@@ -18,8 +19,8 @@ const TripMapCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full items-center justify-center bg-[var(--secondary)]/40">
-        <p className="text-xs text-[var(--muted-foreground)]">Loading map…</p>
+      <div className="flex h-full items-center justify-center bg-[var(--surface-sunken)]/40">
+        <p className="text-xs text-[var(--text-muted)]">Loading map…</p>
       </div>
     ),
   }
@@ -317,24 +318,11 @@ export function TripMapView({ tripId }: { tripId: string }) {
   }, [allPins]);
 
   if (error) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={error} onRetry={() => void load()} />;
   }
 
   if (!data) {
-    return (
-      <div className="h-[calc(100vh-12rem)] animate-pulse rounded-3xl bg-[var(--secondary)]" />
-    );
+    return <TabSkeleton className="h-[calc(100vh-12rem)]" />;
   }
 
   const destination = {
@@ -384,7 +372,7 @@ export function TripMapView({ tripId }: { tripId: string }) {
       </aside>
 
       {/* Map */}
-      <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--background)] lg:col-span-8 xl:col-span-9">
+      <div className="surface-tile overflow-hidden lg:col-span-8 xl:col-span-9">
         <div className="h-[60vh] w-full lg:h-full">
           <TripMapCanvas
             destination={destination}
@@ -431,18 +419,16 @@ function Filters({
   shownPins: number;
 }) {
   return (
-    <section className="rounded-3xl border border-[var(--border)] bg-[var(--background)] p-3">
+    <section className="surface-tile p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-          Filters
-        </p>
-        <p className="text-[11px] text-[var(--muted-foreground)]">
+        <p className="text-caps">Filters</p>
+        <p className="text-mono text-[11px] text-[var(--text-muted)]">
           {shownPins} / {totalPins} pins
         </p>
       </div>
 
       <div className="mt-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+        <p className="text-caps text-[var(--text-muted)]">
           Type
         </p>
         <div className="mt-1 flex flex-wrap gap-1">
@@ -467,7 +453,7 @@ function Filters({
       </div>
 
       <div className="mt-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+        <p className="text-caps text-[var(--text-muted)]">
           Stage
         </p>
         <div className="mt-1 flex flex-wrap gap-1">
@@ -493,7 +479,7 @@ function Filters({
 
       {dayKeys.length > 0 && (
         <div className="mt-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+          <p className="text-caps text-[var(--text-muted)]">
             Day
           </p>
           <div className="mt-1 flex flex-wrap gap-1">
@@ -510,8 +496,8 @@ function Filters({
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
                   dayFilter === k
-                    ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
-                    : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                    ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-raised)]"
+                    : "border-[var(--border-hairline)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
                 )}
               >
                 <span
@@ -531,12 +517,12 @@ function Filters({
         </div>
       )}
 
-      <label className="mt-3 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+      <label className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
         <input
           type="checkbox"
           checked={showRoutes}
           onChange={(e) => setShowRoutes(e.target.checked)}
-          className="h-3.5 w-3.5 rounded border-[var(--border)]"
+          className="h-3.5 w-3.5 rounded border-[var(--border-hairline)]"
         />
         Show daily routes
       </label>
@@ -562,8 +548,8 @@ function Pill({
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
         active
-          ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
-          : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-raised)]"
+          : "border-[var(--border-hairline)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
       )}
     >
       {label}
@@ -572,8 +558,8 @@ function Pill({
           className={cn(
             "rounded-full px-1.5 text-[10px] font-semibold",
             active
-              ? "bg-[var(--background)]/20"
-              : "bg-[var(--secondary)] text-[var(--muted-foreground)]"
+              ? "bg-[var(--surface-raised)]/20"
+              : "bg-[var(--surface-sunken)] text-[var(--text-muted)]"
           )}
         >
           {count}
@@ -598,32 +584,32 @@ function PinList({
 }) {
   if (groups.length === 0) {
     return (
-      <section className="flex-1 rounded-3xl border border-dashed border-[var(--border)] p-6 text-center text-xs text-[var(--muted-foreground)]">
+      <section className="surface-tile flex-1 border-dashed p-6 text-center text-xs text-[var(--text-muted)]">
         No locations match these filters.
       </section>
     );
   }
 
   return (
-    <section className="flex-1 overflow-y-auto rounded-3xl border border-[var(--border)] bg-[var(--background)]">
+    <section className="surface-tile flex-1 overflow-y-auto">
       {groups.map((group) => (
         <div key={group.key}>
-          <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--background)]/95 px-3 py-1.5 backdrop-blur">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-hairline)] bg-[var(--surface-glass)] px-3 py-1.5 backdrop-blur">
             <div className="flex items-center gap-1.5">
               <span
                 aria-hidden
                 className="h-2 w-2 rounded-full"
                 style={{ background: group.color }}
               />
-              <p className="text-[11px] font-semibold uppercase tracking-wide">
+              <p className="text-caps">
                 {group.label}
               </p>
             </div>
-            <span className="text-[10px] text-[var(--muted-foreground)]">
+            <span className="text-[10px] text-[var(--text-muted)]">
               {group.pins.length}
             </span>
           </div>
-          <ul className="divide-y divide-[var(--border)]">
+          <ul className="divide-y divide-[var(--border-hairline)]">
             {group.pins.map((pin, i) => {
               const distance =
                 destination.lat != null && destination.lng != null
@@ -647,13 +633,13 @@ function PinList({
                     type="button"
                     onClick={() => onSelect(pin.id)}
                     className={cn(
-                      "flex w-full gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--secondary)]/60",
-                      selectedPinId === pin.id && "bg-[var(--primary)]/5"
+                      "flex w-full gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--surface-sunken)]/60",
+                      selectedPinId === pin.id && "bg-[var(--accent-line-soft)]"
                     )}
                   >
                     <span
                       aria-hidden
-                      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--secondary)] text-base"
+                      className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-sunken)] text-base"
                     >
                       {TYPE_GLYPH[pin.itemType] ?? "📌"}
                     </span>
@@ -670,11 +656,11 @@ function PinList({
                         </Badge>
                       </div>
                       {pin.subtitle && (
-                        <p className="truncate text-[11px] text-[var(--muted-foreground)]">
+                        <p className="truncate text-[11px] text-[var(--text-muted)]">
                           📍 {pin.subtitle}
                         </p>
                       )}
-                      <p className="text-[10px] text-[var(--muted-foreground)]">
+                      <p className="text-[10px] text-[var(--text-muted)]">
                         {distance != null && (
                           <>{formatDistance(distance)} from center</>
                         )}

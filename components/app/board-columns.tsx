@@ -28,8 +28,8 @@ export function BoardColumns({
     <div className="grid gap-4 md:grid-cols-3">
       <Column
         title="To-Do"
-        accent="text-[var(--muted-foreground)]"
-        pillClass="bg-[var(--secondary)] text-[var(--muted-foreground)]"
+        accent="text-[var(--text-muted)]"
+        pillClass="bg-[var(--surface-sunken)] text-[var(--text-muted)]"
         items={board.todo}
         members={members}
         onItemClick={onItemClick}
@@ -37,8 +37,8 @@ export function BoardColumns({
       />
       <Column
         title="Pending vote"
-        accent="text-amber-600 dark:text-amber-400"
-        pillClass="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+        accent="text-[var(--status-needs-decision)]"
+        pillClass="bg-[var(--status-needs-decision-soft)] text-[var(--status-needs-decision)]"
         items={board.pending}
         members={members}
         onItemClick={onItemClick}
@@ -46,8 +46,8 @@ export function BoardColumns({
       />
       <Column
         title="Confirmed"
-        accent="text-[var(--primary)]"
-        pillClass="bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]"
+        accent="text-[var(--accent-line)]"
+        pillClass="bg-[var(--status-settled-soft)] text-[var(--status-settled)]"
         items={board.confirmed}
         members={members}
         onItemClick={onItemClick}
@@ -75,16 +75,16 @@ function Column({
   empty: string;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--background)]">
-      <header className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
-        <span className={cn("text-sm font-semibold", accent)}>{title}</span>
+    <div className="surface-tile flex flex-col">
+      <header className="flex items-center justify-between border-b border-[var(--border-hairline)] px-4 py-2.5">
+        <span className={cn("text-caps", accent)}>{title}</span>
         <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", pillClass)}>
           {items.length}
         </span>
       </header>
-      <div className="flex-1 divide-y divide-[var(--border)]">
+      <div className="flex-1 divide-y divide-[var(--border-hairline)]">
         {items.length === 0 ? (
-          <p className="px-4 py-4 text-xs italic text-[var(--muted-foreground)]">{empty}</p>
+          <p className="px-4 py-4 text-xs italic text-[var(--text-muted)]">{empty}</p>
         ) : (
           items.map((item) => (
             <ItemRow key={item.id} item={item} members={members} onClick={() => onItemClick(item)} />
@@ -113,32 +113,34 @@ function ItemRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-[var(--secondary)]/60"
+      className="flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-[var(--surface-sunken)]"
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="flex-1 text-sm font-medium">{item.title}</span>
+        <span className="flex-1 text-sm font-medium text-[var(--text-primary)]">
+          {item.title}
+        </span>
         <Badge variant="secondary" className="text-[10px] uppercase">
           {ITEM_TYPE_LABELS[item.item_type]}
         </Badge>
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--muted-foreground)]">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
         {assignee && (
-          <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+          <span className="rounded-full bg-[var(--accent-line-soft)] px-1.5 py-0.5 text-[var(--accent-line)]">
             {assignee}
           </span>
         )}
         {item.stage === "confirmed" && item.booking_status === "needed" && (
-          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+          <span className="rounded-full bg-[var(--status-needs-decision-soft)] px-1.5 py-0.5 text-[var(--status-needs-decision)]">
             Book
           </span>
         )}
         {item.stage === "confirmed" && item.booking_status === "booked" && (
-          <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
+          <span className="rounded-full bg-[var(--status-settled-soft)] px-1.5 py-0.5 text-[var(--status-settled)]">
             ✓ Booked
           </span>
         )}
         {item.deadline_at && (
-          <span className="rounded-full bg-[var(--secondary)] px-1.5 py-0.5">
+          <span className="text-mono rounded-full bg-[var(--surface-sunken)] px-1.5 py-0.5">
             {new Date(item.deadline_at).toLocaleDateString(undefined, {
               month: "short",
               day: "numeric",

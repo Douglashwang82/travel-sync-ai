@@ -13,6 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { appFetchJson } from "@/lib/app-client";
+import {
+  TabPageHeader,
+  TabSurface,
+  TabSurfaceTitle,
+  TabError,
+  TabSkeleton,
+} from "@/components/app/tab-shell";
 import type { Trip, TripStatus } from "@/lib/types";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
@@ -98,43 +105,32 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
   }
 
   if (error && !trip) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={error} onRetry={() => void load()} />;
   }
 
   if (!trip) {
-    return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
+    return <TabSkeleton />;
   }
 
   const isOrganizer = role === "organizer";
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Trip settings</h2>
-        <p className="text-xs text-[var(--muted-foreground)]">
-          {isOrganizer
+      <TabPageHeader
+        title="Trip settings"
+        subtitle={
+          isOrganizer
             ? "Edit the trip basics below. Destination lookup (map, timezone) updates automatically when the bot resolves it from chat."
-            : "Only organizers can edit trip basics. Ask your organizer to make changes, or promote yourself via the LINE bot."}
-        </p>
-      </div>
+            : "Only organizers can edit trip basics. Ask your organizer to make changes, or promote yourself via the LINE bot."
+        }
+      />
 
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (isOrganizer) void handleSave();
         }}
-        className="space-y-5 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5"
+        className="surface-tile space-y-5 p-5"
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -198,9 +194,11 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
           </div>
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && (
+          <p className="text-xs text-[var(--status-blocked)]">{error}</p>
+        )}
         {success && (
-          <p className="text-xs font-medium text-[var(--primary)]">Saved.</p>
+          <p className="text-xs font-medium text-[var(--accent-line)]">Saved.</p>
         )}
 
         {isOrganizer && (
@@ -213,25 +211,22 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       </form>
 
       {isOrganizer && (
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h3 className="text-sm font-semibold">Publish as template</h3>
-            <p className="text-xs text-[var(--muted-foreground)]">
-              Share this trip&apos;s itinerary so others can use it as a starting point.
-            </p>
-          </div>
+        <TabSurface className="flex items-center justify-between gap-4">
+          <TabSurfaceTitle
+            title="Publish as template"
+            subtitle="Share this trip's itinerary so others can use it as a starting point."
+          />
           <Link href={`/app/trips/${tripId}/publish`}>
             <Button variant="outline" size="sm">Publish</Button>
           </Link>
-        </div>
+        </TabSurface>
       )}
 
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
-        <h3 className="text-sm font-semibold">Resolved destination</h3>
-        <p className="text-xs text-[var(--muted-foreground)]">
-          These fields are populated by the AI when it resolves the destination from chat.
-          Update the destination above to trigger a re-sync.
-        </p>
+      <TabSurface>
+        <TabSurfaceTitle
+          title="Resolved destination"
+          subtitle="These fields are populated by the AI when it resolves the destination from chat. Update the destination above to trigger a re-sync."
+        />
         <dl className="mt-3 space-y-2 text-xs">
           <DetailRow label="Formatted address" value={trip.destination_formatted_address} />
           <DetailRow label="Timezone" value={trip.destination_timezone} />
@@ -252,7 +247,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
                   href={trip.destination_google_maps_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[var(--primary)] underline underline-offset-2"
+                  className="text-[var(--accent-line)] underline underline-offset-2"
                 >
                   Open
                 </a>
@@ -268,7 +263,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
             }
           />
         </dl>
-      </div>
+      </TabSurface>
     </div>
   );
 }
@@ -284,13 +279,11 @@ function DetailRow({
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-        {label}
-      </dt>
+      <dt className="text-caps">{label}</dt>
       <dd
-        className={`max-w-[70%] text-right text-[var(--foreground)] ${mono ? "font-mono text-[11px]" : ""}`}
+        className={`max-w-[70%] text-right text-[var(--text-primary)] ${mono ? "text-mono text-[11px]" : ""}`}
       >
-        {value ?? <span className="text-[var(--muted-foreground)] italic">—</span>}
+        {value ?? <span className="text-[var(--text-muted)] italic">—</span>}
       </dd>
     </div>
   );

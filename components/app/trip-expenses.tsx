@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { appFetch, appFetchJson } from "@/lib/app-client";
+import {
+  TabPageHeader,
+  TabSurface,
+  TabSurfaceTitle,
+  TabError,
+  TabSkeleton,
+} from "@/components/app/tab-shell";
 import type { AppExpensesResponse } from "@/lib/app-trip-expenses";
 
 export function TripExpensesClient({
@@ -100,22 +107,11 @@ export function TripExpensesClient({
   }
 
   if (error) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {error}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={error} onRetry={() => void load()} />;
   }
 
   if (!data) {
-    return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
+    return <TabSkeleton />;
   }
 
   const currency = data.budgetCurrency;
@@ -128,17 +124,15 @@ export function TripExpensesClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Expenses</h2>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Log shared costs, track balances, and settle up in the fewest transfers.
-          </p>
-        </div>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          + Log expense
-        </Button>
-      </div>
+      <TabPageHeader
+        title="Expenses"
+        subtitle="Log shared costs, track balances, and settle up in the fewest transfers."
+        actions={
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            + Log expense
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <SummaryCard
@@ -175,31 +169,33 @@ export function TripExpensesClient({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 lg:col-span-1">
-          <h3 className="text-sm font-semibold">Balances</h3>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Green is owed money; red owes money.
-          </p>
+        <TabSurface className="lg:col-span-1">
+          <TabSurfaceTitle
+            title="Balances"
+            subtitle="Green is owed money; red owes money."
+          />
           <ul className="mt-3 space-y-2">
             {data.balances.length === 0 ? (
-              <li className="text-xs italic text-[var(--muted-foreground)]">
+              <li className="text-xs italic text-[var(--text-muted)]">
                 No expenses yet.
               </li>
             ) : (
               data.balances.map((b) => (
                 <li
                   key={b.displayName}
-                  className="flex items-center justify-between rounded-xl bg-[var(--secondary)]/60 px-3 py-2"
+                  className="flex items-center justify-between rounded-xl bg-[var(--surface-sunken)] px-3 py-2"
                 >
-                  <span className="truncate text-sm font-medium">{b.displayName}</span>
+                  <span className="truncate text-sm font-medium text-[var(--text-primary)]">
+                    {b.displayName}
+                  </span>
                   <span
                     className={cn(
-                      "text-sm font-semibold",
+                      "text-mono text-sm font-semibold",
                       b.net > 0.5
-                        ? "text-[var(--primary)]"
+                        ? "text-[var(--status-settled)]"
                         : b.net < -0.5
-                          ? "text-red-500"
-                          : "text-[var(--muted-foreground)]"
+                          ? "text-[var(--status-blocked)]"
+                          : "text-[var(--text-muted)]"
                     )}
                   >
                     {b.net > 0 ? "+" : ""}
@@ -211,22 +207,20 @@ export function TripExpensesClient({
           </ul>
 
           {data.settlements.length > 0 && (
-            <div className="mt-5 space-y-2 border-t border-[var(--border)] pt-4">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-                Settle up
-              </h4>
+            <div className="mt-5 space-y-2 border-t border-[var(--border-hairline)] pt-4">
+              <h4 className="text-caps">Settle up</h4>
               <ul className="space-y-2">
                 {data.settlements.map((s, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-xl border border-[var(--border)] px-3 py-2 text-xs"
+                    className="flex items-center justify-between rounded-xl border border-[var(--border-hairline)] px-3 py-2 text-xs"
                   >
-                    <span className="truncate">
+                    <span className="truncate text-[var(--text-primary)]">
                       <span className="font-medium">{s.from}</span>
-                      <span className="text-[var(--muted-foreground)]"> → </span>
+                      <span className="text-[var(--text-muted)]"> → </span>
                       <span className="font-medium">{s.to}</span>
                     </span>
-                    <span className="shrink-0 font-semibold text-red-500">
+                    <span className="text-mono shrink-0 font-semibold text-[var(--status-blocked)]">
                       {currency} {Math.round(s.amount).toLocaleString()}
                     </span>
                   </li>
@@ -234,16 +228,16 @@ export function TripExpensesClient({
               </ul>
             </div>
           )}
-        </section>
+        </TabSurface>
 
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 lg:col-span-2">
-          <h3 className="text-sm font-semibold">History</h3>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Most recent first. Delete an expense if it was logged by mistake.
-          </p>
-          <ul className="mt-3 divide-y divide-[var(--border)]">
+        <TabSurface className="lg:col-span-2">
+          <TabSurfaceTitle
+            title="History"
+            subtitle="Most recent first. Delete an expense if it was logged by mistake."
+          />
+          <ul className="mt-3 divide-y divide-[var(--border-hairline)]">
             {data.expenses.length === 0 ? (
-              <li className="py-3 text-xs italic text-[var(--muted-foreground)]">
+              <li className="py-3 text-xs italic text-[var(--text-muted)]">
                 Nothing logged yet.
               </li>
             ) : (
@@ -253,8 +247,10 @@ export function TripExpensesClient({
                   className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{e.description}</p>
-                    <p className="text-[11px] text-[var(--muted-foreground)]">
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                      {e.description}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)]">
                       Paid by {e.paidByDisplayName ?? "Unknown"} ·{" "}
                       {new Date(e.createdAt).toLocaleDateString(undefined, {
                         month: "short",
@@ -264,14 +260,14 @@ export function TripExpensesClient({
                       })}
                     </p>
                   </div>
-                  <span className="text-sm font-semibold">
+                  <span className="text-mono text-sm font-semibold text-[var(--text-primary)]">
                     {currency} {Math.round(e.amount).toLocaleString()}
                   </span>
                   <button
                     type="button"
                     onClick={() => void handleDelete(e.id)}
                     disabled={deleting === e.id}
-                    className="text-xs text-[var(--muted-foreground)] transition-colors hover:text-destructive disabled:opacity-50"
+                    className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--status-blocked)] disabled:opacity-50"
                   >
                     {deleting === e.id ? "Deleting..." : "Delete"}
                   </button>
@@ -279,7 +275,7 @@ export function TripExpensesClient({
               ))
             )}
           </ul>
-        </section>
+        </TabSurface>
       </div>
 
       <Dialog
@@ -301,7 +297,7 @@ export function TripExpensesClient({
             <div className="space-y-1.5">
               <Label htmlFor="expense-amount">Amount</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--muted-foreground)]">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--text-muted)]">
                   {currency}
                 </span>
                 <Input
@@ -360,22 +356,23 @@ function SummaryCard({
   tone?: "primary";
   progress?: number | null;
 }) {
-  const valueColor = tone === "primary" ? "text-[var(--primary)]" : "text-[var(--foreground)]";
+  const valueColor =
+    tone === "primary" ? "text-[var(--accent-line)]" : "text-[var(--text-primary)]";
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-        {label}
-      </p>
-      <p className={cn("mt-1 text-2xl font-bold", valueColor)}>{value}</p>
+    <div className="surface-tile p-5">
+      <p className="text-caps">{label}</p>
+      <p className={cn("text-display mt-1 text-2xl", valueColor)}>{value}</p>
       {subtitle && (
-        <p className="mt-1 text-xs text-[var(--muted-foreground)]">{subtitle}</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">{subtitle}</p>
       )}
       {progress != null && (
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--secondary)]">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
           <div
             className={cn(
               "h-full transition-all",
-              progress >= 90 ? "bg-red-500" : "bg-[var(--primary)]"
+              progress >= 90
+                ? "bg-[var(--status-blocked)]"
+                : "bg-[var(--accent-line)]"
             )}
             style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
           />

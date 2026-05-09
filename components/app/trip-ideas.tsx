@@ -15,6 +15,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
 import {
+  TabPageHeader,
+  TabError,
+  TabSkeleton,
+  TabEmptyState,
+} from "@/components/app/tab-shell";
+import {
   IDEA_CATEGORIES,
   type IdeaCategory,
   type TripIdea,
@@ -34,7 +40,7 @@ const CATEGORY_BADGE: Record<IdeaCategory, string> = {
   hotel: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
   activity: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
   restaurant: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  general: "bg-[var(--secondary)] text-[var(--muted-foreground)]",
+  general: "bg-[var(--surface-sunken)] text-[var(--text-muted)]",
 };
 
 type Filter = IdeaCategory | "all";
@@ -138,37 +144,23 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
   }
 
   if (loadError && !ideas) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-        {loadError}{" "}
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="ml-2 underline underline-offset-2"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <TabError message={loadError} onRetry={() => void load()} />;
   }
 
   if (!ideas) {
-    return <div className="h-64 animate-pulse rounded-2xl bg-[var(--secondary)]" />;
+    return <TabSkeleton />;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Ideas</h2>
-        <p className="text-xs text-[var(--muted-foreground)]">
-          Brainstorm with your group. Anyone in the trip can drop a suggestion;
-          the organizer can later promote one to a vote.
-        </p>
-      </div>
+      <TabPageHeader
+        title="Ideas"
+        subtitle="Brainstorm with your group. Anyone in the trip can drop a suggestion; the organizer can later promote one to a vote."
+      />
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4"
+        className="surface-tile space-y-3 p-5"
       >
         <div className="space-y-1.5">
           <Label htmlFor="idea-text">Share an idea</Label>
@@ -181,9 +173,9 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
             maxLength={MAX_LENGTH}
             disabled={submitting}
           />
-          <div className="flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+          <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
             <span>Visible to everyone in this trip&apos;s group.</span>
-            <span>
+            <span className="text-mono">
               {text.trim().length}/{MAX_LENGTH}
             </span>
           </div>
@@ -235,11 +227,13 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
-          {ideas.length === 0
-            ? "No ideas yet. Share the first one above."
-            : "No ideas in this category yet."}
-        </div>
+        <TabEmptyState
+          message={
+            ideas.length === 0
+              ? "No ideas yet. Share the first one above."
+              : "No ideas in this category yet."
+          }
+        />
       ) : (
         <ul className="space-y-3">
           {filtered.map((idea) => (
@@ -272,8 +266,8 @@ function FilterChip({
       className={cn(
         "rounded-full border px-3 py-1 font-medium transition-colors",
         active
-          ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
-          : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          ? "border-[var(--accent-line)] bg-[var(--accent-line-soft)] text-[var(--accent-line)]"
+          : "border-[var(--border-hairline)] text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
       )}
     >
       {label}
@@ -294,7 +288,7 @@ function IdeaCard({
   const when = formatRelative(idea.createdAt);
   const canDelete = idea.isMine && !idea.promoted;
   return (
-    <li className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+    <li className="surface-tile tile-interactive p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant="secondary"
@@ -306,20 +300,20 @@ function IdeaCard({
           {CATEGORY_LABEL[idea.category]}
         </Badge>
         {idea.promoted && (
-          <Badge className="border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+          <Badge className="border-0 bg-[var(--status-settled-soft)] text-[var(--status-settled)]">
             Promoted
           </Badge>
         )}
         {idea.isMine && (
-          <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+          <span className="rounded-full bg-[var(--accent-line-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-line)]">
             You
           </span>
         )}
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-primary)]">
         {idea.text}
       </p>
-      <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+      <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--text-muted)]">
         <span>
           {author} · {when}
         </span>
@@ -328,7 +322,7 @@ function IdeaCard({
             type="button"
             onClick={onDelete}
             disabled={deleting}
-            className="text-[11px] font-medium text-[var(--muted-foreground)] hover:text-destructive disabled:opacity-60"
+            className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--status-blocked)] disabled:opacity-60"
           >
             {deleting ? "Removing…" : "Remove"}
           </button>
