@@ -27,7 +27,7 @@ export async function handleOps(
 
   const summary = await getOperationsSummary(trip.id);
   if (!summary) {
-    await reply("I couldn't build an operations summary for this trip yet.");
+    await reply("目前還無法產生這趟旅程的營運摘要。");
     return;
   }
 
@@ -42,23 +42,23 @@ export async function handleOps(
   });
 
   const lines = [
-    `Ops - ${summary.destinationName}`,
+    `營運狀態 - ${summary.destinationName}`,
     summary.headline,
     "",
-    `Phase: ${summary.phase}`,
-    `Readiness: ${summary.readiness.completionPercent}% complete, ${summary.readiness.confidenceScore}% confidence`,
+    `階段：${summary.phase}`,
+    `就緒度：完成 ${summary.readiness.completionPercent}%，信心度 ${summary.readiness.confidenceScore}%`,
     "",
-    "Next actions:",
+    "下一步行動：",
     ...(summary.nextActions.length > 0
       ? summary.nextActions.map((item) => `- ${item}`)
-      : ["- No immediate action from committed data."]),
+      : ["- 已確認資料中沒有需要立即處理的事項。"]),
     "",
-    "Active risks:",
+    "目前的風險：",
     ...(summary.activeRisks.length > 0
       ? summary.activeRisks.map((item) => `- ${item}`)
-      : ["- No major operational risks detected from committed data."]),
+      : ["- 已確認資料中未發現重大營運風險。"]),
     "",
-    "Freshness:",
+    "資料新鮮度：",
     ...summary.freshness.notes.map((item) => `- ${item}`),
   ];
 

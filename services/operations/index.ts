@@ -247,32 +247,32 @@ function deriveNextActionsFromPhase(
 ): string[] {
   switch (phase) {
     case "planning":
-      return ["Lock trip dates and at least one transport or stay item before using operations heavily."];
+      return ["先確定旅程日期，並至少敲定一項交通或住宿，再開始大量使用營運功能。"];
     case "countdown":
       return [
-        "Use /ready to verify remaining blockers before departure week.",
+        "出發週前用 /ready 確認剩餘阻塞項目。",
         transportItems.length > 0
-          ? "Double-check departure timing against official provider channels."
-          : "Commit the main transport so departure readiness can be validated.",
+          ? "再次和官方來源核對出發時間。"
+          : "確定主要交通方式，才能驗證出發就緒度。",
       ];
     case "departure":
       return [
-        "Send one final group status pulse instead of multiple individual nudges.",
+        "在群組裡送出一次完整的狀態整理，避免分散通知。",
         trip.start_date
-          ? `Today is the departure date: ${trip.start_date}. Reconfirm airport or meetup timing.`
-          : "Reconfirm departure timing.",
+          ? `今天是出發日：${trip.start_date}。請再次確認機場或集合時間。`
+          : "請再次確認出發時間。",
       ];
     case "active":
-      return ["Use /brief for a daily run-of-day summary.", "Keep all group updates batched into one operational message."];
+      return ["使用 /brief 取得每日行程摘要。", "把群組更新整理成一則營運訊息送出即可。"];
     case "return":
       return [
         trip.end_date
-          ? `Return date: ${trip.end_date}. Reconfirm checkout and transport.`
-          : "Reconfirm return timing.",
-        "Use /complete to wrap up the trip, or /exp-summary to settle expenses.",
+          ? `返程日：${trip.end_date}。請再次確認退房與交通。`
+          : "請再次確認返程時間。",
+        "使用 /complete 結束旅程，或用 /exp-summary 結算費用。",
       ];
     case "complete":
-      return ["Trip is complete. Use /exp-summary to settle expenses or /start to plan the next trip."];
+      return ["旅程已完成。使用 /exp-summary 結算費用，或用 /start 規劃下一趟旅程。"];
   }
 }
 
@@ -284,10 +284,10 @@ function deriveActiveRisks(
   const risks: string[] = [];
 
   if (!readiness || readiness.confidenceScore < 50) {
-    risks.push("Operations data is partial. Confirm more committed details before relying on this view.");
+    risks.push("營運資料尚不完整，請補齊更多已確認細節，再依此檢視。");
   }
   if (transportItems.length === 0 && (phase === "countdown" || phase === "departure" || phase === "return")) {
-    risks.push("No committed transport is available for operational tracking.");
+    risks.push("尚未有已確認的交通可供營運追蹤。");
   }
 
   return risks;
@@ -299,9 +299,20 @@ function buildHeadline(
   nextActionCount: number,
   riskCount: number
 ): string {
-  const phaseLabel = phase.charAt(0).toUpperCase() + phase.slice(1);
-  const label = destinationName ?? "your trip";
-  return `${phaseLabel} mode for ${label}: ${nextActionCount} next action${nextActionCount === 1 ? "" : "s"}, ${riskCount} active risk${riskCount === 1 ? "" : "s"}.`;
+  const phaseLabel = formatPhaseLabel(phase);
+  const label = destinationName ?? "這趟旅程";
+  return `${label}目前處於${phaseLabel}：${nextActionCount} 項下一步、${riskCount} 項風險。`;
+}
+
+function formatPhaseLabel(phase: TripPhase): string {
+  switch (phase) {
+    case "planning": return "規劃階段";
+    case "countdown": return "出發倒數";
+    case "departure": return "出發日";
+    case "active": return "旅程進行中";
+    case "return": return "返程階段";
+    case "complete": return "已完成";
+  }
 }
 
 function buildFreshnessNotes(
@@ -309,29 +320,29 @@ function buildFreshnessNotes(
   transportItems: Array<Pick<TripItem, "title">>
 ): string[] {
   const notes: string[] = [
-    "This view uses committed trip data only, not unconfirmed planning chatter.",
+    "此檢視僅根據已確認的旅程資料，不包含未確認的規劃討論。",
   ];
 
   if (!readiness) {
-    notes.push("Readiness data is unavailable.");
+    notes.push("目前無法取得就緒度資料。");
   } else if (readiness.confidenceScore < 50) {
     notes.push(
-      `Readiness confidence is ${readiness.confidenceScore}%, so missing details are shown explicitly as unknown.`
+      `就緒度信心度為 ${readiness.confidenceScore}%，缺少的細節會以「未知」呈現。`
     );
   }
 
   if (transportItems.length === 0) {
-    notes.push("Live transport monitoring is not active because no committed transport has been captured yet.");
+    notes.push("尚未捕捉到任何已確認的交通資料，因此目前沒有啟動即時交通監控。");
   } else {
-    notes.push("Transport shown here is committed itinerary data, not live monitored status yet.");
+    notes.push("此處顯示的交通資料來自已確認的行程，尚非即時監控狀態。");
   }
 
   return notes;
 }
 
 function formatItemType(itemType: ItemType): string {
-  if (itemType === "flight") return "Flight";
-  if (itemType === "transport") return "Transport";
+  if (itemType === "flight") return "航班";
+  if (itemType === "transport") return "交通";
   return itemType;
 }
 
@@ -365,7 +376,7 @@ function parseItemMetadata(raw: unknown, itemType: string): TripItemMetadata | n
 }
 
 function buildTransportStatusLine(item: OpsItem): string {
-  const base = `${formatItemType(item.item_type)} committed: ${item.title}`;
+  const base = `已確認的${formatItemType(item.item_type)}：${item.title}`;
   if (!item.metadata) return base;
 
   const parts: string[] = [];
@@ -376,7 +387,7 @@ function buildTransportStatusLine(item: OpsItem): string {
     }
     if (item.metadata.departure_time) {
       parts.push(
-        new Date(item.metadata.departure_time).toLocaleTimeString("en-US", {
+        new Date(item.metadata.departure_time).toLocaleTimeString("zh-TW", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,
@@ -405,9 +416,9 @@ function buildMetadataSummary(metadata: TripItemMetadata | null): string | null 
       return parts.length > 0 ? parts.join(" ") : null;
     }
     case "hotel":
-      return metadata.check_in_time ? `Check-in ${metadata.check_in_time}` : null;
+      return metadata.check_in_time ? `入住 ${metadata.check_in_time}` : null;
     case "restaurant":
-      return metadata.reservation_time ? `${metadata.reservation_time}${metadata.party_size ? ` · ${metadata.party_size} pax` : ""}` : null;
+      return metadata.reservation_time ? `${metadata.reservation_time}${metadata.party_size ? ` · ${metadata.party_size} 人` : ""}` : null;
     case "transport":
       return metadata.mode ?? null;
     case "activity":

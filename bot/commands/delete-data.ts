@@ -11,7 +11,7 @@ export async function handleDeleteMyData(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.userId) {
-    await reply("I couldn't identify your account. Please try again inside a group chat.");
+    await reply("無法辨識你的帳號，請在群組聊天中再試一次。");
     return;
   }
 
@@ -27,13 +27,13 @@ export async function handleDeleteMyData(
     }
 
     await reply(
-      "✅ Your personal data has been deleted from TravelSync AI.\n\n" +
-        "Anonymised expense records may be retained to preserve your group's balance history.\n\n" +
-        "If you have further questions, contact privacy@travelsync.ai"
+      "✅ 你的個人資料已從 TravelSync AI 刪除。\n\n" +
+        "為了維持群組結餘歷史，已匿名化的費用紀錄可能仍會保留。\n\n" +
+        "如有其他問題，請聯絡 privacy@travelsync.ai"
     );
   } catch {
     await reply(
-      "Something went wrong deleting your data. Please email privacy@travelsync.ai and we will process your request within 30 days."
+      "刪除資料時發生問題，請來信 privacy@travelsync.ai，我們會在 30 天內處理你的請求。"
     );
   }
 }

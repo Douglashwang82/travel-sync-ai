@@ -25,14 +25,14 @@ export async function handleRecommend(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
-    await reply("Usage: /recommend [restaurant|hotel|activity] [optional keywords]");
+    await reply("用法：/recommend [restaurant|hotel|activity] [可選關鍵字]");
     return;
   }
 
   const [typeArg, ...queryParts] = args;
   const itemType = TYPE_MAP[typeArg.toLowerCase()];
   if (!itemType) {
-    await reply("I can recommend: restaurant, hotel, activity, transport, or flight.");
+    await reply("我可以推薦：restaurant、hotel、activity、transport 或 flight。");
     return;
   }
 
@@ -53,8 +53,8 @@ export async function handleRecommend(
 
   if (recommendations.length === 0) {
     await reply(
-      `I don't have any remembered ${itemType} suggestions yet.\n\n` +
-        `Ask the group to mention places naturally or use /share [url], then try again.`
+      `我目前還沒有記住任何 ${itemType} 的建議。\n\n` +
+        `請大家在群組裡聊聊地點，或使用 /share [網址] 分享連結，再試一次。`
     );
     return;
   }
@@ -63,13 +63,13 @@ export async function handleRecommend(
     const parts = [`${index + 1}. ${rec.title}`];
     if (rec.rating) parts.push(`⭐ ${rec.rating}`);
     if (rec.priceLevel) parts.push(rec.priceLevel);
-    parts.push(`mentioned ${rec.mentionCount} time${rec.mentionCount === 1 ? "" : "s"}`);
+    parts.push(`被提及 ${rec.mentionCount} 次`);
     return parts.join("  ·  ");
   });
 
   await reply(
-    `Here are the top remembered ${itemType} picks from your group chat:\n\n` +
+    `以下是群組聊天中最常被記住的 ${itemType}：\n\n` +
       `${lines.join("\n")}\n\n` +
-      `Use /decide ${itemType} when you want to turn these ideas into a group decision.`
+      `想把這些想法變成群組決定時，使用 /decide ${itemType}。`
   );
 }

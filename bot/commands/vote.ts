@@ -38,30 +38,30 @@ export async function handleVote(
 
   if (!match) {
     await reply(
-      `No decision item matching "${args.join(" ")}" found.\n` +
-        `Use /decide ${args.join(" ")} to create one, or /status to see the board.`
+      `找不到符合「${args.join(" ")}」的決定項目。\n` +
+        `用 /decide ${args.join(" ")} 建立一個，或用 /status 查看看板。`
     );
     return;
   }
 
   if (match.item_kind !== "decision") {
     await reply(
-      `"${match.title}" is a planning item, not a decision item.\n` +
-        `Use /decide ${match.item_type ?? args.join(" ")} to create a voteable decision first.`
+      `「${match.title}」是規劃項目，不是可投票的決定項目。\n` +
+        `請先用 /decide ${match.item_type ?? args.join(" ")} 建立可投票的決定項目。`
     );
     return;
   }
 
   if (match.stage === "pending") {
     await reply(
-      `Voting is already open for "${match.title}". Check the carousel above to cast your vote.`
+      `「${match.title}」已經在投票中，請查看上方的投票卡片。`
     );
     return;
   }
 
   // Acknowledge immediately — place search may take a moment
-  await reply(`Starting vote for "${match.title}"... I'll post the options shortly!`);
-  
+  await reply(`正在為「${match.title}」啟動投票⋯⋯選項馬上就會送出！`);
+
   await startDecision({
     itemId: match.id,
     tripId: trip.id,
@@ -73,7 +73,7 @@ export async function handleVote(
     try {
       await pushText(
         ctx.lineGroupId!,
-        `Sorry, something went wrong starting the vote for "${match.title}". Please try /vote again.`
+        `抱歉，啟動「${match.title}」的投票時出了問題，請再試一次 /vote。`
       );
     } catch {
       // ignore secondary failure

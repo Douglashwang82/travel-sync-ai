@@ -25,9 +25,9 @@ export async function handleBooked(
 ): Promise<void> {
   if (args.length < 2 || !ctx.dbGroupId || !ctx.userId) {
     await reply(
-      "Usage: /booked [item name] [confirmation ref]\n" +
+      "用法：/booked [項目名稱] [訂位代碼]\n" +
         "範例：/booked hotel AX-12345\n\n" +
-        "Use /status to see items that still need booking."
+        "使用 /status 查看尚未預訂的項目。"
     );
     return;
   }
@@ -70,12 +70,12 @@ export async function handleBooked(
 
     if (!allPending?.length) {
       await reply(
-        `No items are waiting for a booking confirmation right now. All confirmed decisions are either already booked or don't need a booking.\n\nUse /status to see the full board.`
+        `目前沒有等待預訂確認的項目。所有已確認的決定不是已經預訂，就是不需要預訂。\n\n使用 /status 查看完整看板。`
       );
     } else {
       const list = allPending.map((i) => `• ${i.title}`).join("\n");
       await reply(
-        `Couldn't find a match for "${itemQuery}" among items needing booking.\n\nItems still needing booking:\n${list}\n\nTry: /booked [exact item name] [ref]`
+        `在尚需預訂的項目中找不到符合「${itemQuery}」的結果。\n\n尚未預訂的項目：\n${list}\n\n請嘗試：/booked [完整項目名稱] [訂位代碼]`
       );
     }
     return;
@@ -95,9 +95,9 @@ export async function handleBooked(
 
   if (!result.ok) {
     if (result.code === "ALREADY_BOOKED") {
-      await reply(`"${target.title}" is already marked as booked.`);
+      await reply(`「${target.title}」已經標記為已預訂。`);
     } else {
-      await reply(`Failed to record booking for "${target.title}". Please try again.`);
+      await reply(`記錄「${target.title}」的預訂失敗，請再試一次。`);
     }
     return;
   }
@@ -113,8 +113,8 @@ export async function handleBooked(
   });
 
   await reply(
-    `✅ Booking confirmed for "${target.title}"!\n` +
-      `Ref: ${bookingRef}\n\n` +
-      `This item is now fully booked on the trip board.`
+    `✅ 已確認預訂「${target.title}」！\n` +
+      `訂位代碼：${bookingRef}\n\n` +
+      `這個項目已經在旅程看板上完成預訂。`
   );
 }

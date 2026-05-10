@@ -11,12 +11,12 @@ function formatDateRange(startDate: string | null, endDate: string | null): stri
     return `${startDate} -> ${endDate}`;
   }
 
-  return "Dates TBD";
+  return "日期未定";
 }
 
 function formatTextList(list: TripItem[], bullet: string): string {
   if (list.length === 0) {
-    return "  (empty)";
+    return "  （無）";
   }
 
   return list.map((item) => `  ${bullet} ${item.title}`).join("\n");
@@ -57,10 +57,10 @@ export async function handleStatus(
 
   const dateStr = formatDateRange(trip.start_date, trip.end_date);
   const summaryText =
-    `Trip Board - ${trip.destination_name} (${dateStr})\n\n` +
-    `To-Do (${todo.length})\n${formatTextList(todo, "•")}\n\n` +
-    `Pending (${pending.length})\n${formatTextList(pending, "⏳")}\n\n` +
-    `Confirmed (${confirmed.length})\n${formatTextList(confirmed, "✅")}`;
+    `旅程看板 - ${trip.destination_name}（${dateStr}）\n\n` +
+    `待辦（${todo.length}）\n${formatTextList(todo, "•")}\n\n` +
+    `投票中（${pending.length}）\n${formatTextList(pending, "⏳")}\n\n` +
+    `已確認（${confirmed.length}）\n${formatTextList(confirmed, "✅")}`;
 
   await reply(summaryText);
 }

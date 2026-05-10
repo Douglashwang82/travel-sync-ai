@@ -10,7 +10,7 @@ const ArgsSchema = z.array(z.string()).min(1);
 function normalizeDecisionTitle(raw: string, inferredType: string): string {
   const compact = raw.trim();
   if (compact.toLowerCase() === inferredType.toLowerCase()) {
-    return `Choose ${inferredType}`;
+    return `選擇 ${inferredType}`;
   }
   return compact;
 }
@@ -48,8 +48,8 @@ export async function handleDecide(
 
   if (existing) {
     await reply(
-      `Decision item already exists: "${existing.title}" (${existing.stage}).\n` +
-        `Use /vote ${itemType === "other" ? existing.title : itemType} when the group is ready.`
+      `這個決定項目已經存在：「${existing.title}」（${existing.stage}）。\n` +
+        `當群組準備好時，使用 /vote ${itemType === "other" ? existing.title : itemType} 開始投票。`
     );
     return;
   }
@@ -63,12 +63,12 @@ export async function handleDecide(
   });
 
   if (!result.ok) {
-    await reply("Failed to create the decision item. Please try again.");
+    await reply("建立決定項目失敗，請再試一次。");
     return;
   }
 
   await reply(
-    `Created decision item: "${result.item.title}"\n\n` +
-      `Add options with /option ${itemType === "other" ? result.item.title : itemType} | [option], then start voting with /vote ${itemType === "other" ? result.item.title : itemType}.`
+    `已建立決定項目：「${result.item.title}」\n\n` +
+      `用 /option ${itemType === "other" ? result.item.title : itemType} | [選項] 加入選項，準備好後再用 /vote ${itemType === "other" ? result.item.title : itemType} 開始投票。`
   );
 }

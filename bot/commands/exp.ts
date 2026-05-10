@@ -6,11 +6,11 @@ import {
 } from "@/services/expenses";
 import type { CommandContext } from "../router";
 
-const USAGE = `Usage: /exp [amount] [description] [for @name1 @name2 | for all]
-Examples:
-  /exp 1200 dinner
-  /exp 3500 hotel for all
-  /exp 600 taxi for @Alice @Bob`;
+const USAGE = `用法：/exp [金額] [說明] [for @名字1 @名字2 | for all]
+範例：
+  /exp 1200 晚餐
+  /exp 3500 飯店 for all
+  /exp 600 計程車 for @Alice @Bob`;
 
 /**
  * Parse the raw arg tokens into { amount, description, forTokens }.
@@ -61,7 +61,7 @@ export async function handleExp(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
@@ -82,7 +82,7 @@ export async function handleExp(
     .eq("line_user_id", ctx.userId)
     .single();
 
-  const payerName = payerMember?.display_name ?? "You";
+  const payerName = payerMember?.display_name ?? "你";
 
   // Get active trip (optional — expense can exist without a trip)
   const { data: trip } = await db
@@ -116,21 +116,21 @@ export async function handleExp(
     });
   } catch (err) {
     console.error("[exp] recordExpense failed", err);
-    await reply("Failed to record the expense. Please try again.");
+    await reply("記錄費用失敗，請再試一次。");
     return;
   }
 
   const share = Math.round((amount / beneficiaries.length) * 100) / 100;
   const namesStr =
     beneficiaries.length <= 4
-      ? beneficiaries.map((b) => b.displayName).join(", ")
-      : `${beneficiaries.length} people`;
+      ? beneficiaries.map((b) => b.displayName).join("、")
+      : `${beneficiaries.length} 人`;
 
   await reply(
-    `💰 Recorded!\n\n` +
-      `${payerName} paid $${amount.toLocaleString()} for ${description}\n` +
-      `Split among: ${namesStr}\n` +
-      `Each owes: $${share.toLocaleString()}\n\n` +
-      `Use /exp-summary to see who owes what.`
+    `💰 已記錄！\n\n` +
+      `${payerName} 為「${description}」支付 $${amount.toLocaleString()}\n` +
+      `分攤對象：${namesStr}\n` +
+      `每人應付：$${share.toLocaleString()}\n\n` +
+      `使用 /exp-summary 查看誰欠誰多少。`
   );
 }

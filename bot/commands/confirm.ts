@@ -33,15 +33,15 @@ export async function handleConfirm(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
   const text = args.join(" ").trim();
   if (!text) {
     await reply(
-      "Paste the booking confirmation text after /confirm.\n\n" +
-        "範例：/confirm Booking confirmed! Ref AX-12345 Hotel Sunshine check-in July 15"
+      "請在 /confirm 後貼上預訂確認的內容。\n\n" +
+        "範例：/confirm 訂房確認！訂位代碼 AX-12345 Hotel Sunshine 入住日 7/15"
     );
     return;
   }
@@ -60,7 +60,7 @@ export async function handleConfirm(
     return;
   }
 
-  await reply("Reading your booking confirmation...");
+  await reply("正在讀取你的預訂確認⋯⋯");
 
   let extract: BookingExtract;
   try {
@@ -85,7 +85,7 @@ Return ONLY valid JSON.`,
     extract = parsed.data;
   } catch {
     await reply(
-      "I couldn't parse that confirmation. Please try:\n/booked [item name] [ref number]\n\n" +
+      "我無法解析這份確認內容。請改用：\n/booked [項目名稱] [訂位代碼]\n\n" +
         "範例：/booked hotel ABC-123"
     );
     return;
@@ -93,8 +93,8 @@ Return ONLY valid JSON.`,
 
   if (extract.confidence < 0.5) {
     await reply(
-      "That doesn't look like a booking confirmation. Please forward the actual confirmation message.\n\n" +
-        "Or use: /booked [item name] [ref number]"
+      "這看起來不像是預訂確認，請轉寄實際的確認訊息。\n\n" +
+        "或使用：/booked [項目名稱] [訂位代碼]"
     );
     return;
   }
@@ -107,7 +107,7 @@ Return ONLY valid JSON.`,
     .eq("booking_status", "needed");
 
   if (!candidates?.length) {
-    await reply("No items are waiting for a booking confirmation right now.");
+    await reply("目前沒有等待預訂確認的項目。");
     return;
   }
 
@@ -129,9 +129,9 @@ Return ONLY valid JSON.`,
 
   if (!result.ok) {
     if (result.code === "ALREADY_BOOKED") {
-      await reply(`"${target.title}" is already marked as booked.`);
+      await reply(`「${target.title}」已經標記為已預訂。`);
     } else {
-      await reply(`Failed to record booking for "${target.title}". Please try: /booked ${target.title} ${bookingRef}`);
+      await reply(`記錄「${target.title}」的預訂失敗，請嘗試：/booked ${target.title} ${bookingRef}`);
     }
     return;
   }
@@ -143,16 +143,16 @@ Return ONLY valid JSON.`,
   });
 
   const details: string[] = [];
-  if (extract.propertyName) details.push(`Property: ${extract.propertyName}`);
-  if (extract.checkIn) details.push(`Check-in: ${extract.checkIn}`);
-  if (extract.checkOut) details.push(`Check-out: ${extract.checkOut}`);
-  if (extract.flightNumber) details.push(`Flight: ${extract.flightNumber}`);
-  if (extract.departureDate) details.push(`Departure: ${extract.departureDate}`);
+  if (extract.propertyName) details.push(`名稱：${extract.propertyName}`);
+  if (extract.checkIn) details.push(`入住：${extract.checkIn}`);
+  if (extract.checkOut) details.push(`退房：${extract.checkOut}`);
+  if (extract.flightNumber) details.push(`航班：${extract.flightNumber}`);
+  if (extract.departureDate) details.push(`出發日：${extract.departureDate}`);
 
   await reply(
-    `✅ Booking confirmed for "${target.title}"!\n` +
-      `Ref: ${bookingRef}\n` +
+    `✅ 已確認預訂「${target.title}」！\n` +
+      `訂位代碼：${bookingRef}\n` +
       (details.length ? details.join("\n") + "\n" : "") +
-      `\nThis item is now fully booked on the trip board.`
+      `\n這個項目已經在旅程看板上完成預訂。`
   );
 }

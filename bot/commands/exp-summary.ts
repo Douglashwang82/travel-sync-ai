@@ -7,7 +7,7 @@ export async function handleExpSummary(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
@@ -23,7 +23,7 @@ export async function handleExpSummary(
   const summary = await getExpenseSummary(ctx.dbGroupId, trip?.id ?? null);
 
   if (summary.totalAmount === 0) {
-    await reply("No expenses recorded yet.\nUse /exp to log a payment.");
+    await reply("還沒有記錄任何費用。\n使用 /exp 記下一筆支出。");
     return;
   }
 
@@ -40,40 +40,40 @@ function buildSummaryMessage(
 ): string {
   const lines: string[] = [];
 
-  lines.push(`💰 Expense Summary`);
-  lines.push(`Total spent: ${summary.totalAmount.toLocaleString()}`);
+  lines.push(`💰 費用總覽`);
+  lines.push(`總支出：${summary.totalAmount.toLocaleString()}`);
 
   if (budget) {
     const remaining = budget.amount - summary.totalAmount;
     const pct = Math.min(Math.round((summary.totalAmount / budget.amount) * 100), 100);
     const bar = "█".repeat(Math.floor(pct / 10)) + "░".repeat(10 - Math.floor(pct / 10));
-    lines.push(`Budget: ${summary.totalAmount.toLocaleString()} / ${budget.amount.toLocaleString()} ${budget.currency} (${pct}%)`);
+    lines.push(`預算：${summary.totalAmount.toLocaleString()} / ${budget.amount.toLocaleString()} ${budget.currency}（${pct}%）`);
     lines.push(`[${bar}]`);
     if (remaining < 0) {
-      lines.push(`⚠️ Over budget by ${Math.abs(remaining).toLocaleString()} ${budget.currency}`);
+      lines.push(`⚠️ 已超出預算 ${Math.abs(remaining).toLocaleString()} ${budget.currency}`);
     } else {
-      lines.push(`Remaining: ${remaining.toLocaleString()} ${budget.currency}`);
+      lines.push(`剩餘：${remaining.toLocaleString()} ${budget.currency}`);
     }
   }
   lines.push(``);
 
   // Balances section
-  lines.push(`📊 Balances`);
+  lines.push(`📊 結餘`);
   for (const b of summary.balances) {
     const sign = b.net > 0 ? "+" : "";
-    const label = b.net > 0 ? "is owed" : "owes";
-    lines.push(`  ${b.displayName}: ${sign}$${Math.abs(b.net).toLocaleString()} (${label})`);
+    const label = b.net > 0 ? "應收" : "應付";
+    lines.push(`  ${b.displayName}：${sign}$${Math.abs(b.net).toLocaleString()}（${label}）`);
   }
 
   lines.push(``);
 
   // Settlements section
   if (summary.settlements.length === 0) {
-    lines.push(`✅ Everyone is even!`);
+    lines.push(`✅ 大家都已結清！`);
   } else {
-    lines.push(`💸 Settlements`);
+    lines.push(`💸 結算建議`);
     for (const s of summary.settlements) {
-      lines.push(`  ${s.from} → ${s.to}: $${s.amount.toLocaleString()}`);
+      lines.push(`  ${s.from} → ${s.to}：$${s.amount.toLocaleString()}`);
     }
   }
 
