@@ -268,7 +268,6 @@ function BalancedHero({
 
   return (
     <article className="surface-tile relative isolate flex h-full flex-col gap-7 overflow-hidden p-7 sm:p-9">
-      <div className="hero-mesh hero-parallax" aria-hidden />
       <header className="relative flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <p className="text-caps">{dateRange}</p>
         {trip.destination_formatted_address && (
@@ -321,7 +320,6 @@ function ExpressiveHero({
 
   return (
     <article className="surface-tile relative isolate flex h-full flex-col gap-7 overflow-hidden p-7 sm:p-10">
-      <div className="hero-mesh hero-parallax" aria-hidden />
       <div
         aria-hidden
         className="absolute right-6 top-6 hidden text-[var(--accent-line)] opacity-70 sm:block"

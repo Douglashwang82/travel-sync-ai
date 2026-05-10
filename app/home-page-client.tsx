@@ -341,7 +341,7 @@ export default function HomePageClient() {
       </header>
 
       <main className="flex-1">
-        <section className="relative overflow-hidden bg-gradient-to-b from-white to-[#f0fdf0] px-5 pt-20 pb-24 dark:from-[#0a0a0a] dark:to-[#0d1a0d]">
+        <section className="relative overflow-hidden bg-white px-5 pt-20 pb-24 dark:bg-[#0a0a0a]">
           <div className="mx-auto max-w-2xl space-y-6 text-center">
             <span className="inline-block rounded-full bg-[#dcfce7] px-3 py-1 text-xs font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
               {copy.hero.badge}
