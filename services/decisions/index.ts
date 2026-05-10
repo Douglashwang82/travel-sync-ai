@@ -39,7 +39,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
 
   if (!item) {
     console.warn(`[decisions] Item ${itemId} not found`);
-    await pushText(lineGroupId, `Could not find that item. Use /status to check the board.`);
+    await pushText(lineGroupId, `找不到這個項目。使用 /status 查看看板。`);
     return;
   }
 
@@ -53,7 +53,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   if (item.item_kind !== "decision") {
     await pushText(
       lineGroupId,
-      `"${item.title}" is knowledge or planning context, not a decision item.\nCreate a decision item first, then start voting.`
+      `「${item.title}」是知識或規劃內容，不是決定項目。\n請先建立決定項目，再開始投票。`
     );
     return;
   }
@@ -61,7 +61,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   if (item.stage !== "todo") {
     await pushText(
       lineGroupId,
-      `"${item.title}" is already ${item.stage}. Use /status to see the board.`
+      `「${item.title}」已經是「${item.stage}」階段。使用 /status 查看看板。`
     );
     return;
   }
@@ -139,14 +139,14 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
       if (placesResult.errorKind === "no_results") {
         await pushText(
           lineGroupId,
-          `No places found for "${item.title}" in ${input.destination} yet.\n\n` +
-            `Ask group members to share ideas or use /share [url], then try /vote again.`
+          `${input.destination}目前找不到「${item.title}」的地點。\n\n` +
+            `請大家分享想法，或用 /share [網址] 分享連結，再試一次 /vote。`
         );
       } else {
         await pushText(
           lineGroupId,
-          `I couldn't reach place search for "${item.title}" right now.\n\n` +
-            `Ask group members to share ideas or use /share [url], then try /vote again.`
+          `目前無法為「${item.title}」搜尋地點。\n\n` +
+            `請大家分享想法，或用 /share [網址] 分享連結，再試一次 /vote。`
         );
       }
       return;
@@ -158,7 +158,7 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   const deadline = new Date(Date.now() + VOTE_DURATION_HOURS * 60 * 60 * 1000).toISOString();
   const transition = await startVote(itemId, deadline);
   if (!transition.ok) {
-    await pushText(lineGroupId, `Could not start the vote: ${transition.error}`);
+    await pushText(lineGroupId, `無法開始投票：${transition.error}`);
     return;
   }
 
@@ -189,9 +189,9 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
 
   await pushText(
     lineGroupId,
-    `Vote started for "${item.title}"!\nSwipe to compare options and tap Vote. Closes in ${VOTE_DURATION_HOURS}h.`
+    `「${item.title}」已開始投票！\n滑動比較選項，再按下「投票」。將於 ${VOTE_DURATION_HOURS} 小時後截止。`
   );
-  await pushFlex(lineGroupId, `Vote: ${item.title}`, carousel);
+  await pushFlex(lineGroupId, `投票：${item.title}`, carousel);
   console.log(`[decisions] Decision flow completed successfully for ${itemId}`);
 }
 
@@ -235,7 +235,7 @@ export async function refreshVoteCarousel(
   }));
 
   const carousel = buildVoteCarousel(itemId, item.title, voteOptions);
-  await pushFlex(lineGroupId, `Vote: ${item.title}`, carousel);
+  await pushFlex(lineGroupId, `投票：${item.title}`, carousel);
 }
 
 /**
@@ -268,8 +268,8 @@ export async function announceWinner(
   await pushText(
     lineGroupId,
     buildWinnerMessage(
-      item?.title ?? "Item",
-      option?.name ?? "Selected option",
+      item?.title ?? "項目",
+      option?.name ?? "選定的選項",
       winnerVotes,
       totalVotes
     )
@@ -278,11 +278,11 @@ export async function announceWinner(
   // If this item type requires booking, prompt the group to complete it
   if (item?.booking_status === "needed") {
     const bookingLine = option?.booking_url
-      ? `\n\nBook here: ${option.booking_url}`
+      ? `\n\n預訂連結：${option.booking_url}`
       : "";
     await pushText(
       lineGroupId,
-      `📋 Next step: make the booking for "${item.title}".${bookingLine}\n\nOnce it's done, type:\n/booked ${item.title} [confirmation number]`
+      `📋 下一步：完成「${item.title}」的預訂。${bookingLine}\n\n預訂完成後，請輸入：\n/booked ${item.title} [訂位代碼]`
     );
 
     await track("booking_prompt_sent", {

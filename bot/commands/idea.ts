@@ -22,15 +22,15 @@ export async function handleIdea(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
   if (args.length === 0) {
     await reply(
-      "Usage: /idea [category] [text]\n" +
-        "Categories: destination, hotel, activity, restaurant, general (default)\n\n" +
-        "Examples:\n  /idea Let's visit Sapporo\n  /idea restaurant Any ramen near Shinjuku"
+      "用法：/idea [分類] [內容]\n" +
+        "分類：destination、hotel、activity、restaurant、general（預設）\n\n" +
+        "範例：\n  /idea 想去札幌看看\n  /idea restaurant 新宿附近有什麼好吃的拉麵"
     );
     return;
   }
@@ -60,7 +60,7 @@ export async function handleIdea(
     .single();
 
   if (member?.opted_out) {
-    await reply("You've opted out of TravelSync. Type /optin to re-enable it.");
+    await reply("你已停用 TravelSync。輸入 /optin 可以重新啟用。");
     return;
   }
 
@@ -74,12 +74,12 @@ export async function handleIdea(
 
   const text = textParts.join(" ").trim();
   if (!text) {
-    await reply("請加上一點靈感內容。範例：/idea Let's check out Arashiyama");
+    await reply("請加上一點靈感內容。範例：/idea 來去嵐山逛逛");
     return;
   }
 
   if (text.length > 500) {
-    await reply("Idea is too long (max 500 characters). Please shorten it.");
+    await reply("靈感內容太長了（上限 500 字），請縮短一點。");
     return;
   }
 
@@ -93,7 +93,7 @@ export async function handleIdea(
   });
 
   if (error) {
-    await reply("Failed to save your idea. Please try again.");
+    await reply("儲存靈感失敗，請再試一次。");
     return;
   }
 
@@ -104,12 +104,12 @@ export async function handleIdea(
   });
 
   const categoryLabel = category !== "general" ? ` [${category}]` : "";
-  const displayName = member?.display_name ?? "Someone";
+  const displayName = member?.display_name ?? "某位成員";
 
   await reply(
-    `💡 Idea noted${categoryLabel}: "${text}"\n` +
+    `💡 已記下靈感${categoryLabel}：「${text}」\n` +
       `— ${displayName}\n\n` +
-      `The organizer can promote it to a vote with /decide [item] when the group is ready.`
+      `當群組準備好時，主辦人可以用 /decide [項目] 把它升級成投票。`
   );
 }
 
@@ -123,7 +123,7 @@ export async function handleIdeas(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
@@ -151,7 +151,7 @@ export async function handleIdeas(
 
   if (!ideas?.length) {
     await reply(
-      `No brainstorm ideas yet for ${trip.destination_name ?? "your trip"}.\n\nDrop one with /idea [text].`
+      `${trip.destination_name ?? "這趟旅程"}還沒有任何靈感。\n\n用 /idea [內容] 隨手記下一個吧。`
     );
     return;
   }
@@ -165,11 +165,11 @@ export async function handleIdeas(
     byCategory.get(cat)!.push(`  • ${idea.text}${who}`);
   }
 
-  const sections: string[] = [`💡 Brainstorm — ${trip.destination_name ?? "your trip"} (${ideas.length} idea${ideas.length === 1 ? "" : "s"})`];
+  const sections: string[] = [`💡 靈感 — ${trip.destination_name ?? "這趟旅程"}（共 ${ideas.length} 則）`];
   for (const [cat, lines] of byCategory) {
     sections.push(`\n${cat.charAt(0).toUpperCase() + cat.slice(1)}\n${lines.join("\n")}`);
   }
-  sections.push(`\nUse /decide [item] to turn an idea into a vote.`);
+  sections.push(`\n使用 /decide [項目] 可以把靈感變成投票。`);
 
   await reply(sections.join(""));
 }

@@ -26,14 +26,14 @@ export async function handleReady(
 
   const snapshot = await getReadinessSnapshot(trip.id);
   if (!snapshot) {
-    await reply("I couldn't build a readiness summary for this trip yet.");
+    await reply("目前還無法產生這趟旅程的就緒度摘要。");
     return;
   }
 
   const intro =
     snapshot.confidenceScore < 50
-      ? `I only have partial committed trip details right now (${snapshot.confidenceScore}% confidence).`
-      : `This readiness summary is based on committed trip details only (${snapshot.confidenceScore}% confidence).`;
+      ? `目前只有部分已確認的旅程細節（信心度 ${snapshot.confidenceScore}%）。`
+      : `這份就緒度摘要僅根據已確認的旅程細節（信心度 ${snapshot.confidenceScore}%）。`;
 
   const completed = snapshot.items.filter((item) => item.status === "completed");
   // Separate "open" (decided, not booked) from other blockers so bookings stand out
@@ -49,42 +49,42 @@ export async function handleReady(
   );
 
   const lines = [
-    `Readiness - ${snapshot.trip.destinationName}`,
+    `就緒度 - ${snapshot.trip.destinationName}`,
     intro,
-    `Completion: ${snapshot.completionPercent}%`,
+    `完成度：${snapshot.completionPercent}%`,
   ];
 
   // Surface unbooked items first — most actionable gap
   if (bookingNeeded.length > 0) {
-    lines.push("", "⚠️ Decided but not yet booked:");
+    lines.push("", "⚠️ 已決定但尚未預訂：");
     lines.push(...bookingNeeded.map((item) => `- ${item.title}`));
     lines.push(...bookingInputs.map((input) => `  ${input}`));
   }
 
   lines.push(
     "",
-    "Committed source of truth:",
+    "已確認的依據：",
     ...(snapshot.committedSourceSummary.length > 0
       ? snapshot.committedSourceSummary.map((entry) => `- ${entry}`)
-      : ["- No committed execution details yet."]),
+      : ["- 還沒有任何已確認的執行細節。"]),
     "",
-    "Completed:",
+    "已完成：",
     ...(completed.length > 0
       ? completed.map((item) => `- ${item.title}`)
-      : ["- Nothing fully confirmed yet."])
+      : ["- 還沒有完全確認的項目。"])
   );
 
   if (otherBlockers.length > 0) {
-    lines.push("", "Needs attention:");
-    lines.push(...otherBlockers.map((item) => `- ${item.title}: ${item.description}`));
+    lines.push("", "需要處理：");
+    lines.push(...otherBlockers.map((item) => `- ${item.title}：${item.description}`));
   }
 
   if (missingInputs.length > 0) {
-    lines.push("", "Best next inputs:");
+    lines.push("", "建議下一步補充：");
     lines.push(...missingInputs.map((item) => `- ${item}`));
   }
 
-  lines.push("", "This summary avoids guesswork and does not use unconfirmed planning ideas.");
+  lines.push("", "這份摘要只根據已確認的內容，不會使用未確認的規劃想法。");
 
   await reply(lines.join("\n"));
 }

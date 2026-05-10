@@ -67,7 +67,7 @@ export async function notifyAccessRequested(args: {
   templateTitle: string;
   message: string | null;
 }): Promise<void> {
-  const who = args.requesterDisplayName ?? "Someone";
+  const who = args.requesterDisplayName ?? "有人";
   return createNotification({
     recipientUserId: args.authorLineUserId,
     kind: "template.access_requested",
@@ -78,7 +78,7 @@ export async function notifyAccessRequested(args: {
       requesterDisplayName: args.requesterDisplayName,
       message: args.message,
     },
-    linePushText: `${who} requested access to your template "${args.templateTitle}". Review: ${templateLink(args.slug)}`,
+    linePushText: `${who}申請存取你的範本「${args.templateTitle}」。審核：${templateLink(args.slug)}`,
   });
 }
 
@@ -92,8 +92,8 @@ export async function notifyAccessDecided(args: {
   const verb = args.decision === "approved" ? "approved" : "denied";
   const pushText =
     args.decision === "approved"
-      ? `Your request to access "${args.templateTitle}" was approved. Open: ${templateLink(args.slug)}`
-      : `Your request to access "${args.templateTitle}" was denied.`;
+      ? `你申請存取「${args.templateTitle}」的請求已通過。開啟：${templateLink(args.slug)}`
+      : `你申請存取「${args.templateTitle}」的請求未通過。`;
   return createNotification({
     recipientUserId: args.requesterLineUserId,
     kind: args.decision === "approved" ? "template.access_approved" : "template.access_denied",
@@ -113,7 +113,7 @@ export async function notifyInvited(args: {
   templateTitle: string;
   authorDisplayName: string | null;
 }): Promise<void> {
-  const inviter = args.authorDisplayName ?? "Someone";
+  const inviter = args.authorDisplayName ?? "有人";
   return createNotification({
     recipientUserId: args.inviteeLineUserId,
     kind: "template.invited",
@@ -122,7 +122,7 @@ export async function notifyInvited(args: {
       templateTitle: args.templateTitle,
       authorDisplayName: args.authorDisplayName,
     },
-    linePushText: `${inviter} invited you to view their template "${args.templateTitle}". Open: ${templateLink(args.slug)}`,
+    linePushText: `${inviter}邀請你查看他們的範本「${args.templateTitle}」。開啟：${templateLink(args.slug)}`,
   });
 }
 
@@ -136,7 +136,7 @@ export async function notifyNewComment(args: {
   bodyExcerpt: string;
 }): Promise<void> {
   if (args.commenterLineUserId === args.authorLineUserId) return; // no self-notify
-  const who = args.commenterDisplayName ?? "Someone";
+  const who = args.commenterDisplayName ?? "有人";
   return createNotification({
     recipientUserId: args.authorLineUserId,
     kind: "template.new_comment",
@@ -148,7 +148,7 @@ export async function notifyNewComment(args: {
       commentId: args.commentId,
       bodyExcerpt: args.bodyExcerpt,
     },
-    linePushText: `${who} commented on "${args.templateTitle}". Read: ${templateLink(args.slug)}`,
+    linePushText: `${who}在「${args.templateTitle}」留下了留言。閱讀：${templateLink(args.slug)}`,
   });
 }
 
@@ -160,7 +160,7 @@ export async function notifyForked(args: {
   templateTitle: string;
 }): Promise<void> {
   if (args.forkerLineUserId === args.authorLineUserId) return; // no self-notify
-  const who = args.forkerDisplayName ?? "Someone";
+  const who = args.forkerDisplayName ?? "有人";
   return createNotification({
     recipientUserId: args.authorLineUserId,
     kind: "template.forked",
@@ -170,7 +170,7 @@ export async function notifyForked(args: {
       forkerUserId: args.forkerLineUserId,
       forkerDisplayName: args.forkerDisplayName,
     },
-    linePushText: `${who} forked your template "${args.templateTitle}".`,
+    linePushText: `${who}複製了你的範本「${args.templateTitle}」。`,
   });
 }
 

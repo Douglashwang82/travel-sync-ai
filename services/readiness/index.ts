@@ -125,11 +125,11 @@ export function buildReadinessSnapshot(
       id: "trip-dates",
       tripId: trip.id,
       category: "reservations",
-      title: "Trip dates locked",
+      title: "旅程日期已確認",
       description:
         trip.start_date && trip.end_date
-          ? `Committed trip dates: ${trip.start_date} to ${trip.end_date}.`
-          : "Departure and return dates are not committed yet.",
+          ? `已確認旅程日期：${trip.start_date} 到 ${trip.end_date}。`
+          : "出發與返程日期尚未確認。",
       severity: "critical",
       status: trip.start_date && trip.end_date ? "completed" : "unknown",
       dueAt: trip.start_date,
@@ -141,9 +141,9 @@ export function buildReadinessSnapshot(
       id: "documents",
       tripId: trip.id,
       category: "documents",
-      title: "Passport and visa readiness confirmed",
+      title: "護照與簽證準備就緒",
       description:
-        "No committed traveler document data exists yet. Confirm passport validity and visa requirements manually before departure.",
+        "尚未有任何已確認的旅客證件資料。出發前請手動確認護照效期與簽證需求。",
       severity: "critical",
       status: "unknown",
       dueAt: trip.start_date,
@@ -154,10 +154,10 @@ export function buildReadinessSnapshot(
       id: "stay",
       tripId: trip.id,
       category: "reservations",
-      title: "Accommodation booked",
+      title: "住宿已預訂",
       description: buildItemsDescription(
         hotelItems,
-        "No confirmed accommodation item found yet.",
+        "目前還沒有已確認的住宿項目。",
         "stay"
       ),
       severity: "high",
@@ -170,10 +170,10 @@ export function buildReadinessSnapshot(
       id: "primary-transport",
       tripId: trip.id,
       category: "transport",
-      title: "Primary transport booked",
+      title: "主要交通已預訂",
       description: buildItemsDescription(
         transportItems,
-        "No confirmed flight or transport item found yet.",
+        "目前還沒有已確認的航班或交通項目。",
         "transport"
       ),
       severity: "critical",
@@ -186,11 +186,11 @@ export function buildReadinessSnapshot(
       id: "arrival-plan",
       tripId: trip.id,
       category: "meetup",
-      title: "Arrival and meetup plan confirmed",
+      title: "抵達與接駁計畫已確認",
       description:
         transportItems.length > 0 && hotelItems.length > 0
-          ? "Core arrival pieces exist, but the final meetup or transfer handoff still needs explicit confirmation."
-          : "Arrival meetup or transfer plan cannot be validated until transport and stay are both committed.",
+          ? "抵達相關的核心資訊已具備，但最後的會合或接駁交接仍需明確確認。"
+          : "在交通與住宿都已確認之前，無法驗證抵達會合或接駁計畫。",
       severity: "high",
       status: transportItems.length > 0 && hotelItems.length > 0 ? "open" : "unknown",
       dueAt: trip.start_date,
@@ -201,10 +201,10 @@ export function buildReadinessSnapshot(
       id: "return-plan",
       tripId: trip.id,
       category: "return",
-      title: "Return journey booked",
+      title: "返程交通已預訂",
       description: buildItemsDescription(
         returnTransportItems,
-        "No committed return transport could be confirmed from the current trip data.",
+        "從目前的旅程資料中找不到任何已確認的返程交通。",
         "return"
       ),
       severity: "high",
@@ -222,7 +222,7 @@ export function buildReadinessSnapshot(
           id: "restaurant-reservations",
           tripId: trip.id,
           category: "reservations" as const,
-          title: "Restaurant reservations confirmed",
+          title: "餐廳訂位已確認",
           description: buildItemsDescription(restaurantItems, "", "stay"),
           severity: "medium" as const,
           status: aggregateBookingStatus(restaurantItems),
@@ -238,7 +238,7 @@ export function buildReadinessSnapshot(
           id: "activity-tickets",
           tripId: trip.id,
           category: "reservations" as const,
-          title: "Activity tickets and entries confirmed",
+          title: "活動票券與門票已確認",
           description: buildItemsDescription(activityItems, "", "stay"),
           severity: "medium" as const,
           status: aggregateBookingStatus(activityItems),
@@ -319,18 +319,18 @@ function buildItemsDescription(
   const pendingItems = items.filter((item) => item.booking_status === "needed");
 
   if (pendingItems.length === 0) {
-    const contextLabel = context === "stay" ? "stay" : "transport";
-    return `Confirmed and booked ${contextLabel}: ${items.map((item) => item.title).join(", ")}.`;
+    const contextLabel = context === "stay" ? "住宿" : context === "return" ? "返程交通" : "交通";
+    return `已確認並完成預訂的${contextLabel}：${items.map((item) => item.title).join("、")}。`;
   }
 
   const parts: string[] = [];
   if (bookedItems.length > 0) {
-    parts.push(`Booked: ${bookedItems.map((item) => item.title).join(", ")}`);
+    parts.push(`已預訂：${bookedItems.map((item) => item.title).join("、")}`);
   }
   parts.push(
-    `Decided but not yet booked: ${pendingItems.map((item) => item.title).join(", ")}. Use /booked [item] [ref] once booking is complete.`
+    `已決定但尚未預訂：${pendingItems.map((item) => item.title).join("、")}。預訂完成後，請輸入 /booked [項目] [訂位代碼]。`
   );
-  return parts.join(". ");
+  return parts.join("；");
 }
 
 function collectEvidence(
@@ -346,20 +346,20 @@ function buildMissingInputs(items: ReadinessItem[]): string[] {
     .map((item) => {
       if (item.status === "open") {
         // Decision made but booking not yet completed
-        return `Complete the booking for: ${item.title}. Use /booked [item] [confirmation ref].`;
+        return `完成「${item.title}」的預訂。預訂後請輸入 /booked [項目] [訂位代碼]。`;
       }
       // status === 'unknown' — not even decided yet
       switch (item.id) {
         case "documents":
-          return "Confirm passport validity and visa needs for the group.";
+          return "確認群組成員的護照效期與簽證需求。";
         case "stay":
-          return "Decide and book accommodation — no confirmed hotel yet.";
+          return "決定並預訂住宿 — 目前還沒有已確認的飯店。";
         case "primary-transport":
-          return "Decide and book the main flight or transport so departure readiness can be validated.";
+          return "決定並預訂主要航班或交通，才能驗證出發就緒度。";
         case "return-plan":
-          return "Add and book the return transport as a committed item.";
+          return "新增並預訂返程交通，並將其列為已確認項目。";
         default:
-          return `Confirm: ${item.title}.`;
+          return `請確認：${item.title}。`;
       }
     });
 }
@@ -380,25 +380,25 @@ function buildCommittedSummary(
   const summary: string[] = [];
 
   if (trip.destination_place_id) {
-    summary.push(`Destination anchor: ${trip.destination_place_id}`);
+    summary.push(`目的地代碼：${trip.destination_place_id}`);
   }
   if (trip.destination_formatted_address) {
-    summary.push(`Destination address: ${trip.destination_formatted_address}`);
+    summary.push(`目的地地址：${trip.destination_formatted_address}`);
   }
   if (trip.destination_timezone) {
-    summary.push(`Destination timezone: ${trip.destination_timezone}`);
+    summary.push(`目的地時區：${trip.destination_timezone}`);
   }
   if (trip.destination_google_maps_url) {
-    summary.push(`Destination map: ${trip.destination_google_maps_url}`);
+    summary.push(`目的地地圖：${trip.destination_google_maps_url}`);
   }
   if (trip.start_date && trip.end_date) {
-    summary.push(`Trip dates: ${trip.start_date} to ${trip.end_date}`);
+    summary.push(`旅程日期：${trip.start_date} 到 ${trip.end_date}`);
   }
   if (hotelItems.length > 0) {
-    summary.push(`Accommodation: ${hotelItems.map((item) => item.title).join(", ")}`);
+    summary.push(`住宿：${hotelItems.map((item) => item.title).join("、")}`);
   }
   if (transportItems.length > 0) {
-    summary.push(`Transport: ${transportItems.map((item) => item.title).join(", ")}`);
+    summary.push(`交通：${transportItems.map((item) => item.title).join("、")}`);
   }
 
   return summary;

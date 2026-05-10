@@ -21,7 +21,7 @@ export async function handleShare(
 
   const url = args.find((a) => URL_RE.test(a));
   if (!url) {
-    await reply("Please provide a valid URL starting with http:// or https://");
+    await reply("請提供以 http:// 或 https:// 開頭的有效網址。");
     return;
   }
 
@@ -40,7 +40,7 @@ export async function handleShare(
   }
 
   // Acknowledge immediately — fetching may take a few seconds
-  await reply("Fetching that link... I'll extract the details in a moment!");
+  await reply("正在抓取這個連結⋯⋯馬上幫你整理細節！");
 
   let metadata;
   try {
@@ -49,8 +49,8 @@ export async function handleShare(
     console.error("[share] extraction failed", err);
     await pushText(
         ctx.lineGroupId,
-        "I couldn't read that URL. It may be behind a login or the site blocked me.\n" +
-        "Try /add [item name] to add a planning item, or share another link."
+        "我無法讀取這個網址，可能需要登入，或被網站封鎖了。\n" +
+        "可以改用 /add [項目名稱] 新增規劃項目，或分享其他連結。"
     );
     return;
   }
@@ -71,7 +71,7 @@ export async function handleShare(
 
   if (!remembered) {
     console.error("[share] failed to remember shared item", metadata);
-    await pushText(ctx.lineGroupId, "Something went wrong saving that item. Please try again.");
+    await pushText(ctx.lineGroupId, "儲存這個項目時發生問題，請再試一次。");
     return;
   }
 
@@ -92,7 +92,7 @@ function buildConfirmMessage(m: Awaited<ReturnType<typeof extractUrlMetadata>>):
   };
 
   const emoji = typeEmoji[m.item_type] ?? "📌";
-  lines.push(`${emoji} Saved to trip knowledge: "${m.name}"`);
+  lines.push(`${emoji} 已存入旅程資料庫：「${m.name}」`);
 
   if (m.description) lines.push(`\n${m.description}`);
 
@@ -103,7 +103,7 @@ function buildConfirmMessage(m: Awaited<ReturnType<typeof extractUrlMetadata>>):
 
   if (m.address) lines.push(`📍 ${m.address}`);
 
-  lines.push(`\nUse /recommend ${m.item_type} to recall it later, or /decide ${m.item_type} when the group is ready to choose.`);
+  lines.push(`\n稍後可以用 /recommend ${m.item_type} 回顧；當群組準備好選擇時用 /decide ${m.item_type}。`);
 
   return lines.join("\n");
 }

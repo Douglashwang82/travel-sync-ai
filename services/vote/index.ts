@@ -92,7 +92,7 @@ export async function castVote(input: CastVoteInput): Promise<VoteResult> {
   if (error) {
     return {
       accepted: false,
-      error: "Failed to record vote",
+      error: "無法記錄投票",
       tally: new Map(),
       totalVotes: 0,
       majority: { reached: false, winningOptionId: null, winningCount: 0 },

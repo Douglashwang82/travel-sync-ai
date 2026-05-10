@@ -21,14 +21,14 @@ export async function handleBudget(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("I couldn't identify your group. Please try again.");
+    await reply("無法辨識你的群組，請再試一次。");
     return;
   }
 
   if (args.length === 0) {
     await reply(
-      "Usage: /budget [amount] [currency]\n" +
-        "Examples:\n  /budget 50000\n  /budget 50000 JPY\n  /budget 2000 USD"
+      "用法：/budget [金額] [貨幣]\n" +
+        "範例：\n  /budget 50000\n  /budget 50000 JPY\n  /budget 2000 USD"
     );
     return;
   }
@@ -45,7 +45,7 @@ export async function handleBudget(
     .single();
 
   if (!membership || membership.role !== "organizer") {
-    await reply("Only the trip organizer can set the budget.");
+    await reply("只有旅程主辦人可以設定預算。");
     return;
   }
 
@@ -63,7 +63,7 @@ export async function handleBudget(
     const cand = args[1].toUpperCase();
     if (!SUPPORTED_CURRENCIES.has(cand)) {
       await reply(
-        `Unknown currency "${args[1]}". Supported: ${[...SUPPORTED_CURRENCIES].join(", ")}`
+        `不支援的貨幣「${args[1]}」。可用：${[...SUPPORTED_CURRENCIES].join("、")}`
       );
       return;
     }
@@ -89,7 +89,7 @@ export async function handleBudget(
     .eq("id", trip.id);
 
   if (error) {
-    await reply("Failed to set budget. Please try again.");
+    await reply("設定預算失敗，請再試一次。");
     return;
   }
 
@@ -100,12 +100,12 @@ export async function handleBudget(
   });
 
   const prev = trip.budget_amount
-    ? `Previously: ${Number(trip.budget_amount).toLocaleString()} ${trip.budget_currency}\n\n`
+    ? `先前：${Number(trip.budget_amount).toLocaleString()} ${trip.budget_currency}\n\n`
     : "";
 
   await reply(
-    `Budget set for ${trip.destination_name ?? "your trip"}!\n\n` +
-      `${prev}Total budget: ${amount.toLocaleString()} ${currency}\n\n` +
-      `Expenses are tracked automatically with /exp. View the summary with /exp-summary.`
+    `已為「${trip.destination_name ?? "這趟旅程"}」設定預算！\n\n` +
+      `${prev}總預算：${amount.toLocaleString()} ${currency}\n\n` +
+      `用 /exp 記錄支出，用 /exp-summary 查看總覽。`
   );
 }

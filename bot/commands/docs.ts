@@ -28,7 +28,7 @@ export async function handleDocs(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
@@ -36,14 +36,14 @@ export async function handleDocs(
 
   if (!sub || sub === "help") {
     await reply(
-      "Travel document commands:\n\n" +
-        "/docs add [type] [label] — add your document\n" +
-        "/docs list — show all group docs\n\n" +
-        "Types: passport, visa, insurance, other\n\n" +
-        "Examples:\n" +
+      "旅遊文件指令：\n\n" +
+        "/docs add [類型] [標籤] — 新增你的文件\n" +
+        "/docs list — 顯示群組所有文件\n\n" +
+        "類型：passport、visa、insurance、other\n\n" +
+        "範例：\n" +
         "  /docs add passport expires 2028-03-15\n" +
-        "  /docs add visa Japan e-Visa expires 2026-09-01\n" +
-        "  /docs add insurance AXA travel policy"
+        "  /docs add visa 日本 e-Visa expires 2026-09-01\n" +
+        "  /docs add insurance AXA 旅平險"
     );
     return;
   }
@@ -70,10 +70,10 @@ export async function handleDocs(
     .is("left_at", null)
     .single();
 
-  const displayName = member?.display_name ?? "Unknown";
+  const displayName = member?.display_name ?? "未知成員";
 
   if (sub === "list") {
-    return handleDocsList(ctx.dbGroupId, trip.destination_name ?? "your trip", reply);
+    return handleDocsList(ctx.dbGroupId, trip.destination_name ?? "這趟旅程", reply);
   }
 
   if (sub === "add") {
@@ -124,7 +124,7 @@ export async function handleDocs(
     });
 
     if (error) {
-      await reply("Failed to save document. Please try again.");
+      await reply("儲存文件失敗，請再試一次。");
       return;
     }
 
@@ -134,21 +134,21 @@ export async function handleDocs(
       properties: { doc_type: docType, trip_id: trip.id },
     });
 
-    const labelText = docLabel ? ` (${docLabel})` : "";
-    const expiryText = expiresAt ? ` · expires ${expiresAt}` : "";
+    const labelText = docLabel ? `（${docLabel}）` : "";
+    const expiryText = expiresAt ? ` · 到期日 ${expiresAt}` : "";
     const warningText = status === "expired"
-      ? "\n⚠️ This document appears to be expired!"
+      ? "\n⚠️ 這份文件似乎已過期！"
       : status === "expiring"
-        ? "\n⚠️ This document expires within 6 months — verify before travel."
+        ? "\n⚠️ 這份文件將在 6 個月內到期，出發前請再確認。"
         : "";
 
     await reply(
-      `Document saved for ${displayName}:\n${docType}${labelText}${expiryText}${warningText}\n\nUse /docs list to see all group documents.`
+      `已為 ${displayName} 儲存文件：\n${docType}${labelText}${expiryText}${warningText}\n\n使用 /docs list 查看群組所有文件。`
     );
     return;
   }
 
-  await reply("Unknown sub-command. Use /docs help to see options.");
+  await reply("未知的子指令。使用 /docs help 查看可用選項。");
 }
 
 async function handleDocsList(
@@ -178,33 +178,33 @@ async function handleDocsList(
 
   if (!docs?.length) {
     await reply(
-      `No travel documents recorded yet for ${destination}.\n\n` +
-        "Add yours with: /docs add [type] [label?] [expires YYYY-MM-DD?]"
+      `${destination}還沒有記錄任何旅遊文件。\n\n` +
+        "新增方式：/docs add [類型] [標籤?] [expires YYYY-MM-DD?]"
     );
     return;
   }
 
   const statusIcon: Record<string, string> = { ok: "✅", expiring: "⚠️", expired: "❌", missing: "❓" };
-  const lines: string[] = [`Travel Documents — ${destination}`];
+  const lines: string[] = [`旅遊文件 — ${destination}`];
 
   const byPerson = new Map<string, string[]>();
   for (const doc of docs) {
-    const name = doc.display_name ?? "Unknown";
+    const name = doc.display_name ?? "未知成員";
     if (!byPerson.has(name)) byPerson.set(name, []);
     const icon = statusIcon[doc.status as string] ?? "📄";
-    const label = doc.doc_label ? ` (${doc.doc_label})` : "";
-    const expiry = doc.expires_at ? ` expires ${doc.expires_at}` : "";
+    const label = doc.doc_label ? `（${doc.doc_label}）` : "";
+    const expiry = doc.expires_at ? ` 到期日 ${doc.expires_at}` : "";
     byPerson.get(name)!.push(`  ${icon} ${doc.doc_type}${label}${expiry}`);
   }
 
   for (const [name, entries] of byPerson) {
-    lines.push(`\n${name}:`);
+    lines.push(`\n${name}：`);
     lines.push(...entries);
   }
 
   const warnings = docs.filter((d) => d.status === "expiring" || d.status === "expired");
   if (warnings.length > 0) {
-    lines.push(`\n⚠️ ${warnings.length} document(s) need attention before travel.`);
+    lines.push(`\n⚠️ 有 ${warnings.length} 份文件需要在出發前處理。`);
   }
 
   await reply(lines.join("\n"));
