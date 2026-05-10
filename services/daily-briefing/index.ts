@@ -63,7 +63,7 @@ export async function sendDailyBriefings(): Promise<DailyBriefingResult[]> {
       .eq("booking_status", "needed");
 
     const message = buildBriefingMessage(
-      trip.destination_name ?? "your trip",
+      trip.destination_name ?? "這趟旅程",
       today,
       items ?? [],
       todayDeadlines ?? [],
@@ -124,7 +124,7 @@ function buildBriefingMessage(
   deadlineItems: DeadlineItem[],
   needsBooking: NeedsBookingItem[]
 ): string {
-  const dateLabel = new Date(today + "T12:00:00Z").toLocaleDateString("en-US", {
+  const dateLabel = new Date(today + "T12:00:00Z").toLocaleDateString("zh-TW", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -141,12 +141,12 @@ function buildBriefingMessage(
   };
 
   const lines: string[] = [
-    `🌅 Good morning! Here's your trip plan for today.`,
+    `🌅 早安！這是今天的旅程安排。`,
     `📍 ${destination} — ${dateLabel}`,
   ];
 
   if (bookedItems.length > 0) {
-    lines.push("\n✅ Confirmed for today:");
+    lines.push("\n✅ 今日已確認：");
     for (const item of bookedItems) {
       const icon = TYPE_ICON[item.item_type] ?? "📌";
       const opt = Array.isArray(item.trip_item_options)
@@ -160,7 +160,7 @@ function buildBriefingMessage(
 
       let line = `  ${icon} ${name}`;
       if (timeStr) line += ` @ ${timeStr}`;
-      if (item.booking_ref) line += ` · Ref: ${item.booking_ref}`;
+      if (item.booking_ref) line += ` · 訂位代碼：${item.booking_ref}`;
       if (opt?.address) line += `\n     📍 ${opt.address}`;
 
       // Type-specific detail lines
@@ -173,7 +173,7 @@ function buildBriefingMessage(
   }
 
   if (deadlineItems.length > 0) {
-    lines.push("\n⏰ Due today:");
+    lines.push("\n⏰ 今日待辦：");
     for (const item of deadlineItems) {
       const icon = TYPE_ICON[item.item_type] ?? "📌";
       lines.push(`  ${icon} ${item.title}`);
@@ -181,18 +181,18 @@ function buildBriefingMessage(
   }
 
   if (needsBooking.length > 0) {
-    lines.push("\n⚠️ Still needs booking:");
+    lines.push("\n⚠️ 仍需預訂：");
     for (const item of needsBooking) {
       const icon = TYPE_ICON[item.item_type] ?? "📌";
-      lines.push(`  ${icon} ${item.title} — use /booked ${item.title} [ref] when done`);
+      lines.push(`  ${icon} ${item.title} — 完成後請輸入 /booked ${item.title} [訂位代碼]`);
     }
   }
 
   if (bookedItems.length === 0 && deadlineItems.length === 0) {
-    lines.push("\nNo confirmed activities on the schedule today. Enjoy your free time! 🎉");
+    lines.push("\n今天沒有已確認的安排，好好享受自由時光！🎉");
   }
 
-  lines.push("\n🛠 /ops for full trip status · /incident if something goes wrong");
+  lines.push("\n🛠 /ops 查看完整旅程狀態 · /incident 處理突發狀況");
 
   return lines.join("\n");
 }
@@ -236,21 +236,21 @@ function buildMetadataDetail(metadata: TripItemMetadata | null): string | null {
       if (metadata.departure_airport && metadata.arrival_airport) {
         parts.push(`${metadata.departure_airport} → ${metadata.arrival_airport}`);
       }
-      if (metadata.terminal) parts.push(`Terminal ${metadata.terminal}`);
-      if (metadata.gate) parts.push(`Gate ${metadata.gate}`);
-      if (metadata.seat) parts.push(`Seat ${metadata.seat}`);
+      if (metadata.terminal) parts.push(`航廈 ${metadata.terminal}`);
+      if (metadata.gate) parts.push(`登機門 ${metadata.gate}`);
+      if (metadata.seat) parts.push(`座位 ${metadata.seat}`);
       return parts.length > 0 ? `✈️ ${parts.join(" · ")}` : null;
     }
     case "hotel": {
       const parts: string[] = [];
-      if (metadata.check_in_time) parts.push(`Check-in ${metadata.check_in_time}`);
-      if (metadata.check_out_time) parts.push(`Check-out ${metadata.check_out_time}`);
+      if (metadata.check_in_time) parts.push(`入住 ${metadata.check_in_time}`);
+      if (metadata.check_out_time) parts.push(`退房 ${metadata.check_out_time}`);
       if (metadata.room_type) parts.push(metadata.room_type);
       return parts.length > 0 ? `🏨 ${parts.join(" · ")}` : null;
     }
     case "restaurant": {
       const parts: string[] = [];
-      if (metadata.party_size) parts.push(`${metadata.party_size} pax`);
+      if (metadata.party_size) parts.push(`${metadata.party_size} 人`);
       if (metadata.cuisine) parts.push(metadata.cuisine);
       if (metadata.phone) parts.push(`📞 ${metadata.phone}`);
       return parts.length > 0 ? `🍽️ ${parts.join(" · ")}` : null;
@@ -258,21 +258,21 @@ function buildMetadataDetail(metadata: TripItemMetadata | null): string | null {
     case "transport": {
       const parts: string[] = [];
       if (metadata.mode) parts.push(metadata.mode);
-      if (metadata.pickup_location) parts.push(`From: ${metadata.pickup_location}`);
-      if (metadata.dropoff_location) parts.push(`To: ${metadata.dropoff_location}`);
+      if (metadata.pickup_location) parts.push(`起點：${metadata.pickup_location}`);
+      if (metadata.dropoff_location) parts.push(`終點：${metadata.dropoff_location}`);
       if (metadata.provider) parts.push(metadata.provider);
       return parts.length > 0 ? `🚌 ${parts.join(" · ")}` : null;
     }
     case "activity": {
       const parts: string[] = [];
-      if (metadata.duration_minutes) parts.push(`${metadata.duration_minutes} min`);
-      if (metadata.meeting_point) parts.push(`Meet: ${metadata.meeting_point}`);
+      if (metadata.duration_minutes) parts.push(`${metadata.duration_minutes} 分鐘`);
+      if (metadata.meeting_point) parts.push(`集合：${metadata.meeting_point}`);
       return parts.length > 0 ? `🎯 ${parts.join(" · ")}` : null;
     }
     case "insurance": {
       const parts: string[] = [];
       if (metadata.provider) parts.push(metadata.provider);
-      if (metadata.emergency_contact) parts.push(`Emergency: ${metadata.emergency_contact}`);
+      if (metadata.emergency_contact) parts.push(`緊急聯絡：${metadata.emergency_contact}`);
       return parts.length > 0 ? `🛡️ ${parts.join(" · ")}` : null;
     }
     default:
@@ -283,7 +283,7 @@ function buildMetadataDetail(metadata: TripItemMetadata | null): string | null {
 function formatTime(value: string): string {
   const d = new Date(value);
   if (!Number.isNaN(d.getTime())) {
-    return d.toLocaleTimeString("en-US", {
+    return d.toLocaleTimeString("zh-TW", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,

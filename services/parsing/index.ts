@@ -113,7 +113,7 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
         for (const conflict of parseResult.conflicts) {
           await pushText(
             lineGroupId,
-            `I noticed a potential conflict: ${conflict.description}. Added it to Pending Votes for the group to decide.`
+            `我發現可能的衝突：${conflict.description}。已加入待投票清單，等群組決定。`
           ).catch(() => {});
         }
       }
@@ -145,22 +145,22 @@ function buildExtractionAck(
 
   for (const action of actions) {
     if (action.action === "update_trip_core") {
-      if (action.field === "destination") parts.push("destination updated");
+      if (action.field === "destination") parts.push("已更新目的地");
       else if (
         action.field === "date_range" ||
         action.field === "start_date" ||
         action.field === "end_date"
       ) {
-        parts.push("dates noted");
+        parts.push("已記錄日期");
       }
     } else if (action.action === "create_todo_item" && action.itemTitle) {
-      parts.push(`"${action.itemTitle}" added to To-Do`);
+      parts.push(`已將「${action.itemTitle}」加入待辦`);
     } else if (action.action === "add_option" && action.optionName) {
-      parts.push(`"${action.optionName}" noted as an option`);
+      parts.push(`已記下選項「${action.optionName}」`);
     }
   }
 
   if (parts.length === 0) return null;
-  return `Got it — ${parts.join(", ")}.`;
+  return `收到 — ${parts.join("、")}。`;
 }
 

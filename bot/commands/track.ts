@@ -25,7 +25,7 @@ export async function handleTrack(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.userId) {
-    await reply("I can't identify who you are — try again from a LINE group chat.");
+    await reply("無法辨識你的身分，請從 LINE 群組聊天再試一次。");
     return;
   }
 
@@ -62,24 +62,24 @@ async function trackList(
 
   if (!data || data.length === 0) {
     await reply(
-      "📡 You're not tracking anything yet.\n\n" +
-      "Add a source: /track add https://some-travel-blog.com"
+      "📡 你還沒有追蹤任何來源。\n\n" +
+      "新增來源：/track add https://some-travel-blog.com"
     );
     return;
   }
 
-  const lines: string[] = [`📡 Tracking ${data.length} source${data.length === 1 ? "" : "s"}:`];
+  const lines: string[] = [`📡 目前追蹤 ${data.length} 個來源：`];
   data.forEach((row, i) => {
-    const status = row.is_active ? "" : " (paused)";
+    const status = row.is_active ? "" : "（已暫停）";
     const fails = row.consecutive_failures > 0 ? ` ⚠️${row.consecutive_failures}` : "";
-    const last = row.last_success_at ? relativeTime(row.last_success_at) : "never";
+    const last = row.last_success_at ? relativeTime(row.last_success_at) : "從未";
     lines.push(
       `${i + 1}. [${row.source_type}] ${row.category}${status}${fails}\n` +
       `   ${truncate(row.source_url, 60)}\n` +
-      `   last: ${last}`
+      `   上次：${last}`
     );
   });
-  lines.push("\nAdd more with /track add <url>");
+  lines.push("\n新增更多：/track add <網址>");
 
   await reply(lines.join("\n"));
 }
@@ -97,7 +97,7 @@ async function trackAdd(
 
   if (/^https?:\/\/([^/]+\.)?threads\.(net|com)\//i.test(url)) {
     await reply(
-      "Threads isn't supported yet — Meta's Threads API has no public discovery endpoint. Try Instagram (Business/Creator accounts only) or an RSS feed instead."
+      "Threads 目前不支援 — Meta 的 Threads API 沒有公開的發現介面。可以改用 Instagram（僅限商業／創作者帳號）或 RSS 來源。"
     );
     return;
   }
@@ -116,16 +116,16 @@ async function trackAdd(
 
   if (error) {
     if (error.code === "23505") {
-      await reply("You're already tracking that URL.");
+      await reply("你已經在追蹤這個網址了。");
       return;
     }
-    await reply("Couldn't add that source. Check the URL and try again.");
+    await reply("新增來源失敗，請檢查網址後再試一次。");
     return;
   }
 
   await reply(
-    `📡 Added (${sourceType}, ${category})\n${truncate(url, 80)}\n\n` +
-    "Use /track run to fetch it now, or wait for the daily digest."
+    `📡 已新增（${sourceType}、${category}）\n${truncate(url, 80)}\n\n` +
+    "使用 /track run 立即抓取，或等候每日摘要。"
   );
 }
 
@@ -136,21 +136,21 @@ async function trackRun(
   const result = await composeAndSendDigest(lineUserId);
 
   if (result.delivered) {
-    await reply(`📬 Sent today's digest (${result.item_count} items) to your LINE chat with me.`);
+    await reply(`📬 今日摘要（${result.item_count} 則）已送到你和我的 1:1 聊天。`);
     return;
   }
   switch (result.skipped_reason) {
     case "already_sent":
-      await reply("📬 Today's digest already went out — check your 1:1 chat with me.");
+      await reply("📬 今日摘要已經送出，請查看你和我的 1:1 聊天。");
       return;
     case "no_items":
-      await reply("Nothing new today. Add a source with /track add <url> or wait until tomorrow.");
+      await reply("今天沒有新內容。可以用 /track add <網址> 新增來源，或等到明天。");
       return;
     case "llm_unavailable":
       await reply("摘要服務暫時無法使用，請稍後再試。");
       return;
     default:
-      await reply("Couldn't send the digest right now. Please try again shortly.");
+      await reply("目前無法送出摘要，請稍後再試一次。");
   }
 }
 
@@ -171,11 +171,11 @@ export const __test = { detectSourceType };
 
 function usage(): string {
   return [
-    "📡 /track — follow websites & feeds for daily travel info",
+    "📡 /track — 追蹤網站與訂閱來源，獲取每日旅遊資訊",
     "",
-    "/track             list your sources",
-    "/track add <url>   add a source (category optional)",
-    "/track run         send today's digest to your DM",
+    "/track             列出你目前的來源",
+    "/track add <網址>  新增來源（分類可選）",
+    "/track run         立刻把今日摘要送到你的私訊",
   ].join("\n");
 }
 
@@ -186,9 +186,9 @@ function truncate(s: string, max: number): string {
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.round(diff / 60_000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return "剛剛";
+  if (m < 60) return `${m} 分鐘前`;
   const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
+  if (h < 24) return `${h} 小時前`;
+  return `${Math.round(h / 24)} 天前`;
 }

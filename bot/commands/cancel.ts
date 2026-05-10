@@ -8,7 +8,7 @@ export async function handleCancel(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("I couldn't identify your group. Please try again.");
+    await reply("無法辨識你的群組，請再試一次。");
     return;
   }
 
@@ -23,7 +23,7 @@ export async function handleCancel(
     .single();
 
   if (!membership || membership.role !== "organizer") {
-    await reply("Only the trip organizer can cancel the trip.");
+    await reply("只有旅程主辦人可以取消旅程。");
     return;
   }
 
@@ -35,7 +35,7 @@ export async function handleCancel(
     .single();
 
   if (!trip) {
-    await reply("There's no active trip to cancel.");
+    await reply("目前沒有可取消的進行中旅程。");
     return;
   }
 
@@ -46,7 +46,7 @@ export async function handleCancel(
 
   if (error) {
     logger.error("cancel trip failed", { groupId: ctx.dbGroupId ?? undefined, userId: ctx.userId });
-    await reply("Something went wrong cancelling the trip. Please try again.");
+    await reply("取消旅程時發生問題，請再試一次。");
     return;
   }
 
@@ -56,9 +56,9 @@ export async function handleCancel(
     properties: { destination: trip.destination_name ?? null },
   });
 
-  const label = trip.destination_name ? `Trip to ${trip.destination_name}` : "The trip";
+  const label = trip.destination_name ? `前往「${trip.destination_name}」的旅程` : "這趟旅程";
   await reply(
-    `${label} has been cancelled.\n\n` +
-      `Use /start to plan a new trip whenever you're ready.`
+    `${label}已取消。\n\n` +
+      `當你準備好時，使用 /start 規劃新的旅程。`
   );
 }

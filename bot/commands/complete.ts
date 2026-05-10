@@ -10,7 +10,7 @@ export async function handleComplete(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("I couldn't identify your group. Please try again.");
+    await reply("無法辨識你的群組，請再試一次。");
     return;
   }
 
@@ -25,7 +25,7 @@ export async function handleComplete(
     .single();
 
   if (!membership || membership.role !== "organizer") {
-    await reply("Only the trip organizer can mark the trip as complete.");
+    await reply("只有旅程主辦人可以將旅程標記為完成。");
     return;
   }
 
@@ -37,7 +37,7 @@ export async function handleComplete(
     .single();
 
   if (!trip) {
-    await reply("There's no active trip to mark as complete.");
+    await reply("目前沒有可標記為完成的進行中旅程。");
     return;
   }
 
@@ -48,7 +48,7 @@ export async function handleComplete(
 
   if (error) {
     logger.error("complete trip failed", { groupId: ctx.dbGroupId ?? undefined, userId: ctx.userId });
-    await reply("Something went wrong completing the trip. Please try again.");
+    await reply("完成旅程時發生問題，請再試一次。");
     return;
   }
 
@@ -59,26 +59,26 @@ export async function handleComplete(
   });
 
   await reply(
-    `🏁 Trip to ${(trip.destination_name ?? "your trip")} is now complete!\n\n` +
-      `Calculating final expenses...`
+    `🏁 前往「${(trip.destination_name ?? "目的地")}」的旅程已完成！\n\n` +
+      `正在計算最終費用⋯⋯`
   );
 
   // Push final settlement summary
   const summary = await getExpenseSummary(ctx.dbGroupId, trip.id).catch(() => null);
   if (summary && summary.totalAmount > 0) {
-    const lines: string[] = [`💰 Final Settlement — ${(trip.destination_name ?? "your trip")}`];
-    lines.push(`Total spent: ${summary.totalAmount.toLocaleString()}`);
+    const lines: string[] = [`💰 最終結算 — ${(trip.destination_name ?? "這趟旅程")}`];
+    lines.push(`總支出：${summary.totalAmount.toLocaleString()}`);
     lines.push(``);
 
     if (summary.settlements.length === 0) {
-      lines.push(`✅ Everyone is even! No transfers needed.`);
+      lines.push(`✅ 大家都已結清！不需要轉帳。`);
     } else {
-      lines.push(`💸 Please complete these transfers:`);
+      lines.push(`💸 請完成以下轉帳：`);
       for (const s of summary.settlements) {
-        lines.push(`  ${s.from} → ${s.to}: $${s.amount.toLocaleString()}`);
+        lines.push(`  ${s.from} → ${s.to}：$${s.amount.toLocaleString()}`);
       }
       lines.push(``);
-      lines.push(`Once you've paid, confirm with your group. Thanks for traveling together!`);
+      lines.push(`轉帳完成後請和群組確認。謝謝大家一起旅行！`);
     }
 
     await pushText(ctx.lineGroupId, lines.join("\n"));
@@ -92,10 +92,10 @@ export async function handleComplete(
     .is("left_at", null);
 
   const npsMessage =
-    `👋 Hi! Thanks for using TravelSync AI for your trip to ${(trip.destination_name ?? "your trip")}.\n\n` +
-    `How was your experience? Reply with a number:\n` +
-    `1-4 😞 Poor · 5-6 😐 OK · 7-8 🙂 Good · 9-10 🤩 Excellent\n\n` +
-    `Your feedback helps us improve. (This is a one-time message.)`;
+    `👋 嗨！謝謝你使用 TravelSync AI 規劃前往「${(trip.destination_name ?? "目的地")}」的旅程。\n\n` +
+    `這次體驗如何？請回覆一個數字：\n` +
+    `1-4 😞 差 · 5-6 😐 普通 · 7-8 🙂 好 · 9-10 🤩 很棒\n\n` +
+    `你的回饋能幫助我們進步。（此訊息只會傳送一次。）`;
 
   for (const member of members ?? []) {
     await pushText(member.line_user_id, npsMessage, ctx.dbGroupId).catch(() => {

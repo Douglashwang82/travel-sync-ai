@@ -45,7 +45,7 @@ export async function handleNudge(
 
   if (recentNudge) {
     await reply(
-      "I already sent a nudge recently. Give your group a bit more time before nudging again."
+      "我剛剛已經提醒過了，請再給群組一點時間，稍後再提醒。"
     );
     return;
   }
@@ -72,20 +72,20 @@ export async function handleNudge(
   }
 
   const lines: string[] = [
-    `📣 Trip update for ${trip.destination_name ?? "your trip"}:`,
+    `📣 ${trip.destination_name ?? "這趟旅程"}的進度提醒：`,
   ];
 
   if (pendingItems?.length) {
-    lines.push(`\n⏳ Still waiting for votes on:`);
+    lines.push(`\n⏳ 仍在等待投票：`);
     pendingItems.forEach((item) => lines.push(`  • ${item.title}`));
   }
 
   if (staleItems?.length) {
-    lines.push(`\n📌 These items haven't been discussed yet:`);
+    lines.push(`\n📌 這些項目還沒被討論：`);
     staleItems.forEach((item) => lines.push(`  • ${item.title}`));
   }
 
-  lines.push(`\nType /status to view the full board.`);
+  lines.push(`\n輸入 /status 查看完整看板。`);
 
   const nudgeMessage = lines.join("\n");
 
@@ -99,5 +99,5 @@ export async function handleNudge(
     },
   });
 
-  await reply("Nudge sent to the group!");
+  await reply("已將提醒送到群組！");
 }

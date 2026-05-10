@@ -13,8 +13,8 @@ export async function handleOption(
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
     await reply(
-      "Usage: /option [decision-item] | [option-name]\n" +
-        "範例：/option restaurant | Ramen Shop Osaka"
+      "用法：/option [決定項目] | [選項名稱]\n" +
+        "範例：/option restaurant | 大阪拉麵店"
     );
     return;
   }
@@ -24,8 +24,8 @@ export async function handleOption(
 
   if (pipeIndex === -1) {
     await reply(
-      "Please separate the decision item and option name with |.\n" +
-        "範例：/option restaurant | Ramen Shop Osaka"
+      "請用 | 分隔決定項目和選項名稱。\n" +
+        "範例：/option restaurant | 大阪拉麵店"
     );
     return;
   }
@@ -35,8 +35,8 @@ export async function handleOption(
 
   if (!itemQuery || !optionName) {
     await reply(
-      "Both a decision item and an option name are required.\n" +
-        "範例：/option restaurant | Ramen Shop Osaka"
+      "決定項目和選項名稱都必須提供。\n" +
+        "範例：/option restaurant | 大阪拉麵店"
     );
     return;
   }
@@ -60,16 +60,16 @@ export async function handleOption(
 
   if (!match) {
     await reply(
-      `No decision item matching "${itemQuery}" found.\n` +
-        `Use /decide ${itemQuery} to create one first.`
+      `找不到符合「${itemQuery}」的決定項目。\n` +
+        `請先用 /decide ${itemQuery} 建立一個。`
     );
     return;
   }
 
   if (match.item_kind !== "decision") {
     await reply(
-      `"${match.title}" is a planning task, not a decision item.\n` +
-        `Use /decide ${match.item_type ?? itemQuery} to create a voteable decision first.`
+      `「${match.title}」是規劃任務，不是可投票的決定項目。\n` +
+        `請先用 /decide ${match.item_type ?? itemQuery} 建立可投票的決定項目。`
     );
     return;
   }
@@ -78,21 +78,21 @@ export async function handleOption(
 
   if (!result.ok) {
     if (result.code === "DUPLICATE") {
-      await reply(`"${optionName}" is already an option for "${match.title}".`);
+      await reply(`「${optionName}」已經是「${match.title}」的選項了。`);
       return;
     }
     if (result.code === "ALREADY_CONFIRMED") {
-      await reply(`"${match.title}" is already confirmed — no more options can be added.`);
+      await reply(`「${match.title}」已經確認，不能再新增選項。`);
       return;
     }
-    await reply("Failed to add the option. Please try again.");
+    await reply("新增選項失敗，請再試一次。");
     return;
   }
 
   const stageNote =
     match.stage === "pending"
-      ? `\n\nVoting is already open for "${match.title}" — this option is now available to vote on.`
-      : `\n\nUse /vote ${match.item_type ?? itemQuery} when the group is ready to start voting.`;
+      ? `\n\n「${match.title}」目前正在投票中，這個選項已經可以被投票。`
+      : `\n\n當群組準備好投票時，使用 /vote ${match.item_type ?? itemQuery}。`;
 
-  await reply(`Added option "${result.name}" to "${match.title}".${stageNote}`);
+  await reply(`已將選項「${result.name}」加入「${match.title}」。${stageNote}`);
 }

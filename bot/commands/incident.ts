@@ -20,7 +20,7 @@ export async function handleIncident(
   const query = args.join(" ").trim();
   if (!query) {
     await reply(
-      "用法：/incident [發生了什麼]\n範例：/incident I lost my passport"
+      "用法：/incident [發生了什麼]\n範例：/incident 我的護照不見了"
     );
     return;
   }
@@ -42,11 +42,11 @@ export async function handleIncident(
 
   if (!resolution.matched || !resolution.playbook) {
     await reply(
-      "I couldn't confidently map that to a supported incident yet.\n\n" +
-        "Try describing it more directly, like:\n" +
-        "- /incident flight delay\n" +
-        "- /incident I lost my passport\n" +
-        "- /incident we can't find the group"
+      "我目前無法確定這對應到哪個支援的事件類型。\n\n" +
+        "可以更直接地描述，例如：\n" +
+        "- /incident 班機延誤\n" +
+        "- /incident 護照不見了\n" +
+        "- /incident 找不到同行的人"
     );
     return;
   }
@@ -67,7 +67,7 @@ export async function handleIncident(
 
   const followUpText =
     createdTasks.length > 0
-      ? `\n\nAdded follow-up items to the board:\n${createdTasks
+      ? `\n\n已在看板上新增後續任務：\n${createdTasks
           .map((task) => `- ${task.title}`)
           .join("\n")}`
       : "";
@@ -102,7 +102,7 @@ async function ensureIncidentTasks(
       item_kind: "task",
       stage: "todo",
       source: "system",
-      description: "Created from an incident playbook.",
+      description: "由事件處理流程自動建立。",
     });
 
     if (!error) {

@@ -6,7 +6,7 @@ export async function handleOptout(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("I couldn't identify you. Please try again.");
+    await reply("無法辨識你的身分，請再試一次。");
     return;
   }
 
@@ -24,8 +24,8 @@ export async function handleOptout(
     );
 
   await reply(
-    "Done. I'll no longer process your messages for trip planning.\n" +
-      "Type /optin at any time to re-enable."
+    "完成。我不會再解析你的訊息來協助旅程規劃。\n" +
+      "想重新啟用的話，隨時輸入 /optin 即可。"
   );
 }
 
@@ -34,7 +34,7 @@ export async function handleOptin(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("I couldn't identify you. Please try again.");
+    await reply("無法辨識你的身分，請再試一次。");
     return;
   }
 
@@ -52,6 +52,6 @@ export async function handleOptin(
     );
 
   await reply(
-    "Welcome back! I'll start processing your messages again to help with trip planning."
+    "歡迎回來！我會重新開始解析你的訊息來協助旅程規劃。"
   );
 }

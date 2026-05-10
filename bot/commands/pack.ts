@@ -34,7 +34,7 @@ export async function handlePack(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("This command must be used inside a group chat.");
+    await reply("這個指令只能在群組聊天中使用。");
     return;
   }
 
@@ -42,12 +42,12 @@ export async function handlePack(
 
   if (!sub || sub === "help") {
     await reply(
-      "Packing list commands:\n\n" +
-        "/pack add [category?] [item] — add an item\n" +
-        "/pack list — show all items with check status\n" +
-        "/pack check [#] — mark item as packed\n\n" +
-        "Categories: documents, clothing, toiletries, electronics, safety, general\n\n" +
-        "Examples:\n" +
+      "打包清單指令：\n\n" +
+        "/pack add [分類?] [物品] — 新增物品\n" +
+        "/pack list — 顯示所有物品與打包狀態\n" +
+        "/pack check [編號] — 標記物品為已打包\n\n" +
+        "分類：documents、clothing、toiletries、electronics、safety、general\n\n" +
+        "範例：\n" +
         "  /pack add passport\n" +
         "  /pack add clothing t-shirt x5\n" +
         "  /pack list\n" +
@@ -77,14 +77,14 @@ export async function handlePack(
     .single();
 
   if (!group) {
-    await reply("Group not found.");
+    await reply("找不到這個群組。");
     return;
   }
 
   if (sub === "add") {
     const remaining = args.slice(1);
     if (!remaining.length) {
-      await reply("用法：/pack add [分類?] [物品]\n範例：/pack add clothing rain jacket");
+      await reply("用法：/pack add [分類?] [物品]\n範例：/pack add clothing 雨衣");
       return;
     }
 
@@ -99,7 +99,7 @@ export async function handlePack(
 
     const label = labelParts.join(" ").trim();
     if (!label) {
-      await reply("請提供物品名稱。範例：/pack add clothing rain jacket");
+      await reply("請提供物品名稱。範例：/pack add clothing 雨衣");
       return;
     }
 
@@ -113,7 +113,7 @@ export async function handlePack(
     });
 
     if (error) {
-      await reply("Failed to add item. Please try again.");
+      await reply("新增物品失敗，請再試一次。");
       return;
     }
 
@@ -124,13 +124,13 @@ export async function handlePack(
     });
 
     await reply(
-      `${CATEGORY_ICONS[category]} Added to packing list: ${label} [${category}]\n\nUse /pack list to see everything.`
+      `${CATEGORY_ICONS[category]} 已加入打包清單：${label} [${category}]\n\n使用 /pack list 查看所有項目。`
     );
     return;
   }
 
   if (sub === "list") {
-    return handlePackList(ctx.dbGroupId, ctx.userId, trip.id, trip.destination_name ?? "your trip", reply);
+    return handlePackList(ctx.dbGroupId, ctx.userId, trip.id, trip.destination_name ?? "這趟旅程", reply);
   }
 
   if (sub === "check") {
@@ -148,12 +148,12 @@ export async function handlePack(
       .order("created_at", { ascending: true });
 
     if (!items?.length) {
-      await reply("No items in packing list yet. Use /pack add [item] to add some.");
+      await reply("打包清單還沒有任何項目。使用 /pack add [物品] 來新增。");
       return;
     }
 
     if (itemNum < 1 || itemNum > items.length) {
-      await reply(`Item #${itemNum} not found. Use /pack list to see item numbers.`);
+      await reply(`找不到編號 #${itemNum} 的項目。使用 /pack list 查看項目編號。`);
       return;
     }
 
@@ -165,16 +165,16 @@ export async function handlePack(
     );
 
     if (error) {
-      await reply("Failed to mark item. Please try again.");
+      await reply("標記物品失敗，請再試一次。");
       return;
     }
 
     const cat = item.category as PackCategory;
-    await reply(`${CATEGORY_ICONS[cat] ?? "📦"} Checked off: ${item.label}`);
+    await reply(`${CATEGORY_ICONS[cat] ?? "📦"} 已打包：${item.label}`);
     return;
   }
 
-  await reply("Unknown sub-command. Use /pack help to see options.");
+  await reply("未知的子指令。使用 /pack help 查看可用選項。");
 }
 
 async function handlePackList(
@@ -195,7 +195,7 @@ async function handlePackList(
 
   if (!items?.length) {
     await reply(
-      `No packing items yet for ${destination}.\n\n` +
+      `${destination}的打包清單還是空的。\n\n` +
         "新增物品：/pack add [分類?] [物品]"
     );
     return;
@@ -232,7 +232,7 @@ async function handlePackList(
     byCategory.get(cat)!.push({ num: idx + 1, label: item.label, id: item.id });
   });
 
-  const lines: string[] = [`Packing List — ${destination}`];
+  const lines: string[] = [`打包清單 — ${destination}`];
   let totalChecked = 0;
 
   for (const [cat, catItems] of byCategory) {
@@ -241,15 +241,15 @@ async function handlePackList(
     for (const item of catItems) {
       const myCheck = checkedIds.has(item.id) ? "✓" : "○";
       const others = checkCounts.get(item.id) ?? 0;
-      const othersText = others > 0 ? ` (${others} packed)` : "";
+      const othersText = others > 0 ? `（已有 ${others} 人打包）` : "";
       lines.push(`  ${myCheck} #${item.num} ${item.label}${othersText}`);
       if (checkedIds.has(item.id)) totalChecked++;
     }
   }
 
   const pct = Math.round((totalChecked / items.length) * 100);
-  lines.push(`\nYour progress: ${totalChecked}/${items.length} items (${pct}%)`);
-  lines.push("Use /pack check [#] to mark items as packed.");
+  lines.push(`\n你的進度：${totalChecked}/${items.length} 項（${pct}%）`);
+  lines.push("使用 /pack check [編號] 標記為已打包。");
 
   await reply(lines.join("\n"));
 }

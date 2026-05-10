@@ -86,7 +86,7 @@ function buildOptionBubble(
   if (voteCount > 0) {
     bodyContents.push({
       type: "text",
-      text: `${voteCount} vote${voteCount === 1 ? "" : "s"}`,
+      text: `${voteCount} 票`,
       size: "xs",
       color: "#00b900",
       margin: "md",
@@ -100,9 +100,9 @@ function buildOptionBubble(
       color: "#00b900",
       action: {
         type: "postback",
-        label: voteCount > 0 ? `Vote (${voteCount})` : "Vote",
+        label: voteCount > 0 ? `投票（${voteCount}）` : "投票",
         data: postbackData,
-        displayText: `I vote for ${candidate.name}`,
+        displayText: `我投給 ${candidate.name}`,
       },
     },
   ];
@@ -113,7 +113,7 @@ function buildOptionBubble(
       style: "link",
       action: {
         type: "uri",
-        label: "View details",
+        label: "查看詳情",
         uri: candidate.bookingUrl,
       },
     });
@@ -148,9 +148,9 @@ export function buildWinnerMessage(
   totalVotes: number
 ): string {
   return (
-    `✅ Decision made for "${itemTitle}"!\n\n` +
+    `✅ 「${itemTitle}」的決定已完成！\n\n` +
     `🏆 ${winnerName}\n` +
-    `${voteCount} out of ${totalVotes} vote${totalVotes === 1 ? "" : "s"}\n\n` +
-    `View the confirmed itinerary in the dashboard.`
+    `${totalVotes} 票中的 ${voteCount} 票\n\n` +
+    `可至控制台查看已確認的行程。`
   );
 }

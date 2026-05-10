@@ -29,7 +29,7 @@ export async function handleAdd(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
-    await reply("用法：/add [項目]\n範例：/add Book travel insurance");
+    await reply("用法：/add [項目]\n範例：/add 預訂旅遊保險");
     return;
   }
 
@@ -55,12 +55,12 @@ export async function handleAdd(
 
   if (error) {
     console.error("[add] failed to insert item", error);
-    await reply("Failed to add the item. Please try again.");
+    await reply("新增項目失敗，請再試一次。");
     return;
   }
 
   await reply(
-    `Added to To-Do: "${title}"\n\n` +
-      `This is a task. Use /decide only when the group needs to choose between options.`
+    `已加入待辦：「${title}」\n\n` +
+      `這是一個任務。當群組需要在多個選項中做出選擇時，再使用 /decide。`
   );
 }
