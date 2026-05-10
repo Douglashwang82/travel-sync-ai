@@ -43,7 +43,7 @@ export function TripBoardView({ tripId }: { tripId: string }) {
       setLoadError(
         err instanceof AppApiFetchError
           ? err.message
-          : "Failed to load trip board"
+          : "旅程看板載入失敗"
       );
     }
   }, [tripId]);
@@ -76,12 +76,12 @@ export function TripBoardView({ tripId }: { tripId: string }) {
     <>
       <div className="space-y-4">
         <TabPageHeader
-          title="Advanced board"
-          subtitle={`${total} item${total === 1 ? "" : "s"} across To-Do, Pending vote and Confirmed. Use the Workspace tab for the map-first view.`}
+          title="進階看板"
+          subtitle={`${total} 個項目分布在待辦、投票中與已確認。若想用地圖優先的方式瀏覽，請回到總覽。`}
           actions={
             isOrganizer ? (
               <Button size="sm" onClick={() => setAddOpen(true)}>
-                + Add item
+                + 新增項目
               </Button>
             ) : undefined
           }

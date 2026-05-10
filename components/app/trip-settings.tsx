@@ -23,10 +23,10 @@ import {
 import type { Trip, TripStatus } from "@/lib/types";
 
 const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "draft", label: "草稿" },
+  { value: "active", label: "進行中" },
+  { value: "completed", label: "已完成" },
+  { value: "cancelled", label: "已取消" },
 ];
 
 export function TripSettingsClient({ tripId }: { tripId: string }) {
@@ -55,7 +55,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       setEndDate(res.trip.end_date ?? "");
       setStatus(res.trip.status);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load trip");
+      setError(err instanceof Error ? err.message : "旅程載入失敗");
     }
   }, [tripId]);
 
@@ -98,7 +98,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       setTrip(res.trip);
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save trip");
+      setError(err instanceof Error ? err.message : "旅程儲存失敗");
     } finally {
       setSaving(false);
     }
@@ -117,11 +117,11 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
-        title="Trip settings"
+        title="旅程設定"
         subtitle={
           isOrganizer
-            ? "Edit the trip basics below. Destination lookup (map, timezone) updates automatically when the bot resolves it from chat."
-            : "Only organizers can edit trip basics. Ask your organizer to make changes, or promote yourself via the LINE bot."
+            ? "在下方編輯旅程基本資料。當 bot 從聊天中解析目的地後，地圖與時區會自動更新。"
+            : "只有主揪可以編輯旅程基本資料。請主揪協助修改，或透過 LINE bot 調整權限。"
         }
       />
 
@@ -134,7 +134,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="trip-destination">Destination</Label>
+            <Label htmlFor="trip-destination">目的地</Label>
             <Input
               id="trip-destination"
               placeholder="Osaka, Japan"
@@ -144,7 +144,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="trip-title">Trip title (optional)</Label>
+            <Label htmlFor="trip-title">旅程標題（選填）</Label>
             <Input
               id="trip-title"
               placeholder="Summer gang trip 2026"
@@ -154,7 +154,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="trip-start">Start date</Label>
+            <Label htmlFor="trip-start">開始日期</Label>
             <Input
               id="trip-start"
               type="date"
@@ -164,7 +164,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="trip-end">End date</Label>
+            <Label htmlFor="trip-end">結束日期</Label>
             <Input
               id="trip-end"
               type="date"
@@ -174,7 +174,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Status</Label>
+            <Label>狀態</Label>
             <Select
               value={status}
               onValueChange={(v) => setStatus(v as TripStatus)}
@@ -198,13 +198,13 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
           <p className="text-xs text-[var(--status-blocked)]">{error}</p>
         )}
         {success && (
-          <p className="text-xs font-medium text-[var(--accent-line)]">Saved.</p>
+          <p className="text-xs font-medium text-[var(--accent-line)]">已儲存。</p>
         )}
 
         {isOrganizer && (
           <div className="flex justify-end">
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save changes"}
+              {saving ? "儲存中..." : "儲存變更"}
             </Button>
           </div>
         )}
@@ -213,25 +213,25 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       {isOrganizer && (
         <TabSurface className="flex items-center justify-between gap-4">
           <TabSurfaceTitle
-            title="Publish as template"
-            subtitle="Share this trip's itinerary so others can use it as a starting point."
+            title="發布為範本"
+            subtitle="分享這趟旅程的行程，讓其他人可以作為規劃起點。"
           />
           <Link href={`/app/trips/${tripId}/publish`}>
-            <Button variant="outline" size="sm">Publish</Button>
+            <Button variant="outline" size="sm">發布</Button>
           </Link>
         </TabSurface>
       )}
 
       <TabSurface>
         <TabSurfaceTitle
-          title="Resolved destination"
-          subtitle="These fields are populated by the AI when it resolves the destination from chat. Update the destination above to trigger a re-sync."
+          title="已解析目的地"
+          subtitle="AI 從聊天中解析目的地後會填入這些欄位。更新上方目的地可重新同步。"
         />
         <dl className="mt-3 space-y-2 text-xs">
-          <DetailRow label="Formatted address" value={trip.destination_formatted_address} />
-          <DetailRow label="Timezone" value={trip.destination_timezone} />
+          <DetailRow label="格式化地址" value={trip.destination_formatted_address} />
+          <DetailRow label="時區" value={trip.destination_timezone} />
           <DetailRow
-            label="Coordinates"
+            label="座標"
             value={
               trip.destination_lat != null && trip.destination_lng != null
                 ? `${trip.destination_lat}, ${trip.destination_lng}`
@@ -240,7 +240,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
           />
           <DetailRow label="Google Place ID" value={trip.destination_place_id} mono />
           <DetailRow
-            label="Maps URL"
+            label="地圖 URL"
             value={
               trip.destination_google_maps_url ? (
                 <a
@@ -249,16 +249,16 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
                   rel="noreferrer"
                   className="text-[var(--accent-line)] underline underline-offset-2"
                 >
-                  Open
+                  開啟
                 </a>
               ) : null
             }
           />
           <DetailRow
-            label="Last synced"
+            label="上次同步"
             value={
               trip.destination_source_last_synced_at
-                ? new Date(trip.destination_source_last_synced_at).toLocaleString()
+                ? new Date(trip.destination_source_last_synced_at).toLocaleString("zh-TW")
                 : null
             }
           />
@@ -283,7 +283,7 @@ function DetailRow({
       <dd
         className={`max-w-[70%] text-right text-[var(--text-primary)] ${mono ? "text-mono text-[11px]" : ""}`}
       >
-        {value ?? <span className="text-[var(--text-muted)] italic">—</span>}
+        {value ?? <span className="text-[var(--text-muted)] italic">-</span>}
       </dd>
     </div>
   );

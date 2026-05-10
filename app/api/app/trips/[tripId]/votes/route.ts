@@ -70,7 +70,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (itemsErr) {
     return NextResponse.json(
-      { error: "Failed to load votes", code: "DB_ERROR" },
+      { error: "投票載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (optionsRes.error || votesRes.error || membersRes.error) {
     return NextResponse.json(
-      { error: "Failed to load vote details", code: "DB_ERROR" },
+      { error: "投票詳情載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -217,7 +217,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -225,7 +225,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const parsed = CastSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR" },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     .single();
   if (!item || item.trip_id !== tripId) {
     return NextResponse.json(
-      { error: "Item not found in this trip", code: "NOT_FOUND" },
+      { error: "在此旅程中找不到項目", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   if (!result.accepted) {
     return NextResponse.json(
-      { error: result.error ?? "Vote not accepted", code: "VOTE_REJECTED" },
+      { error: result.error ?? "投票未被接受", code: "VOTE_REJECTED" },
       { status: 409 }
     );
   }

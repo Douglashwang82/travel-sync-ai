@@ -8,7 +8,7 @@ export async function handleOps(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 
@@ -21,7 +21,7 @@ export async function handleOps(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

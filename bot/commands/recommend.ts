@@ -45,7 +45,7 @@ export async function handleRecommend(
     .single();
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

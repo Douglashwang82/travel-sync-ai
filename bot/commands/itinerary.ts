@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db";
 import { getConfirmedItems, type ItineraryRow } from "@/services/trip-items";
 import type { TripItemMetadata } from "@/lib/trip-item-metadata";
+import { BOT_COPY } from "@/lib/bot-copy";
 import type { CommandContext } from "../router";
 
 type TripForItinerary = {
@@ -17,7 +18,7 @@ export async function handleItinerary(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId) {
-    await reply("Usage: /itinerary [YYYY-MM-DD]\nExample: /itinerary 2026-07-15");
+    await reply("用法：/itinerary [YYYY-MM-DD]\n範例：/itinerary 2026-07-15");
     return;
   }
 
@@ -30,7 +31,7 @@ export async function handleItinerary(
     .single();
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply(BOT_COPY.noActiveTrip);
     return;
   }
 
@@ -38,9 +39,9 @@ export async function handleItinerary(
   const requestedDate = parseRequestedDate(args.join(" "), typedTrip);
   if (args.length > 0 && !requestedDate) {
     await reply(
-      "I couldn't understand that date.\n" +
-        "Use /itinerary YYYY-MM-DD or /itinerary M/D.\n" +
-        "Example: /itinerary 2026-07-15"
+      "我看不懂這個日期。\n" +
+        "請使用 /itinerary YYYY-MM-DD 或 /itinerary M/D。\n" +
+        "範例：/itinerary 2026-07-15"
     );
     return;
   }
@@ -50,7 +51,7 @@ export async function handleItinerary(
     items = await getConfirmedItems(typedTrip.id);
   } catch (err) {
     console.error("[itinerary] failed to load confirmed items", err);
-    await reply("Failed to load the itinerary. Please try again.");
+    await reply("行程載入失敗，請再試一次。");
     return;
   }
 
@@ -83,13 +84,13 @@ function formatItinerary(
   requestedDate: string | null
 ): string {
   const title = requestedDate
-    ? `Itinerary for ${formatDateLabel(requestedDate)}`
-    : `Itinerary${trip.destination_name ? `: ${trip.destination_name}` : ""}`;
+    ? `${formatDateLabel(requestedDate)} 的行程`
+    : `行程${trip.destination_name ? `：${trip.destination_name}` : ""}`;
 
   if (items.length === 0) {
     return requestedDate
-      ? `${title}\n\nNo confirmed plans for this date yet.`
-      : `${title}\n\nNo confirmed itinerary items yet. Use /decide, /vote, or add confirmed plans from the web app.`;
+      ? `${title}\n\n這一天還沒有已確認的安排。`
+      : `${title}\n\n目前還沒有已確認的行程。可以使用 /decide、/vote，或從網頁版新增已確認安排。`;
   }
 
   const lines = [title];
@@ -100,10 +101,10 @@ function formatItinerary(
   const grouped = groupByDate(items);
   for (const [date, dayItems] of grouped) {
     lines.push("");
-    lines.push(date === "undated" ? "No date set" : formatDateLabel(date));
+    lines.push(date === "undated" ? "未設定日期" : formatDateLabel(date));
 
     const note = date !== "undated" ? trip.day_notes?.[date]?.note?.trim() : "";
-    if (note) lines.push(`Note: ${note}`);
+    if (note) lines.push(`備註：${note}`);
 
     for (const item of dayItems) {
       lines.push(formatItemLine(item));
@@ -137,7 +138,7 @@ function getMetadataDate(metadata: TripItemMetadata): string | null {
 function formatItemLine(item: ItineraryRow): string {
   const time = getItemTime(item);
   const option = item.confirmed_option?.name;
-  const ref = item.booking_ref ? ` ref ${item.booking_ref}` : "";
+  const ref = item.booking_ref ? ` 訂位編號 ${item.booking_ref}` : "";
   const label = option && option !== item.title ? `${item.title}: ${option}` : item.title;
   return `- ${time ? `${time} ` : ""}${label}${ref}`;
 }
@@ -160,6 +161,6 @@ function formatDateLabel(date: string): string {
 }
 
 function formatTripDates(startDate: string | null, endDate: string | null): string {
-  if (startDate && endDate) return `${startDate} to ${endDate}`;
+  if (startDate && endDate) return `${startDate} 到 ${endDate}`;
   return startDate ?? endDate ?? "";
 }

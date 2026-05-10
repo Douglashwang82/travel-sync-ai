@@ -13,7 +13,7 @@ export async function handleVote(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId || !ctx.lineGroupId) {
-    await reply("Usage: /vote [item]\nExample: /vote hotel");
+    await reply("用法：/vote [項目]\n範例：/vote hotel");
     return;
   }
 
@@ -23,7 +23,7 @@ export async function handleVote(
   const trip = await getActiveTrip(db, ctx.dbGroupId, "id, destination_name");
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

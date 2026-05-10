@@ -46,7 +46,7 @@ export async function handleIdea(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Start one first with /start [destination] [dates].");
+    await reply("目前沒有進行中的旅程。請先使用 /start [目的地] [日期] 建立旅程。");
     return;
   }
 
@@ -74,7 +74,7 @@ export async function handleIdea(
 
   const text = textParts.join(" ").trim();
   if (!text) {
-    await reply("Please include some idea text. Example: /idea Let's check out Arashiyama");
+    await reply("請加上一點靈感內容。範例：/idea Let's check out Arashiyama");
     return;
   }
 
@@ -137,7 +137,7 @@ export async function handleIdeas(
     .single();
 
   if (!trip) {
-    await reply("No active trip to show ideas for.");
+    await reply("目前沒有可查看靈感的進行中旅程。");
     return;
   }
 

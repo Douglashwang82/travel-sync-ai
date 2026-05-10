@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   const parsedParams = ParamsSchema.safeParse(params);
   if (!parsedParams.success) {
     return NextResponse.json(
-      { error: "Invalid item id", code: "VALIDATION_ERROR" },
+      { error: "物品 ID 無效", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -37,7 +37,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   const parsed = PatchSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -61,13 +61,13 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
 
     if (itemErr) {
       return NextResponse.json(
-        { error: "Failed to load item", code: "DB_ERROR" },
+        { error: "物品載入失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }
     if (!item) {
       return NextResponse.json(
-        { error: "Item not found", code: "NOT_FOUND" },
+        { error: "找不到物品", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
       );
       if (error) {
         return NextResponse.json(
-          { error: "Failed to mark item", code: "DB_ERROR" },
+          { error: "標記物品失敗", code: "DB_ERROR" },
           { status: 500 }
         );
       }
@@ -91,7 +91,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
         .eq("line_user_id", auth.lineUserId);
       if (error) {
         return NextResponse.json(
-          { error: "Failed to unmark item", code: "DB_ERROR" },
+          { error: "取消標記物品失敗", code: "DB_ERROR" },
           { status: 500 }
         );
       }
@@ -113,13 +113,13 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to update item", code: "DB_ERROR" },
+        { error: "更新物品失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }
     if (!data) {
       return NextResponse.json(
-        { error: "Item not found", code: "NOT_FOUND" },
+        { error: "找不到物品", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
@@ -133,7 +133,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   const parsedParams = ParamsSchema.safeParse(params);
   if (!parsedParams.success) {
     return NextResponse.json(
-      { error: "Invalid item id", code: "VALIDATION_ERROR" },
+      { error: "物品 ID 無效", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -146,7 +146,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   });
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Scope required", code: "VALIDATION_ERROR" },
+      { error: "缺少清單範圍", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -162,19 +162,19 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
 
     if (itemErr) {
       return NextResponse.json(
-        { error: "Failed to load item", code: "DB_ERROR" },
+        { error: "物品載入失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }
     if (!item) {
       return NextResponse.json(
-        { error: "Item not found", code: "NOT_FOUND" },
+        { error: "找不到物品", code: "NOT_FOUND" },
         { status: 404 }
       );
     }
     if (auth.role !== "organizer" && item.added_by !== auth.lineUserId) {
       return NextResponse.json(
-        { error: "You can only delete items you added", code: "FORBIDDEN" },
+        { error: "只能刪除你新增的物品", code: "FORBIDDEN" },
         { status: 403 }
       );
     }
@@ -187,7 +187,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete item", code: "DB_ERROR" },
+        { error: "刪除物品失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }
@@ -201,7 +201,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete item", code: "DB_ERROR" },
+        { error: "刪除物品失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }

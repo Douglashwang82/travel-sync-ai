@@ -24,7 +24,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
 
   if (!expense || expense.trip_id !== tripId || expense.group_id !== auth.groupId) {
     return NextResponse.json(
-      { error: "Expense not found", code: "NOT_FOUND" },
+      { error: "找不到費用", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -32,7 +32,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   const isPayer = expense.paid_by_user_id === auth.lineUserId;
   if (!isPayer && auth.role !== "organizer") {
     return NextResponse.json(
-      { error: "Only the payer or an organizer can delete this expense", code: "FORBIDDEN" },
+      { error: "只有付款人或主揪可以刪除這筆費用", code: "FORBIDDEN" },
       { status: 403 }
     );
   }
@@ -41,7 +41,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   const { error } = await db.from("expenses").delete().eq("id", expenseId);
   if (error) {
     return NextResponse.json(
-      { error: "Failed to delete expense", code: "DB_ERROR" },
+      { error: "刪除費用失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }

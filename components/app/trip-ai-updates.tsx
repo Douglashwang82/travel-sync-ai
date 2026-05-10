@@ -8,26 +8,8 @@ import { ITEM_TYPE_LABELS } from "@/components/app/board-columns";
 import { IconCheck, IconClose } from "@/components/app/icons";
 
 const COPY = {
-  en: {
-    title: "AI updates",
-    sub: "Pulled from your LINE chat. Confirm, edit, or dismiss — never auto-applied.",
-    empty: "Nothing extracted yet. Mention dates, hotels, or restaurants in chat and they'll show up here.",
-    confirm: "Confirm",
-    edit: "Edit",
-    dismiss: "Dismiss",
-    from: "from",
-    at: "at",
-  },
-  "zh-TW": {
-    title: "AI 摘要",
-    sub: "由群組訊息整理，請審核 — 不會自動寫入。",
-    empty: "目前還沒有 AI 整理的項目。在群組裡聊到日期、飯店或餐廳，這裡就會出現。",
-    confirm: "確認",
-    edit: "修改",
-    dismiss: "略過",
-    from: "來自",
-    at: "於",
-  },
+  en: { title: "AI updates", sub: "Pulled from your LINE chat. Confirm, edit, or dismiss - never auto-applied.", empty: "Nothing extracted yet. Mention dates, hotels, or restaurants in chat and they'll show up here.", confirm: "Confirm", edit: "Edit", dismiss: "Dismiss", from: "from", at: "at", fallbackItem: "Item" },
+  "zh-TW": { title: "AI 摘要", sub: "由 LINE 群組訊息整理，請先審核，系統不會自動寫入。", empty: "目前還沒有 AI 整理的項目。在群組裡聊到日期、飯店或餐廳，這裡就會出現。", confirm: "確認", edit: "編輯", dismiss: "略過", from: "來自", at: "於", fallbackItem: "項目" },
 } as const;
 
 interface AIUpdatesTileProps {
@@ -80,8 +62,8 @@ export function AIUpdatesTile({
                 key={item.id}
                 title={item.title}
                 description={item.description ?? null}
-                provenance={`${copy.at} ${time.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
-                kind={ITEM_TYPE_LABELS[item.item_type] ?? "Item"}
+                provenance={`${copy.at} ${time.toLocaleString(locale === "zh-TW" ? "zh-TW" : undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                kind={ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem}
                 onConfirm={onConfirm ? () => onConfirm(item) : undefined}
                 onEdit={() => onItemClick(item)}
                 onDismiss={() => dismiss(item)}

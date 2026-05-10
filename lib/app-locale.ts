@@ -1,7 +1,7 @@
 export type AppLocale = "en" | "zh-TW";
 
 export const APP_LOCALE_COOKIE = "travelsync-app-locale";
-export const DEFAULT_APP_LOCALE: AppLocale = "en";
+export const DEFAULT_APP_LOCALE: AppLocale = "zh-TW";
 
 export function parseAppLocale(value: string | null | undefined): AppLocale {
   return value === "zh-TW" ? "zh-TW" : DEFAULT_APP_LOCALE;

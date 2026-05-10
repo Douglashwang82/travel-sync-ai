@@ -42,13 +42,13 @@ import type { NudgeResponse } from "@/app/api/app/trips/[tripId]/votes/[itemId]/
 import { OptionDetailDialog } from "@/components/app/option-detail-dialog";
 
 const TYPE_LABEL: Record<string, string> = {
-  hotel: "Hotel",
-  restaurant: "Restaurant",
-  activity: "Activity",
-  transport: "Transport",
-  flight: "Flight",
-  insurance: "Insurance",
-  other: "Other",
+  hotel: "住宿",
+  restaurant: "餐廳",
+  activity: "活動",
+  transport: "交通",
+  flight: "航班",
+  insurance: "保險",
+  other: "其他",
 };
 
 type OverviewState = {
@@ -87,7 +87,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
         currentUserId: board.currentUser.lineUserId,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load votes");
+      setError(err instanceof Error ? err.message : "投票載入失敗");
     }
   }, [tripId]);
 
@@ -107,7 +107,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
       });
       await load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to cast vote");
+      setActionError(err instanceof Error ? err.message : "投票失敗");
     } finally {
       setCasting(null);
     }
@@ -127,8 +127,8 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
-        title="Votes"
-        subtitle={`Active group decisions. Majority of ${majorityThreshold(memberCount)} of ${memberCount} auto-confirms a winner.`}
+        title="投票"
+        subtitle={`目前的群組決策。${memberCount} 人中達 ${majorityThreshold(memberCount)} 票多數即自動確認勝出選項。`}
       />
 
       {actionError && (
@@ -141,8 +141,8 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
         <TabEmptyState
           message={
             isOrganizer
-              ? "No active votes. Start one from the To-Do list below."
-              : "No active votes. Ask your organizer to start one."
+              ? "目前沒有進行中的投票。可從下方待辦清單開始一個投票。"
+              : "目前沒有進行中的投票。請主揪開始投票。"
           }
         />
       ) : (
@@ -168,17 +168,17 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
       {isOrganizer && (
         <TabSurface>
           <TabSurfaceTitle
-            title="Start a new vote"
-            subtitle="Promote a To-Do item to a group decision with 2+ options and a deadline."
+            title="開始新投票"
+            subtitle="將待辦項目轉成群組決策，加入至少 2 個選項與截止時間。"
             trailing={
               <span className="text-mono text-[11px] text-[var(--text-muted)]">
-                {todo.length} to-do item{todo.length === 1 ? "" : "s"}
+                {todo.length} 個待辦項目
               </span>
             }
           />
           {todo.length === 0 ? (
             <p className="mt-4 text-xs italic text-[var(--text-muted)]">
-              No to-do items available. Add one from the overview first.
+              目前沒有可投票的待辦項目。請先從總覽新增一個。
             </p>
           ) : (
             <ul className="mt-4 divide-y divide-[var(--border-hairline)]">
@@ -192,7 +192,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
                       {item.title}
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)]">
-                      {TYPE_LABEL[item.item_type] ?? "Item"}
+                      {TYPE_LABEL[item.item_type] ?? "項目"}
                     </p>
                   </div>
                   <Button
@@ -200,7 +200,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
                     variant="outline"
                     onClick={() => setStartItemId(item.id)}
                   >
-                    Start vote
+                    開始投票
                   </Button>
                 </li>
               ))}
@@ -213,7 +213,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
         <StartVoteDialog
           tripId={tripId}
           itemId={startItemId}
-          itemTitle={todo.find((t) => t.id === startItemId)?.title ?? "this item"}
+          itemTitle={todo.find((t) => t.id === startItemId)?.title ?? "這個項目"}
           onClose={() => setStartItemId(null)}
           onStarted={() => {
             setStartItemId(null);
@@ -315,14 +315,14 @@ function VoteCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="text-[10px] uppercase">
-                  {TYPE_LABEL[vote.item.itemType] ?? "Vote"}
+                  {TYPE_LABEL[vote.item.itemType] ?? "投票"}
                 </Badge>
                 <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                  Pending vote
+                  投票中
                 </Badge>
                 {iHaventVoted && (
                   <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
-                    Your vote needed
+                    等你投票
                   </span>
                 )}
                 {vote.item.deadlineAt && (
@@ -337,12 +337,10 @@ function VoteCard({
               )}
               {collapsed && (
                 <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                  {vote.options.length} option
-                  {vote.options.length === 1 ? "" : "s"} ·{" "}
-                  {vote.totalVotes}/{memberCount} voted
+                  {vote.options.length} 個選項 · 已投 {vote.totalVotes}/{memberCount}
                   {myVote && (
                     <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
-                      ✓ {myVote.name}
+                      已選 {myVote.name}
                     </span>
                   )}
                 </p>
@@ -352,10 +350,10 @@ function VoteCard({
           {isOrganizer && !collapsed && (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-                Add option
+                新增選項
               </Button>
               <Button size="sm" variant="outline" onClick={onCloseClick}>
-                Close vote
+                結束投票
               </Button>
             </div>
           )}
@@ -430,7 +428,7 @@ function VoteCard({
                       <span className="text-sm font-semibold">{opt.name}</span>
                       {opt.votedByMe && (
                         <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-[10px] font-semibold text-white">
-                          Your pick
+                          你的選擇
                         </span>
                       )}
                       {opt.rating != null && (
@@ -446,9 +444,9 @@ function VoteCard({
                       {opt.notes && (
                         <span
                           className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
-                          title="Group notes available"
+                          title="有群組備註"
                         >
-                          ✏ Notes
+                          備註
                         </span>
                       )}
                     </div>
@@ -461,7 +459,7 @@ function VoteCard({
                       <VoterAvatars voters={opt.voters} />
                     )}
                     <p className="text-[11px] text-[var(--primary)] opacity-70 group-hover:opacity-100">
-                      {hasDetail ? "Tap for details" : "Tap to add price, location, notes"}
+                      {hasDetail ? "點一下看詳情" : "點一下新增價格、地點或備註"}
                     </p>
                   </div>
                   <div
@@ -474,7 +472,7 @@ function VoteCard({
                         {opt.voteCount}
                       </span>
                       <span className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
-                        vote{opt.voteCount === 1 ? "" : "s"}
+                        票
                       </span>
                     </div>
                     <Button
@@ -489,10 +487,10 @@ function VoteCard({
                       )}
                     >
                       {castingThis
-                        ? "Saving…"
+                        ? "儲存中..."
                         : opt.votedByMe
-                          ? "✓ Voted"
-                          : "Vote"}
+                          ? "已投票"
+                          : "投票"}
                     </Button>
                   </div>
                 </div>
@@ -568,12 +566,12 @@ function VoterAvatars({
           return (
             <span
               key={v.lineUserId}
-              title={`${label} voted`}
+              title={`${label} 已投票`}
               className={cn(
                 "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-[var(--background)]",
                 avatarPalette(v.lineUserId)
               )}
-              aria-label={`${label} voted`}
+              aria-label={`${label} 已投票`}
             >
               {avatarInitial(v.displayName, v.lineUserId)}
             </span>
@@ -594,7 +592,7 @@ function VoterAvatars({
       <span className="text-[11px] text-[var(--text-muted)]">
         {voters.length === 1
           ? voters[0].displayName ?? voters[0].lineUserId.slice(0, 6)
-          : `${voters.length} voted`}
+          : `${voters.length} 人已投`}
       </span>
     </div>
   );
@@ -614,15 +612,15 @@ function DeadlineCountdown({ deadlineAt }: { deadlineAt: string }) {
 
   let label: string;
   if (overdue) {
-    label = "Overdue";
+    label = "已逾期";
   } else if (hours < 1) {
-    label = `${minutes}m left`;
+    label = `剩 ${minutes} 分`;
   } else if (hours < 24) {
-    label = `${hours}h ${minutes}m left`;
+    label = `剩 ${hours} 小時 ${minutes} 分`;
   } else {
     const days = Math.floor(hours / 24);
     const remHours = hours % 24;
-    label = `${days}d ${remHours}h left`;
+    label = `剩 ${days} 天 ${remHours} 小時`;
   }
 
   const tone = overdue
@@ -674,7 +672,7 @@ function VoteProgress({
           aria-hidden
           className="absolute top-0 h-full w-px bg-[var(--foreground)]/40"
           style={{ left: `${majorityPct}%` }}
-          title="Majority threshold"
+          title="多數門檻"
         />
       </div>
       <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
@@ -682,12 +680,12 @@ function VoteProgress({
           <span className="font-semibold text-[var(--foreground)]">
             {totalVotes}
           </span>
-          <span> of {memberCount} voted</span>
+          <span> / {memberCount} 已投</span>
         </span>
         <span>
           {reached
-            ? "Majority reached"
-            : `${needed - totalVotes} more for majority`}
+            ? "已達多數"
+            : `還差 ${needed - totalVotes} 票達多數`}
         </span>
       </div>
     </div>
@@ -716,7 +714,7 @@ function NonVoterRow({
   if (nonVoters.length === 0) {
     return (
       <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-        Everyone has voted ✓
+        所有人都已投票
       </p>
     );
   }
@@ -742,12 +740,12 @@ function NonVoterRow({
       ).length;
       if (nudgedCount === 0 && cooldownCount > 0) {
         setFeedback({
-          message: `Already nudged in the last 30 min — try again later.`,
+          message: "30 分鐘內已提醒過，請稍後再試。",
           tone: "info",
         });
       } else if (nudgedCount === 0) {
         setFeedback({
-          message: "No one to nudge right now.",
+          message: "目前沒有可提醒的人。",
           tone: "info",
         });
       } else {
@@ -755,18 +753,18 @@ function NonVoterRow({
           .map((n) => n.displayName ?? "?")
           .slice(0, 3)
           .join(", ");
-        const more = res.nudged.length > 3 ? ` +${res.nudged.length - 3} more` : "";
+        const more = res.nudged.length > 3 ? ` +${res.nudged.length - 3} 人` : "";
         setFeedback({
           message:
             cooldownCount > 0
-              ? `Nudged ${names}${more} · ${cooldownCount} on cooldown`
-              : `Nudged ${names}${more}`,
+              ? `已提醒 ${names}${more} · ${cooldownCount} 人冷卻中`
+              : `已提醒 ${names}${more}`,
           tone: "success",
         });
       }
     } catch (err) {
       setFeedback({
-        message: err instanceof Error ? err.message : "Failed to nudge",
+        message: err instanceof Error ? err.message : "提醒失敗",
         tone: "error",
       });
     } finally {
@@ -780,12 +778,12 @@ function NonVoterRow({
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-          Waiting on
+          等待投票
         </span>
         <div className="flex flex-wrap gap-1.5">
           {includesMe && (
             <span className="inline-flex items-center gap-1 rounded-full border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--primary)]">
-              You
+              你
             </span>
           )}
           {others.map((m) => (
@@ -798,7 +796,7 @@ function NonVoterRow({
                 "inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-200 disabled:opacity-60 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60",
                 nudging === m.lineUserId && "animate-pulse"
               )}
-              title={`Nudge ${m.displayName ?? "this member"} via LINE`}
+              title={`透過 LINE 提醒 ${m.displayName ?? "這位成員"}`}
             >
               <span aria-hidden className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-200 text-[8px] font-bold dark:bg-amber-900">
                 {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
@@ -822,7 +820,7 @@ function NonVoterRow({
             disabled={nudging !== null}
             onClick={() => void nudge(otherIds, "all")}
           >
-            {nudging === "all" ? "Nudging…" : "Nudge all"}
+            {nudging === "all" ? "提醒中..." : "提醒全部"}
           </Button>
         )}
       </div>
@@ -903,16 +901,16 @@ function StartVoteDialog({
       .filter((o) => o.name.length > 0);
 
     if (payloadOptions.length < 2) {
-      setError("Enter at least two options.");
+      setError("請至少輸入兩個選項。");
       return;
     }
     if (!deadline) {
-      setError("Pick a deadline for the vote.");
+      setError("請選擇投票截止時間。");
       return;
     }
     const iso = new Date(deadline).toISOString();
     if (Number.isNaN(new Date(deadline).getTime())) {
-      setError("Deadline is invalid.");
+      setError("截止時間無效。");
       return;
     }
 
@@ -927,7 +925,7 @@ function StartVoteDialog({
       );
       onStarted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start vote");
+      setError(err instanceof Error ? err.message : "開始投票失敗");
     } finally {
       setSubmitting(false);
     }
@@ -937,16 +935,15 @@ function StartVoteDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Start vote: {itemTitle}</DialogTitle>
+          <DialogTitle>開始投票：{itemTitle}</DialogTitle>
           <DialogDescription>
-            Add the options the group should choose between, then set a deadline.
-            Majority auto-confirms; organizers can also close early.
+            加入讓大家選擇的選項，然後設定截止時間。達多數會自動確認；主揪也可以提前結束。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="start-deadline">Deadline</Label>
+            <Label htmlFor="start-deadline">截止時間</Label>
             <Input
               id="start-deadline"
               type="datetime-local"
@@ -957,14 +954,14 @@ function StartVoteDialog({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Options</Label>
+              <Label>選項</Label>
               <button
                 type="button"
                 onClick={addRow}
                 disabled={options.length >= 10}
                 className="text-xs font-medium text-[var(--primary)] hover:underline disabled:opacity-50"
               >
-                + Add option
+                + 新增選項
               </button>
             </div>
 
@@ -976,7 +973,7 @@ function StartVoteDialog({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                      Option {idx + 1}
+                      選項 {idx + 1}
                     </span>
                     {options.length > 2 && (
                       <button
@@ -984,28 +981,28 @@ function StartVoteDialog({
                         onClick={() => removeRow(idx)}
                         className="text-[11px] text-[var(--text-muted)] hover:text-destructive"
                       >
-                        Remove
+                        移除
                       </button>
                     )}
                   </div>
                   <Input
-                    placeholder="Name (required) — e.g. Hotel Granvia"
+                    placeholder="名稱（必填），例如：Hotel Granvia"
                     value={o.name}
                     onChange={(e) => updateOption(idx, { name: e.target.value })}
                   />
                   <Input
-                    placeholder="Address (optional)"
+                    placeholder="地址（選填）"
                     value={o.address}
                     onChange={(e) => updateOption(idx, { address: e.target.value })}
                   />
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <Input
-                      placeholder="Image URL (optional)"
+                      placeholder="圖片 URL（選填）"
                       value={o.imageUrl}
                       onChange={(e) => updateOption(idx, { imageUrl: e.target.value })}
                     />
                     <Input
-                      placeholder="Booking URL (optional)"
+                      placeholder="預訂 URL（選填）"
                       value={o.bookingUrl}
                       onChange={(e) =>
                         updateOption(idx, { bookingUrl: e.target.value })
@@ -1023,11 +1020,11 @@ function StartVoteDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button onClick={() => void handleStart()} disabled={submitting}>
-            {submitting ? "Starting..." : "Start vote"}
+            {submitting ? "開始中..." : "開始投票"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1058,7 +1055,7 @@ function CloseVoteDialog({
 
   async function handleClose() {
     if (!winnerId) {
-      setError("Pick the winning option.");
+      setError("請選擇勝出選項。");
       return;
     }
     setSubmitting(true);
@@ -1073,7 +1070,7 @@ function CloseVoteDialog({
       );
       onClosed();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to close vote");
+      setError(err instanceof Error ? err.message : "結束投票失敗");
     } finally {
       setSubmitting(false);
     }
@@ -1083,23 +1080,22 @@ function CloseVoteDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Close vote: {vote.item.title}</DialogTitle>
+          <DialogTitle>結束投票：{vote.item.title}</DialogTitle>
           <DialogDescription>
-            Pick the winning option. The item will be confirmed and, if bookable,
-            will enter the booking queue.
+            選擇勝出選項。此項目會被確認；若需要預訂，會進入預訂佇列。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <Label>Winning option</Label>
+          <Label>勝出選項</Label>
           <Select value={winnerId} onValueChange={setWinnerId}>
             <SelectTrigger>
-              <SelectValue placeholder="Pick an option" />
+              <SelectValue placeholder="選擇一個選項" />
             </SelectTrigger>
             <SelectContent>
               {vote.options.map((o) => (
                 <SelectItem key={o.id} value={o.id}>
-                  {o.name} ({o.voteCount} vote{o.voteCount === 1 ? "" : "s"})
+                  {o.name}（{o.voteCount} 票）
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1110,11 +1106,11 @@ function CloseVoteDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button onClick={() => void handleClose()} disabled={submitting || !winnerId}>
-            {submitting ? "Closing..." : "Confirm winner"}
+            {submitting ? "結束中..." : "確認勝出"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1152,7 +1148,7 @@ function AddOptionDialog({
 
   async function handleAdd() {
     if (!name.trim()) {
-      setError("Option needs a name.");
+      setError("選項需要名稱。");
       return;
     }
     setSubmitting(true);
@@ -1172,7 +1168,7 @@ function AddOptionDialog({
       });
       onAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add option");
+      setError(err instanceof Error ? err.message : "新增選項失敗");
     } finally {
       setSubmitting(false);
     }
@@ -1182,15 +1178,15 @@ function AddOptionDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add option</DialogTitle>
+          <DialogTitle>新增選項</DialogTitle>
           <DialogDescription>
-            Adds another choice to this active vote. Existing votes are unaffected.
+            為目前投票加入另一個選擇。既有投票不會受到影響。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="opt-name">Name</Label>
+            <Label htmlFor="opt-name">名稱</Label>
             <Input
               id="opt-name"
               value={name}
@@ -1199,19 +1195,19 @@ function AddOptionDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="opt-place">Pick a place (optional)</Label>
+            <Label htmlFor="opt-place">選擇地點（選填）</Label>
             <PlacePicker
               inputId="opt-place"
               value={place}
               onChange={handlePlacePicked}
-              placeholder="Search Google for a place to put on the map"
+              placeholder="搜尋 Google 地點，加入地圖"
             />
             <p className="text-[11px] text-muted-foreground">
-              Selecting a place attaches its location so this option shows on the trip map.
+              選擇地點後會附上座標，這個選項就會顯示在旅程地圖上。
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="opt-address">Address (optional)</Label>
+            <Label htmlFor="opt-address">地址（選填）</Label>
             <Input
               id="opt-address"
               value={address}
@@ -1220,7 +1216,7 @@ function AddOptionDialog({
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="opt-image">Image URL (optional)</Label>
+              <Label htmlFor="opt-image">圖片 URL（選填）</Label>
               <Input
                 id="opt-image"
                 value={imageUrl}
@@ -1228,7 +1224,7 @@ function AddOptionDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="opt-book">Booking URL (optional)</Label>
+              <Label htmlFor="opt-book">預訂 URL（選填）</Label>
               <Input
                 id="opt-book"
                 value={bookingUrl}
@@ -1242,11 +1238,11 @@ function AddOptionDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button onClick={() => void handleAdd()} disabled={submitting}>
-            {submitting ? "Adding..." : "Add option"}
+            {submitting ? "新增中..." : "新增選項"}
           </Button>
         </DialogFooter>
       </DialogContent>

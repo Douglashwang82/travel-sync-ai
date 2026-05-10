@@ -48,13 +48,13 @@ import {
 } from "@/lib/app-pack";
 
 const CATEGORY_LABEL: Record<AppPackCategory, string> = {
-  documents: "Documents",
-  clothing: "Clothing",
-  toiletries: "Toiletries",
-  electronics: "Electronics",
-  health: "Health",
-  safety: "Safety",
-  general: "General",
+  documents: "文件",
+  clothing: "衣物",
+  toiletries: "盥洗",
+  electronics: "電子用品",
+  health: "健康",
+  safety: "安全",
+  general: "一般",
 };
 
 const CATEGORY_BADGE: Record<AppPackCategory, string> = {
@@ -89,7 +89,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
       );
       setData(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load packing list");
+      setError(err instanceof Error ? err.message : "打包清單載入失敗");
     }
   }, [tripId]);
 
@@ -133,7 +133,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
     e.preventDefault();
     const trimmed = label.trim();
     if (!trimmed) {
-      setActionError("Enter an item to pack.");
+      setActionError("請輸入要打包的物品。");
       return;
     }
 
@@ -149,7 +149,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
       setAddOpen(false);
       await load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to add item");
+      setActionError(err instanceof Error ? err.message : "新增物品失敗");
     } finally {
       setSubmitting(false);
     }
@@ -168,14 +168,14 @@ export function TripPackClient({ tripId }: { tripId: string }) {
       });
       await load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to update item");
+      setActionError(err instanceof Error ? err.message : "更新物品失敗");
     } finally {
       setBusyItem(null);
     }
   }
 
   async function deleteItem(item: AppGroupPackItem | AppPersonalPackItem) {
-    if (!confirm(`Delete "${item.label}" from this packing list?`)) return;
+    if (!confirm(`要從打包清單刪除「${item.label}」嗎？`)) return;
     setBusyItem(item.id);
     setActionError(null);
     try {
@@ -185,7 +185,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
       );
       await load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to delete item");
+      setActionError(err instanceof Error ? err.message : "刪除物品失敗");
     } finally {
       setBusyItem(null);
     }
@@ -204,8 +204,8 @@ export function TripPackClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
-        title="Pack"
-        subtitle="Track the group checklist and your private bag list for this trip."
+        title="打包"
+        subtitle="追蹤群組共用清單，以及你自己的私人行李清單。"
         actions={
           <>
             <Button
@@ -213,13 +213,13 @@ export function TripPackClient({ tripId }: { tripId: string }) {
               size="sm"
               variant="outline"
               onClick={() => void load()}
-              title="Refresh packing list"
+              title="重新整理打包清單"
             >
               <RefreshCw />
             </Button>
             <Button size="sm" onClick={() => setAddOpen(true)}>
               <Plus />
-              Add item
+              新增物品
             </Button>
           </>
         }
@@ -228,8 +228,8 @@ export function TripPackClient({ tripId }: { tripId: string }) {
       <div className="grid gap-4 md:grid-cols-2">
         <ProgressPanel
           icon={<Users className="size-4" />}
-          title="Group list"
-          subtitle="Visible to everyone in the trip group"
+          title="群組清單"
+          subtitle="旅程群組中的所有人都看得到"
           packed={data.groupPackedCount}
           total={data.groupItems.length}
           active={scope === "group"}
@@ -237,8 +237,8 @@ export function TripPackClient({ tripId }: { tripId: string }) {
         />
         <ProgressPanel
           icon={<User className="size-4" />}
-          title="My bag"
-          subtitle="Private to your app account"
+          title="我的行李"
+          subtitle="只有你的 app 帳號看得到"
           packed={data.personalPackedCount}
           total={data.personalItems.length}
           active={scope === "mine"}
@@ -249,7 +249,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <FilterChip
-            label={`All / ${counts.all}`}
+            label={`全部 / ${counts.all}`}
             active={filter === "all"}
             onClick={() => setFilter("all")}
           />
@@ -267,10 +267,10 @@ export function TripPackClient({ tripId }: { tripId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-hairline)] pb-4">
             <div>
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                {scope === "group" ? "Group packing list" : "My packing list"}
+                {scope === "group" ? "群組打包清單" : "我的打包清單"}
               </h3>
               <p className="text-mono text-xs text-[var(--text-muted)]">
-                {currentProgress.packed}/{currentProgress.total} packed
+                已打包 {currentProgress.packed}/{currentProgress.total}
               </p>
             </div>
             <div className="h-2 w-36 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
@@ -290,8 +290,8 @@ export function TripPackClient({ tripId }: { tripId: string }) {
           {activeItems.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-[var(--text-muted)]">
               {counts.all === 0
-                ? "No packing items yet."
-                : "No packing items in this category."}
+                ? "還沒有打包物品。"
+                : "這個分類沒有打包物品。"}
             </div>
           ) : (
             <ul className="divide-y divide-[var(--border-hairline)]">
@@ -323,9 +323,9 @@ export function TripPackClient({ tripId }: { tripId: string }) {
         <DialogContent className="max-w-md">
           <form onSubmit={handleAdd}>
             <DialogHeader>
-              <DialogTitle>Add packing item</DialogTitle>
+              <DialogTitle>新增打包物品</DialogTitle>
               <DialogDescription>
-                Add it to the selected list: group shared or private.
+                新增到目前選擇的清單：群組共用或私人清單。
               </DialogDescription>
             </DialogHeader>
 
@@ -342,7 +342,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
                   )}
                 >
                   <Users className="size-4" />
-                  Group
+                  群組
                 </button>
                 <button
                   type="button"
@@ -355,24 +355,24 @@ export function TripPackClient({ tripId }: { tripId: string }) {
                   )}
                 >
                   <User className="size-4" />
-                  Mine
+                  我的
                 </button>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="pack-label">Item</Label>
+                <Label htmlFor="pack-label">物品</Label>
                 <Input
                   id="pack-label"
                   value={label}
                   onChange={(event) => setLabel(event.target.value)}
-                  placeholder="Passport, charger, rain jacket"
+                  placeholder="護照、充電器、雨衣"
                   maxLength={120}
                   disabled={submitting}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="pack-category">Category</Label>
+                <Label htmlFor="pack-category">分類</Label>
                 <Select
                   value={category}
                   onValueChange={(value) => setCategory(value as AppPackCategory)}
@@ -398,12 +398,12 @@ export function TripPackClient({ tripId }: { tripId: string }) {
             <DialogFooter className="mt-6">
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={submitting}>
-                  Cancel
+                  取消
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={submitting || !label.trim()}>
                 {submitting && <Loader2 className="animate-spin" />}
-                Add item
+                新增物品
               </Button>
             </DialogFooter>
           </form>
@@ -526,13 +526,13 @@ function GroupPackRow({
           </Badge>
         </div>
         <p className="mt-1 text-xs text-[var(--text-muted)]">
-          {item.packedCount} packed
-          {item.addedByName ? ` / added by ${item.addedByName}` : ""}
+          已打包 {item.packedCount}
+          {item.addedByName ? ` / 新增者：${item.addedByName}` : ""}
         </p>
       </div>
       {item.canDelete && (
         <IconButton
-          title={`Delete ${item.label}`}
+          title={`刪除 ${item.label}`}
           disabled={busy}
           onClick={onDelete}
         />
@@ -578,10 +578,10 @@ function PersonalPackRow({
           </Badge>
         </div>
         <p className="mt-1 text-xs text-[var(--text-muted)]">
-          {item.isPacked ? "Packed" : "Not packed"}
+          {item.isPacked ? "已打包" : "尚未打包"}
         </p>
       </div>
-      <IconButton title={`Delete ${item.label}`} disabled={busy} onClick={onDelete} />
+      <IconButton title={`刪除 ${item.label}`} disabled={busy} onClick={onDelete} />
     </li>
   );
 }
@@ -602,7 +602,7 @@ function PackToggle({
       type="button"
       onClick={onClick}
       disabled={busy}
-      title={packed ? `Mark ${label} as not packed` : `Mark ${label} as packed`}
+      title={packed ? `將 ${label} 標記為尚未打包` : `將 ${label} 標記為已打包`}
       className={cn(
         "flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
         packed

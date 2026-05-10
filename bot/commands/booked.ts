@@ -26,7 +26,7 @@ export async function handleBooked(
   if (args.length < 2 || !ctx.dbGroupId || !ctx.userId) {
     await reply(
       "Usage: /booked [item name] [confirmation ref]\n" +
-        "Example: /booked hotel AX-12345\n\n" +
+        "範例：/booked hotel AX-12345\n\n" +
         "Use /status to see items that still need booking."
     );
     return;
@@ -46,7 +46,7 @@ export async function handleBooked(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one.");
+    await reply("目前沒有進行中的旅程。請使用 /start 建立旅程。");
     return;
   }
 

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     .single();
   if (!item || item.trip_id !== tripId) {
     return NextResponse.json(
-      { error: "Item not found in this trip", code: "NOT_FOUND" },
+      { error: "在此旅程中找不到項目", code: "NOT_FOUND" },
       { status: 404 }
     );
   }

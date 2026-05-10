@@ -6,13 +6,13 @@ import type { BoardData, ItemType, TripItem } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 
 export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
-  hotel: "Hotel",
-  restaurant: "Restaurant",
-  activity: "Activity",
-  transport: "Transport",
-  flight: "Flight",
-  insurance: "Insurance",
-  other: "Other",
+  hotel: "住宿",
+  restaurant: "餐廳",
+  activity: "活動",
+  transport: "交通",
+  flight: "航班",
+  insurance: "保險",
+  other: "其他",
 };
 
 export function BoardColumns({
@@ -27,31 +27,31 @@ export function BoardColumns({
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <Column
-        title="To-Do"
+        title="待辦"
         accent="text-[var(--text-muted)]"
         pillClass="bg-[var(--surface-sunken)] text-[var(--text-muted)]"
         items={board.todo}
         members={members}
         onItemClick={onItemClick}
-        empty="Nothing yet. Add a to-do or type /add in chat."
+        empty="目前還沒有事項。新增一個待辦，或在聊天中輸入 /add。"
       />
       <Column
-        title="Pending vote"
+        title="投票中"
         accent="text-[var(--status-needs-decision)]"
         pillClass="bg-[var(--status-needs-decision-soft)] text-[var(--status-needs-decision)]"
         items={board.pending}
         members={members}
         onItemClick={onItemClick}
-        empty="No active votes. Start one in chat with /vote."
+        empty="目前沒有進行中的投票。可在聊天中用 /vote 開始。"
       />
       <Column
-        title="Confirmed"
+        title="已確認"
         accent="text-[var(--accent-line)]"
         pillClass="bg-[var(--status-settled-soft)] text-[var(--status-settled)]"
         items={board.confirmed}
         members={members}
         onItemClick={onItemClick}
-        empty="Nothing confirmed yet."
+        empty="目前還沒有已確認事項。"
       />
     </div>
   );
@@ -131,17 +131,17 @@ function ItemRow({
         )}
         {item.stage === "confirmed" && item.booking_status === "needed" && (
           <span className="rounded-full bg-[var(--status-needs-decision-soft)] px-1.5 py-0.5 text-[var(--status-needs-decision)]">
-            Book
+            待預訂
           </span>
         )}
         {item.stage === "confirmed" && item.booking_status === "booked" && (
           <span className="rounded-full bg-[var(--status-settled-soft)] px-1.5 py-0.5 text-[var(--status-settled)]">
-            ✓ Booked
+            已預訂
           </span>
         )}
         {item.deadline_at && (
           <span className="text-mono rounded-full bg-[var(--surface-sunken)] px-1.5 py-0.5">
-            {new Date(item.deadline_at).toLocaleDateString(undefined, {
+            {new Date(item.deadline_at).toLocaleDateString("zh-TW", {
               month: "short",
               day: "numeric",
             })}

@@ -92,7 +92,7 @@ export async function loadTripExpensesForGroup(
       groupId,
       error,
     });
-    throw new Error("Failed to load expenses");
+    throw new Error("費用載入失敗");
   }
 
   const expenses: AppExpenseRow[] = (rows ?? []).map((r) => ({

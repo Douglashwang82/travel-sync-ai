@@ -58,7 +58,7 @@ export async function handleDocs(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 
@@ -79,7 +79,7 @@ export async function handleDocs(
   if (sub === "add") {
     const remaining = args.slice(1);
     if (!remaining.length) {
-      await reply("Usage: /docs add [type] [label?] [expires YYYY-MM-DD?]\nExample: /docs add passport expires 2028-03-15");
+      await reply("用法：/docs add [類型] [標籤?] [expires YYYY-MM-DD?]\n範例：/docs add passport expires 2028-03-15");
       return;
     }
 
@@ -166,7 +166,7 @@ async function handleDocsList(
     .single();
 
   if (!trip) {
-    await reply("No active trip found.");
+    await reply("目前沒有進行中的旅程。");
     return;
   }
 

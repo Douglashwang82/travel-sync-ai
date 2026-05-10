@@ -15,7 +15,7 @@ export async function handleShare(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
-    await reply("Usage: /share [url]\nExample: /share https://booking.com/hotel/xyz");
+    await reply("用法：/share [網址]\n範例：/share https://booking.com/hotel/xyz");
     return;
   }
 
@@ -35,7 +35,7 @@ export async function handleShare(
     .single();
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

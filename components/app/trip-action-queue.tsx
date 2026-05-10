@@ -37,7 +37,7 @@ const COPY = {
     mine: "Mine",
     noneMine: "Nothing on your plate.",
     noneAll: "All clear. Plan something or wait for the group.",
-    pickOwner: "No owner — pick someone to drive this",
+    pickOwner: "No owner - assign someone to drive this",
     confirmedNeedsBooking: "Confirmed but not yet booked",
     aiExtracted: "AI extracted",
     waiting: (names: string) => `Waiting on ${names}`,
@@ -46,7 +46,7 @@ const COPY = {
     assign: "Assign",
     review: "Review",
     nudge: "Nudge",
-    nudging: "Nudging…",
+    nudging: "Nudging...",
     nudgedSent: (n: number) => `Nudged ${n}`,
     nudgedCool: "Already nudged in last 30 min",
     nudgedNothing: "Nothing to nudge",
@@ -57,16 +57,20 @@ const COPY = {
     dLeft: (d: number) => `${d}d left`,
     optionCount: (n: number) => `${n} option${n === 1 ? "" : "s"}`,
     voted: (taken: number, total: number) => `${taken}/${total} voted`,
+    nudgeFailed: "Nudge failed",
+    priority: (p: string) => `${p} priority`,
+    fallbackItem: "Item",
+    owner: "owner",
   },
   "zh-TW": {
     title: "行動清單",
     subTotal: (n: number) => `${n} 項依優先順序排列`,
-    subEmpty: "目前沒有需要處理的事項。",
+    subEmpty: "目前沒有需要群組處理的事項。",
     everyone: "全部",
     mine: "我的",
-    noneMine: "你已沒有待辦。",
-    noneAll: "都搞定了。等等大家就好。",
-    pickOwner: "沒有負責人 — 指派一位",
+    noneMine: "你目前沒有待辦。",
+    noneAll: "目前都清楚了。可以新增事項，或等大家回覆。",
+    pickOwner: "尚未指派負責人 - 請指定一位",
     confirmedNeedsBooking: "已確認但尚未預訂",
     aiExtracted: "AI 擷取",
     waiting: (names: string) => `等待 ${names}`,
@@ -75,17 +79,21 @@ const COPY = {
     assign: "指派",
     review: "審核",
     nudge: "提醒",
-    nudging: "提醒中…",
+    nudging: "提醒中...",
     nudgedSent: (n: number) => `已提醒 ${n} 人`,
     nudgedCool: "30 分鐘內已提醒過",
     nudgedNothing: "沒有可提醒的對象",
-    cooldown: (n: number) => ` · ${n} 個冷卻中`,
-    overdue: "逾期",
+    cooldown: (n: number) => ` · ${n} 人冷卻中`,
+    overdue: "已逾期",
     minLeft: (m: number) => `剩 ${m} 分`,
     hLeft: (h: number) => `剩 ${h} 小時`,
     dLeft: (d: number) => `剩 ${d} 天`,
     optionCount: (n: number) => `${n} 個選項`,
     voted: (taken: number, total: number) => `${taken}/${total} 已投`,
+    nudgeFailed: "提醒失敗",
+    priority: (p: string) => `${p} 優先度`,
+    fallbackItem: "項目",
+    owner: "負責人",
   },
 } as const;
 
@@ -149,7 +157,7 @@ function buildActions({
         priority: score >= 100 ? "critical" : score >= 90 ? "high" : "medium",
         score,
         title: vote.item.title,
-        itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? "Item",
+        itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem,
         reason: `${copy.optionCount(vote.options.length)} · ${copy.voted(vote.totalVotes, vote.memberCount)}`,
         deadlineAt: vote.item.deadlineAt,
         item,
@@ -166,7 +174,7 @@ function buildActions({
           priority: score >= 70 ? "high" : "medium",
           score,
           title: vote.item.title,
-          itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? "Item",
+          itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem,
           reason: copy.waiting(
             nonVoters.slice(0, 2).map((n) => n.displayName ?? "?").join(", ") +
               (nonVoters.length > 2 ? ` +${nonVoters.length - 2}` : "")
@@ -188,7 +196,7 @@ function buildActions({
       priority: score >= 90 ? "high" : "medium",
       score,
       title: item.title,
-      itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? "Item",
+      itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem,
       reason: copy.pickOwner,
       deadlineAt: item.deadline_at,
       item,
@@ -204,7 +212,7 @@ function buildActions({
       priority: score >= 80 ? "high" : score >= 50 ? "medium" : "low",
       score,
       title: item.title,
-      itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? "Item",
+      itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem,
       reason: copy.confirmedNeedsBooking,
       deadlineAt: item.deadline_at,
       item,
@@ -215,14 +223,14 @@ function buildActions({
     if (item.source !== "ai") continue;
     const owner = item.assigned_to_line_user_id;
     if (owner == null) continue;
-    const ownerName = memberById.get(owner)?.displayName ?? "owner";
+    const ownerName = memberById.get(owner)?.displayName ?? copy.owner;
     rows.push({
       id: `approve:${item.id}`,
       kind: "approve",
       priority: "medium",
       score: 45,
       title: item.title,
-      itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? "Item",
+      itemTypeLabel: ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem,
       reason: `${copy.aiExtracted} · ${ownerName}`,
       deadlineAt: item.deadline_at,
       item,
@@ -304,7 +312,7 @@ export function ActionQueueTile({
             ? err.message
             : err instanceof Error
               ? err.message
-              : "Nudge failed",
+              : copy.nudgeFailed,
         tone: "err",
       });
     } finally {
@@ -375,7 +383,7 @@ export function ActionQueueTile({
                   <span
                     aria-hidden
                     className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", PRIORITY_DOT[row.priority])}
-                    title={`${row.priority} priority`}
+                    title={copy.priority(row.priority)}
                   />
                   <span
                     aria-hidden

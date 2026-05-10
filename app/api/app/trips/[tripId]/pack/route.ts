@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (tripErr || !trip) {
     return NextResponse.json(
-      { error: "Trip not found", code: "NOT_FOUND" },
+      { error: "找不到旅程", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (groupErr) {
     return NextResponse.json(
-      { error: "Failed to load group packing list", code: "DB_ERROR" },
+      { error: "群組打包清單載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (checksResult.error || membersResult.error || personalResult.error) {
     return NextResponse.json(
-      { error: "Failed to load packing list", code: "DB_ERROR" },
+      { error: "打包清單載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const parsed = CreateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -173,7 +173,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to add group item", code: "DB_ERROR" },
+        { error: "新增群組物品失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to add personal item", code: "DB_ERROR" },
+        { error: "新增私人物品失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
 import { generateText, GeminiUnavailableError } from "@/lib/gemini";
+import { BOT_COPY, BOT_LANGUAGE_RULE } from "@/lib/bot-copy";
 import type { CommandContext } from "../router";
 import type { ItemStage } from "@/lib/types";
 
@@ -20,12 +21,12 @@ export async function handleAsk(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (args.length === 0) {
-    await reply("Usage: /ask [question]\nExample: /ask what hotels have we confirmed?");
+    await reply("用法：/ask [問題]\n範例：/ask 我們確認了哪些飯店？");
     return;
   }
 
   if (!ctx.dbGroupId) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply(BOT_COPY.noActiveTrip);
     return;
   }
 
@@ -40,7 +41,7 @@ export async function handleAsk(
     .single();
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply(BOT_COPY.noActiveTrip);
     return;
   }
 
@@ -58,28 +59,29 @@ export async function handleAsk(
 
   const dateRange =
     trip.start_date && trip.end_date
-      ? `${trip.start_date} to ${trip.end_date}`
-      : "not set yet";
+      ? `${trip.start_date} 到 ${trip.end_date}`
+      : "尚未設定";
 
   const systemPrompt =
     `You are TravelBot, the AI assistant for this LINE travel group.\n` +
-    `Answer the question using the trip data below. Be concise — keep your response under 5 lines.\n\n` +
-    `Trip: ${trip.destination_name ?? "destination not set yet"}\n` +
-    `Dates: ${dateRange}\n` +
-    `To-Do: ${todo.length > 0 ? todo.join(", ") : "none"}\n` +
-    `Pending Vote: ${pending.length > 0 ? pending.join(", ") : "none"}\n` +
-    `Confirmed: ${confirmed.length > 0 ? confirmed.join(", ") : "none"}\n\n` +
-    `If the question is about something not in the data, say so clearly.`;
+    `${BOT_LANGUAGE_RULE}\n` +
+    `請根據下方旅程資料回答問題，回覆精簡在 5 行以內。\n\n` +
+    `旅程：${trip.destination_name ?? "尚未設定目的地"}\n` +
+    `日期：${dateRange}\n` +
+    `待辦：${todo.length > 0 ? todo.join(", ") : "無"}\n` +
+    `投票中：${pending.length > 0 ? pending.join(", ") : "無"}\n` +
+    `已確認：${confirmed.length > 0 ? confirmed.join(", ") : "無"}\n\n` +
+    `如果問題詢問的內容不在資料中，請清楚說明目前看不到。`;
 
   try {
     const answer = (await generateText(systemPrompt, question)).trim();
-    await reply(answer || "I'm not sure. Try rephrasing your question.");
+    await reply(answer || "我還不確定答案。可以換個方式問我。");
   } catch (err) {
     if (err instanceof GeminiUnavailableError) {
-      await reply("I'm temporarily unavailable. Please try again in a minute.");
+      await reply(BOT_COPY.temporaryUnavailable);
       return;
     }
     console.error("[ask] generateText failed", err);
-    await reply("Sorry, I couldn't answer that. Please try again.");
+    await reply("抱歉，我剛剛無法回答這個問題，請再試一次。");
   }
 }

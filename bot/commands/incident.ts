@@ -13,14 +13,14 @@ export async function handleIncident(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 
   const query = args.join(" ").trim();
   if (!query) {
     await reply(
-      "Usage: /incident [what happened]\nExample: /incident I lost my passport"
+      "用法：/incident [發生了什麼]\n範例：/incident I lost my passport"
     );
     return;
   }
@@ -34,7 +34,7 @@ export async function handleIncident(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

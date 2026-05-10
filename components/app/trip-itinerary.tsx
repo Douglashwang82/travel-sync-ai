@@ -44,13 +44,13 @@ import type {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<string, string> = {
-  hotel: "Hotel",
-  restaurant: "Food",
-  activity: "Activity",
-  transport: "Transport",
-  flight: "Flight",
-  insurance: "Insurance",
-  other: "Item",
+  hotel: "住宿",
+  restaurant: "餐飲",
+  activity: "活動",
+  transport: "交通",
+  flight: "航班",
+  insurance: "保險",
+  other: "項目",
 };
 
 const TYPE_ICON: Record<string, string> = {
@@ -118,14 +118,21 @@ function timeOfDayBucket(iso: string | null): "morning" | "afternoon" | "evening
   return "evening";
 }
 
+function timeOfDayLabel(bucket: ReturnType<typeof timeOfDayBucket>): string {
+  if (bucket === "morning") return "上午";
+  if (bucket === "afternoon") return "下午";
+  if (bucket === "evening") return "晚上";
+  return "彈性";
+}
+
 function formatDayLabel(dateStr: string): {
   weekday: string;
   monthDay: string;
 } {
   const d = new Date(dateStr + "T00:00:00");
   return {
-    weekday: d.toLocaleDateString(undefined, { weekday: "short" }),
-    monthDay: d.toLocaleDateString(undefined, {
+    weekday: d.toLocaleDateString("zh-TW", { weekday: "short" }),
+    monthDay: d.toLocaleDateString("zh-TW", {
       month: "short",
       day: "numeric",
     }),
@@ -172,7 +179,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
       setMembers(ms.members);
       setRole(tr.role);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load itinerary");
+      setError(err instanceof Error ? err.message : "行程載入失敗");
     }
   }, [tripId]);
 
@@ -248,7 +255,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         key: UNSCHEDULED_KEY,
         dayNumber: null,
         weekday: "—",
-        monthDay: "Unscheduled",
+        monthDay: "未排程",
         isToday: false,
         isUnscheduled: true,
         isEmpty: false,
@@ -303,7 +310,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
       />
 
       {visibleDays.length === 0 ? (
-        <TabEmptyState message="Nothing on the timeline yet. Add an item or set trip dates to start planning." />
+        <TabEmptyState message="時間軸上還沒有內容。新增項目或設定旅程日期後就能開始安排。" />
       ) : (
         <Timeline
           days={visibleDays}
@@ -341,16 +348,16 @@ function Toolbar({
   return (
     <div className="space-y-3">
       <TabPageHeader
-        title="Timeline"
-        subtitle={`${totalDays} day${totalDays === 1 ? "" : "s"} · ${itemsCount} item${itemsCount === 1 ? "" : "s"} on the timeline`}
+        title="行程時間軸"
+        subtitle={`${totalDays} 天 · ${itemsCount} 個項目`}
         actions={
           <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-[var(--border-hairline)] p-0.5 text-xs">
             {(
               [
-                { v: "all", label: "All", count: counts.all },
-                { v: "confirmed", label: "Confirmed", count: counts.confirmed },
-                { v: "pending", label: "Pending vote", count: counts.pending },
-                { v: "todo", label: "To-do", count: counts.todo },
+                { v: "all", label: "全部", count: counts.all },
+                { v: "confirmed", label: "已確認", count: counts.confirmed },
+                { v: "pending", label: "投票中", count: counts.pending },
+                { v: "todo", label: "待辦", count: counts.todo },
               ] as const
             ).map((f) => (
               <button
@@ -390,7 +397,7 @@ function Toolbar({
               aria-pressed={selectedDayKey === null}
               className="inline-flex items-center gap-1 rounded-full border border-[var(--text-primary)] bg-[var(--text-primary)] px-2.5 py-1 text-[11px] font-medium text-[var(--surface-raised)] transition-colors"
             >
-              All days
+              全部天數
             </button>
           )}
           {days.map((d) => (
@@ -508,7 +515,7 @@ function DayHeading({
       setEditing(false);
       onSaved();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save note");
+      setSaveError(err instanceof Error ? err.message : "備註儲存失敗");
     } finally {
       setSaving(false);
     }
@@ -523,22 +530,22 @@ function DayHeading({
       <div className="flex flex-wrap items-center gap-1.5">
         {day.dayNumber != null && (
           <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Day {day.dayNumber}
+            第 {day.dayNumber} 天
           </span>
         )}
         {day.isToday && (
           <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
-            Today
+            今天
           </span>
         )}
         {day.isUnscheduled && (
           <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Unscheduled
+            未排程
           </span>
         )}
         {stats.typeIcons.length > 0 && (
           <span
-            aria-label="Item types"
+            aria-label="項目類型"
             className="text-sm leading-none"
             title={stats.typeIcons.map((t) => t.label).join(", ")}
           >
@@ -553,7 +560,7 @@ function DayHeading({
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="One-line summary, e.g. ‘Travel day: Osaka → Kyoto’"
+            placeholder="一行摘要，例如：移動日：Osaka 到 Kyoto"
             maxLength={140}
             autoFocus
             disabled={saving}
@@ -569,7 +576,7 @@ function DayHeading({
               onClick={() => void save(draft.trim() || null)}
               disabled={saving}
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? "儲存中..." : "儲存"}
             </Button>
             <Button
               size="sm"
@@ -582,7 +589,7 @@ function DayHeading({
               }}
               disabled={saving}
             >
-              Cancel
+              取消
             </Button>
             {day.note && (
               <Button
@@ -592,7 +599,7 @@ function DayHeading({
                 onClick={() => void save(null)}
                 disabled={saving}
               >
-                Remove
+                移除
               </Button>
             )}
           </div>
@@ -607,7 +614,7 @@ function DayHeading({
           )}
           title={
             day.note.updatedByName
-              ? `Last edited by ${day.note.updatedByName}`
+              ? `最後編輯：${day.note.updatedByName}`
               : undefined
           }
         >
@@ -626,7 +633,7 @@ function DayHeading({
               onClick={() => setEditing(true)}
               className="text-[11px] font-medium text-[var(--primary)] hover:underline"
             >
-              + Add summary
+              + 新增摘要
             </button>
           )}
           {canAddManualItem && (
@@ -635,7 +642,7 @@ function DayHeading({
               onClick={onAddManualItem}
               className="text-[11px] font-medium text-[var(--primary)] hover:underline"
             >
-              + Add manually
+              + 手動新增
             </button>
           )}
         </div>
@@ -651,7 +658,7 @@ interface DayStats {
 
 function buildDayStats(day: TimelineDay, currency: string): DayStats {
   if (day.items.length === 0) {
-    return { line: "Nothing planned yet", typeIcons: [] };
+    return { line: "尚未安排", typeIcons: [] };
   }
   const counts = { confirmed: 0, pending: 0, todo: 0 };
   const types = new Set<string>();
@@ -662,9 +669,9 @@ function buildDayStats(day: TimelineDay, currency: string): DayStats {
     types.add(item.item_type);
   }
   const parts: string[] = [];
-  if (counts.confirmed > 0) parts.push(`${counts.confirmed} confirmed`);
-  if (counts.pending > 0) parts.push(`${counts.pending} pending`);
-  if (counts.todo > 0) parts.push(`${counts.todo} to-do`);
+  if (counts.confirmed > 0) parts.push(`${counts.confirmed} 已確認`);
+  if (counts.pending > 0) parts.push(`${counts.pending} 投票中`);
+  if (counts.todo > 0) parts.push(`${counts.todo} 待辦`);
 
   const totalCost = estimateDayCost(day.items);
   if (totalCost != null) {
@@ -675,11 +682,11 @@ function buildDayStats(day: TimelineDay, currency: string): DayStats {
     .slice(0, 5)
     .map((t) => ({
       icon: TYPE_ICON[t] ?? TYPE_ICON.other,
-      label: TYPE_LABEL[t] ?? "Item",
+      label: TYPE_LABEL[t] ?? "項目",
     }));
 
   return {
-    line: parts.length > 0 ? parts.join(" · ") : "No status yet",
+    line: parts.length > 0 ? parts.join(" · ") : "尚無狀態",
     typeIcons,
   };
 }
@@ -844,7 +851,7 @@ function TimelineEvent({
       setEditing(false);
       onUpdated();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save");
+      setSaveError(err instanceof Error ? err.message : "儲存失敗");
     } finally {
       setSaving(false);
     }
@@ -857,7 +864,7 @@ function TimelineEvent({
       )?.displayName ?? item.assigned_to_line_user_id)
     : null;
   const time = item.deadline_at
-    ? new Date(item.deadline_at).toLocaleTimeString(undefined, {
+    ? new Date(item.deadline_at).toLocaleTimeString("zh-TW", {
         hour: "2-digit",
         minute: "2-digit",
       })
@@ -887,12 +894,12 @@ function TimelineEvent({
                   {time}
                 </span>
                 <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
-                  {tod}
+                  {timeOfDayLabel(tod)}
                 </span>
               </>
             ) : (
               <span className="text-xs italic text-[var(--text-muted)]">
-                Anytime
+                彈性時間
               </span>
             )}
           </div>
@@ -917,7 +924,7 @@ function TimelineEvent({
                     {TYPE_ICON[item.item_type] ?? TYPE_ICON.other}
                   </span>
                   <Badge variant="secondary" className="text-[9px] uppercase">
-                    {TYPE_LABEL[item.item_type] ?? "Item"}
+                    {TYPE_LABEL[item.item_type] ?? "項目"}
                   </Badge>
                   <span
                     className={cn(
@@ -925,16 +932,16 @@ function TimelineEvent({
                       STAGE_TONE[item.stage] ?? STAGE_TONE.todo
                     )}
                   >
-                    {item.stage === "pending" ? "pending vote" : item.stage}
+                    {item.stage === "pending" ? "投票中" : item.stage === "confirmed" ? "已確認" : "待辦"}
                   </span>
                   {item.booking_status === "needed" && (
                     <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                      Book
+                      待預訂
                     </span>
                   )}
                   {item.booking_status === "booked" && (
                     <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9px] font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
-                      ✓ Booked
+                      已預訂
                     </span>
                   )}
                 </div>
@@ -991,7 +998,7 @@ function TimelineEvent({
                     rel="noreferrer"
                     className="font-medium text-[var(--primary)] underline underline-offset-2"
                   >
-                    Maps
+                    地圖
                   </a>
                 )}
                 {option.booking_url && (
@@ -1001,7 +1008,7 @@ function TimelineEvent({
                     rel="noreferrer"
                     className="font-medium text-[var(--primary)] underline underline-offset-2"
                   >
-                    Book
+                    預訂
                   </a>
                 )}
               </div>
@@ -1017,7 +1024,7 @@ function TimelineEvent({
                           htmlFor={`it-dl-${item.id}`}
                           className="text-[10px]"
                         >
-                          Time
+                          時間
                         </Label>
                         <Input
                           id={`it-dl-${item.id}`}
@@ -1028,14 +1035,14 @@ function TimelineEvent({
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[10px]">Assigned to</Label>
+                        <Label className="text-[10px]">指派給</Label>
                         <Select value={assignee} onValueChange={setAssignee}>
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Unassigned" />
+                            <SelectValue placeholder="未指派" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={UNASSIGNED}>
-                              Unassigned
+                              未指派
                             </SelectItem>
                             {members.map((m) => (
                               <SelectItem key={m.lineUserId} value={m.lineUserId}>
@@ -1066,7 +1073,7 @@ function TimelineEvent({
                         }}
                         disabled={saving}
                       >
-                        Cancel
+                        取消
                       </Button>
                       <Button
                         size="sm"
@@ -1074,7 +1081,7 @@ function TimelineEvent({
                         onClick={() => void handleSave()}
                         disabled={saving}
                       >
-                        {saving ? "Saving…" : "Save"}
+                        {saving ? "儲存中..." : "儲存"}
                       </Button>
                     </div>
                   </div>
@@ -1085,7 +1092,7 @@ function TimelineEvent({
                       onClick={() => setEditing(true)}
                       className="text-[11px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
                     >
-                      Edit time / assignment
+                      編輯時間 / 指派
                     </button>
                     {canAddOption && (
                       <button
@@ -1093,7 +1100,7 @@ function TimelineEvent({
                         onClick={() => setAddOptionOpen(true)}
                         className="text-[11px] font-medium text-[var(--primary)] underline underline-offset-2 hover:text-[var(--foreground)]"
                       >
-                        Add option
+                        新增選項
                       </button>
                     )}
                   </div>
@@ -1150,7 +1157,7 @@ function EmptyDayBlock({
       setPhase("done");
     } catch (err) {
       setErrorMsg(
-        err instanceof Error ? err.message : "Failed to get suggestions"
+        err instanceof Error ? err.message : "取得建議失敗"
       );
       setPhase("error");
     }
@@ -1194,14 +1201,14 @@ function EmptyDayBlock({
           >
             <div className="space-y-0.5">
               <p className="text-sm font-medium text-[var(--text-muted)]">
-                Nothing planned
+                尚未安排
               </p>
               <p className="text-[11px] text-[var(--text-muted)]/80">
-                Tap for AI suggestions tailored to this day
+                點一下取得適合這一天的 AI 建議
               </p>
             </div>
             <span className="text-[11px] font-semibold text-[var(--primary)] opacity-70 group-hover:opacity-100">
-              ✨ Suggest
+              AI 建議
             </span>
           </button>
         </div>
@@ -1220,7 +1227,7 @@ function EmptyDayBlock({
             </div>
           ))}
           <p className="text-center text-[11px] text-[var(--text-muted)]">
-            Getting AI suggestions…
+            正在取得 AI 建議...
           </p>
         </div>
       ) : phase === "error" ? (
@@ -1231,21 +1238,21 @@ function EmptyDayBlock({
             onClick={() => void handleSuggest()}
             className="ml-1 underline underline-offset-2"
           >
-            Retry
+            重試
           </button>
         </div>
       ) : (
         <div className="surface-tile space-y-2 p-3">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-              ✨ AI suggestions
+              AI 建議
             </p>
             <button
               type="button"
               onClick={() => void handleSuggest()}
               className="text-[10px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
             >
-              Refresh
+              重新整理
             </button>
           </div>
           {suggestions.map((s) => (
@@ -1278,7 +1285,7 @@ function EmptyDayBlock({
                     disabled={addingTitle !== null}
                     className="h-6 shrink-0 px-2 text-[10px]"
                   >
-                    {addingTitle === s.title ? "Adding…" : "Add"}
+                    {addingTitle === s.title ? "新增中..." : "新增"}
                   </Button>
                 )}
               </div>
@@ -1311,7 +1318,7 @@ function ManualItineraryItemDialog({
   async function handleAdd() {
     const cleanTitle = title.trim();
     if (!cleanTitle) {
-      setError("Item needs a title.");
+      setError("項目需要標題。");
       return;
     }
 
@@ -1330,7 +1337,7 @@ function ManualItineraryItemDialog({
       });
       onAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add item");
+      setError(err instanceof Error ? err.message : "新增項目失敗");
     } finally {
       setSubmitting(false);
     }
@@ -1340,15 +1347,15 @@ function ManualItineraryItemDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add itinerary item</DialogTitle>
+          <DialogTitle>新增行程項目</DialogTitle>
           <DialogDescription>
-            Add a plan to this day without using AI suggestions.
+            不透過 AI 建議，直接把安排加到這一天。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="manual-item-title">Title</Label>
+            <Label htmlFor="manual-item-title">標題</Label>
             <Input
               id="manual-item-title"
               value={title}
@@ -1358,7 +1365,7 @@ function ManualItineraryItemDialog({
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              <Label>類型</Label>
               <Select value={itemType} onValueChange={setItemType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -1373,7 +1380,7 @@ function ManualItineraryItemDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="manual-item-time">Time</Label>
+              <Label htmlFor="manual-item-time">時間</Label>
               <Input
                 id="manual-item-time"
                 type="datetime-local"
@@ -1383,7 +1390,7 @@ function ManualItineraryItemDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="manual-item-description">Notes (optional)</Label>
+            <Label htmlFor="manual-item-description">備註（選填）</Label>
             <Textarea
               id="manual-item-description"
               value={description}
@@ -1397,11 +1404,11 @@ function ManualItineraryItemDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button onClick={() => void handleAdd()} disabled={submitting}>
-            {submitting ? "Adding..." : "Add item"}
+            {submitting ? "新增中..." : "新增項目"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1461,7 +1468,7 @@ function AddOptionDialog({
       .filter((option) => option.name.length > 0);
 
     if (payload.length === 0) {
-      setError("Enter at least one option.");
+      setError("請至少輸入一個選項。");
       return;
     }
 
@@ -1469,7 +1476,7 @@ function AddOptionDialog({
     for (const option of payload) {
       const key = option.name.toLowerCase();
       if (names.has(key)) {
-        setError("Option names must be unique.");
+        setError("選項名稱不可重複。");
         return;
       }
       names.add(key);
@@ -1491,7 +1498,7 @@ function AddOptionDialog({
       }
       onAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add options");
+      setError(err instanceof Error ? err.message : "新增選項失敗");
     } finally {
       setSubmitting(false);
     }
@@ -1501,9 +1508,9 @@ function AddOptionDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add options</DialogTitle>
+          <DialogTitle>新增選項</DialogTitle>
           <DialogDescription>
-            Add one or more choices to this decision item.
+            為這個決策項目加入一個或多個選擇。
           </DialogDescription>
         </DialogHeader>
 
@@ -1515,7 +1522,7 @@ function AddOptionDialog({
             >
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor={`it-option-name-${index}`}>
-                  Option {index + 1}
+                  選項 {index + 1}
                 </Label>
                 {options.length > 1 && (
                   <button
@@ -1523,7 +1530,7 @@ function AddOptionDialog({
                     onClick={() => removeRow(index)}
                     className="text-[11px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
                   >
-                    Remove
+                    移除
                   </button>
                 )}
               </div>
@@ -1534,14 +1541,14 @@ function AddOptionDialog({
                   updateOption(index, { name: event.target.value })
                 }
                 autoFocus={index === 0}
-                placeholder="Name"
+                placeholder="名稱"
               />
               <Input
                 value={option.address}
                 onChange={(event) =>
                   updateOption(index, { address: event.target.value })
                 }
-                placeholder="Address (optional)"
+                placeholder="地址（選填）"
               />
               <div className="grid gap-2 sm:grid-cols-2">
                 <Input
@@ -1549,14 +1556,14 @@ function AddOptionDialog({
                   onChange={(event) =>
                     updateOption(index, { imageUrl: event.target.value })
                   }
-                  placeholder="Image URL (optional)"
+                  placeholder="圖片 URL（選填）"
                 />
                 <Input
                   value={option.bookingUrl}
                   onChange={(event) =>
                     updateOption(index, { bookingUrl: event.target.value })
                   }
-                  placeholder="Booking URL (optional)"
+                  placeholder="預訂 URL（選填）"
                 />
               </div>
             </div>
@@ -1568,7 +1575,7 @@ function AddOptionDialog({
             onClick={addRow}
             disabled={options.length >= 10 || submitting}
           >
-            Add more
+            新增更多
           </Button>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
@@ -1576,11 +1583,11 @@ function AddOptionDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button onClick={() => void handleAdd()} disabled={submitting}>
-            {submitting ? "Adding..." : "Add options"}
+            {submitting ? "新增中..." : "新增選項"}
           </Button>
         </DialogFooter>
       </DialogContent>

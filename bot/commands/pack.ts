@@ -66,7 +66,7 @@ export async function handlePack(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 
@@ -84,7 +84,7 @@ export async function handlePack(
   if (sub === "add") {
     const remaining = args.slice(1);
     if (!remaining.length) {
-      await reply("Usage: /pack add [category?] [item]\nExample: /pack add clothing rain jacket");
+      await reply("用法：/pack add [分類?] [物品]\n範例：/pack add clothing rain jacket");
       return;
     }
 
@@ -99,7 +99,7 @@ export async function handlePack(
 
     const label = labelParts.join(" ").trim();
     if (!label) {
-      await reply("Please provide an item name. Example: /pack add clothing rain jacket");
+      await reply("請提供物品名稱。範例：/pack add clothing rain jacket");
       return;
     }
 
@@ -136,7 +136,7 @@ export async function handlePack(
   if (sub === "check") {
     const numStr = args[1];
     if (!numStr || !/^\d+$/.test(numStr)) {
-      await reply("Usage: /pack check [#]\nExample: /pack check 3");
+      await reply("用法：/pack check [編號]\n範例：/pack check 3");
       return;
     }
 
@@ -196,7 +196,7 @@ async function handlePackList(
   if (!items?.length) {
     await reply(
       `No packing items yet for ${destination}.\n\n` +
-        "Add items with: /pack add [category?] [item]"
+        "新增物品：/pack add [分類?] [物品]"
     );
     return;
   }

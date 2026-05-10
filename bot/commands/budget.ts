@@ -53,7 +53,7 @@ export async function handleBudget(
   const rawAmount = args[0].replace(/,/g, "");
   const amount = parseFloat(rawAmount);
   if (isNaN(amount) || amount <= 0) {
-    await reply("Please provide a valid positive amount. Example: /budget 50000");
+    await reply("請提供有效的正數金額。範例：/budget 50000");
     return;
   }
 
@@ -79,7 +79,7 @@ export async function handleBudget(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Start one with /start [destination] [dates].");
+    await reply("目前沒有進行中的旅程。請使用 /start [目的地] [日期] 建立旅程。");
     return;
   }
 

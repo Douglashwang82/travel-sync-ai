@@ -42,7 +42,7 @@ export function PlacePicker({
   value,
   onChange,
   bias,
-  placeholder = "Search for a place...",
+  placeholder = "搜尋地點...",
   inputId,
   disabled,
 }: {
@@ -107,7 +107,7 @@ export function PlacePicker({
               ? err.message
               : err instanceof Error
                 ? err.message
-                : "Search failed"
+                : "搜尋失敗"
           );
         }
       } finally {
@@ -147,7 +147,7 @@ export function PlacePicker({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Failed to load place"
+            : "地點載入失敗"
       );
     } finally {
       setLoading(false);
@@ -189,6 +189,7 @@ export function PlacePicker({
           type="button"
           className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
           onClick={handleClear}
+          aria-label="清除地點"
           tabIndex={-1}
         >
           ×
@@ -224,7 +225,7 @@ export function PlacePicker({
       )}
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       {loading && !value && (
-        <p className="mt-1 text-xs text-muted-foreground">Searching...</p>
+        <p className="mt-1 text-xs text-muted-foreground">搜尋中...</p>
       )}
     </div>
   );

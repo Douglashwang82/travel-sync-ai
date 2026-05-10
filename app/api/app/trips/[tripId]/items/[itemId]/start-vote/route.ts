@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   if (!item || item.trip_id !== tripId) {
     return NextResponse.json(
-      { error: "Item not found in this trip", code: "NOT_FOUND" },
+      { error: "在此旅程中找不到項目", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   if (item.stage !== "todo") {
     return NextResponse.json(
       {
-        error: `Item is already ${item.stage} — cannot start a new vote`,
+        error: `此項目已是 ${item.stage} 狀態，無法開始新投票`,
         code: "INVALID_STAGE",
       },
       { status: 422 }
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   if (uniqueOptions.length < 2) {
     return NextResponse.json(
       {
-        error: "Need at least two distinct options to start a vote",
+        error: "至少需要兩個不同選項才能開始投票",
         code: "NOT_ENOUGH_OPTIONS",
       },
       { status: 400 }
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       .eq("id", itemId);
     if (kindErr) {
       return NextResponse.json(
-        { error: "Failed to promote item to a decision", code: "DB_ERROR" },
+        { error: "項目轉為決策失敗", code: "DB_ERROR" },
         { status: 500 }
       );
     }
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     .eq("trip_item_id", itemId);
   if (clearErr) {
     return NextResponse.json(
-      { error: "Failed to reset existing options", code: "DB_ERROR" },
+      { error: "重設既有選項失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   if (optErr || !inserted) {
     return NextResponse.json(
-      { error: "Failed to insert options", code: "DB_ERROR" },
+      { error: "新增選項失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }

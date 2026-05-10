@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db";
 import { track } from "@/lib/analytics";
 import { enrichTripDestinationMetadata } from "@/services/trips/destination";
+import { BOT_COPY } from "@/lib/bot-copy";
 import type { CommandContext } from "../router";
 
 /**
@@ -58,7 +59,7 @@ export async function handleStart(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("I can't start a trip here — please try from a LINE group.");
+    await reply("我無法在這裡建立旅程，請在 LINE 群組中再試一次。");
     return;
   }
 
@@ -73,11 +74,11 @@ export async function handleStart(
 
   if (existing) {
     const label = existing.destination_name
-      ? `to ${existing.destination_name}`
-      : "in progress";
+      ? `：${existing.destination_name}`
+      : "正在規劃中";
     await reply(
-      `There's already a trip ${label}.\n` +
-        `Use /status to view it, or /cancel to cancel it first.`
+      `目前已經有一個旅程${label}。\n` +
+        `使用 /status 查看，或先用 /cancel 取消現有旅程。`
     );
     return;
   }
@@ -99,7 +100,7 @@ export async function handleStart(
 
   if (error || !trip) {
     console.error("[start] failed to create trip", error);
-    await reply("Something went wrong creating the trip. Please try again.");
+    await reply(BOT_COPY.genericError);
     return;
   }
 
@@ -128,31 +129,31 @@ export async function handleStart(
 
   if (!destination && !startDate && !endDate) {
     await reply(
-      `Trip started! ✈️\n\n` +
-        `No destination, dates, or participants locked in yet — that's fine, we can decide together.\n\n` +
-        `Try:\n` +
-        `• /idea destination Kyoto — brainstorm a spot\n` +
-        `• /decide destination — put it to a group vote\n` +
-        `• /add Pick travel dates — add a planning to-do\n\n` +
-        `Type /status any time to see the trip board.`
+      `旅程已建立！\n\n` +
+        `目的地、日期和成員還沒決定也沒關係，我們可以一起慢慢整理。\n\n` +
+        `可以試試：\n` +
+        `- /idea destination Kyoto：先記下一個目的地靈感\n` +
+        `- /decide destination：讓大家投票決定\n` +
+        `- /add Pick travel dates：新增日期規劃待辦\n\n` +
+        `隨時輸入 /status 查看旅程看板。`
     );
     return;
   }
 
   const destinationLine = destination
-    ? `\n📍 Destination: ${destination}`
-    : `\n📍 Destination: not set yet (use /idea or /decide to plan it)`;
+    ? `\n目的地：${destination}`
+    : `\n目的地：尚未設定（可用 /idea 或 /decide 規劃）`;
   const dateLine =
     startDate && endDate
-      ? `\n📅 ${startDate} → ${endDate}`
-      : `\n📅 Dates: not set yet (mention them in chat or /add to plan)`;
+      ? `\n日期：${startDate} 到 ${endDate}`
+      : `\n日期：尚未設定（可在聊天中提到，或用 /add 新增規劃）`;
 
   await reply(
-    `Trip started! ✈️` +
+    `旅程已建立！` +
       destinationLine +
       dateLine +
-      `\n\nI'll start tracking travel-related messages. ` +
-      `Use /add for planning items, /recommend to recall knowledge, or /decide to set up a group vote.\n\n` +
-      `Type /status to see the trip board.`
+      `\n\n我會開始整理旅遊相關訊息。` +
+      `可用 /add 新增規劃事項、/recommend 回想已保存的資訊，或用 /decide 建立群組投票。\n\n` +
+      `輸入 /status 查看旅程看板。`
   );
 }

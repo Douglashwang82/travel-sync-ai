@@ -11,7 +11,7 @@ export async function handleNudge(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ctx.dbGroupId || !ctx.lineGroupId) {
-    await reply("No active trip found.");
+    await reply("目前沒有進行中的旅程。");
     return;
   }
 
@@ -25,7 +25,7 @@ export async function handleNudge(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one.");
+    await reply("目前沒有進行中的旅程。請使用 /start 建立旅程。");
     return;
   }
 
@@ -67,7 +67,7 @@ export async function handleNudge(
     .lte("updated_at", staleThreshold);
 
   if (!pendingItems?.length && !staleItems?.length) {
-    await reply("Everything looks good! No pending votes or stale items.");
+    await reply("目前看起來都很好！沒有待投票或停滯的項目。");
     return;
   }
 

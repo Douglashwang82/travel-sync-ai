@@ -19,7 +19,7 @@ const PatchSchema = z
     notes: z.string().max(2000).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, {
-    message: "At least one field must be provided",
+    message: "至少需要提供一個欄位",
   });
 
 export interface OptionDetailResponse {
@@ -61,7 +61,7 @@ export async function PATCH(
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -70,7 +70,7 @@ export async function PATCH(
   if (!parsed.success) {
     return NextResponse.json(
       {
-        error: "Validation failed",
+        error: "資料驗證失敗",
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
@@ -105,7 +105,7 @@ export async function PATCH(
 
   if (!option || optionItemId !== itemId || linkedTripId !== tripId) {
     return NextResponse.json(
-      { error: "Option not found in this item", code: "NOT_FOUND" },
+      { error: "在此項目中找不到選項", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -156,7 +156,7 @@ export async function PATCH(
 
   if (error || !updated) {
     return NextResponse.json(
-      { error: "Failed to update option", code: "DB_ERROR" },
+      { error: "更新選項失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }

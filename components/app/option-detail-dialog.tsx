@@ -85,7 +85,7 @@ export function OptionDetailDialog({
       const ratingNum =
         draft.rating.trim() === "" ? null : Number(draft.rating);
       if (ratingNum != null && (Number.isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5)) {
-        throw new Error("Rating must be a number between 0 and 5");
+        throw new Error("評分必須是 0 到 5 之間的數字");
       }
       const payload = {
         name: draft.name.trim(),
@@ -112,7 +112,7 @@ export function OptionDetailDialog({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Failed to save"
+            : "儲存失敗"
       );
     } finally {
       setSaving(false);
@@ -140,21 +140,20 @@ export function OptionDetailDialog({
             <DialogHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="text-[10px] uppercase">
-                  Option
+                  選項
                 </Badge>
                 {option.votedByMe && (
                   <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-[10px] font-semibold text-white">
-                    Your pick
+                    你的選擇
                   </span>
                 )}
                 <span className="text-[11px] text-[var(--muted-foreground)]">
-                  {option.voteCount} vote{option.voteCount === 1 ? "" : "s"}
+                  {option.voteCount} 票
                 </span>
               </div>
               <DialogTitle className="mt-1.5">{option.name}</DialogTitle>
               <DialogDescription className="text-xs">
-                Vote for &quot;{vote.item.title}&quot; · anyone in the group
-                can add price, location, or experience notes.
+                正在為「{vote.item.title}」投票。群組成員都可以補充價格、地點或體驗備註。
               </DialogDescription>
             </DialogHeader>
 
@@ -183,7 +182,7 @@ export function OptionDetailDialog({
                     onClick={onClose}
                     className="sm:order-1"
                   >
-                    Close
+                    關閉
                   </Button>
                   <Button
                     onClick={() => void handleVote()}
@@ -194,10 +193,10 @@ export function OptionDetailDialog({
                     )}
                   >
                     {voting
-                      ? "Saving…"
+                      ? "儲存中..."
                       : option.votedByMe
-                        ? "Voted ✓ Tap to change"
-                        : "Cast my vote"}
+                        ? "已投票，點一下可更改"
+                        : "投給這個選項"}
                   </Button>
                 </>
               ) : (
@@ -208,14 +207,14 @@ export function OptionDetailDialog({
                     disabled={saving}
                     className="sm:order-1"
                   >
-                    Cancel
+                    取消
                   </Button>
                   <Button
                     onClick={() => void handleSave()}
                     disabled={saving || draft.name.trim() === ""}
                     className="sm:order-2"
                   >
-                    {saving ? "Saving…" : "Save details"}
+                    {saving ? "儲存中..." : "儲存詳情"}
                   </Button>
                 </>
               )}
@@ -255,41 +254,41 @@ function ReadView({
       {hasFacts && (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
           {option.address && (
-            <Fact label="Location" full>
+            <Fact label="地點" full>
               <span className="text-[var(--foreground)]">📍 {option.address}</span>
             </Fact>
           )}
           {option.priceLevel && (
-            <Fact label="Price">
+            <Fact label="價格">
               <span className="font-semibold">{option.priceLevel}</span>
             </Fact>
           )}
           {option.rating != null && (
-            <Fact label="Rating">
+            <Fact label="評分">
               <span className="font-semibold">★ {option.rating}</span>
             </Fact>
           )}
           {option.googleMapsUrl && (
-            <Fact label="Map">
+            <Fact label="地圖">
               <a
                 href={option.googleMapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
               >
-                Open on map →
+                在地圖開啟
               </a>
             </Fact>
           )}
           {option.bookingUrl && (
-            <Fact label="Booking">
+            <Fact label="預訂">
               <a
                 href={option.bookingUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium text-[var(--primary)] underline-offset-2 hover:underline"
               >
-                Booking page →
+                開啟預訂頁
               </a>
             </Fact>
           )}
@@ -299,14 +298,14 @@ function ReadView({
       <section className="rounded-xl border border-[var(--border)] bg-[var(--secondary)]/30 p-3">
         <div className="flex items-center justify-between">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-            Group notes & experience
+            群組備註與體驗
           </p>
           <button
             type="button"
             onClick={onEdit}
             className="text-[11px] font-medium text-[var(--primary)] hover:underline"
           >
-            {option.notes ? "Edit" : "Add notes"}
+            {option.notes ? "編輯" : "新增備註"}
           </button>
         </div>
         {option.notes ? (
@@ -316,10 +315,10 @@ function ReadView({
             </p>
             {option.notesUpdatedByName && option.notesUpdatedAt && (
               <p className="mt-2 text-[10px] text-[var(--muted-foreground)]">
-                Last updated by{" "}
+                最後由{" "}
                 <span className="font-medium">{option.notesUpdatedByName}</span>
-                {" · "}
-                {new Date(option.notesUpdatedAt).toLocaleDateString(undefined, {
+                {" 更新 · "}
+                {new Date(option.notesUpdatedAt).toLocaleDateString("zh-TW", {
                   month: "short",
                   day: "numeric",
                   hour: "2-digit",
@@ -330,8 +329,7 @@ function ReadView({
           </>
         ) : (
           <p className="mt-2 text-xs italic text-[var(--muted-foreground)]">
-            No notes yet. Tap &quot;Add notes&quot; to share price, address,
-            personal experience, or anything else the group should know.
+            還沒有備註。點「新增備註」分享價格、地址、個人體驗，或任何群組該知道的資訊。
           </p>
         )}
       </section>
@@ -339,7 +337,7 @@ function ReadView({
       {option.voters.length > 0 && (
         <section>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-            Voted by
+            已投票
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {option.voters.map((v) => (
@@ -397,13 +395,12 @@ function EditView({
   return (
     <fieldset disabled={saving} className="space-y-3">
       <p className="rounded-lg bg-[var(--primary)]/5 px-3 py-2 text-[11px] text-[var(--muted-foreground)]">
-        Anyone in the group can update these details so the whole crew can
-        decide together.
+        群組成員都可以更新這些資訊，讓大家一起做決定。
       </p>
 
       <div className="space-y-1.5">
         <Label htmlFor="opt-name" className="text-xs">
-          Name
+          名稱
         </Label>
         <Input
           id="opt-name"
@@ -417,19 +414,19 @@ function EditView({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
           <Label htmlFor="opt-price" className="text-xs">
-            Price
+            價格
           </Label>
           <Input
             id="opt-price"
             value={draft.priceLevel}
-            placeholder="e.g. ¥18,000/night, $$"
+            placeholder="例如：JPY 18,000/晚、$$"
             onChange={(e) => patch("priceLevel", e.target.value)}
             maxLength={40}
           />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="opt-rating" className="text-xs">
-            Rating (0–5)
+            評分（0-5）
           </Label>
           <Input
             id="opt-rating"
@@ -438,7 +435,7 @@ function EditView({
             min={0}
             max={5}
             step={0.1}
-            placeholder="e.g. 4.5"
+            placeholder="例如：4.5"
             onChange={(e) => patch("rating", e.target.value)}
           />
         </div>
@@ -446,12 +443,12 @@ function EditView({
 
       <div className="space-y-1.5">
         <Label htmlFor="opt-address" className="text-xs">
-          Address / location
+          地址 / 地點
         </Label>
         <Input
           id="opt-address"
           value={draft.address}
-          placeholder="Street, neighborhood, or place name"
+          placeholder="街道、區域或地點名稱"
           onChange={(e) => patch("address", e.target.value)}
           maxLength={400}
         />
@@ -460,24 +457,24 @@ function EditView({
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="opt-map" className="text-xs">
-            Map URL
+            地圖 URL
           </Label>
           <Input
             id="opt-map"
             value={draft.googleMapsUrl}
-            placeholder="https://maps.google.com/…"
+            placeholder="https://maps.google.com/..."
             onChange={(e) => patch("googleMapsUrl", e.target.value)}
             maxLength={1000}
           />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="opt-booking" className="text-xs">
-            Booking URL
+            預訂 URL
           </Label>
           <Input
             id="opt-booking"
             value={draft.bookingUrl}
-            placeholder="https://…"
+            placeholder="https://..."
             onChange={(e) => patch("bookingUrl", e.target.value)}
             maxLength={1000}
           />
@@ -486,12 +483,12 @@ function EditView({
 
       <div className="space-y-1.5">
         <Label htmlFor="opt-image" className="text-xs">
-          Image URL
+          圖片 URL
         </Label>
         <Input
           id="opt-image"
           value={draft.imageUrl}
-          placeholder="https://…"
+          placeholder="https://..."
           onChange={(e) => patch("imageUrl", e.target.value)}
           maxLength={1000}
         />
@@ -499,18 +496,18 @@ function EditView({
 
       <div className="space-y-1.5">
         <Label htmlFor="opt-notes" className="text-xs">
-          Notes & experience
+          備註與體驗
         </Label>
         <Textarea
           id="opt-notes"
           value={draft.notes}
           rows={4}
-          placeholder="Anything the group should know — your personal experience, why you like it, what to watch out for, who recommended it…"
+          placeholder="任何群組該知道的資訊：你的體驗、推薦原因、注意事項、誰推薦的..."
           onChange={(e) => patch("notes", e.target.value)}
           maxLength={2000}
         />
         <p className="text-[10px] text-[var(--muted-foreground)]">
-          {2000 - draft.notes.length} characters left
+          還可輸入 {2000 - draft.notes.length} 字
         </p>
       </div>
 

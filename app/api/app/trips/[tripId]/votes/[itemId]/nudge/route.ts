@@ -57,7 +57,7 @@ export async function POST(
   const parsed = NudgeSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR" },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -73,13 +73,13 @@ export async function POST(
 
   if (!item || item.trip_id !== tripId) {
     return NextResponse.json(
-      { error: "Item not found in this trip", code: "NOT_FOUND" },
+      { error: "在此旅程中找不到項目", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
   if (item.stage !== "pending") {
     return NextResponse.json(
-      { error: "Vote is not active", code: "VOTE_NOT_ACTIVE" },
+      { error: "投票目前未進行中", code: "VOTE_NOT_ACTIVE" },
       { status: 409 }
     );
   }
@@ -98,7 +98,7 @@ export async function POST(
 
   if (membersRes.error || votesRes.error) {
     return NextResponse.json(
-      { error: "Failed to load vote state", code: "DB_ERROR" },
+      { error: "投票狀態載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }

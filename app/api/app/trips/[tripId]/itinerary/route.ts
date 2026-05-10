@@ -66,7 +66,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (!trip) {
     return NextResponse.json(
-      { error: "Trip not found", code: "NOT_FOUND" },
+      { error: "找不到旅程", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (error) {
     return NextResponse.json(
-      { error: "Failed to load itinerary", code: "DB_ERROR" },
+      { error: "行程載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }

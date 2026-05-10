@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", code: "VALIDATION_ERROR" },
+      { error: "資料驗證失敗", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -49,14 +49,14 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     .single();
   if (!item || item.trip_id !== tripId) {
     return NextResponse.json(
-      { error: "Item not found in this trip", code: "NOT_FOUND" },
+      { error: "在此旅程中找不到項目", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
   if (item.stage !== "pending") {
     return NextResponse.json(
       {
-        error: `Cannot close a vote that is ${item.stage}`,
+        error: `無法結束 ${item.stage} 狀態的投票`,
         code: "INVALID_STAGE",
       },
       { status: 422 }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     .single();
   if (!option) {
     return NextResponse.json(
-      { error: "That option does not belong to this vote", code: "NOT_FOUND" },
+      { error: "這個選項不屬於此投票", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   if (!closed) {
     return NextResponse.json(
-      { error: "Vote was already closed", code: "ALREADY_CLOSED" },
+      { error: "投票已經結束", code: "ALREADY_CLOSED" },
       { status: 409 }
     );
   }

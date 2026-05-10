@@ -48,7 +48,7 @@ export function TripExpensesClient({
       );
       setData(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load expenses");
+      setError(err instanceof Error ? err.message : "費用載入失敗");
     }
   }, [tripId]);
 
@@ -60,11 +60,11 @@ export function TripExpensesClient({
   async function handleSubmit() {
     const value = Number.parseFloat(amount);
     if (!Number.isFinite(value) || value <= 0) {
-      setSubmitError("Enter a valid amount.");
+      setSubmitError("請輸入有效金額。");
       return;
     }
     if (!description.trim()) {
-      setSubmitError("Enter a description.");
+      setSubmitError("請輸入費用描述。");
       return;
     }
 
@@ -80,14 +80,14 @@ export function TripExpensesClient({
       setAddOpen(false);
       await load();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to record expense");
+      setSubmitError(err instanceof Error ? err.message : "記錄費用失敗");
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleDelete(expenseId: string) {
-    if (!confirm("Delete this expense? Balances will update immediately.")) return;
+    if (!confirm("要刪除這筆費用嗎？餘額會立即更新。")) return;
     setDeleting(expenseId);
     try {
       const res = await appFetch(
@@ -96,11 +96,11 @@ export function TripExpensesClient({
       );
       if (!res.ok && res.status !== 204) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to delete expense");
+        throw new Error(body.error ?? "刪除費用失敗");
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete expense");
+      setError(err instanceof Error ? err.message : "刪除費用失敗");
     } finally {
       setDeleting(null);
     }
@@ -125,45 +125,45 @@ export function TripExpensesClient({
   return (
     <div className="space-y-6">
       <TabPageHeader
-        title="Expenses"
-        subtitle="Log shared costs, track balances, and settle up in the fewest transfers."
+        title="費用"
+        subtitle="記錄共同支出、追蹤餘額，並用最少轉帳完成結算。"
         actions={
           <Button size="sm" onClick={() => setAddOpen(true)}>
-            + Log expense
+            + 記錄費用
           </Button>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <SummaryCard
-          label="Total spent"
+          label="總支出"
           value={`${currency} ${Math.round(data.totalAmount).toLocaleString()}`}
           subtitle={
             data.balances.length > 0
-              ? `~ ${currency} ${Math.round(perPerson).toLocaleString()} per person · ${data.balances.length} ${data.balances.length === 1 ? "person" : "people"}`
-              : "No one splitting yet"
+              ? `約 ${currency} ${Math.round(perPerson).toLocaleString()} / 人 · ${data.balances.length} 人分帳`
+              : "尚未有人分帳"
           }
           tone="primary"
         />
         <SummaryCard
-          label="Budget"
+          label="預算"
           value={
             data.budgetAmount != null
               ? `${currency} ${data.budgetAmount.toLocaleString()}`
-              : "Not set"
+              : "尚未設定"
           }
           subtitle={
-            budgetPct != null ? `${budgetPct.toFixed(0)}% used` : "Set via /budget in chat"
+            budgetPct != null ? `已使用 ${budgetPct.toFixed(0)}%` : "可在聊天中使用 /budget 設定"
           }
           progress={budgetPct}
         />
         <SummaryCard
-          label="Open settlements"
+          label="待結算"
           value={`${data.settlements.length}`}
           subtitle={
             data.settlements.length > 0
-              ? "Transfers to make everyone even"
-              : "Everyone is settled"
+              ? "讓大家結清的轉帳建議"
+              : "所有人都已結清"
           }
         />
       </div>
@@ -171,13 +171,13 @@ export function TripExpensesClient({
       <div className="grid gap-6 lg:grid-cols-3">
         <TabSurface className="lg:col-span-1">
           <TabSurfaceTitle
-            title="Balances"
-            subtitle="Green is owed money; red owes money."
+            title="餘額"
+            subtitle="綠色代表應收，紅色代表應付。"
           />
           <ul className="mt-3 space-y-2">
             {data.balances.length === 0 ? (
               <li className="text-xs italic text-[var(--text-muted)]">
-                No expenses yet.
+                還沒有費用。
               </li>
             ) : (
               data.balances.map((b) => (
@@ -208,7 +208,7 @@ export function TripExpensesClient({
 
           {data.settlements.length > 0 && (
             <div className="mt-5 space-y-2 border-t border-[var(--border-hairline)] pt-4">
-              <h4 className="text-caps">Settle up</h4>
+              <h4 className="text-caps">結算</h4>
               <ul className="space-y-2">
                 {data.settlements.map((s, i) => (
                   <li
@@ -232,13 +232,13 @@ export function TripExpensesClient({
 
         <TabSurface className="lg:col-span-2">
           <TabSurfaceTitle
-            title="History"
-            subtitle="Most recent first. Delete an expense if it was logged by mistake."
+            title="紀錄"
+            subtitle="最新紀錄在前。如果記錯了，可以刪除費用。"
           />
           <ul className="mt-3 divide-y divide-[var(--border-hairline)]">
             {data.expenses.length === 0 ? (
               <li className="py-3 text-xs italic text-[var(--text-muted)]">
-                Nothing logged yet.
+                還沒有紀錄。
               </li>
             ) : (
               data.expenses.map((e) => (
@@ -251,8 +251,8 @@ export function TripExpensesClient({
                       {e.description}
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)]">
-                      Paid by {e.paidByDisplayName ?? "Unknown"} ·{" "}
-                      {new Date(e.createdAt).toLocaleDateString(undefined, {
+                      付款人：{e.paidByDisplayName ?? "未知"} ·{" "}
+                      {new Date(e.createdAt).toLocaleDateString("zh-TW", {
                         month: "short",
                         day: "numeric",
                         hour: "2-digit",
@@ -269,7 +269,7 @@ export function TripExpensesClient({
                     disabled={deleting === e.id}
                     className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--status-blocked)] disabled:opacity-50"
                   >
-                    {deleting === e.id ? "Deleting..." : "Delete"}
+                    {deleting === e.id ? "刪除中..." : "刪除"}
                   </button>
                 </li>
               ))
@@ -287,15 +287,15 @@ export function TripExpensesClient({
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Log a shared expense</DialogTitle>
+            <DialogTitle>記錄共同費用</DialogTitle>
             <DialogDescription>
-              The cost is split equally among all current trip members.
+              這筆費用會平均分攤給目前所有旅程成員。
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="expense-amount">Amount</Label>
+              <Label htmlFor="expense-amount">金額</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--text-muted)]">
                   {currency}
@@ -315,10 +315,10 @@ export function TripExpensesClient({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="expense-description">Description</Label>
+              <Label htmlFor="expense-description">描述</Label>
               <Input
                 id="expense-description"
-                placeholder="e.g. Dinner at Nanbantei"
+                placeholder="例如：Nanbantei 晚餐"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -330,11 +330,11 @@ export function TripExpensesClient({
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" disabled={submitting}>
-                Cancel
+                取消
               </Button>
             </DialogClose>
             <Button onClick={() => void handleSubmit()} disabled={submitting}>
-              {submitting ? "Saving..." : "Log expense"}
+              {submitting ? "儲存中..." : "記錄費用"}
             </Button>
           </DialogFooter>
         </DialogContent>

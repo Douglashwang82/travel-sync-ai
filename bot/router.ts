@@ -3,6 +3,7 @@ import { replyFlex, replyText, pushFlex, pushText } from "@/lib/line";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildCommandPageUrl, isLinkableCommand } from "@/lib/command-pages";
 import { createAdminClient } from "@/lib/db";
+import { BOT_COPY } from "@/lib/bot-copy";
 import { COMMAND_ROUTE_MAP, RATE_LIMIT_EXEMPT_COMMANDS } from "./command-registry";
 
 export interface CommandContext {
@@ -57,7 +58,7 @@ export async function routeCommand(
     if (!url) return message;
 
     if (typeof message === "string") {
-      return `${message}\n\nView: ${url}`;
+      return `${message}\n\n${BOT_COPY.viewLink(url)}`;
     }
 
     const container = message.contents;
@@ -75,11 +76,11 @@ export async function routeCommand(
             { type: "separator", margin: "md" },
             {
               type: "text",
-              text: `View: ${url}`,
+              text: BOT_COPY.viewLink(url),
               size: "xs",
               color: "#3B82F6",
               wrap: true,
-              action: { type: "uri", label: "View", uri: url },
+              action: { type: "uri", label: BOT_COPY.viewLabel, uri: url },
             },
           ],
         },
@@ -124,21 +125,21 @@ export async function routeCommand(
   const route = COMMAND_ROUTE_MAP.get(cmd);
 
   if (!route) {
-    await reply("I didn't catch that! Type /help to see what I can do.");
+    await reply(BOT_COPY.unknownCommand);
     return;
   }
 
   if (!RATE_LIMIT_EXEMPT_COMMANDS.has(cmd)) {
     const groupLimit = await checkRateLimit("group", ctx.lineGroupId);
     if (!groupLimit.allowed) {
-      await reply("Too many commands. Please wait a moment and try again.");
+      await reply(BOT_COPY.groupRateLimited);
       return;
     }
 
     if (ctx.userId) {
       const userLimit = await checkRateLimit("user", ctx.userId);
       if (!userLimit.allowed) {
-        await reply("You're sending commands too quickly. Please slow down a little.");
+        await reply(BOT_COPY.userRateLimited);
         return;
       }
     }

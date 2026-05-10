@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
   if (error) {
     return NextResponse.json(
-      { error: "Failed to load ideas", code: "DB_ERROR" },
+      { error: "靈感載入失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON", code: "INVALID_JSON" },
+      { error: "JSON 格式無效", code: "INVALID_JSON" },
       { status: 400 }
     );
   }
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   if (!parsed.success) {
     return NextResponse.json(
       {
-        error: "Validation failed",
+        error: "資料驗證失敗",
         code: "VALIDATION_ERROR",
         details: parsed.error.flatten(),
       },
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   if (error || !inserted) {
     return NextResponse.json(
-      { error: "Failed to save idea", code: "DB_ERROR" },
+      { error: "靈感儲存失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }
@@ -156,7 +156,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   const parsed = DeleteSchema.safeParse({ id: idParam });
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Idea id required", code: "VALIDATION_ERROR" },
+      { error: "缺少靈感 ID", code: "VALIDATION_ERROR" },
       { status: 400 }
     );
   }
@@ -170,14 +170,14 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
 
   if (!idea || idea.trip_id !== tripId) {
     return NextResponse.json(
-      { error: "Idea not found", code: "NOT_FOUND" },
+      { error: "找不到靈感", code: "NOT_FOUND" },
       { status: 404 }
     );
   }
 
   if (idea.submitted_by !== auth.lineUserId && auth.role !== "organizer") {
     return NextResponse.json(
-      { error: "You can only delete your own ideas", code: "FORBIDDEN" },
+      { error: "只能刪除你自己新增的靈感", code: "FORBIDDEN" },
       { status: 403 }
     );
   }
@@ -185,7 +185,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   if (idea.promoted) {
     return NextResponse.json(
       {
-        error: "This idea has been promoted and cannot be deleted",
+        error: "這個靈感已轉成投票，無法刪除",
         code: "IDEA_PROMOTED",
       },
       { status: 409 }
@@ -195,7 +195,7 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   const { error } = await db.from("trip_ideas").delete().eq("id", parsed.data.id);
   if (error) {
     return NextResponse.json(
-      { error: "Failed to delete idea", code: "DB_ERROR" },
+      { error: "靈感刪除失敗", code: "DB_ERROR" },
       { status: 500 }
     );
   }

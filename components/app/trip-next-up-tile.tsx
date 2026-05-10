@@ -7,30 +7,8 @@ import type { Trip, TripItem } from "@/lib/types";
 import { IconArrowUpRight, IconCalendar, IconClock, IconPin } from "@/components/app/icons";
 
 const COPY = {
-  en: {
-    title: "Up next",
-    sub: "The closest confirmed beat.",
-    seeAll: "Itinerary",
-    inDays: (n: number) => `In ${n} day${n === 1 ? "" : "s"}`,
-    today: "Today",
-    tomorrow: "Tomorrow",
-    inTrip: (d: number, total: number) => `Day ${d} of ${total}`,
-    nothing: "Nothing scheduled yet. Add something or wait for the group to vote.",
-    pre: (start: string) => `Trip starts ${start}`,
-    over: "Trip ended.",
-  },
-  "zh-TW": {
-    title: "接下來",
-    sub: "最近一個已敲定的行程。",
-    seeAll: "行程",
-    inDays: (n: number) => `${n} 天後`,
-    today: "今天",
-    tomorrow: "明天",
-    inTrip: (d: number, total: number) => `第 ${d} / ${total} 天`,
-    nothing: "尚未排定任何事。先加一項或等大家投票。",
-    pre: (start: string) => `${start} 出發`,
-    over: "旅程已結束。",
-  },
+  en: { title: "Up next", sub: "The closest confirmed beat.", seeAll: "Itinerary", inDays: (n: number) => `In ${n} day${n === 1 ? "" : "s"}`, today: "Today", tomorrow: "Tomorrow", inTrip: (d: number, total: number) => `Day ${d} of ${total}`, nothing: "Nothing scheduled yet. Add something or wait for the group to vote.", pre: (start: string) => `Trip starts ${start}`, over: "Trip ended." },
+  "zh-TW": { title: "接下來", sub: "最近一個已確認行程。", seeAll: "行程", inDays: (n: number) => `${n} 天後`, today: "今天", tomorrow: "明天", inTrip: (d: number, total: number) => `第 ${d} / ${total} 天`, nothing: "尚未排定任何事項。先新增一項，或等大家投票。", pre: (start: string) => `${start} 出發`, over: "旅程已結束。" },
 } as const;
 
 interface NextUpTileProps {
@@ -42,7 +20,21 @@ interface NextUpTileProps {
 
 export function NextUpTile({ tripId, trip, items, onItemClick }: NextUpTileProps) {
   const { locale } = useAppLocale();
-  const copy = COPY[locale];
+  const copy =
+    locale === "zh-TW"
+      ? {
+          title: "接下來",
+          sub: "最近一個已確認行程。",
+          seeAll: "行程",
+          inDays: (n: number) => `${n} 天後`,
+          today: "今天",
+          tomorrow: "明天",
+          inTrip: (d: number, total: number) => `第 ${d} / ${total} 天`,
+          nothing: "尚未排定任何事項。先新增一項，或等大家投票。",
+          pre: (start: string) => `${start} 出發`,
+          over: "旅程已結束。",
+        }
+      : COPY.en;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -91,7 +83,7 @@ export function NextUpTile({ tripId, trip, items, onItemClick }: NextUpTileProps
             {trip.start_date && now > new Date(trip.start_date + "T00:00:00").getTime()
               ? copy.nothing
               : trip.start_date
-                ? copy.pre(new Date(trip.start_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }))
+                ? copy.pre(new Date(trip.start_date + "T00:00:00").toLocaleDateString(locale === "zh-TW" ? "zh-TW" : undefined, { month: "short", day: "numeric" }))
                 : copy.nothing}
           </p>
         </div>
@@ -122,7 +114,12 @@ function RelativeWhen({
   iso: string | null;
   trip: Trip;
   now: number;
-  copy: typeof COPY[keyof typeof COPY];
+  copy: {
+    today: string;
+    tomorrow: string;
+    over: string;
+    inDays: (n: number) => string;
+  };
 }) {
   if (!iso && !trip.start_date) {
     return null;
@@ -138,7 +135,7 @@ function RelativeWhen({
   else label = copy.inDays(days);
 
   const time = iso
-    ? new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+    ? new Date(iso).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })
     : null;
 
   return (

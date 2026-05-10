@@ -7,34 +7,8 @@ import { IconArrowUpRight, IconCoin } from "@/components/app/icons";
 import type { AppExpensesResponse } from "@/lib/app-trip-expenses";
 
 const COPY = {
-  en: {
-    title: "Trip finance",
-    sub: "Live snapshot. Settle anytime.",
-    manage: "Manage",
-    total: "Total",
-    perPerson: "Per person",
-    unsettled: "Unsettled",
-    overBudget: "Over budget",
-    onTrack: "On track",
-    settled: "Everyone's settled.",
-    whoOwes: "Who owes whom",
-    settle: "Mark settled",
-    noBudget: "No budget set",
-  },
-  "zh-TW": {
-    title: "費用總覽",
-    sub: "即時更新，隨時可結算。",
-    manage: "管理",
-    total: "總額",
-    perPerson: "每人",
-    unsettled: "未結算",
-    overBudget: "超支",
-    onTrack: "預算內",
-    settled: "全部結清。",
-    whoOwes: "誰欠誰",
-    settle: "標記為已結",
-    noBudget: "尚未設定預算",
-  },
+  en: { title: "Trip finance", sub: "Live snapshot. Settle anytime.", manage: "Manage", total: "Total", perPerson: "Per person", unsettled: "Unsettled", overBudget: "Over budget", onTrack: "On track", settled: "Everyone's settled.", whoOwes: "Who owes whom", settle: "Mark settled", noBudget: "No budget set", used: "used", spent: "spent" },
+  "zh-TW": { title: "費用總覽", sub: "即時快照，隨時可結算。", manage: "管理", total: "總額", perPerson: "每人", unsettled: "未結算", overBudget: "超支", onTrack: "預算內", settled: "大家都已結清。", whoOwes: "誰欠誰", settle: "標記已結算", noBudget: "尚未設定預算", used: "已使用", spent: "已花費" },
 } as const;
 
 interface FinanceTileProps {
@@ -96,8 +70,8 @@ export function FinanceTile({ tripId, expenses, memberCount, onSettleClick }: Fi
 
       <output className="sr-only">
         {budgetAmount != null
-          ? `${Math.round(budgetPct ?? 0)} percent of ${formatMoney(budgetAmount, budgetCurrency)} used`
-          : `${formatMoney(totalAmount, budgetCurrency)} spent`}
+          ? `${copy.used} ${Math.round(budgetPct ?? 0)}% / ${formatMoney(budgetAmount, budgetCurrency)}`
+          : `${formatMoney(totalAmount, budgetCurrency)} ${copy.spent}`}
       </output>
 
       {settlements.length > 0 ? (
@@ -170,7 +144,7 @@ function BudgetRing({ pct, overBudget }: { pct: number | null; overBudget: boole
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-mono text-sm font-semibold text-[var(--text-primary)]">
-        {pct == null ? "—" : `${Math.round(value)}%`}
+        {pct == null ? "-" : `${Math.round(value)}%`}
       </span>
     </div>
   );

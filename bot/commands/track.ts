@@ -91,7 +91,7 @@ async function trackAdd(
 ): Promise<void> {
   const url = rest.find((a) => URL_RE.test(a));
   if (!url) {
-    await reply("Usage: /track add <url> [category]\nExample: /track add https://www.timeout.com/tokyo/restaurants restaurant");
+    await reply("用法：/track add <url> [分類]\n範例：/track add https://www.timeout.com/tokyo/restaurants restaurant");
     return;
   }
 
@@ -147,7 +147,7 @@ async function trackRun(
       await reply("Nothing new today. Add a source with /track add <url> or wait until tomorrow.");
       return;
     case "llm_unavailable":
-      await reply("The summary service is temporarily unavailable. Try again in a minute.");
+      await reply("摘要服務暫時無法使用，請稍後再試。");
       return;
     default:
       await reply("Couldn't send the digest right now. Please try again shortly.");

@@ -20,7 +20,7 @@ const TripMapCanvas = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex h-full items-center justify-center bg-[var(--surface-sunken)]/40">
-        <p className="text-xs text-[var(--text-muted)]">Loading map…</p>
+        <p className="text-xs text-[var(--text-muted)]">地圖載入中...</p>
       </div>
     ),
   }
@@ -29,13 +29,13 @@ const TripMapCanvas = dynamic(
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<string, string> = {
-  hotel: "Hotels",
-  restaurant: "Food",
-  activity: "Activities",
-  transport: "Transit",
-  flight: "Flights",
-  insurance: "Insurance",
-  other: "Other",
+  hotel: "住宿",
+  restaurant: "餐飲",
+  activity: "活動",
+  transport: "交通",
+  flight: "航班",
+  insurance: "保險",
+  other: "其他",
 };
 
 const TYPE_GLYPH: Record<string, string> = {
@@ -49,9 +49,9 @@ const TYPE_GLYPH: Record<string, string> = {
 };
 
 const STAGE_LABEL: Record<string, string> = {
-  confirmed: "Confirmed",
-  pending: "Pending vote",
-  todo: "To-do",
+  confirmed: "已確認",
+  pending: "投票中",
+  todo: "待辦",
 };
 
 const DAY_PALETTE = [
@@ -79,7 +79,7 @@ function dateKey(iso: string | null): string | null {
 
 function dayLabel(iso: string): string {
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString("zh-TW", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -195,7 +195,7 @@ export function TripMapView({ tripId }: { tripId: string }) {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Failed to load map data"
+            : "地圖資料載入失敗"
       );
     }
   }, [tripId]);
@@ -287,7 +287,7 @@ export function TripMapView({ tripId }: { tripId: string }) {
         key,
         label:
           key === "__unscheduled__"
-            ? "Unscheduled"
+            ? "未排程"
             : dayLabel(key),
         color: dayColorByKey.get(key) ?? "#94a3b8",
         pins: pins.slice().sort((a, b) => a.title.localeCompare(b.title)),
@@ -421,21 +421,21 @@ function Filters({
   return (
     <section className="surface-tile p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-caps">Filters</p>
+        <p className="text-caps">篩選</p>
         <p className="text-mono text-[11px] text-[var(--text-muted)]">
-          {shownPins} / {totalPins} pins
+          {shownPins} / {totalPins} 個地點
         </p>
       </div>
 
       <div className="mt-2">
         <p className="text-caps text-[var(--text-muted)]">
-          Type
+          類型
         </p>
         <div className="mt-1 flex flex-wrap gap-1">
           <Pill
             active={typeFilter === "all"}
             onClick={() => setTypeFilter("all")}
-            label="All"
+            label="全部"
             count={totalPins}
           />
           {(["hotel", "restaurant", "activity", "transport"] as const).map(
@@ -454,24 +454,24 @@ function Filters({
 
       <div className="mt-2">
         <p className="text-caps text-[var(--text-muted)]">
-          Stage
+          狀態
         </p>
         <div className="mt-1 flex flex-wrap gap-1">
           <Pill
             active={stageFilter === "all"}
             onClick={() => setStageFilter("all")}
-            label="All"
+            label="全部"
           />
           <Pill
             active={stageFilter === "confirmed"}
             onClick={() => setStageFilter("confirmed")}
-            label="✓ Confirmed"
+            label="已確認"
             count={counts.confirmed}
           />
           <Pill
             active={stageFilter === "pending"}
             onClick={() => setStageFilter("pending")}
-            label="🗳 Pending vote"
+            label="投票中"
             count={counts.pending}
           />
         </div>
@@ -480,13 +480,13 @@ function Filters({
       {dayKeys.length > 0 && (
         <div className="mt-2">
           <p className="text-caps text-[var(--text-muted)]">
-            Day
+            日期
           </p>
           <div className="mt-1 flex flex-wrap gap-1">
             <Pill
               active={dayFilter === "all"}
               onClick={() => setDayFilter("all")}
-              label="All days"
+              label="全部日期"
             />
             {dayKeys.map((k) => (
               <button
@@ -511,7 +511,7 @@ function Filters({
             <Pill
               active={dayFilter === "unscheduled"}
               onClick={() => setDayFilter("unscheduled")}
-              label="Unscheduled"
+              label="未排程"
             />
           </div>
         </div>
@@ -524,7 +524,7 @@ function Filters({
           onChange={(e) => setShowRoutes(e.target.checked)}
           className="h-3.5 w-3.5 rounded border-[var(--border-hairline)]"
         />
-        Show daily routes
+        顯示每日路線
       </label>
     </section>
   );
@@ -585,7 +585,7 @@ function PinList({
   if (groups.length === 0) {
     return (
       <section className="surface-tile flex-1 border-dashed p-6 text-center text-xs text-[var(--text-muted)]">
-        No locations match these filters.
+        沒有符合篩選條件的地點。
       </section>
     );
   }
@@ -662,19 +662,19 @@ function PinList({
                       )}
                       <p className="text-[10px] text-[var(--text-muted)]">
                         {distance != null && (
-                          <>{formatDistance(distance)} from center</>
+                          <>距中心 {formatDistance(distance)}</>
                         )}
                         {fromPrev != null && (
                           <>
                             {distance != null && " · "}
-                            {formatDistance(fromPrev)} from prev
+                            距上一站 {formatDistance(fromPrev)}
                           </>
                         )}
                         {pin.kind === "option" && (
                           <>
                             {(distance != null || fromPrev != null) && " · "}
-                            vote option
-                            {pin.votedByMe && " · ✓ your pick"}
+                            投票選項
+                            {pin.votedByMe && " · 你的選擇"}
                           </>
                         )}
                       </p>

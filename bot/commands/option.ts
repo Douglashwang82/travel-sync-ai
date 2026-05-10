@@ -14,7 +14,7 @@ export async function handleOption(
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
     await reply(
       "Usage: /option [decision-item] | [option-name]\n" +
-        "Example: /option restaurant | Ramen Shop Osaka"
+        "範例：/option restaurant | Ramen Shop Osaka"
     );
     return;
   }
@@ -25,7 +25,7 @@ export async function handleOption(
   if (pipeIndex === -1) {
     await reply(
       "Please separate the decision item and option name with |.\n" +
-        "Example: /option restaurant | Ramen Shop Osaka"
+        "範例：/option restaurant | Ramen Shop Osaka"
     );
     return;
   }
@@ -36,7 +36,7 @@ export async function handleOption(
   if (!itemQuery || !optionName) {
     await reply(
       "Both a decision item and an option name are required.\n" +
-        "Example: /option restaurant | Ramen Shop Osaka"
+        "範例：/option restaurant | Ramen Shop Osaka"
     );
     return;
   }
@@ -46,7 +46,7 @@ export async function handleOption(
   const trip = await getActiveTrip(db, ctx.dbGroupId);
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

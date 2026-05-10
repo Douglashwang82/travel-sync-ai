@@ -68,10 +68,10 @@ describe("handleItinerary", () => {
     await handleItinerary([], ctx, reply);
 
     const message = reply.mock.calls[0][0] as string;
-    expect(message).toContain("Itinerary: Tokyo");
+    expect(message).toContain("行程：Tokyo");
     expect(message).toContain("2026-07-15");
-    expect(message).toContain("Note: Arrival day");
-    expect(message).toContain("Hotel check-in ref ABC123");
+    expect(message).toContain("備註：Arrival day");
+    expect(message).toContain("Hotel check-in 訂位編號 ABC123");
     expect(message).toContain("2026-07-16");
     expect(message).toContain("Dinner: Ramen Shop Osaka");
   });
@@ -110,7 +110,7 @@ describe("handleItinerary", () => {
     await handleItinerary(["7/15"], ctx, reply);
 
     const message = reply.mock.calls[0][0] as string;
-    expect(message).toContain("Itinerary for 2026-07-15");
+    expect(message).toContain("2026-07-15 的行程");
     expect(message).toContain("Hotel check-in");
     expect(message).not.toContain("Dinner");
   });
@@ -125,6 +125,6 @@ describe("handleItinerary", () => {
 
     await handleItinerary(["2026-07-18"], ctx, reply);
 
-    expect(reply).toHaveBeenCalledWith(expect.stringContaining("No confirmed plans"));
+    expect(reply).toHaveBeenCalledWith(expect.stringContaining("還沒有已確認的安排"));
   });
 });

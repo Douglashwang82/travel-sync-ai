@@ -41,7 +41,7 @@ export async function handleConfirm(
   if (!text) {
     await reply(
       "Paste the booking confirmation text after /confirm.\n\n" +
-        "Example: /confirm Booking confirmed! Ref AX-12345 Hotel Sunshine check-in July 15"
+        "範例：/confirm Booking confirmed! Ref AX-12345 Hotel Sunshine check-in July 15"
     );
     return;
   }
@@ -56,7 +56,7 @@ export async function handleConfirm(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 
@@ -86,7 +86,7 @@ Return ONLY valid JSON.`,
   } catch {
     await reply(
       "I couldn't parse that confirmation. Please try:\n/booked [item name] [ref number]\n\n" +
-        "Example: /booked hotel ABC-123"
+        "範例：/booked hotel ABC-123"
     );
     return;
   }

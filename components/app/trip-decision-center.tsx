@@ -10,44 +10,8 @@ import { ITEM_TYPE_LABELS } from "@/components/app/board-columns";
 import { IconArrowUpRight, IconChevronRight, IconCheck } from "@/components/app/icons";
 
 const COPY = {
-  en: {
-    title: "Decision center",
-    sub: "What still needs to be decided.",
-    needsVote: "Needs vote",
-    waitingOwner: "Waiting on owner",
-    recentlyConfirmed: "Recently locked in",
-    empty: "Nothing waiting on you. Nice.",
-    pickOwner: "Tap to assign",
-    open: "All votes",
-    of: "of",
-    voted: "voted",
-    waiting: "Waiting",
-    plus: (n: number) => `+${n}`,
-    more: (n: number) => `+${n} more`,
-    locked: "Locked in",
-    book: "Book",
-    booked: "Booked",
-    owner: "Owner",
-  },
-  "zh-TW": {
-    title: "決策中心",
-    sub: "還沒決定的事項。",
-    needsVote: "需要投票",
-    waitingOwner: "等待負責人",
-    recentlyConfirmed: "近期已決定",
-    empty: "目前沒有待決定的事，做得好。",
-    pickOwner: "點擊指派",
-    open: "全部投票",
-    of: "/",
-    voted: "已投",
-    waiting: "等待",
-    plus: (n: number) => `+${n}`,
-    more: (n: number) => `還有 ${n} 個`,
-    locked: "已敲定",
-    book: "待訂",
-    booked: "已訂",
-    owner: "負責人",
-  },
+  en: { title: "Decision center", sub: "What still needs to be decided.", needsVote: "Needs vote", waitingOwner: "Waiting on owner", recentlyConfirmed: "Recently locked in", empty: "Nothing waiting on you. Nice.", pickOwner: "Tap to assign", open: "All votes", of: "of", voted: "voted", waiting: "Waiting", plus: (n: number) => `+${n}`, more: (n: number) => `+${n} more`, locked: "Locked in", book: "Book", booked: "Booked", owner: "Owner", item: "Item" },
+  "zh-TW": { title: "決策中心", sub: "還沒決定的事項。", needsVote: "需要投票", waitingOwner: "等待負責人", recentlyConfirmed: "近期已確認", empty: "目前沒有待決定事項。", pickOwner: "點一下指派", open: "全部投票", of: "/", voted: "已投", waiting: "等待", plus: (n: number) => `+${n}`, more: (n: number) => `還有 ${n} 個`, locked: "已敲定", book: "待預訂", booked: "已預訂", owner: "負責人", item: "項目" },
 } as const;
 
 interface TileProps {
@@ -108,7 +72,7 @@ export function DecisionCenterTile(props: TileProps) {
                   key={item.id}
                   onClick={() => onItemClick(item)}
                   title={item.title}
-                  badge={ITEM_TYPE_LABELS[item.item_type] ?? "Item"}
+                  badge={ITEM_TYPE_LABELS[item.item_type] ?? copy.item}
                   bottom={
                     <div className="flex items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
                       <span className="text-mono">
@@ -141,7 +105,7 @@ export function DecisionCenterTile(props: TileProps) {
                 key={item.id}
                 onClick={() => onItemClick(item)}
                 title={item.title}
-                badge={ITEM_TYPE_LABELS[item.item_type] ?? "Item"}
+                badge={ITEM_TYPE_LABELS[item.item_type] ?? copy.item}
                 bottom={<p className="text-[11px] text-[var(--text-muted)]">{copy.pickOwner}</p>}
               />
             ))}
@@ -165,7 +129,7 @@ export function DecisionCenterTile(props: TileProps) {
                       ? copy.book
                       : item.booking_status === "booked"
                         ? copy.booked
-                        : (ITEM_TYPE_LABELS[item.item_type] ?? "Item")
+                        : (ITEM_TYPE_LABELS[item.item_type] ?? copy.item)
                   }
                   badgeTone={
                     item.booking_status === "needed"

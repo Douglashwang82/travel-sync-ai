@@ -21,7 +21,7 @@ export async function handleDecide(
   reply: (text: string) => Promise<void>
 ): Promise<void> {
   if (!ArgsSchema.safeParse(args).success || !ctx.dbGroupId) {
-    await reply("Usage: /decide [item]\nExample: /decide restaurant");
+    await reply("用法：/decide [項目]\n範例：/decide restaurant");
     return;
   }
 
@@ -33,7 +33,7 @@ export async function handleDecide(
   const trip = await getActiveTrip(db, ctx.dbGroupId);
 
   if (!trip) {
-    await reply("No active trip. Use /start to create one first.");
+    await reply("目前沒有進行中的旅程。請先使用 /start 建立旅程。");
     return;
   }
 

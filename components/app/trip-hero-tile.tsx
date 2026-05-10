@@ -48,7 +48,7 @@ const COPY = {
     publish: "發布行程",
     openToday: "查看今日",
     settle: "結算費用",
-    invite: "邀請夥伴",
+    invite: "邀請旅伴",
     map: "在地圖開啟",
     line: "在 LINE 開啟",
     untitled: "未命名旅程",

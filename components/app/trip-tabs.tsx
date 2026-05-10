@@ -17,6 +17,7 @@ const COPY = {
     pack: "Pack",
     board: "Board",
     settings: "Settings",
+    aria: "Trip workspace sections",
   },
   "zh-TW": {
     overview: "總覽",
@@ -25,9 +26,10 @@ const COPY = {
     ideas: "靈感",
     votes: "投票",
     expenses: "費用",
-    pack: "Pack",
+    pack: "打包",
     board: "看板",
     settings: "設定",
+    aria: "旅程工作區分頁",
   },
 } as const;
 
@@ -87,7 +89,7 @@ export function TripTabs({ tripId }: { tripId: string }) {
     <nav
       ref={navRef}
       role="tablist"
-      aria-label="Trip workspace sections"
+      aria-label={copy.aria}
       onKeyDown={onKeyDown}
       className={cn(
         "sticky top-0 z-30 -mx-4 flex w-[calc(100%+2rem)] gap-1 overflow-x-auto px-4 py-2 transition-[background-color,backdrop-filter,box-shadow,border-color] duration-200",

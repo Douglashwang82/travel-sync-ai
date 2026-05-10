@@ -55,7 +55,14 @@ const COPY = {
 
 export function TripOverviewBento({ tripId }: { tripId: string }) {
   const { locale } = useAppLocale();
-  const copy = COPY[locale];
+  const copy =
+    locale === "zh-TW"
+      ? {
+          skeletonHero: "工作區載入中...",
+          retry: "重試",
+          failed: "旅程總覽載入失敗",
+        }
+      : COPY.en;
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -214,7 +221,7 @@ export function TripOverviewBento({ tripId }: { tripId: string }) {
   }
 
   if (!data) {
-    return <BentoSkeleton heroVariant={heroVariant} />;
+    return <BentoSkeleton loadingLabel={copy.skeletonHero} />;
   }
 
   const { board, members, expenses, trip, role, votes, meLineUserId } = data;
@@ -420,7 +427,7 @@ function BentoStyles() {
   );
 }
 
-function BentoSkeleton({ heroVariant }: { heroVariant: HeroVariant }) {
+function BentoSkeleton({ loadingLabel }: { loadingLabel: string }) {
   return (
     <>
       <div className="bento">
@@ -431,7 +438,7 @@ function BentoSkeleton({ heroVariant }: { heroVariant: HeroVariant }) {
         <div className="bento-next skeleton rounded-[var(--radius-tile)]" aria-hidden />
         <div className="bento-ai skeleton rounded-[var(--radius-tile)]" aria-hidden />
       </div>
-      <span className="sr-only">{`Loading ${heroVariant} workspace`}</span>
+      <span className="sr-only">{loadingLabel}</span>
       <BentoStyles />
     </>
   );

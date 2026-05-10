@@ -27,7 +27,7 @@ export async function handleStatus(
   reply: Reply
 ): Promise<void> {
   if (!ctx.dbGroupId) {
-    await reply("No active trip found. Use /start to create one.");
+    await reply("目前沒有進行中的旅程。請使用 /start 建立旅程。");
     return;
   }
 
@@ -41,7 +41,7 @@ export async function handleStatus(
     .single();
 
   if (!trip) {
-    await reply("No active trip found. Use /start [destination] [dates] to begin.");
+    await reply("目前沒有進行中的旅程。請使用 /start [目的地] [日期] 開始。");
     return;
   }
 

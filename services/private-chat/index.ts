@@ -2,11 +2,12 @@ import { createAdminClient } from "@/lib/db";
 import { replyText } from "@/lib/line";
 import { generateConversation, GeminiUnavailableError } from "@/lib/gemini";
 import type { ConversationMessage } from "@/lib/gemini";
+import { BOT_COPY, BOT_LANGUAGE_RULE } from "@/lib/bot-copy";
 
 const MAX_HISTORY = 20;
 const ONBOARDING_MESSAGE =
-  "Hi! I'm TravelBot. To chat with me about your trip, add me to your LINE travel group first, then come back here.\n\n" +
-  "Once you're in a group with an active trip, I can answer questions, give travel advice, and summarize what your group has planned.";
+  "嗨，我是 TravelBot。若要和我聊你的旅程，請先把我加入你的 LINE 旅遊群組，再回到這裡。\n\n" +
+  "只要你在有進行中旅程的群組裡，我就能回答問題、提供旅遊建議，並整理大家已經規劃好的內容。";
 
 /**
  * Handle a LINE 1:1 DM from a user.
@@ -78,13 +79,13 @@ export async function handleDirectMessage(
   let agentReply: string;
   try {
     agentReply = (await generateConversation(systemPrompt, history, messageText)).trim();
-    if (!agentReply) agentReply = "I'm not sure how to answer that. Try asking about your trip plans or activities.";
+    if (!agentReply) agentReply = "我還不確定怎麼回答。你可以換個方式問旅程規劃或活動安排。";
   } catch (err) {
     if (err instanceof GeminiUnavailableError) {
-      agentReply = "I'm temporarily unavailable. Please try again in a minute.";
+      agentReply = BOT_COPY.temporaryUnavailable;
     } else {
       console.error("[private-chat] generateConversation failed", err);
-      agentReply = "Sorry, something went wrong. Please try again.";
+      agentReply = BOT_COPY.genericError;
     }
   }
 
@@ -106,22 +107,24 @@ function buildSystemPrompt(
   if (!trip) {
     return (
       `You are TravelBot, the AI assistant for ${groupLabel}.\n` +
-      `This group doesn't have an active trip yet. You can tell the user to ask the group organizer to type /start in the group chat to begin planning.\n` +
-      `Keep replies short and friendly.`
+      `${BOT_LANGUAGE_RULE}\n` +
+      `這個群組目前沒有進行中的旅程。你可以請使用者提醒群組主揪在群組聊天室輸入 /start 開始規劃。\n` +
+      `回覆要短、友善，適合 LINE 聊天。`
     );
   }
 
   const dateRange =
     trip.start_date && trip.end_date
-      ? `${trip.start_date} to ${trip.end_date}`
-      : "dates not set yet";
+      ? `${trip.start_date} 到 ${trip.end_date}`
+      : "尚未設定日期";
 
   return (
     `You are TravelBot, the AI assistant for ${groupLabel}.\n` +
-    `You have read-only access to the trip plan. You can answer questions, give travel advice, and summarize group activity — but you cannot make changes.\n\n` +
-    `Active Trip: ${trip.destination_name ?? "destination not set yet"}\n` +
-    `Dates: ${dateRange}\n` +
-    `Status: ${trip.status}\n\n` +
-    `Keep replies concise — this is a LINE chat. If asked about something you don't have data on, say so clearly.`
+    `${BOT_LANGUAGE_RULE}\n` +
+    `你只能唯讀存取旅程規劃。你可以回答問題、提供旅遊建議、整理群組活動，但不能更改資料。\n\n` +
+    `目前旅程：${trip.destination_name ?? "尚未設定目的地"}\n` +
+    `日期：${dateRange}\n` +
+    `狀態：${trip.status}\n\n` +
+    `回覆保持精簡，適合 LINE 聊天。如果被問到資料中沒有的內容，請清楚說明目前看不到。`
   );
 }

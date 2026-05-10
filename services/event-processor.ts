@@ -108,12 +108,11 @@ async function handleJoin(ctx: EventContext): Promise<void> {
   });
 
   const welcomeMessage =
-    "👋 Hi! I'm TravelSync AI — your group trip planning co-pilot.\n\n" +
-    "Let's get started!\nType /start [destination] [dates] to kick off a trip.\n" +
-    "Example: /start Osaka 7/15-7/20\n\n" +
-    "Type /help to see all commands.\n\n" +
-    "⚠️ Privacy notice: I'll parse travel-related messages to help plan your trip. " +
-    "Type /optout at any time to stop.";
+    "嗨，我是 TravelSync AI，你們的群組旅程規劃助手。\n\n" +
+    "開始使用：輸入 /start [目的地] [日期] 建立旅程。\n" +
+    "範例：/start Osaka 7/15-7/20\n\n" +
+    "輸入 /help 查看所有指令。\n\n" +
+    "隱私提醒：我會解析旅遊相關訊息來協助規劃。你可以隨時輸入 /optout 停止解析。";
 
   await pushText(ctx.lineGroupId, welcomeMessage);
 }
@@ -189,7 +188,7 @@ async function handlePostback(
     });
 
     if (!result.accepted) {
-      await pushText(ctx.lineGroupId, result.error ?? "Could not record your vote.");
+      await pushText(ctx.lineGroupId, result.error ?? "無法記錄你的投票。");
       return;
     }
 

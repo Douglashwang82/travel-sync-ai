@@ -26,13 +26,13 @@ import { PlacePicker, type PickedPlace } from "@/components/app/place-picker";
 import type { ItemType } from "@/lib/types";
 
 const ITEM_TYPE_OPTIONS: { value: ItemType; label: string }[] = [
-  { value: "hotel", label: "Hotel" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "activity", label: "Activity" },
-  { value: "transport", label: "Transport" },
-  { value: "flight", label: "Flight" },
-  { value: "insurance", label: "Insurance" },
-  { value: "other", label: "Other" },
+  { value: "hotel", label: "住宿" },
+  { value: "restaurant", label: "餐廳" },
+  { value: "activity", label: "活動" },
+  { value: "transport", label: "交通" },
+  { value: "flight", label: "航班" },
+  { value: "insurance", label: "保險" },
+  { value: "other", label: "其他" },
 ];
 
 export function AddItemDialog({
@@ -70,10 +70,8 @@ export function AddItemDialog({
 
   async function handleSubmit() {
     if (!title.trim()) return;
-
     setSubmitting(true);
     setError(null);
-
     try {
       await appFetchJson(`/api/app/trips/${tripId}/items`, {
         method: "POST",
@@ -98,7 +96,7 @@ export function AddItemDialog({
       reset();
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create item");
+      setError(err instanceof Error ? err.message : "新增項目失敗");
     } finally {
       setSubmitting(false);
     }
@@ -114,19 +112,18 @@ export function AddItemDialog({
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add a trip item</DialogTitle>
+          <DialogTitle>新增旅程項目</DialogTitle>
           <DialogDescription>
-            Add a to-do, a decision to vote on, or a booking reminder. Items land in the
-            To-Do column.
+            新增待辦、需要投票的決策，或預訂提醒。項目會先進入待辦欄。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="add-item-title">Title</Label>
+            <Label htmlFor="add-item-title">標題</Label>
             <Input
               id="add-item-title"
-              placeholder="e.g. Book travel insurance"
+              placeholder="例如：預訂旅遊保險"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
@@ -134,21 +131,21 @@ export function AddItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="add-item-place">Pick a place (optional)</Label>
+            <Label htmlFor="add-item-place">選擇地點（選填）</Label>
             <PlacePicker
               inputId="add-item-place"
               value={place}
               onChange={handlePlacePicked}
-              placeholder="Search Google for a hotel, restaurant, attraction…"
+              placeholder="搜尋 Google 上的飯店、餐廳或景點..."
             />
             <p className="text-[11px] text-muted-foreground">
-              Attaching a place pins this item to the trip map.
+              附上地點後，這個項目會出現在旅程地圖上。
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              <Label>類型</Label>
               <Select value={type} onValueChange={(v) => setType(v as ItemType)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -163,7 +160,7 @@ export function AddItemDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="add-item-deadline">Deadline</Label>
+              <Label htmlFor="add-item-deadline">截止時間</Label>
               <Input
                 id="add-item-deadline"
                 type="datetime-local"
@@ -174,10 +171,10 @@ export function AddItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="add-item-description">Description (optional)</Label>
+            <Label htmlFor="add-item-description">描述（選填）</Label>
             <Textarea
               id="add-item-description"
-              placeholder="Extra context — e.g. needs approval from everyone"
+              placeholder="補充說明，例如：需要大家同意"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -190,11 +187,11 @@ export function AddItemDialog({
         <DialogFooter className="gap-2 sm:gap-0">
           <DialogClose asChild>
             <Button variant="outline" disabled={submitting}>
-              Cancel
+              取消
             </Button>
           </DialogClose>
           <Button onClick={() => void handleSubmit()} disabled={submitting || !title.trim()}>
-            {submitting ? "Adding..." : "Add item"}
+            {submitting ? "新增中..." : "新增項目"}
           </Button>
         </DialogFooter>
       </DialogContent>

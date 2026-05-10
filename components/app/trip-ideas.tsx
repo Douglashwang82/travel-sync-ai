@@ -28,11 +28,11 @@ import {
 } from "@/lib/app-ideas";
 
 const CATEGORY_LABEL: Record<IdeaCategory, string> = {
-  destination: "Destination",
-  hotel: "Hotel",
-  activity: "Activity",
-  restaurant: "Restaurant",
-  general: "General",
+  destination: "目的地",
+  hotel: "住宿",
+  activity: "活動",
+  restaurant: "餐廳",
+  general: "一般",
 };
 
 const CATEGORY_BADGE: Record<IdeaCategory, string> = {
@@ -67,7 +67,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
       setIdeas(res.ideas);
       setLoadError(null);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load ideas");
+      setLoadError(err instanceof Error ? err.message : "靈感載入失敗");
     }
   }, [tripId]);
 
@@ -101,11 +101,11 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) {
-      setSubmitError("Add a few words for your idea.");
+      setSubmitError("請輸入一點靈感內容。");
       return;
     }
     if (trimmed.length > MAX_LENGTH) {
-      setSubmitError(`Keep it under ${MAX_LENGTH} characters.`);
+      setSubmitError(`請控制在 ${MAX_LENGTH} 字以內。`);
       return;
     }
     setSubmitting(true);
@@ -122,7 +122,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
       setText("");
       setCategory("general");
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to share idea");
+      setSubmitError(err instanceof Error ? err.message : "分享靈感失敗");
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +137,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
       );
       setIdeas((prev) => (prev ? prev.filter((i) => i.id !== id) : prev));
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to delete idea");
+      setSubmitError(err instanceof Error ? err.message : "刪除靈感失敗");
     } finally {
       setDeletingId(null);
     }
@@ -154,8 +154,8 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
-        title="Ideas"
-        subtitle="Brainstorm with your group. Anyone in the trip can drop a suggestion; the organizer can later promote one to a vote."
+        title="靈感"
+        subtitle="和旅伴一起發想。任何成員都能留下建議，主揪之後可以把靈感轉成投票。"
       />
 
       <form
@@ -163,18 +163,18 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
         className="surface-tile space-y-3 p-5"
       >
         <div className="space-y-1.5">
-          <Label htmlFor="idea-text">Share an idea</Label>
+          <Label htmlFor="idea-text">分享靈感</Label>
           <Textarea
             id="idea-text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="e.g. Let's check out Arashiyama bamboo grove"
+            placeholder="例如：想去嵐山竹林走走"
             rows={3}
             maxLength={MAX_LENGTH}
             disabled={submitting}
           />
           <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
-            <span>Visible to everyone in this trip&apos;s group.</span>
+            <span>旅程群組中的所有人都看得到。</span>
             <span className="text-mono">
               {text.trim().length}/{MAX_LENGTH}
             </span>
@@ -183,7 +183,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
 
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="idea-category">Category</Label>
+            <Label htmlFor="idea-category">分類</Label>
             <Select
               value={category}
               onValueChange={(v) => setCategory(v as IdeaCategory)}
@@ -201,7 +201,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
             </Select>
           </div>
           <Button type="submit" disabled={submitting || text.trim().length === 0}>
-            {submitting ? "Sharing…" : "Share idea"}
+            {submitting ? "分享中..." : "分享靈感"}
           </Button>
         </div>
 
@@ -212,7 +212,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <FilterChip
-          label={`All · ${counts.all}`}
+          label={`全部 · ${counts.all}`}
           active={filter === "all"}
           onClick={() => setFilter("all")}
         />
@@ -230,8 +230,8 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
         <TabEmptyState
           message={
             ideas.length === 0
-              ? "No ideas yet. Share the first one above."
-              : "No ideas in this category yet."
+              ? "還沒有靈感。先在上方分享第一個吧。"
+              : "這個分類還沒有靈感。"
           }
         />
       ) : (
@@ -301,12 +301,12 @@ function IdeaCard({
         </Badge>
         {idea.promoted && (
           <Badge className="border-0 bg-[var(--status-settled-soft)] text-[var(--status-settled)]">
-            Promoted
+            已轉成投票
           </Badge>
         )}
         {idea.isMine && (
           <span className="rounded-full bg-[var(--accent-line-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-line)]">
-            You
+            你
           </span>
         )}
       </div>
@@ -324,7 +324,7 @@ function IdeaCard({
             disabled={deleting}
             className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--status-blocked)] disabled:opacity-60"
           >
-            {deleting ? "Removing…" : "Remove"}
+            {deleting ? "移除中..." : "移除"}
           </button>
         )}
       </div>
@@ -337,11 +337,11 @@ function formatRelative(iso: string): string {
   if (Number.isNaN(t)) return "";
   const diffMs = Date.now() - t;
   const minutes = Math.round(diffMs / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return "剛剛";
+  if (minutes < 60) return `${minutes} 分鐘前`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours} 小時前`;
   const days = Math.round(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (days < 7) return `${days} 天前`;
+  return new Date(iso).toLocaleDateString("zh-TW");
 }

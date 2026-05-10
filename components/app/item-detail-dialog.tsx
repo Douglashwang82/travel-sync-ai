@@ -27,13 +27,13 @@ import type { ItemType, TripItem } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 
 const ITEM_TYPE_OPTIONS: { value: ItemType; label: string }[] = [
-  { value: "hotel", label: "Hotel" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "activity", label: "Activity" },
-  { value: "transport", label: "Transport" },
-  { value: "flight", label: "Flight" },
-  { value: "insurance", label: "Insurance" },
-  { value: "other", label: "Other" },
+  { value: "hotel", label: "住宿" },
+  { value: "restaurant", label: "餐廳" },
+  { value: "activity", label: "活動" },
+  { value: "transport", label: "交通" },
+  { value: "flight", label: "航班" },
+  { value: "insurance", label: "保險" },
+  { value: "other", label: "其他" },
 ];
 
 const UNASSIGNED = "__unassigned__";
@@ -44,6 +44,12 @@ function toInputLocal(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function stageLabel(stage: TripItem["stage"]): string {
+  if (stage === "pending") return "投票中";
+  if (stage === "confirmed") return "已確認";
+  return "待辦";
 }
 
 export function ItemDetailDialog({
@@ -115,7 +121,7 @@ export function ItemDetailDialog({
       });
       onItemChanged(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save changes");
+      setError(err instanceof Error ? err.message : "儲存變更失敗");
     } finally {
       setSaving(false);
     }
@@ -132,7 +138,7 @@ export function ItemDetailDialog({
       });
       onItemChanged(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reopen");
+      setError(err instanceof Error ? err.message : "移回待辦失敗");
     } finally {
       setBusy(null);
     }
@@ -149,7 +155,7 @@ export function ItemDetailDialog({
       });
       onItemDeleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      setError(err instanceof Error ? err.message : "刪除失敗");
     } finally {
       setBusy(null);
     }
@@ -171,7 +177,7 @@ export function ItemDetailDialog({
       setBookingRef("");
       onItemChanged(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to mark as booked");
+      setError(err instanceof Error ? err.message : "標記已預訂失敗");
     } finally {
       setBusy(null);
     }
@@ -187,28 +193,28 @@ export function ItemDetailDialog({
                 {item.title}
               </DialogTitle>
               <DialogDescription>
-                Edit details, assign a member, or move this item between columns.
+                編輯詳情、指派成員，或將項目移到其他欄位。
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="capitalize">
-                  {item.stage === "pending" ? "pending vote" : item.stage}
+                  {stageLabel(item.stage)}
                 </Badge>
                 {item.stage === "confirmed" && item.booking_status === "needed" && (
                   <Badge className="border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                    Booking needed
+                    需要預訂
                   </Badge>
                 )}
                 {item.stage === "confirmed" && item.booking_status === "booked" && (
                   <Badge className="border-0 bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
-                    Booked ✓
+                    已預訂
                   </Badge>
                 )}
                 {item.booking_ref && (
                   <span className="truncate rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[11px] text-[var(--muted-foreground)]">
-                    Ref: {item.booking_ref}
+                    編號：{item.booking_ref}
                   </span>
                 )}
               </div>
@@ -216,7 +222,7 @@ export function ItemDetailDialog({
               {isOrganizer ? (
                 <>
                   <div className="space-y-1.5">
-                    <Label htmlFor="item-title">Title</Label>
+                    <Label htmlFor="item-title">標題</Label>
                     <Input
                       id="item-title"
                       value={title}
@@ -226,7 +232,7 @@ export function ItemDetailDialog({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label>Type</Label>
+                      <Label>類型</Label>
                       <Select value={type} onValueChange={(v) => setType(v as ItemType)}>
                         <SelectTrigger>
                           <SelectValue />
@@ -241,7 +247,7 @@ export function ItemDetailDialog({
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="item-deadline">Deadline</Label>
+                      <Label htmlFor="item-deadline">截止時間</Label>
                       <Input
                         id="item-deadline"
                         type="datetime-local"
@@ -252,7 +258,7 @@ export function ItemDetailDialog({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="item-description">Description</Label>
+                    <Label htmlFor="item-description">描述</Label>
                     <Textarea
                       id="item-description"
                       rows={3}
@@ -262,17 +268,17 @@ export function ItemDetailDialog({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label>Assigned to</Label>
+                    <Label>負責人</Label>
                     <Select value={assignee} onValueChange={setAssignee}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Unassigned" />
+                        <SelectValue placeholder="未指派" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                        <SelectItem value={UNASSIGNED}>未指派</SelectItem>
                         {members.map((m) => (
                           <SelectItem key={m.lineUserId} value={m.lineUserId}>
                             {m.displayName ?? m.lineUserId}
-                            {m.role === "organizer" ? " · organizer" : ""}
+                            {m.role === "organizer" ? " · 主揪" : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -284,19 +290,19 @@ export function ItemDetailDialog({
                   {item.description && <p>{item.description}</p>}
                   {item.deadline_at && (
                     <p>
-                      Deadline:{" "}
-                      {new Date(item.deadline_at).toLocaleString(undefined, {
+                      截止時間：{" "}
+                      {new Date(item.deadline_at).toLocaleString("zh-TW", {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}
                     </p>
                   )}
                   <p>
-                    Assigned to:{" "}
+                    負責人：{" "}
                     {item.assigned_to_line_user_id
                       ? (members.find((m) => m.lineUserId === item.assigned_to_line_user_id)
                           ?.displayName ?? item.assigned_to_line_user_id)
-                      : "Unassigned"}
+                      : "未指派"}
                   </p>
                 </div>
               )}
@@ -304,15 +310,15 @@ export function ItemDetailDialog({
               {item.stage === "confirmed" && item.booking_status === "needed" && (
                 <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
                   <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                    Booking not yet confirmed
+                    尚未確認預訂
                   </p>
                   <div className="space-y-1.5">
                     <Label htmlFor="booking-ref" className="text-xs">
-                      Confirmation number or URL
+                      確認編號或 URL
                     </Label>
                     <Input
                       id="booking-ref"
-                      placeholder="e.g. AX-12345 or https://…"
+                      placeholder="例如：AX-12345 或 https://..."
                       value={bookingRef}
                       onChange={(e) => setBookingRef(e.target.value)}
                       className="text-sm"
@@ -324,7 +330,7 @@ export function ItemDetailDialog({
                     disabled={busy === "book" || !bookingRef.trim()}
                     className="w-full"
                   >
-                    {busy === "book" ? "Saving..." : "Mark as booked"}
+                    {busy === "book" ? "儲存中..." : "標記為已預訂"}
                   </Button>
                 </div>
               )}
@@ -333,7 +339,7 @@ export function ItemDetailDialog({
 
               {isOrganizer && confirmDelete && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-                  Permanently delete &ldquo;{item.title}&rdquo;? This cannot be undone.
+                  要永久刪除「{item.title}」嗎？此操作無法復原。
                   <div className="mt-2 flex justify-end gap-2">
                     <Button
                       size="sm"
@@ -341,7 +347,7 @@ export function ItemDetailDialog({
                       onClick={() => setConfirmDelete(false)}
                       disabled={busy === "delete"}
                     >
-                      Cancel
+                      取消
                     </Button>
                     <Button
                       size="sm"
@@ -349,7 +355,7 @@ export function ItemDetailDialog({
                       onClick={() => void handleDelete()}
                       disabled={busy === "delete"}
                     >
-                      {busy === "delete" ? "Deleting..." : "Delete"}
+                      {busy === "delete" ? "刪除中..." : "刪除"}
                     </Button>
                   </div>
                 </div>
@@ -366,7 +372,7 @@ export function ItemDetailDialog({
                       onClick={() => void handleReopen()}
                       disabled={busy === "reopen"}
                     >
-                      {busy === "reopen" ? "Moving..." : "Move to To-Do"}
+                      {busy === "reopen" ? "移動中..." : "移回待辦"}
                     </Button>
                   )}
                   <Button
@@ -376,7 +382,7 @@ export function ItemDetailDialog({
                     disabled={confirmDelete}
                     className="text-destructive"
                   >
-                    Delete
+                    刪除
                   </Button>
                 </div>
               ) : (
@@ -385,7 +391,7 @@ export function ItemDetailDialog({
               <div className="flex items-center gap-2">
                 <DialogClose asChild>
                   <Button variant="outline" size="sm">
-                    Close
+                    關閉
                   </Button>
                 </DialogClose>
                 {isOrganizer && (
@@ -394,7 +400,7 @@ export function ItemDetailDialog({
                     onClick={() => void handleSave()}
                     disabled={saving || !isDirty || !title.trim()}
                   >
-                    {saving ? "Saving..." : "Save changes"}
+                    {saving ? "儲存中..." : "儲存變更"}
                   </Button>
                 )}
               </div>
