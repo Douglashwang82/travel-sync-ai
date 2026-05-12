@@ -42,9 +42,11 @@ export interface SignInMember {
   lineUserId: string;
   displayName: string | null;
   role: string;
-  groupId: string;
-  groupName: string | null;
-  lineGroupId: string;
+  groups: Array<{
+    groupId: string;
+    groupName: string | null;
+    lineGroupId: string;
+  }>;
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -54,9 +56,10 @@ export async function GET(): Promise<NextResponse> {
   const { data, error } = await db
     .from("group_members")
     .select(
-      "line_user_id, display_name, role, group_id, line_groups!inner(id, line_group_id, name, status)"
+      "line_user_id, display_name, role, joined_at, group_id, line_groups!inner(id, line_group_id, name, status)"
     )
     .is("left_at", null)
+    .order("joined_at", { ascending: false })
     .order("display_name", { ascending: true });
 
   if (error) {
@@ -66,16 +69,45 @@ export async function GET(): Promise<NextResponse> {
     );
   }
 
-  const members: SignInMember[] = (data ?? []).map((row) => {
+  const membersByLineUserId = new Map<string, SignInMember>();
+
+  for (const row of data ?? []) {
     const group = Array.isArray(row.line_groups) ? row.line_groups[0] : row.line_groups;
-    return {
-      lineUserId: row.line_user_id as string,
-      displayName: row.display_name as string | null,
-      role: row.role as string,
+    const lineUserId = row.line_user_id as string;
+    const existing = membersByLineUserId.get(lineUserId);
+    const groupSummary = {
       groupId: row.group_id as string,
       groupName: (group?.name as string | null) ?? null,
       lineGroupId: (group?.line_group_id as string) ?? "",
     };
+
+    if (!existing) {
+      membersByLineUserId.set(lineUserId, {
+        lineUserId,
+        displayName: row.display_name as string | null,
+        role: row.role as string,
+        groups: [groupSummary],
+      });
+      continue;
+    }
+
+    if (!existing.groups.some((candidate) => candidate.groupId === groupSummary.groupId)) {
+      existing.groups.push(groupSummary);
+    }
+
+    if (existing.displayName == null && row.display_name != null) {
+      existing.displayName = row.display_name as string;
+    }
+
+    if (existing.role !== "organizer" && row.role === "organizer") {
+      existing.role = "organizer";
+    }
+  }
+
+  const members = Array.from(membersByLineUserId.values()).sort((left, right) => {
+    const leftName = (left.displayName ?? left.lineUserId).toLowerCase();
+    const rightName = (right.displayName ?? right.lineUserId).toLowerCase();
+    return leftName.localeCompare(rightName);
   });
 
   return NextResponse.json({ members });

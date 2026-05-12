@@ -11,13 +11,6 @@ import { appFetch, appFetchJson } from "@/lib/app-client";
 import { clearAppBrowserCache } from "@/lib/app-browser-cache";
 import type { SignInMember } from "@/app/api/app/sign-in/route";
 
-type MembersByGroup = Array<{
-  groupId: string;
-  groupName: string | null;
-  lineGroupId: string;
-  members: SignInMember[];
-}>;
-
 type FormMode = "login" | "register";
 
 const COPY = {
@@ -184,36 +177,19 @@ export default function SignInPage() {
     };
   }, []);
 
-  const grouped: MembersByGroup = useMemo(() => {
+  const filteredMembers = useMemo(() => {
     const term = filter.trim().toLowerCase();
-    const filtered = term
+    return term
       ? members.filter((m) => {
           const haystack = [
             m.displayName ?? "",
             m.lineUserId,
-            m.groupName ?? "",
-            m.lineGroupId,
           ]
             .join(" ")
             .toLowerCase();
           return haystack.includes(term);
         })
       : members;
-
-    const map = new Map<string, MembersByGroup[number]>();
-    for (const m of filtered) {
-      const key = m.groupId;
-      if (!map.has(key)) {
-        map.set(key, {
-          groupId: m.groupId,
-          groupName: m.groupName,
-          lineGroupId: m.lineGroupId,
-          members: [],
-        });
-      }
-      map.get(key)!.members.push(m);
-    }
-    return Array.from(map.values());
   }, [members, filter]);
 
   async function handlePick(lineUserId: string) {
@@ -404,7 +380,7 @@ export default function SignInPage() {
               {lineLoginConfigured ? copy.devSignIn : copy.pickMember}
             </h2>
             <span className="text-[11px] text-[var(--muted-foreground)]">
-              {copy.members(members.length)}
+              {copy.members(filteredMembers.length)}
             </span>
           </header>
           <div className="mt-4 space-y-3">
@@ -420,57 +396,41 @@ export default function SignInPage() {
               </div>
             )}
 
-            <div className="space-y-4">
-              {grouped.map((g) => (
-                <section
-                  key={g.groupId}
-                  className="rounded-2xl border border-[var(--border)]"
-                >
-                  <header className="border-b border-[var(--border)] px-4 py-3">
-                    <p className="text-sm font-semibold text-[var(--foreground)]">
-                      {g.groupName ?? copy.untitledLineGroup}
-                    </p>
-                    <p className="mt-0.5 font-mono text-[11px] text-[var(--muted-foreground)]">
-                      {g.lineGroupId}
-                    </p>
-                  </header>
-                  <ul className="divide-y divide-[var(--border)]">
-                    {g.members.map((m) => {
-                      const isLoading = signingInAs === m.lineUserId;
-                      return (
-                        <li
-                          key={`${g.groupId}-${m.lineUserId}`}
-                          className="flex items-center gap-3 px-4 py-3"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {m.displayName ?? copy.unknown}
-                              {m.role === "organizer" && (
-                                <span className="ml-2 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
-                                  {copy.organizer}
-                                </span>
-                              )}
-                            </p>
-                            <p className="truncate font-mono text-[11px] text-[var(--muted-foreground)]">
-                              {m.lineUserId}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void handlePick(m.lineUserId)}
-                            disabled={signingInAs !== null}
-                            className="h-8 shrink-0 rounded-full px-3 text-xs"
-                          >
-                            {isLoading ? copy.signingIn : copy.continue}
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              ))}
-            </div>
+            <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)]">
+              {filteredMembers.map((m) => {
+                const isLoading = signingInAs === m.lineUserId;
+
+                return (
+                  <li
+                    key={m.lineUserId}
+                    className="flex items-center gap-3 px-4 py-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {m.displayName ?? copy.unknown}
+                        {m.role === "organizer" && (
+                          <span className="ml-2 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
+                            {copy.organizer}
+                          </span>
+                        )}
+                      </p>
+                      <p className="truncate font-mono text-[11px] text-[var(--muted-foreground)]">
+                        {m.lineUserId}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handlePick(m.lineUserId)}
+                      disabled={signingInAs !== null}
+                      className="h-8 shrink-0 rounded-full px-3 text-xs"
+                    >
+                      {isLoading ? copy.signingIn : copy.continue}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </section>
       )}
