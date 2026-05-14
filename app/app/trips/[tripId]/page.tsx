@@ -1,4 +1,4 @@
-import { TripOverview } from "@/components/app/trip-overview";
+import { TripBentoPage } from "@/components/app/trip-bento-page";
 
 export default async function TripOverviewPage({
   params,
@@ -6,5 +6,5 @@ export default async function TripOverviewPage({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  return <TripOverview tripId={tripId} />;
+  return <TripBentoPage tripId={tripId} />;
 }

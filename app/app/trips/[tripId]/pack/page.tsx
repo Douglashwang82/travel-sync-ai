@@ -1,10 +1,10 @@
-import { TripPackClient } from "@/components/app/trip-pack";
+import { redirect } from "next/navigation";
 
-export default async function TripPackPage({
+export default async function PackRoute({
   params,
 }: {
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  return <TripPackClient tripId={tripId} />;
+  redirect(`/app/trips/${tripId}?scroll=pack`);
 }

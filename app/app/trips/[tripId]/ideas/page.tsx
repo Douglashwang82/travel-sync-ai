@@ -1,4 +1,4 @@
-import { TripIdeasClient } from "@/components/app/trip-ideas";
+import { redirect } from "next/navigation";
 
 export default async function IdeasRoute({
   params,
@@ -6,5 +6,5 @@ export default async function IdeasRoute({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  return <TripIdeasClient tripId={tripId} />;
+  redirect(`/app/trips/${tripId}?scroll=ideas`);
 }

@@ -1,10 +1,10 @@
-import { TripMapView } from "@/components/app/trip-map-view";
+import { redirect } from "next/navigation";
 
-export default async function TripMapPage({
+export default async function MapRoute({
   params,
 }: {
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  return <TripMapView tripId={tripId} />;
+  redirect(`/app/trips/${tripId}?scroll=map`);
 }
