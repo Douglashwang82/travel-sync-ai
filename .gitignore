@@ -45,3 +45,6 @@ next-env.d.ts
 
 # agents
 .claude
+
+# supabase cli temp state (auto-generated)
+supabase/.temp/
