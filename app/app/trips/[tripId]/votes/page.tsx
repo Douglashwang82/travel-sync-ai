@@ -1,4 +1,4 @@
-import { TripVotesClient } from "@/components/app/trip-votes";
+import { redirect } from "next/navigation";
 
 export default async function VotesRoute({
   params,
@@ -6,5 +6,5 @@ export default async function VotesRoute({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  return <TripVotesClient tripId={tripId} />;
+  redirect(`/app/trips/${tripId}?scroll=votes`);
 }

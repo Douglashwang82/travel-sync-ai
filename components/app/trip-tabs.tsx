@@ -1,46 +1,65 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAppLocale } from "@/components/app/app-locale-provider";
 import { cn } from "@/lib/utils";
+
+/**
+ * Scroll-spy anchor nav. Replaces the previous router-based tab strip:
+ * every "tab" now scrolls to a bento grid section on the same page rather
+ * than navigating to a separate route. The active pill updates as the
+ * user scrolls past each tile.
+ */
 
 const COPY = {
   en: {
     overview: "Overview",
-    map: "Map",
     itinerary: "Itinerary",
+    budget: "Budget",
+    tasks: "Tasks",
     ideas: "Ideas",
     votes: "Votes",
-    expenses: "Expenses",
+    map: "Map",
     pack: "Pack",
-    board: "Board",
-    settings: "Settings",
+    members: "Members",
     aria: "Trip workspace sections",
   },
   "zh-TW": {
     overview: "總覽",
-    map: "地圖",
     itinerary: "行程",
+    budget: "預算",
+    tasks: "任務",
     ideas: "靈感",
     votes: "投票",
-    expenses: "費用",
+    map: "地圖",
     pack: "打包",
-    board: "看板",
-    settings: "設定",
-    aria: "旅程工作區分頁",
+    members: "成員",
+    aria: "旅程工作區區段",
   },
 } as const;
 
+const SECTIONS = [
+  { id: "hero", labelKey: "overview" as const },
+  { id: "itinerary", labelKey: "itinerary" as const },
+  { id: "budget", labelKey: "budget" as const },
+  { id: "tasks", labelKey: "tasks" as const },
+  { id: "ideas", labelKey: "ideas" as const },
+  { id: "votes", labelKey: "votes" as const },
+  { id: "map", labelKey: "map" as const },
+  { id: "pack", labelKey: "pack" as const },
+  { id: "members", labelKey: "members" as const },
+];
+
 export function TripTabs({ tripId }: { tripId: string }) {
-  const pathname = usePathname();
   const { locale } = useAppLocale();
   const copy = COPY[locale];
-  const base = `/app/trips/${tripId}`;
+  const router = useRouter();
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [activeId, setActiveId] = useState<string>("hero");
 
+  // Sticky background flips on once the nav reaches the top.
   useEffect(() => {
     function handler() {
       const top = navRef.current?.getBoundingClientRect().top ?? 0;
@@ -51,17 +70,41 @@ export function TripTabs({ tripId }: { tripId: string }) {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  const tabs = [
-    { href: base, label: copy.overview, match: (p: string) => p === base },
-    { href: `${base}/map`, label: copy.map, match: (p: string) => p.startsWith(`${base}/map`) },
-    { href: `${base}/itinerary`, label: copy.itinerary, match: (p: string) => p.startsWith(`${base}/itinerary`) },
-    { href: `${base}/ideas`, label: copy.ideas, match: (p: string) => p.startsWith(`${base}/ideas`) },
-    { href: `${base}/votes`, label: copy.votes, match: (p: string) => p.startsWith(`${base}/votes`) },
-    { href: `${base}/expenses`, label: copy.expenses, match: (p: string) => p.startsWith(`${base}/expenses`) },
-    { href: `${base}/pack`, label: copy.pack, match: (p: string) => p.startsWith(`${base}/pack`) },
-    { href: `${base}/board`, label: copy.board, match: (p: string) => p.startsWith(`${base}/board`) },
-    { href: `${base}/settings`, label: copy.settings, match: (p: string) => p.startsWith(`${base}/settings`) },
-  ] as const;
+  // Scroll-spy: pick the section whose top is closest to (just below) the nav.
+  useEffect(() => {
+    function update() {
+      const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
+      const probe = navHeight + 24;
+      let current: string = SECTIONS[0]!.id;
+      for (const s of SECTIONS) {
+        const el = document.getElementById(s.id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top - probe <= 0) current = s.id;
+      }
+      setActiveId(current);
+    }
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  function go(id: string, e: React.MouseEvent | React.KeyboardEvent) {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Update the URL hash without triggering a full navigation.
+    if (typeof history !== "undefined") {
+      history.replaceState(null, "", `#${id}`);
+    }
+    // Best-effort focus for keyboard users.
+    el.focus({ preventScroll: true });
+  }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLElement>) {
     const target = e.target as HTMLElement;
@@ -85,6 +128,11 @@ export function TripTabs({ tripId }: { tripId: string }) {
     }
   }
 
+  // `tripId` and `router` are unused now that nav is in-page; reference
+  // them so existing callers don't have to change shape.
+  void tripId;
+  void router;
+
   return (
     <nav
       ref={navRef}
@@ -98,16 +146,16 @@ export function TripTabs({ tripId }: { tripId: string }) {
           : "border-b border-[var(--border-hairline)] bg-[var(--surface-base)]"
       )}
     >
-      {tabs.map((t) => {
-        const active = t.match(pathname);
+      {SECTIONS.map((s) => {
+        const active = activeId === s.id;
         return (
-          <Link
-            key={t.href}
-            href={t.href}
+          <a
+            key={s.id}
+            href={`#${s.id}`}
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}
-            prefetch
+            onClick={(e) => go(s.id, e)}
             className={cn(
               "relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-line)] focus-visible:ring-offset-2",
@@ -116,7 +164,7 @@ export function TripTabs({ tripId }: { tripId: string }) {
                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             )}
           >
-            {t.label}
+            {copy[s.labelKey]}
             {active && (
               <span
                 aria-hidden
@@ -124,7 +172,7 @@ export function TripTabs({ tripId }: { tripId: string }) {
                 style={{ boxShadow: "var(--accent-line-glow)" }}
               />
             )}
-          </Link>
+          </a>
         );
       })}
     </nav>

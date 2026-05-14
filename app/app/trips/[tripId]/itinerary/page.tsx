@@ -1,4 +1,4 @@
-import { TripItineraryClient } from "@/components/app/trip-itinerary";
+import { redirect } from "next/navigation";
 
 export default async function ItineraryRoute({
   params,
@@ -6,5 +6,5 @@ export default async function ItineraryRoute({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  return <TripItineraryClient tripId={tripId} />;
+  redirect(`/app/trips/${tripId}?scroll=itinerary`);
 }
