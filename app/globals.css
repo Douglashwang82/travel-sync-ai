@@ -408,3 +408,35 @@ body {
   100% { filter: hue-rotate(360deg) brightness(1); }
 }
 .logo-animated { animation: logo-hue 6s linear infinite; }
+
+/* ─── Bento embed normalization ─────────────────────────────────────────── */
+/*
+ * `.bento-embed` wraps the content area of a `BentoFrame` when the child is
+ * an existing feature client. The outer `BentoFrame` is the tile, so any
+ * immediate-child `surface-tile` (e.g. the `<article>` from `TripHeroTile`)
+ * has its redundant background/border/shadow neutralized. Nested tiles
+ * (cards-within-sections) keep their styling so visual hierarchy inside the
+ * tile still reads.
+ */
+.bento-embed > .surface-tile,
+.bento-embed > article.surface-tile,
+.bento-embed > section.surface-tile {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.bento-embed h2.text-display {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+/* Feature clients use `space-y-4`/`space-y-5`/`space-y-6` between internal
+ * sections; tighten the rhythm so embedded views feel like tile content,
+ * not full pages. */
+.bento-embed > .space-y-4 > * + *,
+.bento-embed > .space-y-5 > * + *,
+.bento-embed > .space-y-6 > * + *,
+.bento-embed > div > .space-y-4 > * + * {
+  margin-top: 0.75rem;
+}

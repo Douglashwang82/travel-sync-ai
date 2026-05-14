@@ -4,11 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { appFetchJson } from "@/lib/app-client";
 import { TripHeroTile } from "@/components/app/trip-hero-tile";
-import {
-  BentoCell,
-  GridTileSkeleton,
-  GridTileError,
-} from "@/components/app/grids/grid-tile";
+import { GridTileSkeleton, GridTileError } from "@/components/app/grids/grid-tile";
 import type { Trip } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 
@@ -38,21 +34,18 @@ export function HeroGrid({ tripId }: { tripId: string }) {
     })();
   }, [load]);
 
+  if (error) return <GridTileError message={error} onRetry={() => void load()} />;
+  if (!data) return <GridTileSkeleton className="min-h-[220px]" />;
+
   return (
-    <BentoCell id="hero" className="block h-full">
-      {error && <GridTileError message={error} onRetry={() => void load()} />}
-      {!error && !data && <GridTileSkeleton className="min-h-[260px]" />}
-      {!error && data && (
-        <TripHeroTile
-          variant="balanced"
-          trip={data.trip}
-          members={data.members}
-          groupName={null}
-          lineDeepLink={null}
-          tripId={tripId}
-          onPrimary={() => router.push(`/app/trips/${tripId}/publish`)}
-        />
-      )}
-    </BentoCell>
+    <TripHeroTile
+      variant="balanced"
+      trip={data.trip}
+      members={data.members}
+      groupName={null}
+      lineDeepLink={null}
+      tripId={tripId}
+      onPrimary={() => router.push(`/app/trips/${tripId}/publish`)}
+    />
   );
 }
