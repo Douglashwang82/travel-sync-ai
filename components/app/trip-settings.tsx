@@ -117,6 +117,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
+        id="settings-page-header"
         title="旅程設定"
         subtitle={
           isOrganizer
@@ -213,6 +214,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       {isOrganizer && (
         <TabSurface className="flex items-center justify-between gap-4">
           <TabSurfaceTitle
+            id="settings-publish-header"
             title="發布為範本"
             subtitle="分享這趟旅程的行程，讓其他人可以作為規劃起點。"
           />
@@ -224,6 +226,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
 
       <TabSurface>
         <TabSurfaceTitle
+          id="settings-destination-header"
           title="已解析目的地"
           subtitle="AI 從聊天中解析目的地後會填入這些欄位。更新上方目的地可重新同步。"
         />

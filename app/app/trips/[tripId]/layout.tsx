@@ -6,7 +6,6 @@ import { createAdminClient } from "@/lib/db";
 import { parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
-import { TripTabs } from "@/components/app/trip-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -97,8 +96,8 @@ export default async function TripLayout({
    * a thin status row, the sticky tab strip, and the tab content.
    */
   return (
-    <div className="space-y-4">
-      <nav className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+    <div id="trip-layout" className="space-y-4">
+      <nav id="trip-breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
         <Link href="/app" className="hover:text-[var(--text-primary)]">
           {copy.trips}
         </Link>
@@ -126,9 +125,7 @@ export default async function TripLayout({
         </span>
       </nav>
 
-      <TripTabs tripId={tripId} />
-
-      <div className="pt-2">{children}</div>
+      <div id="trip-content" className="pt-2">{children}</div>
     </div>
   );
 }

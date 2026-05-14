@@ -348,6 +348,7 @@ function Toolbar({
   return (
     <div className="space-y-3">
       <TabPageHeader
+        id="itinerary-page-header"
         title="行程時間軸"
         subtitle={`${totalDays} 天 · ${itemsCount} 個項目`}
         actions={

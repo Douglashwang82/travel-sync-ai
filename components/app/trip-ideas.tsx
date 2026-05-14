@@ -154,6 +154,7 @@ export function TripIdeasClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
+        id="ideas-page-header"
         title="靈感"
         subtitle="和旅伴一起發想。任何成員都能留下建議，主揪之後可以把靈感轉成投票。"
       />

@@ -195,7 +195,7 @@ export default async function AppTripsPage() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section id="trips-header" className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">{copy.heading}</h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -208,13 +208,13 @@ export default async function AppTripsPage() {
       {trips.length === 0 && <EmptyTrips locale={locale} />}
 
       {active.length > 0 && (
-        <Section title={copy.activeSection}>
+        <Section id="active-trips" title={copy.activeSection}>
           <TripGrid trips={active} locale={locale} />
         </Section>
       )}
 
       {other.length > 0 && (
-        <Section title={copy.pastSection}>
+        <Section id="past-trips" title={copy.pastSection}>
           <TripGrid trips={other} locale={locale} dim />
         </Section>
       )}
@@ -254,9 +254,9 @@ function EmptyTrips({ locale }: { locale: AppLocale }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section>
+    <section id={id}>
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
         {title}
       </h2>

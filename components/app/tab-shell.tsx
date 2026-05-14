@@ -12,18 +12,20 @@ import { cn } from "@/lib/utils";
  */
 
 export function TabPageHeader({
+  id,
   title,
   subtitle,
   eyebrow,
   actions,
 }: {
+  id?: string;
   title: string;
   subtitle?: string;
   eyebrow?: string;
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
+    <header id={id} className="flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         {eyebrow && <p className="text-caps mb-1">{eyebrow}</p>}
         <h2 className="text-display text-2xl text-[var(--text-primary)]">{title}</h2>
@@ -54,16 +56,18 @@ export function TabSurface({
 }
 
 export function TabSurfaceTitle({
+  id,
   title,
   subtitle,
   trailing,
 }: {
+  id?: string;
   title: string;
   subtitle?: string;
   trailing?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-baseline justify-between gap-3">
+    <header id={id} className="flex flex-wrap items-baseline justify-between gap-3">
       <div className="min-w-0">
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
         {subtitle && (

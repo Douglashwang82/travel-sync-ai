@@ -204,6 +204,7 @@ export function TripPackClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
+        id="pack-page-header"
         title="打包"
         subtitle="追蹤群組共用清單，以及你自己的私人行李清單。"
         actions={

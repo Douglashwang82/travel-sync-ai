@@ -76,6 +76,7 @@ export function TripBoardView({ tripId }: { tripId: string }) {
     <>
       <div className="space-y-4">
         <TabPageHeader
+          id="board-page-header"
           title="進階看板"
           subtitle={`${total} 個項目分布在待辦、投票中與已確認。若想用地圖優先的方式瀏覽，請回到總覽。`}
           actions={

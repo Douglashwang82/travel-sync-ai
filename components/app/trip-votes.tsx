@@ -127,6 +127,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
   return (
     <div className="space-y-6">
       <TabPageHeader
+        id="votes-page-header"
         title="投票"
         subtitle={`目前的群組決策。${memberCount} 人中達 ${majorityThreshold(memberCount)} 票多數即自動確認勝出選項。`}
       />
@@ -168,6 +169,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
       {isOrganizer && (
         <TabSurface>
           <TabSurfaceTitle
+            id="votes-new-header"
             title="開始新投票"
             subtitle="將待辦項目轉成群組決策，加入至少 2 個選項與截止時間。"
             trailing={

@@ -270,7 +270,7 @@ export default function SignInPage() {
       )}
 
       {lineLoginConfigured && (
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
+        <section id="line-login" className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
           <h2 className="text-sm font-semibold">{copy.lineSectionTitle}</h2>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
             {copy.lineSectionBody}
@@ -284,7 +284,7 @@ export default function SignInPage() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
+      <section id="email-auth" className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
         <h2 className="text-sm font-semibold">{copy.emailSectionTitle[mode]}</h2>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
           {copy.emailSectionBody[mode]}
@@ -374,8 +374,8 @@ export default function SignInPage() {
       )}
 
       {members.length > 0 && (
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
-          <header className="flex items-center justify-between">
+        <section id="member-picker" className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
+          <header id="member-picker-header" className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">
               {lineLoginConfigured ? copy.devSignIn : copy.pickMember}
             </h2>

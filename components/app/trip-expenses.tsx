@@ -125,6 +125,7 @@ export function TripExpensesClient({
   return (
     <div className="space-y-6">
       <TabPageHeader
+        id="expenses-page-header"
         title="費用"
         subtitle="記錄共同支出、追蹤餘額，並用最少轉帳完成結算。"
         actions={
@@ -171,6 +172,7 @@ export function TripExpensesClient({
       <div className="grid gap-6 lg:grid-cols-3">
         <TabSurface className="lg:col-span-1">
           <TabSurfaceTitle
+            id="expenses-balance-header"
             title="餘額"
             subtitle="綠色代表應收，紅色代表應付。"
           />
@@ -232,6 +234,7 @@ export function TripExpensesClient({
 
         <TabSurface className="lg:col-span-2">
           <TabSurfaceTitle
+            id="expenses-log-header"
             title="紀錄"
             subtitle="最新紀錄在前。如果記錯了，可以刪除費用。"
           />
