@@ -8,6 +8,10 @@ vi.mock("@/lib/analytics", () => ({
 vi.mock("@/services/trips/destination", () => ({
   enrichTripDestinationMetadata: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("@/lib/line", () => ({
+  getAllGroupMemberIds: vi.fn().mockResolvedValue(null),
+  fetchGroupMemberProfile: vi.fn().mockResolvedValue(null),
+}));
 
 import { createAdminClient } from "@/lib/db";
 import { handleStart } from "@/bot/commands/start";

@@ -100,6 +100,61 @@ export async function replyFlex(
   });
 }
 
+// ─── Group roster helpers ─────────────────────────────────────────────────────
+
+/**
+ * Page through `getGroupMembersIds` and return every LINE user ID in the
+ * group. Requires a verified or premium LINE Official Account — returns
+ * `null` (rather than throwing) when the API rejects the call so callers can
+ * fall back to whatever members are already known.
+ */
+export async function getAllGroupMemberIds(
+  lineGroupId: string
+): Promise<string[] | null> {
+  const all: string[] = [];
+  let start: string | undefined;
+  try {
+    do {
+      const res = await lineClient.getGroupMembersIds(lineGroupId, start);
+      if (Array.isArray(res.memberIds)) all.push(...res.memberIds);
+      start = res.next ?? undefined;
+    } while (start);
+    return all;
+  } catch (err) {
+    console.warn(
+      `[line] getGroupMembersIds failed for ${lineGroupId}:`,
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
+}
+
+/**
+ * Fetch a single member's profile in a group. Returns null on failure so
+ * callers can keep going without a display name.
+ */
+export async function fetchGroupMemberProfile(
+  lineGroupId: string,
+  lineUserId: string
+): Promise<{ displayName: string | null; pictureUrl: string | null } | null> {
+  try {
+    const profile = await lineClient.getGroupMemberProfile(
+      lineGroupId,
+      lineUserId
+    );
+    return {
+      displayName: profile.displayName ?? null,
+      pictureUrl: profile.pictureUrl ?? null,
+    };
+  } catch (err) {
+    console.warn(
+      `[line] getGroupMemberProfile failed for ${lineUserId} in ${lineGroupId}:`,
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
+}
+
 // ─── Outbound tracking helpers ────────────────────────────────────────────────
 
 async function trackOutbound(

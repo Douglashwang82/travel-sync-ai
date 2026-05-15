@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db";
 import { track } from "@/lib/analytics";
 import { enrichTripDestinationMetadata } from "@/services/trips/destination";
+import { addLineGroupMembersToTrip } from "@/services/trips/members";
 import { BOT_COPY } from "@/lib/bot-copy";
 import type { CommandContext } from "../router";
 
@@ -112,6 +113,8 @@ export async function handleStart(
     },
     { onConflict: "group_id,line_user_id" }
   );
+
+  await addLineGroupMembersToTrip(trip.id, ctx.dbGroupId, ctx.lineGroupId);
 
   await track("trip_created", {
     groupId: ctx.dbGroupId,
