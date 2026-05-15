@@ -114,7 +114,7 @@ export async function handleStart(
     { onConflict: "group_id,line_user_id" }
   );
 
-  await addLineGroupMembersToTrip(trip.id, ctx.dbGroupId);
+  await addLineGroupMembersToTrip(trip.id, ctx.dbGroupId, ctx.lineGroupId);
 
   await track("trip_created", {
     groupId: ctx.dbGroupId,
