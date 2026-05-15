@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { useSearchParams } from "next/navigation";
 import { HeroGrid } from "@/components/app/grids/hero-grid";
 import { ItineraryGrid } from "@/components/app/grids/itinerary-grid";
+import { CalendarGrid } from "@/components/app/grids/calendar-grid";
 import { BudgetGrid } from "@/components/app/grids/budget-grid";
 import { TaskGrid } from "@/components/app/grids/task-grid";
 import { IdeasGrid } from "@/components/app/grids/ideas-grid";
@@ -38,6 +39,7 @@ interface TileDef {
 const TILES: TileDef[] = [
   { id: "hero", title: "Trip", icon: "✦", Component: HeroGrid, defaultSize: "xl" },
   { id: "itinerary", title: "Itinerary", icon: "📅", Component: ItineraryGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/itinerary` },
+  { id: "calendar", title: "Calendar", icon: "📆", Component: CalendarGrid, defaultSize: "lg" },
   { id: "budget", title: "Budget", icon: "💰", Component: BudgetGrid, defaultSize: "md", href: (t) => `/app/trips/${t}/expenses` },
   { id: "tasks", title: "Tasks", icon: "✓", Component: TaskGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/board` },
   { id: "ideas", title: "Ideas", icon: "✨", Component: IdeasGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/ideas` },
