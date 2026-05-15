@@ -20,12 +20,13 @@ export interface MapPin {
   title: string;
   subtitle: string | null;
   itemType: string;
-  stage: "confirmed" | "pending" | "todo";
-  kind: "item" | "option";
-  itemId: string;
+  stage: "confirmed" | "pending" | "todo" | "shared";
+  kind: "item" | "option" | "memory";
+  itemId: string | null;
   optionId: string | null;
   dayKey: string | null;
   votedByMe?: boolean;
+  bookingUrl?: string | null;
 }
 
 export interface DayRoute {
@@ -68,11 +69,17 @@ const TYPE_GLYPH: Record<string, string> = {
 function pinIcon(pin: MapPin, selected: boolean): L.DivIcon {
   const color = TYPE_COLOR[pin.itemType] ?? TYPE_COLOR.other;
   const glyph = TYPE_GLYPH[pin.itemType] ?? TYPE_GLYPH.other;
-  const dimmed = pin.stage === "pending" || pin.stage === "todo";
+  const dimmed =
+    pin.stage === "pending" || pin.stage === "todo" || pin.stage === "shared";
   const ring = selected ? "4px" : "2px";
-  const size = selected ? 36 : 30;
+  const size = selected ? 36 : pin.kind === "memory" ? 26 : 30;
   const opacity = dimmed ? 0.85 : 1;
-  const dash = pin.stage === "pending" ? "border: 2px dashed white;" : "";
+  const dash =
+    pin.stage === "pending"
+      ? "border: 2px dashed white;"
+      : pin.kind === "memory"
+        ? "border: 2px dotted white;"
+        : "";
   const html = `
     <div style="
       width: ${size}px; height: ${size}px;
@@ -240,6 +247,21 @@ export default function TripMapCanvas({
               >
                 {pin.itemType} · {pin.stage}
               </div>
+              {pin.bookingUrl && (
+                <a
+                  href={pin.bookingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: "inline-block",
+                    marginTop: 6,
+                    fontSize: 12,
+                    color: "#2563eb",
+                  }}
+                >
+                  開啟連結 ↗
+                </a>
+              )}
             </div>
           </Popup>
         </Marker>

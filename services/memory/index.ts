@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/db";
+import { geocodeAddress } from "@/services/decisions/places";
 import type { ItemType } from "@/lib/types";
 
 export interface PlaceMemoryInput {
@@ -25,6 +26,8 @@ export interface PlaceMemory {
   canonical_key: string;
   summary: string | null;
   address: string | null;
+  lat: number | null;
+  lng: number | null;
   rating: number | null;
   price_level: string | null;
   image_url: string | null;
@@ -74,9 +77,18 @@ export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemor
     .single();
 
   if (existing) {
+    const nextAddress = input.address ?? existing.address ?? null;
+    const addressChanged =
+      nextAddress != null && nextAddress !== (existing.address ?? null);
+    const needsGeocode =
+      nextAddress != null && (addressChanged || existing.lat == null || existing.lng == null);
+    const coords = needsGeocode ? await safeGeocode(nextAddress) : null;
+
     const patch = {
       summary: input.summary ?? existing.summary ?? null,
-      address: input.address ?? existing.address ?? null,
+      address: nextAddress,
+      lat: coords?.lat ?? existing.lat ?? null,
+      lng: coords?.lng ?? existing.lng ?? null,
       rating: input.rating ?? existing.rating ?? null,
       price_level: input.priceLevel ?? existing.price_level ?? null,
       image_url: input.imageUrl ?? existing.image_url ?? null,
@@ -97,6 +109,8 @@ export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemor
     return (updated ?? { ...existing, ...patch }) as PlaceMemory;
   }
 
+  const coords = input.address ? await safeGeocode(input.address) : null;
+
   const { data: created } = await db
     .from("trip_memories")
     .insert({
@@ -107,6 +121,8 @@ export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemor
       canonical_key: canonicalKey,
       summary: input.summary ?? null,
       address: input.address ?? null,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
       rating: input.rating ?? null,
       price_level: input.priceLevel ?? null,
       image_url: input.imageUrl ?? null,
@@ -122,6 +138,17 @@ export async function rememberPlace(input: PlaceMemoryInput): Promise<PlaceMemor
   if (!created) return null;
 
   return created as PlaceMemory;
+}
+
+async function safeGeocode(
+  address: string
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    return await geocodeAddress(address);
+  } catch (err) {
+    console.error("[memory] geocodeAddress threw", err);
+    return null;
+  }
 }
 
 export async function getRecommendations(
