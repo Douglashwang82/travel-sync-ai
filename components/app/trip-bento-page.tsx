@@ -11,6 +11,7 @@ import { VotesGrid } from "@/components/app/grids/votes-grid";
 import { MapGrid } from "@/components/app/grids/map-grid";
 import { PackGrid } from "@/components/app/grids/pack-grid";
 import { MembersGrid } from "@/components/app/grids/members-grid";
+import { SharedGrid } from "@/components/app/grids/shared-grid";
 import { CustomGrid } from "@/components/app/grids/custom-grid";
 import { AddCustomGridDialog } from "@/components/app/grids/add-custom-grid-dialog";
 import { BentoFrame } from "@/components/app/grids/bento-frame";
@@ -41,6 +42,7 @@ const TILES: TileDef[] = [
   { id: "budget", title: "Budget", icon: "💰", Component: BudgetGrid, defaultSize: "md", href: (t) => `/app/trips/${t}/expenses` },
   { id: "tasks", title: "Tasks", icon: "✓", Component: TaskGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/board` },
   { id: "ideas", title: "Ideas", icon: "✨", Component: IdeasGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/ideas` },
+  { id: "shared", title: "Shared", icon: "🔗", Component: SharedGrid, defaultSize: "lg" },
   { id: "votes", title: "Votes", icon: "🗳", Component: VotesGrid, defaultSize: "md", href: (t) => `/app/trips/${t}/votes` },
   { id: "map", title: "Map", icon: "📍", Component: MapGrid, defaultSize: "md", href: (t) => `/app/trips/${t}/map` },
   { id: "pack", title: "Pack", icon: "🧳", Component: PackGrid, defaultSize: "md", href: (t) => `/app/trips/${t}/pack` },
