@@ -158,6 +158,47 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails | n
   }
 }
 
+export async function geocodeAddress(
+  address: string
+): Promise<{ lat: number; lng: number } | null> {
+  const trimmed = address.trim();
+  if (!trimmed) return null;
+
+  const apiKey = getPlacesApiKey();
+  if (!apiKey) {
+    console.warn("[places] geocodeAddress skipped because no Places or unified Maps API key is set");
+    return null;
+  }
+
+  try {
+    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.id,places.location",
+      },
+      body: JSON.stringify({
+        textQuery: trimmed,
+        maxResultCount: 1,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("[places] geocodeAddress API error", res.status, await res.text());
+      return null;
+    }
+
+    const data = (await res.json()) as { places?: GooglePlace[] };
+    const loc = data.places?.[0]?.location;
+    if (loc?.latitude == null || loc?.longitude == null) return null;
+    return { lat: loc.latitude, lng: loc.longitude };
+  } catch (err) {
+    console.error("[places] geocodeAddress threw", err);
+    return null;
+  }
+}
+
 export async function findDestinationPlace(destination: string): Promise<PlaceCandidate | null> {
   const apiKey = getPlacesApiKey();
   if (!apiKey) {

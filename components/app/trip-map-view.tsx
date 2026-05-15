@@ -11,6 +11,7 @@ import type {
   ItineraryResponse,
 } from "@/app/api/app/trips/[tripId]/itinerary/route";
 import type { WebVotesResponse } from "@/app/api/app/trips/[tripId]/votes/route";
+import type { MemoriesResponse } from "@/app/api/app/trips/[tripId]/memories/route";
 import type { MapPin, DayRoute } from "@/components/app/trip-map-canvas";
 
 // Leaflet uses `window` at import time — load only on the client.
@@ -52,6 +53,7 @@ const STAGE_LABEL: Record<string, string> = {
   confirmed: "已確認",
   pending: "投票中",
   todo: "待辦",
+  shared: "分享記錄",
 };
 
 const DAY_PALETTE = [
@@ -68,7 +70,7 @@ const DAY_PALETTE = [
 ];
 
 type TypeFilter = "all" | "hotel" | "restaurant" | "activity" | "transport";
-type StageFilter = "all" | "confirmed" | "pending";
+type StageFilter = "all" | "confirmed" | "pending" | "shared";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,7 +113,8 @@ function formatDistance(meters: number): string {
 
 function buildPins(
   itinerary: ItineraryResponse,
-  votes: WebVotesResponse
+  votes: WebVotesResponse,
+  memories: MemoriesResponse
 ): MapPin[] {
   const pins: MapPin[] = [];
 
@@ -131,6 +134,7 @@ function buildPins(
       itemId: item.id,
       optionId: opt.id,
       dayKey: dateKey(item.deadline_at),
+      bookingUrl: opt.booking_url,
     });
   }
 
@@ -158,8 +162,35 @@ function buildPins(
         optionId: opt.id,
         dayKey: dayK,
         votedByMe: opt.votedByMe,
+        bookingUrl: opt.bookingUrl,
       });
     }
+  }
+
+  // Shared memories — addressable content from /share and AI parsing that
+  // isn't yet a planned trip item. Deduplicate against confirmed/pending pins
+  // (same lat/lng + title) so a memory doesn't sit on top of its own item.
+  const occupied = new Set<string>();
+  for (const p of pins) {
+    occupied.add(`${p.lat.toFixed(5)},${p.lng.toFixed(5)}|${p.title}`);
+  }
+  for (const mem of memories.memories) {
+    const key = `${mem.lat.toFixed(5)},${mem.lng.toFixed(5)}|${mem.title}`;
+    if (occupied.has(key)) continue;
+    pins.push({
+      id: `memory:${mem.id}`,
+      lat: mem.lat,
+      lng: mem.lng,
+      title: mem.title,
+      subtitle: mem.address,
+      itemType: mem.itemType,
+      stage: "shared",
+      kind: "memory",
+      itemId: null,
+      optionId: null,
+      dayKey: null,
+      bookingUrl: mem.bookingUrl,
+    });
   }
 
   return pins;
@@ -170,6 +201,7 @@ function buildPins(
 interface MapData {
   itinerary: ItineraryResponse;
   votes: WebVotesResponse;
+  memories: MemoriesResponse;
 }
 
 export function TripMapView({ tripId }: { tripId: string }) {
@@ -183,12 +215,13 @@ export function TripMapView({ tripId }: { tripId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const [itinerary, votes] = await Promise.all([
+      const [itinerary, votes, memories] = await Promise.all([
         appFetchJson<ItineraryResponse>(`/api/app/trips/${tripId}/itinerary`),
         appFetchJson<WebVotesResponse>(`/api/app/trips/${tripId}/votes`),
+        appFetchJson<MemoriesResponse>(`/api/app/trips/${tripId}/memories`),
       ]);
       setError(null);
-      setData({ itinerary, votes });
+      setData({ itinerary, votes, memories });
     } catch (err) {
       setError(
         err instanceof AppApiFetchError
@@ -208,7 +241,7 @@ export function TripMapView({ tripId }: { tripId: string }) {
 
   const allPins = useMemo<MapPin[]>(() => {
     if (!data) return [];
-    return buildPins(data.itinerary, data.votes);
+    return buildPins(data.itinerary, data.votes, data.memories);
   }, [data]);
 
   const dayKeys = useMemo<string[]>(() => {
@@ -272,7 +305,10 @@ export function TripMapView({ tripId }: { tripId: string }) {
   >(() => {
     const buckets = new Map<string, MapPin[]>();
     for (const pin of filteredPins) {
-      const key = pin.dayKey ?? "__unscheduled__";
+      const key =
+        pin.kind === "memory"
+          ? "__shared__"
+          : pin.dayKey ?? "__unscheduled__";
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(pin);
     }
@@ -286,10 +322,15 @@ export function TripMapView({ tripId }: { tripId: string }) {
       out.push({
         key,
         label:
-          key === "__unscheduled__"
-            ? "未排程"
-            : dayLabel(key),
-        color: dayColorByKey.get(key) ?? "#94a3b8",
+          key === "__shared__"
+            ? "分享記錄"
+            : key === "__unscheduled__"
+              ? "未排程"
+              : dayLabel(key),
+        color:
+          key === "__shared__"
+            ? "#a855f7"
+            : dayColorByKey.get(key) ?? "#94a3b8",
         pins: pins.slice().sort((a, b) => a.title.localeCompare(b.title)),
       });
     }
@@ -305,6 +346,7 @@ export function TripMapView({ tripId }: { tripId: string }) {
       transport: 0,
       confirmed: 0,
       pending: 0,
+      shared: 0,
     };
     for (const p of allPins) {
       if (p.itemType === "hotel") c.hotel++;
@@ -313,6 +355,7 @@ export function TripMapView({ tripId }: { tripId: string }) {
       else if (p.itemType === "transport") c.transport++;
       if (p.stage === "confirmed") c.confirmed++;
       else if (p.stage === "pending") c.pending++;
+      else if (p.stage === "shared") c.shared++;
     }
     return c;
   }, [allPins]);
@@ -473,6 +516,12 @@ function Filters({
             onClick={() => setStageFilter("pending")}
             label="投票中"
             count={counts.pending}
+          />
+          <Pill
+            active={stageFilter === "shared"}
+            onClick={() => setStageFilter("shared")}
+            label="分享記錄"
+            count={counts.shared}
           />
         </div>
       </div>
