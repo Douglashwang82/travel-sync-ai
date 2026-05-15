@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type ComponentType, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { HeroGrid } from "@/components/app/grids/hero-grid";
 import { ItineraryGrid } from "@/components/app/grids/itinerary-grid";
@@ -11,6 +11,8 @@ import { VotesGrid } from "@/components/app/grids/votes-grid";
 import { MapGrid } from "@/components/app/grids/map-grid";
 import { PackGrid } from "@/components/app/grids/pack-grid";
 import { MembersGrid } from "@/components/app/grids/members-grid";
+import { CustomGrid } from "@/components/app/grids/custom-grid";
+import { AddCustomGridDialog } from "@/components/app/grids/add-custom-grid-dialog";
 import { BentoFrame } from "@/components/app/grids/bento-frame";
 import {
   useBentoLayout,
@@ -21,6 +23,8 @@ import {
   CommandPalette,
   useCommandPalette,
 } from "@/components/app/command-palette";
+import { appFetchJson } from "@/lib/app-client";
+import type { CustomGrid as CustomGridData } from "@/app/api/app/trips/[tripId]/custom-grids/route";
 
 interface TileDef {
   id: string;
@@ -43,12 +47,13 @@ const TILES: TileDef[] = [
   { id: "members", title: "Members", icon: "👥", Component: MembersGrid, defaultSize: "md" },
 ];
 
-const TILE_MAP = new Map(TILES.map((t) => [t.id, t]));
-
-const DEFAULT_LAYOUT: LayoutEntry[] = TILES.map((t) => ({
-  id: t.id,
-  size: t.defaultSize,
-}));
+const CUSTOM_TILE_PREFIX = "custom:";
+function customTileId(gridId: string): string {
+  return `${CUSTOM_TILE_PREFIX}${gridId}`;
+}
+function isCustomTileId(id: string): boolean {
+  return id.startsWith(CUSTOM_TILE_PREFIX);
+}
 
 /**
  * Single-page bento grid workspace. Every feature is rendered through the
@@ -60,17 +65,67 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
   const palette = useCommandPalette();
   const searchParams = useSearchParams();
   const tilesRef = useRef<HTMLDivElement>(null);
-  const { order, move, setSize, reset } = useBentoLayout(tripId, DEFAULT_LAYOUT);
+  const [customGrids, setCustomGrids] = useState<CustomGridData[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await appFetchJson<{ grids: CustomGridData[] }>(
+          `/api/app/trips/${tripId}/custom-grids`,
+        );
+        setCustomGrids(res.grids);
+      } catch {
+        // Non-critical: leave the list empty; the user can retry by opening Add dialog.
+      }
+    })();
+  }, [tripId]);
+
+  const allTiles = useMemo<TileDef[]>(() => {
+    const customTiles: TileDef[] = customGrids.map((g) => ({
+      id: customTileId(g.id),
+      title: g.title,
+      icon: "🤖",
+      Component: () => null,
+      defaultSize: "md",
+    }));
+    return [...TILES, ...customTiles];
+  }, [customGrids]);
+
+  const tileMap = useMemo(() => new Map(allTiles.map((t) => [t.id, t])), [allTiles]);
+  const layoutDefaults = useMemo<LayoutEntry[]>(
+    () => allTiles.map((t) => ({ id: t.id, size: t.defaultSize })),
+    [allTiles],
+  );
+
+  const { order, move, setSize, reset } = useBentoLayout(tripId, layoutDefaults);
+
+  const customGridMap = useMemo(
+    () => new Map(customGrids.map((g) => [customTileId(g.id), g])),
+    [customGrids],
+  );
+
+  const handleCustomCreated = useCallback((grid: CustomGridData) => {
+    setCustomGrids((prev) => [...prev, grid]);
+  }, []);
+
+  const handleCustomChange = useCallback((next: CustomGridData) => {
+    setCustomGrids((prev) => prev.map((g) => (g.id === next.id ? next : g)));
+  }, []);
+
+  const handleCustomDelete = useCallback((id: string) => {
+    setCustomGrids((prev) => prev.filter((g) => g.id !== id));
+  }, []);
 
   const entries = useMemo(
     () =>
       order
         .map((entry) => {
-          const def = TILE_MAP.get(entry.id);
+          const def = tileMap.get(entry.id);
           return def ? { entry, def } : null;
         })
         .filter((x): x is { entry: LayoutEntry; def: TileDef } => x !== null),
-    [order]
+    [order, tileMap]
   );
 
   // Scroll to ?scroll=<id> (used by sub-route redirects).
@@ -130,21 +185,41 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
         onAddItem={() => {}}
       />
 
+      <AddCustomGridDialog
+        tripId={tripId}
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onCreated={handleCustomCreated}
+      />
+
       <div className="mb-3 flex items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
         <span className="text-caps">Workspace</span>
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
-          title="Reset to default layout"
-        >
-          Reset layout
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--text-primary)]"
+            title="Add a custom AI-powered grid"
+          >
+            + Add grid
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+            title="Reset to default layout"
+          >
+            Reset layout
+          </button>
+        </div>
       </div>
 
       <div ref={tilesRef} className="bento-grid">
         {entries.map(({ entry, def }) => {
           const Component = def.Component;
+          const customGrid = isCustomTileId(entry.id)
+            ? customGridMap.get(entry.id)
+            : null;
           return (
             <div
               key={entry.id}
@@ -160,7 +235,16 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
                 href={def.href ? def.href(tripId) : undefined}
                 embed={entry.id !== "members"}
               >
-                <Component tripId={tripId} />
+                {customGrid ? (
+                  <CustomGrid
+                    tripId={tripId}
+                    grid={customGrid}
+                    onChange={handleCustomChange}
+                    onDelete={handleCustomDelete}
+                  />
+                ) : (
+                  <Component tripId={tripId} />
+                )}
               </BentoFrame>
             </div>
           );
