@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-  CircleMarker,
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  InfoWindow,
   useMap,
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+  useMapsLibrary,
+} from "@vis.gl/react-google-maps";
 
 export interface MapPin {
   id: string;
@@ -66,42 +63,112 @@ const TYPE_GLYPH: Record<string, string> = {
   other: "📌",
 };
 
-function pinIcon(pin: MapPin, selected: boolean): L.DivIcon {
+// ─── Marker ───────────────────────────────────────────────────────────────────
+
+function PinMarker({
+  pin,
+  selected,
+  onClick,
+}: {
+  pin: MapPin;
+  selected: boolean;
+  onClick: () => void;
+}) {
   const color = TYPE_COLOR[pin.itemType] ?? TYPE_COLOR.other;
   const glyph = TYPE_GLYPH[pin.itemType] ?? TYPE_GLYPH.other;
   const dimmed =
     pin.stage === "pending" || pin.stage === "todo" || pin.stage === "shared";
-  const ring = selected ? "4px" : "2px";
   const size = selected ? 36 : pin.kind === "memory" ? 26 : 30;
-  const opacity = dimmed ? 0.85 : 1;
-  const dash =
+  const ringWidth = selected ? 4 : 2;
+  const border =
     pin.stage === "pending"
-      ? "border: 2px dashed white;"
+      ? "2px dashed white"
       : pin.kind === "memory"
-        ? "border: 2px dotted white;"
-        : "";
-  const html = `
-    <div style="
-      width: ${size}px; height: ${size}px;
-      background: ${color};
-      color: white;
-      border-radius: 9999px 9999px 9999px 0;
-      transform: rotate(-45deg);
-      box-shadow: 0 0 0 ${ring} ${selected ? color : "white"}, 0 2px 4px rgba(0,0,0,0.2);
-      opacity: ${opacity};
-      ${dash}
-      display: flex; align-items: center; justify-content: center;
-    ">
-      <span style="transform: rotate(45deg); font-size: ${size * 0.45}px; line-height: 1;">${glyph}</span>
-    </div>
-  `;
-  return L.divIcon({
-    html,
-    className: "trip-map-pin",
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size],
-    popupAnchor: [0, -size],
-  });
+        ? "2px dotted white"
+        : undefined;
+
+  return (
+    <AdvancedMarker
+      position={{ lat: pin.lat, lng: pin.lng }}
+      onClick={onClick}
+      zIndex={selected ? 1000 : pin.kind === "memory" ? 1 : 2}
+    >
+      <div
+        style={{
+          width: size,
+          height: size,
+          background: color,
+          color: "white",
+          borderRadius: "9999px 9999px 9999px 0",
+          transform: "rotate(-45deg)",
+          boxShadow: `0 0 0 ${ringWidth}px ${selected ? color : "white"}, 0 2px 4px rgba(0,0,0,0.2)`,
+          opacity: dimmed ? 0.85 : 1,
+          border,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <span
+          style={{
+            transform: "rotate(45deg)",
+            fontSize: size * 0.45,
+            lineHeight: 1,
+          }}
+        >
+          {glyph}
+        </span>
+      </div>
+    </AdvancedMarker>
+  );
+}
+
+// ─── Daily route polylines (imperative) ───────────────────────────────────────
+
+function DayRoutes({ routes }: { routes: DayRoute[] }) {
+  const map = useMap();
+  const mapsLib = useMapsLibrary("maps");
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
+
+  useEffect(() => {
+    if (!map || !mapsLib) return;
+
+    for (const p of polylinesRef.current) p.setMap(null);
+    polylinesRef.current = [];
+
+    for (const route of routes) {
+      if (route.points.length < 2) continue;
+      // Dashed polyline via a repeating icon — Google Maps doesn't support
+      // dashArray directly the way SVG/Leaflet do.
+      const poly = new mapsLib.Polyline({
+        map,
+        path: route.points.map((p) => ({ lat: p.lat, lng: p.lng })),
+        strokeOpacity: 0,
+        icons: [
+          {
+            icon: {
+              path: "M 0,-1 0,1",
+              strokeOpacity: 0.55,
+              strokeColor: route.color,
+              strokeWeight: 3,
+              scale: 3,
+            },
+            offset: "0",
+            repeat: "12px",
+          },
+        ],
+      });
+      polylinesRef.current.push(poly);
+    }
+
+    return () => {
+      for (const p of polylinesRef.current) p.setMap(null);
+      polylinesRef.current = [];
+    };
+  }, [map, mapsLib, routes]);
+
+  return null;
 }
 
 // ─── Auto-fit on change ───────────────────────────────────────────────────────
@@ -116,156 +183,186 @@ function FitBounds({
   selectedPinId: string | null;
 }) {
   const map = useMap();
+  const coreLib = useMapsLibrary("core");
   const lastFitKey = useRef<string>("");
 
   useEffect(() => {
+    if (!map || !coreLib) return;
+
     if (selectedPinId) {
       const pin = pins.find((p) => p.id === selectedPinId);
       if (pin) {
-        map.flyTo([pin.lat, pin.lng], Math.max(map.getZoom(), 14), {
-          duration: 0.45,
-        });
+        map.panTo({ lat: pin.lat, lng: pin.lng });
+        const zoom = map.getZoom() ?? 11;
+        if (zoom < 14) map.setZoom(14);
       }
       return;
     }
 
-    const points: Array<[number, number]> = [];
-    for (const p of pins) points.push([p.lat, p.lng]);
+    const points: Array<{ lat: number; lng: number }> = [];
+    for (const p of pins) points.push({ lat: p.lat, lng: p.lng });
     if (destination.lat != null && destination.lng != null) {
-      points.push([destination.lat, destination.lng]);
+      points.push({ lat: destination.lat, lng: destination.lng });
     }
     if (points.length === 0) return;
 
-    const fitKey = points.map((p) => p.join(",")).join("|");
+    const fitKey = points.map((p) => `${p.lat},${p.lng}`).join("|");
     if (fitKey === lastFitKey.current) return;
     lastFitKey.current = fitKey;
 
     if (points.length === 1) {
-      map.setView(points[0], 13);
+      map.setCenter(points[0]);
+      map.setZoom(13);
     } else {
-      const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [40, 40] });
+      const bounds = new coreLib.LatLngBounds();
+      for (const p of points) bounds.extend(p);
+      map.fitBounds(bounds, 40);
     }
-  }, [pins, destination.lat, destination.lng, selectedPinId, map]);
+  }, [map, coreLib, pins, destination.lat, destination.lng, selectedPinId]);
 
   return null;
 }
 
 // ─── Main canvas ──────────────────────────────────────────────────────────────
 
-export default function TripMapCanvas({
+export default function TripMapCanvas(props: MapCanvasProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY;
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
+
+  if (!apiKey) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[var(--surface-sunken)]/40 p-6 text-center">
+        <p className="text-xs text-[var(--text-muted)]">
+          地圖未設定 — 請在環境變數加入{" "}
+          <code className="text-mono">
+            NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY
+          </code>
+          。
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <APIProvider apiKey={apiKey}>
+      <CanvasInner {...props} mapId={mapId} />
+    </APIProvider>
+  );
+}
+
+function CanvasInner({
   destination,
   pins,
   dayRoutes,
   selectedPinId,
   onPinSelect,
-}: MapCanvasProps) {
-  const center = useMemo<[number, number]>(() => {
+  mapId,
+}: MapCanvasProps & { mapId: string | undefined }) {
+  const center = useMemo<{ lat: number; lng: number }>(() => {
     if (destination.lat != null && destination.lng != null)
-      return [destination.lat, destination.lng];
-    if (pins.length > 0) return [pins[0].lat, pins[0].lng];
-    return [35.0116, 135.7681]; // Kyoto fallback so the tile layer never shows blank
+      return { lat: destination.lat, lng: destination.lng };
+    if (pins.length > 0) return { lat: pins[0].lat, lng: pins[0].lng };
+    return { lat: 35.0116, lng: 135.7681 }; // Kyoto fallback
   }, [destination.lat, destination.lng, pins]);
 
+  const selectedPin = useMemo(
+    () => pins.find((p) => p.id === selectedPinId) ?? null,
+    [pins, selectedPinId]
+  );
+
+  // InfoWindow can be dismissed via its × without clearing parent selection.
+  // Tracking the dismissed id lets a fresh selection re-open the window
+  // without an effect that resets local state.
+  const [dismissedId, setDismissedId] = useState<string | null>(null);
+  const showInfo = selectedPin != null && dismissedId !== selectedPin.id;
+
   return (
-    <MapContainer
-      center={center}
-      zoom={11}
-      scrollWheelZoom
+    <Map
+      defaultCenter={center}
+      defaultZoom={11}
+      gestureHandling="greedy"
+      mapId={mapId}
       className="h-full w-full"
       style={{ minHeight: "100%" }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-
       <FitBounds
         pins={pins}
         destination={destination}
         selectedPinId={selectedPinId}
       />
+      <DayRoutes routes={dayRoutes} />
 
       {destination.lat != null && destination.lng != null && (
-        <CircleMarker
-          center={[destination.lat, destination.lng]}
-          radius={6}
-          pathOptions={{
-            color: "#111827",
-            fillColor: "#111827",
-            fillOpacity: 0.85,
-            weight: 2,
-          }}
+        <AdvancedMarker
+          position={{ lat: destination.lat, lng: destination.lng }}
+          zIndex={0}
+          title={destination.name ?? "Trip destination"}
         >
-          <Popup>
-            <strong>{destination.name ?? "Trip destination"}</strong>
-            <br />
-            <span style={{ color: "#6b7280", fontSize: 12 }}>Trip center</span>
-          </Popup>
-        </CircleMarker>
-      )}
-
-      {dayRoutes.map((route) =>
-        route.points.length >= 2 ? (
-          <Polyline
-            key={route.dayKey}
-            positions={route.points.map((p) => [p.lat, p.lng])}
-            pathOptions={{
-              color: route.color,
-              weight: 3,
-              opacity: 0.55,
-              dashArray: "6 6",
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              background: "#111827",
+              border: "2px solid white",
+              borderRadius: "9999px",
+              boxShadow:
+                "0 0 0 2px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2)",
             }}
           />
-        ) : null
+        </AdvancedMarker>
       )}
 
       {pins.map((pin) => (
-        <Marker
+        <PinMarker
           key={pin.id}
-          position={[pin.lat, pin.lng]}
-          icon={pinIcon(pin, selectedPinId === pin.id)}
-          eventHandlers={{
-            click: () => onPinSelect(pin),
-          }}
+          pin={pin}
+          selected={selectedPinId === pin.id}
+          onClick={() => onPinSelect(pin)}
+        />
+      ))}
+
+      {showInfo && selectedPin && (
+        <InfoWindow
+          position={{ lat: selectedPin.lat, lng: selectedPin.lng }}
+          pixelOffset={[0, -36]}
+          onCloseClick={() => setDismissedId(selectedPin.id)}
+          headerDisabled
         >
-          <Popup>
-            <div style={{ minWidth: 180 }}>
-              <strong>{pin.title}</strong>
-              {pin.subtitle && (
-                <div style={{ color: "#6b7280", fontSize: 12 }}>
-                  {pin.subtitle}
-                </div>
-              )}
-              <div
+          <div style={{ minWidth: 180, fontFamily: "system-ui" }}>
+            <strong>{selectedPin.title}</strong>
+            {selectedPin.subtitle && (
+              <div style={{ color: "#6b7280", fontSize: 12 }}>
+                {selectedPin.subtitle}
+              </div>
+            )}
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 11,
+                textTransform: "uppercase",
+                color: "#6b7280",
+              }}
+            >
+              {selectedPin.itemType} · {selectedPin.stage}
+            </div>
+            {selectedPin.bookingUrl && (
+              <a
+                href={selectedPin.bookingUrl}
+                target="_blank"
+                rel="noreferrer"
                 style={{
-                  marginTop: 4,
-                  fontSize: 11,
-                  textTransform: "uppercase",
-                  color: "#6b7280",
+                  display: "inline-block",
+                  marginTop: 6,
+                  fontSize: 12,
+                  color: "#2563eb",
                 }}
               >
-                {pin.itemType} · {pin.stage}
-              </div>
-              {pin.bookingUrl && (
-                <a
-                  href={pin.bookingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "inline-block",
-                    marginTop: 6,
-                    fontSize: 12,
-                    color: "#2563eb",
-                  }}
-                >
-                  開啟連結 ↗
-                </a>
-              )}
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+                開啟連結 ↗
+              </a>
+            )}
+          </div>
+        </InfoWindow>
+      )}
+    </Map>
   );
 }

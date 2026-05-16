@@ -14,7 +14,7 @@ import type { WebVotesResponse } from "@/app/api/app/trips/[tripId]/votes/route"
 import type { MemoriesResponse } from "@/app/api/app/trips/[tripId]/memories/route";
 import type { MapPin, DayRoute } from "@/components/app/trip-map-canvas";
 
-// Leaflet uses `window` at import time — load only on the client.
+// Google Maps JS depends on `window` — load only on the client.
 const TripMapCanvas = dynamic(
   () => import("@/components/app/trip-map-canvas"),
   {
