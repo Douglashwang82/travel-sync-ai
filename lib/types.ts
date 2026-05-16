@@ -115,6 +115,9 @@ export interface TripItem {
   description: string | null;
   stage: ItemStage;
   source: ItemSource;
+  source_agent: string | null;
+  source_run_id: string | null;
+  source_inputs: Record<string, unknown> | null;
   status_reason: string | null;
   confirmed_option_id: string | null;
   deadline_at: string | null;

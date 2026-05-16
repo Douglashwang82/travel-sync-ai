@@ -18,6 +18,10 @@ export interface TripIdea {
   promotedItemId: string | null;
   createdAt: string;
   isMine: boolean;
+  /** Set when the idea was authored by an agent (e.g. "itinerary_drafter"). */
+  sourceAgent: string | null;
+  /** Soft FK to the agent run that produced this idea. */
+  sourceRunId: string | null;
 }
 
 export interface TripIdeasResponse {

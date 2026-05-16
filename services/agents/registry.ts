@@ -1,7 +1,21 @@
-import type { AgentDefinition } from "./types";
+import type { AgentDefinition, AgentMode } from "./types";
 import { flightPriceTracker } from "./flight-price-tracker";
+import { weatherForecast } from "./weather-forecast";
+import { chatDigest } from "./chat-digest";
+import { itineraryDrafter } from "./itinerary-drafter";
+import { packingSuggester } from "./packing-suggester";
+import { hotelPriceWatch } from "./hotel-price-watch";
+import { consensusRadar } from "./consensus-radar";
 
-const AGENTS: AgentDefinition[] = [flightPriceTracker as AgentDefinition];
+const AGENTS: AgentDefinition[] = [
+  flightPriceTracker as AgentDefinition,
+  weatherForecast as AgentDefinition,
+  chatDigest as AgentDefinition,
+  itineraryDrafter as AgentDefinition,
+  packingSuggester as AgentDefinition,
+  hotelPriceWatch as AgentDefinition,
+  consensusRadar as AgentDefinition,
+];
 
 const AGENT_MAP = new Map(AGENTS.map((a) => [a.type, a]));
 
@@ -22,6 +36,7 @@ export interface PublicAgent {
   label: string;
   description: string;
   icon: string;
+  mode: AgentMode;
   defaultFrequencyHours: number;
   configFields: AgentDefinition["configFields"];
   defaultConfig: unknown;
@@ -33,6 +48,7 @@ export function publicAgents(): PublicAgent[] {
     label: a.label,
     description: a.description,
     icon: a.icon,
+    mode: a.mode,
     defaultFrequencyHours: a.defaultFrequencyHours,
     configFields: a.configFields,
     defaultConfig: a.defaultConfig,
