@@ -63,11 +63,11 @@ async function loadChat(
 
 function fallbackSummary(messages: ChatMessage[]): DigestResult {
   if (messages.length === 0) {
-    return { summary: "No chat activity in the window.", decisions: [], openQuestions: [] };
+    return { summary: "這段時間內群組沒有任何聊天紀錄。", decisions: [], openQuestions: [] };
   }
   const senders = new Set(messages.map((m) => m.user)).size;
   return {
-    summary: `${messages.length} messages from ${senders} people. Open the trip's LINE group for details.`,
+    summary: `${senders} 位成員共留下 ${messages.length} 則訊息。請開啟此旅程的 LINE 群組查看詳情。`,
     decisions: [],
     openQuestions: [],
   };
@@ -82,13 +82,13 @@ async function summarizeWithLLM(messages: ChatMessage[]): Promise<DigestResult> 
   try {
     const raw = await generateJson<unknown>(
       [
-        "You are summarizing a trip-planning chat for travelers who missed the conversation.",
-        "Produce JSON with three fields:",
-        "  summary: 2-3 sentences in plain English. Mention concrete topics (destinations, dates, hotels).",
-        "  decisions: array of strings, each describing one thing the group seems to have settled on (max 5).",
-        "  openQuestions: array of strings of still-unresolved items (max 5).",
-        "Skip greetings and small talk. Never invent facts.",
-        "Respond with strict JSON only.",
+        "你正在為錯過群組討論的旅伴整理一份旅程規劃的聊天摘要。",
+        "請輸出包含三個欄位的 JSON:",
+        "  summary: 2-3 句繁體中文摘要,點出實際討論的主題(目的地、日期、飯店等)。",
+        "  decisions: 字串陣列,每一條描述群組似乎已經決定的事項(最多 5 條,繁體中文)。",
+        "  openQuestions: 字串陣列,描述仍未決定的議題(最多 5 條,繁體中文)。",
+        "請略過寒暄與閒聊,不可捏造事實。",
+        "僅以嚴格 JSON 格式回覆。",
       ].join("\n"),
       transcript,
     );
@@ -109,7 +109,7 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
     return {
       outputKind: "summary",
       output: {
-        summary: "This trip isn't linked to a LINE group, so there's no chat to digest.",
+        summary: "這個旅程尚未綁定 LINE 群組,因此沒有聊天內容可整理。",
         decisions: [],
         openQuestions: [],
         messageCount: 0,
@@ -135,16 +135,16 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 }
 
 function formatWindow(hours: number): string {
-  if (hours < 24) return `Last ${hours}h`;
+  if (hours < 24) return `近 ${hours} 小時`;
   const days = Math.round(hours / 24);
-  return `Last ${days}d`;
+  return `近 ${days} 天`;
 }
 
 export const chatDigest: AgentDefinition<DigestConfig> = {
   type: "chat_digest",
-  label: "Chat digest",
+  label: "聊天摘要",
   description:
-    "Summarizes recent LINE group chat into decisions and open questions. Great for catching up.",
+    "把近期的 LINE 群組討論整理成決議與待解問題,讓錯過的人能快速跟上。",
   icon: "💬",
   mode: "assist",
   defaultFrequencyHours: 24,
@@ -153,7 +153,7 @@ export const chatDigest: AgentDefinition<DigestConfig> = {
   configFields: [
     {
       name: "windowHours",
-      label: "Window (hours)",
+      label: "時間範圍(小時)",
       type: "number",
       placeholder: "168",
       min: 1,
@@ -161,7 +161,7 @@ export const chatDigest: AgentDefinition<DigestConfig> = {
     },
     {
       name: "maxMessages",
-      label: "Max messages",
+      label: "訊息數上限",
       type: "number",
       placeholder: "120",
       min: 10,

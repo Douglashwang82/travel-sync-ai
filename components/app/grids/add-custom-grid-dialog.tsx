@@ -43,7 +43,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
         const res = await appFetchJson<{ agents: PublicAgent[] }>("/api/app/agents");
         if (!cancelled) setAgents(res.agents);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load agents");
+        if (!cancelled) setError(err instanceof Error ? err.message : "載入代理失敗");
       }
     })();
     return () => {
@@ -101,7 +101,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
       onCreated(final);
       handleOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create");
+      setError(err instanceof Error ? err.message : "建立失敗");
       setSubmitting(false);
     }
   }
@@ -110,11 +110,11 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{selected ? `Configure ${selected.label}` : "Add a custom grid"}</DialogTitle>
+          <DialogTitle>{selected ? `設定 ${selected.label}` : "新增自訂格"}</DialogTitle>
           <DialogDescription>
             {selected
-              ? "An AI agent will keep this tile fresh on a schedule."
-              : "Pick an agent to power a new bento tile."}
+              ? "AI 代理會依照排程自動更新這個格子。"
+              : "選擇一個代理，為新的 bento 格子提供內容。"}
           </DialogDescription>
         </DialogHeader>
 
@@ -126,7 +126,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
 
         {!selected && (
           <div className="grid gap-2">
-            {agents == null && <div className="text-sm text-[var(--text-muted)]">Loading agents…</div>}
+            {agents == null && <div className="text-sm text-[var(--text-muted)]">正在載入代理…</div>}
             {agents?.map((a) => (
               <button
                 key={a.type}
@@ -152,7 +152,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
           <div className="grid gap-3">
             <div className="grid gap-1">
               <label className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
-                Tile title
+                格子標題
               </label>
               <input
                 value={title}
@@ -181,7 +181,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
               onClick={() => setSelected(null)}
               className="rounded-md border border-[var(--border-hairline)] px-3 py-1.5 text-sm hover:border-[var(--border-strong)]"
             >
-              Back
+              返回
             </button>
           )}
           <button
@@ -190,7 +190,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
             onClick={submit}
             className="rounded-md bg-[var(--accent-line)] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {submitting ? "Creating…" : "Add grid"}
+            {submitting ? "建立中…" : "新增格子"}
           </button>
         </DialogFooter>
       </DialogContent>
@@ -268,18 +268,18 @@ const AUTONOMY_OPTIONS: Array<{
 }> = [
   {
     value: "propose_only",
-    label: "Propose only",
-    hint: "Suggestions land in Ideas. Nothing is added to the trip until a human confirms.",
+    label: "僅提出建議",
+    hint: "建議會出現在「點子」中。除非有人確認，否則不會加入旅程。",
   },
   {
     value: "auto_apply_with_undo",
-    label: "Auto-apply with undo",
-    hint: "Suggestions are also added to the To-Do board, with a Dismiss button to remove them.",
+    label: "自動套用（可復原）",
+    hint: "建議會自動加入待辦看板，並提供「忽略」按鈕可以移除。",
   },
   {
     value: "auto_apply",
-    label: "Auto-apply",
-    hint: "Suggestions are added to the To-Do board silently. Trust the agent.",
+    label: "自動套用",
+    hint: "建議會直接加入待辦看板，不另行通知。請充分信任這個代理。",
   },
 ];
 
@@ -293,7 +293,7 @@ function AutonomyPicker({
   return (
     <div className="grid gap-2">
       <label className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
-        Autonomy
+        自主權
       </label>
       <div className="grid gap-1">
         {AUTONOMY_OPTIONS.map((opt) => (

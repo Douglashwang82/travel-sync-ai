@@ -45,16 +45,16 @@ const DraftSchema = z.object({
 function fallbackDraft(config: DrafterConfig): { overview: string; days: DraftedDay[] } {
   const start = new Date(config.startDate + "T00:00:00Z");
   return {
-    overview: `A ${config.days}-day ${config.vibe} outline for ${config.destination}. The AI couldn't reach Gemini, so this is a placeholder — edit before promoting.`,
+    overview: `${config.destination} 的 ${config.days} 天「${config.vibe}」風格行程草稿。目前無法連線到 Gemini,以下僅為佔位內容,請編輯後再正式採用。`,
     days: Array.from({ length: config.days }, (_, i) => {
       const d = new Date(start.getTime() + i * 86_400_000);
       return {
         date: d.toISOString().slice(0, 10),
-        title: `Day ${i + 1} in ${config.destination}`,
+        title: `${config.destination} 第 ${i + 1} 天`,
         suggestions: [
-          { category: "activity", text: "Morning: pick a neighborhood walk" },
-          { category: "restaurant", text: "Lunch: local specialty" },
-          { category: "activity", text: "Afternoon: one museum or park" },
+          { category: "activity", text: "早上:選一個街區散步" },
+          { category: "restaurant", text: "午餐:當地特色料理" },
+          { category: "activity", text: "下午:參觀一座博物館或公園" },
         ],
       };
     }),
@@ -65,12 +65,13 @@ async function draftWithLLM(config: DrafterConfig): Promise<{ overview: string; 
   try {
     const raw = await generateJson<unknown>(
       [
-        `You are drafting a ${config.days}-day trip outline for ${config.destination}, starting ${config.startDate}.`,
-        `Vibe: ${config.vibe}.`,
-        "Output strict JSON with shape: { overview: string, days: [{ date: 'YYYY-MM-DD', title: string, suggestions: [{ category: 'activity'|'restaurant'|'hotel', text: string }] }] }.",
-        "Keep suggestions specific (named neighborhoods or known landmarks). 2-4 suggestions per day.",
-        "Never invent flight/hotel bookings. Don't include prices.",
-        "Respond with strict JSON only.",
+        `你正在為 ${config.destination} 撰寫一份從 ${config.startDate} 開始、為期 ${config.days} 天的旅程草稿。`,
+        `風格:${config.vibe}。`,
+        "請輸出嚴格 JSON,結構為:{ overview: string, days: [{ date: 'YYYY-MM-DD', title: string, suggestions: [{ category: 'activity'|'restaurant'|'hotel', text: string }] }] }。",
+        "所有文字內容(overview、title、suggestions.text)請使用繁體中文。",
+        "建議內容要具體(指名街區或知名景點),每天 2-4 條建議。",
+        "請勿杜撰機票或飯店訂位,也不要列出價格。",
+        "僅以嚴格 JSON 格式回覆。",
       ].join("\n"),
       JSON.stringify({ destination: config.destination, startDate: config.startDate, days: config.days, vibe: config.vibe }),
     );
@@ -140,7 +141,7 @@ async function persistAsIdeas(
         trip_id: tripId,
         group_id: trip.group_id as string,
         submitted_by: `agent:${AGENT_KEY}`,
-        display_name: "AI itinerary drafter",
+        display_name: "AI 行程規劃師",
         category: ideaCategoryFor(s.category),
         text,
         source_agent: AGENT_KEY,
@@ -221,14 +222,14 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
   if (ctx.autonomy !== "propose_only" && persisted.created > 0) {
     itemsCreated = await autoApplyToItems(ctx.tripId, ctx.customGridId, config, draft.days);
     if (itemsCreated > 0) {
-      const msg = `🤖 Itinerary drafter added ${itemsCreated} new ${itemsCreated === 1 ? "activity" : "activities"} to the To-Do board for ${config.destination}. Open the app to review.`;
+      const msg = `🤖 行程規劃師為 ${config.destination} 在待辦看板新增了 ${itemsCreated} 個行程,請開啟 App 檢視。`;
       await pushAgentAck(ctx.tripId, msg);
     }
   } else if (persisted.created > 0 && ctx.autonomy === "propose_only") {
     // Even in propose_only mode, a one-line nudge to the group is useful so
     // members know to glance at Ideas. Keep this opt-out for the future if it
     // proves noisy.
-    const msg = `✦ Itinerary drafter posted ${persisted.created} new suggestion${persisted.created === 1 ? "" : "s"} in Ideas for ${config.destination}.`;
+    const msg = `✦ 行程規劃師為 ${config.destination} 在「點子」新增了 ${persisted.created} 條建議。`;
     await pushAgentAck(ctx.tripId, msg);
   }
 
@@ -250,9 +251,9 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
 export const itineraryDrafter: AgentDefinition<DrafterConfig> = {
   type: AGENT_KEY,
-  label: "Itinerary drafter",
+  label: "行程規劃師",
   description:
-    "Drafts a day-by-day outline for your destination and drops the suggestions into Ideas, ready for you to edit or promote.",
+    "為目的地撰寫一份每日行程草稿,並把建議放進「點子」中,方便你編輯或正式採用。",
   icon: "🗺️",
   mode: "propose",
   defaultFrequencyHours: 24 * 7, // weekly refresh; users mostly run it on demand
@@ -264,19 +265,19 @@ export const itineraryDrafter: AgentDefinition<DrafterConfig> = {
     vibe: "balanced",
   } as DrafterConfig,
   configFields: [
-    { name: "destination", label: "Destination", type: "text", placeholder: "Kyoto, Japan", required: true },
-    { name: "startDate", label: "Start date", type: "date", required: true },
-    { name: "days", label: "Number of days", type: "number", placeholder: "3", min: 1, max: 14 },
+    { name: "destination", label: "目的地", type: "text", placeholder: "京都,日本", required: true },
+    { name: "startDate", label: "開始日期", type: "date", required: true },
+    { name: "days", label: "天數", type: "number", placeholder: "3", min: 1, max: 14 },
     {
       name: "vibe",
-      label: "Vibe",
+      label: "風格",
       type: "select",
       options: [
-        { value: "balanced", label: "Balanced" },
-        { value: "foodie", label: "Foodie" },
-        { value: "outdoors", label: "Outdoors" },
-        { value: "culture", label: "Culture" },
-        { value: "relaxed", label: "Relaxed" },
+        { value: "balanced", label: "均衡" },
+        { value: "foodie", label: "美食" },
+        { value: "outdoors", label: "戶外" },
+        { value: "culture", label: "文化" },
+        { value: "relaxed", label: "悠閒" },
       ],
     },
   ],

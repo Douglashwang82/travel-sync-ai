@@ -18,6 +18,7 @@ const CONTENT = {
       languageLabel: "Language",
       english: "EN",
       traditionalChinese: "繁中",
+      logIn: "Log in",
     },
     hero: {
       badge: "Built for LINE groups",
@@ -27,6 +28,7 @@ const CONTENT = {
         "TravelSync AI reads your LINE group chat, turns scattered conversations into an organized trip board, and helps your group make decisions - all without leaving LINE.",
       primaryCta: "Add to LINE",
       secondaryCta: "See how it works",
+      logInToWebApp: "Log in to web app",
     },
     chat: {
       alice: "Anyone know a good hotel near Namba? 🏨",
@@ -121,6 +123,7 @@ const CONTENT = {
       languageLabel: "語言",
       english: "EN",
       traditionalChinese: "繁中",
+      logIn: "登入",
     },
     hero: {
       badge: "專為 LINE 群組打造",
@@ -130,6 +133,7 @@ const CONTENT = {
         "TravelSync AI 會讀取你的 LINE 群組對話，把零散的討論整理成清楚的旅行看板，幫助整個團隊做決定，全程不用離開 LINE。",
       primaryCta: "加入 LINE",
       secondaryCta: "看看怎麼運作",
+      logInToWebApp: "登入網頁版",
     },
     chat: {
       alice: "有人知道難波附近不錯的飯店嗎？🏨",
@@ -225,6 +229,7 @@ const CONTENT = {
       languageLabel: string;
       english: string;
       traditionalChinese: string;
+      logIn: string;
     };
     hero: {
       badge: string;
@@ -233,6 +238,7 @@ const CONTENT = {
       description: string;
       primaryCta: string;
       secondaryCta: string;
+      logInToWebApp: string;
     };
     chat: {
       alice: string;
@@ -270,7 +276,14 @@ const CONTENT = {
 >;
 
 export default function HomePageClient() {
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>("zh-TW");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved === "en" || saved === "zh-TW") {
+      setLocale(saved);
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -334,7 +347,7 @@ export default function HomePageClient() {
               href="/app"
               className="rounded-full border border-[var(--border)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--secondary)] sm:px-4"
             >
-              Log in
+              {copy.nav.logIn}
             </Link>
           </nav>
         </div>
@@ -366,7 +379,7 @@ export default function HomePageClient() {
                 href="/app"
                 className="inline-flex items-center justify-center rounded-full border border-[var(--primary)] bg-white px-6 py-3 text-sm font-semibold text-[var(--primary)] shadow-sm transition-colors hover:bg-[#f0fdf0] dark:bg-[#0a0a0a] dark:hover:bg-[#111]"
               >
-                Log in to web app
+                {copy.hero.logInToWebApp}
               </Link>
               <a
                 href="#how-it-works"
@@ -505,7 +518,7 @@ export default function HomePageClient() {
                 href="/app"
                 className="inline-flex items-center justify-center rounded-full border border-white/50 px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
               >
-                Log in to web app
+                {copy.hero.logInToWebApp}
               </Link>
             </div>
           </div>
