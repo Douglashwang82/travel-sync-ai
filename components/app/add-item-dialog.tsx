@@ -23,7 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
 import { PlacePicker, type PickedPlace } from "@/components/app/place-picker";
-import type { ItemType } from "@/lib/types";
+import type { ItemKind, ItemType } from "@/lib/types";
 
 const ITEM_TYPE_OPTIONS: { value: ItemType; label: string }[] = [
   { value: "hotel", label: "住宿" },
@@ -33,6 +33,19 @@ const ITEM_TYPE_OPTIONS: { value: ItemType; label: string }[] = [
   { value: "flight", label: "航班" },
   { value: "insurance", label: "保險" },
   { value: "other", label: "其他" },
+];
+
+const ITEM_KIND_OPTIONS: { value: ItemKind; label: string; description: string }[] = [
+  {
+    value: "task",
+    label: "一般事項",
+    description: "不需要群組投票，只是待辦、提醒或已知安排。",
+  },
+  {
+    value: "decision",
+    label: "群組決策",
+    description: "需要大家從多個選項中決定，之後可以開始投票。",
+  },
 ];
 
 export function AddItemDialog({
@@ -48,6 +61,7 @@ export function AddItemDialog({
 }) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<ItemType>("other");
+  const [kind, setKind] = useState<ItemKind>("task");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
   const [place, setPlace] = useState<PickedPlace | null>(null);
@@ -57,6 +71,7 @@ export function AddItemDialog({
   function reset() {
     setTitle("");
     setType("other");
+    setKind("task");
     setDescription("");
     setDeadline("");
     setPlace(null);
@@ -79,6 +94,7 @@ export function AddItemDialog({
           action: "create",
           title: title.trim(),
           itemType: type,
+          itemKind: kind,
           description: description.trim() || undefined,
           deadlineAt: deadline ? new Date(deadline).toISOString() : null,
           place:
@@ -114,7 +130,7 @@ export function AddItemDialog({
         <DialogHeader>
           <DialogTitle>新增旅程項目</DialogTitle>
           <DialogDescription>
-            新增待辦、需要投票的決策，或預訂提醒。項目會先進入待辦欄。
+            新增一般事項或需要群組投票的決策。項目會先進入待辦欄。
           </DialogDescription>
         </DialogHeader>
 
@@ -160,14 +176,34 @@ export function AddItemDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="add-item-deadline">截止時間</Label>
-              <Input
-                id="add-item-deadline"
-                type="datetime-local"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-              />
+              <Label>性質</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as ItemKind)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ITEM_KIND_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            {ITEM_KIND_OPTIONS.find((o) => o.value === kind)?.description}
+          </p>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="add-item-deadline">截止時間</Label>
+            <Input
+              id="add-item-deadline"
+              type="datetime-local"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
           </div>
 
           <div className="space-y-1.5">

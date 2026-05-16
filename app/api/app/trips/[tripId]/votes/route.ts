@@ -64,6 +64,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     .from("trip_items")
     .select("id, title, description, item_type, deadline_at")
     .eq("trip_id", tripId)
+    .eq("item_kind", "decision")
     .eq("stage", "pending")
     .order("deadline_at", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });

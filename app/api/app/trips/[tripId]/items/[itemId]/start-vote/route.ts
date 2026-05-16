@@ -22,8 +22,8 @@ const BodySchema = z.object({
 /**
  * POST /api/app/trips/:tripId/items/:itemId/start-vote
  *
- * Organizer-only. Converts a To-Do item into an active vote:
- *   1. Upgrades item_kind to 'decision' if needed (requires no existing votes).
+ * Organizer-only. Converts a To-Do decision item into an active vote:
+ *   1. Requires item_kind = 'decision'.
  *   2. Inserts the provided options (de-duplicated by name, case-insensitive).
  *   3. Calls startVote() to transition todo → pending with the deadline.
  *
@@ -97,16 +97,10 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   }
 
   if (item.item_kind !== "decision") {
-    const { error: kindErr } = await db
-      .from("trip_items")
-      .update({ item_kind: "decision" })
-      .eq("id", itemId);
-    if (kindErr) {
-      return NextResponse.json(
-        { error: "項目轉為決策失敗", code: "DB_ERROR" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { error: "只有群組決策項目可以開始投票", code: "NOT_DECISION_ITEM" },
+      { status: 422 }
+    );
   }
 
   // Clear any pre-existing options on a to-do item — we control this shape.

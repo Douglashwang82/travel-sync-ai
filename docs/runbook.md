@@ -1,6 +1,6 @@
 # Deployment Runbook — Travel Sync AI
 
-**Stack:** Next.js 16 · Supabase · Vercel · LINE Bot + Web app · Gemini 2.0-flash  
+**Stack:** Next.js 16 · Supabase · Vercel · LINE Bot + Web app · Gemini 2.5 Flash  
 **Target:** Stage 1 — up to 100 users
 
 ---

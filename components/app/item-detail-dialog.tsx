@@ -47,7 +47,7 @@ function toInputLocal(iso: string | null): string {
 }
 
 function stageLabel(stage: TripItem["stage"]): string {
-  if (stage === "pending") return "投票中";
+  if (stage === "pending") return "進行中";
   if (stage === "confirmed") return "已確認";
   return "待辦";
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
 import { Button } from "@/components/ui/button";
-import type { BoardData, TripItem } from "@/lib/types";
+import type { BoardData, ItemStage, TripItem } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 import { BoardColumns } from "@/components/app/board-columns";
 import { ItemDetailDialog } from "@/components/app/item-detail-dialog";
@@ -21,6 +21,8 @@ export function TripBoardView({ tripId }: { tripId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<TripItem | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [movingItemId, setMovingItemId] = useState<string | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -68,9 +70,48 @@ export function TripBoardView({ tripId }: { tripId: string }) {
     );
   }
 
-  const { board, members, role } = data;
+  const viewData: BoardViewData = data;
+  const { board, members, role } = viewData;
   const isOrganizer = role === "organizer";
   const total = board.todo.length + board.pending.length + board.confirmed.length;
+
+  async function handleItemStageChange(item: TripItem, stage: ItemStage) {
+    if (!isOrganizer || item.stage === stage || movingItemId) return;
+
+    const previous = viewData;
+    const optimistic = { ...item, stage };
+    setMoveError(null);
+    setMovingItemId(item.id);
+    setData({
+      ...viewData,
+      board: placeBoardItem(viewData.board, optimistic),
+    });
+
+    try {
+      const updated = await appFetchJson<TripItem>(`/api/app/trips/${tripId}/items`, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "move_stage",
+          itemId: item.id,
+          stage,
+        }),
+      });
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              board: placeBoardItem(current.board, updated),
+            }
+          : current
+      );
+      setSelectedItem((current) => (current?.id === updated.id ? updated : current));
+    } catch (err) {
+      setData(previous);
+      setMoveError(err instanceof Error ? err.message : "Failed to move item");
+    } finally {
+      setMovingItemId(null);
+    }
+  }
 
   return (
     <>
@@ -78,7 +119,7 @@ export function TripBoardView({ tripId }: { tripId: string }) {
         <TabPageHeader
           id="board-page-header"
           title="進階看板"
-          subtitle={`${total} 個項目分布在待辦、投票中與已確認。若想用地圖優先的方式瀏覽，請回到總覽。`}
+          subtitle={`${total} 個項目分布在待辦、進行中與已確認。若想用地圖優先的方式瀏覽，請回到總覽。`}
           actions={
             isOrganizer ? (
               <Button size="sm" onClick={() => setAddOpen(true)}>
@@ -92,7 +133,11 @@ export function TripBoardView({ tripId }: { tripId: string }) {
           board={board}
           members={members}
           onItemClick={setSelectedItem}
+          canMoveItems={isOrganizer}
+          movingItemId={movingItemId}
+          onItemStageChange={(item, stage) => void handleItemStageChange(item, stage)}
         />
+        {moveError && <p className="text-xs text-destructive">{moveError}</p>}
       </div>
 
       <AddItemDialog
@@ -124,4 +169,23 @@ export function TripBoardView({ tripId }: { tripId: string }) {
       />
     </>
   );
+}
+
+function placeBoardItem(board: BoardData, item: TripItem): BoardData {
+  const withoutItem = {
+    todo: board.todo.filter((candidate) => candidate.id !== item.id),
+    pending: board.pending.filter((candidate) => candidate.id !== item.id),
+    confirmed: board.confirmed.filter((candidate) => candidate.id !== item.id),
+  };
+
+  return {
+    ...board,
+    todo: item.stage === "todo" ? [...withoutItem.todo, item] : withoutItem.todo,
+    pending:
+      item.stage === "pending" ? [...withoutItem.pending, item] : withoutItem.pending,
+    confirmed:
+      item.stage === "confirmed"
+        ? [...withoutItem.confirmed, item]
+        : withoutItem.confirmed,
+  };
 }
