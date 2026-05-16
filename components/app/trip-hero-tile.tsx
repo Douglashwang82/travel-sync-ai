@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppLocale } from "@/components/app/app-locale-provider";
+import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
 import type { Trip } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 import {
@@ -27,14 +28,21 @@ const COPY = {
     weekOut: (n: number) => `T-${n}d`,
     going: "going",
     plus: (n: number) => `+${n}`,
-    publish: "Publish itinerary",
+    inviteCta: "Invite trip member",
     openToday: "Open today",
     settle: "Settle expenses",
-    invite: "Invite",
     map: "Open in Maps",
     line: "Open in LINE",
     untitled: "Untitled trip",
     datesTbd: "Dates to be decided",
+    addDestination: "Add destination",
+    addDeparture: "Add departure",
+    departureFrom: "From",
+    destinationTo: "To",
+    addDates: "Add dates",
+    save: "Save",
+    cancel: "Cancel",
+    saving: "Saving…",
   },
   "zh-TW": {
     daysOut: (n: number) => `還有 ${n} 天`,
@@ -45,14 +53,21 @@ const COPY = {
     weekOut: (n: number) => `T-${n}d`,
     going: "一同出發",
     plus: (n: number) => `+${n}`,
-    publish: "發布行程",
+    inviteCta: "邀請旅伴加入",
     openToday: "查看今日",
     settle: "結算費用",
-    invite: "邀請旅伴",
     map: "在地圖開啟",
     line: "在 LINE 開啟",
     untitled: "未命名旅程",
     datesTbd: "日期待定",
+    addDestination: "新增目的地",
+    addDeparture: "新增出發地",
+    departureFrom: "從",
+    destinationTo: "前往",
+    addDates: "新增日期",
+    save: "儲存",
+    cancel: "取消",
+    saving: "儲存中…",
   },
 } as const;
 
@@ -64,6 +79,7 @@ interface HeroProps {
   lineDeepLink: string | null;
   tripId: string;
   onPrimary?: () => void;
+  onTripChange?: (trip: Trip) => void;
 }
 
 export function TripHeroTile(props: HeroProps) {
@@ -153,41 +169,53 @@ function Countdown({ mode, daysToStart, dayIndex, tripLengthDays, copy, size = "
   );
 }
 
-function PrimaryCta({ mode, copy, onClick, href }: { mode: HeroMode; copy: typeof COPY[keyof typeof COPY]; onClick?: () => void; href?: string }) {
-  const label = mode === "in" ? copy.openToday : mode === "post" ? copy.settle : copy.publish;
-  const Element: "a" | "button" = href ? "a" : "button";
+function PrimaryCta({
+  mode,
+  copy,
+  tripId,
+  onClick,
+}: {
+  mode: HeroMode;
+  copy: typeof COPY[keyof typeof COPY];
+  tripId: string;
+  onClick?: () => void;
+}) {
+  if (mode === "in") {
+    return (
+      <button type="button" onClick={onClick} className="btn-tactile">
+        {copy.openToday}
+        <IconArrowUpRight size={16} />
+      </button>
+    );
+  }
+  if (mode === "post") {
+    return (
+      <button type="button" onClick={onClick} className="btn-tactile">
+        {copy.settle}
+        <IconArrowUpRight size={16} />
+      </button>
+    );
+  }
+  // Pre-trip and T-minus: the primary action is to bring more travellers in.
   return (
-    <Element
-      type={Element === "button" ? "button" : undefined}
-      href={href}
-      onClick={onClick}
-      className="btn-tactile"
-    >
-      {label}
+    <Link href={`/app/trips/${tripId}/settings`} className="btn-tactile">
+      {copy.inviteCta}
       <IconArrowUpRight size={16} />
-    </Element>
+    </Link>
   );
 }
 
 function SecondaryActions({
-  tripId,
   trip,
   lineDeepLink,
   copy,
 }: {
-  tripId: string;
   trip: Trip;
   lineDeepLink: string | null;
   copy: typeof COPY[keyof typeof COPY];
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
-      <Link
-        href={`/app/trips/${tripId}/settings`}
-        className="rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-1.5 font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
-      >
-        {copy.invite}
-      </Link>
       {trip.destination_google_maps_url && (
         <a
           href={trip.destination_google_maps_url}
@@ -213,6 +241,258 @@ function SecondaryActions({
   );
 }
 
+// ─── Editable trip details (date / destination / departure) ────────────────
+// Any group member may edit these via PATCH /api/app/trips/[tripId].
+
+interface TripDraft {
+  destinationName: string;
+  departureName: string;
+  startDate: string;
+  endDate: string;
+}
+
+function draftFromTrip(trip: Trip): TripDraft {
+  return {
+    destinationName: trip.destination_name ?? "",
+    departureName: trip.departure_name ?? "",
+    startDate: trip.start_date ?? "",
+    endDate: trip.end_date ?? "",
+  };
+}
+
+function useTripEditor(trip: Trip, tripId: string, onTripChange?: (t: Trip) => void) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<TripDraft>(() => draftFromTrip(trip));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const lastSyncedRef = useRef<Trip>(trip);
+
+  // Keep the draft in sync with the trip prop while not actively editing.
+  useEffect(() => {
+    if (lastSyncedRef.current !== trip && !editing) {
+      setDraft(draftFromTrip(trip));
+      lastSyncedRef.current = trip;
+    }
+  }, [trip, editing]);
+
+  const open = useCallback(() => {
+    setDraft(draftFromTrip(trip));
+    setError(null);
+    setEditing(true);
+  }, [trip]);
+
+  const cancel = useCallback(() => {
+    setDraft(draftFromTrip(trip));
+    setError(null);
+    setEditing(false);
+  }, [trip]);
+
+  const save = useCallback(async () => {
+    setSaving(true);
+    setError(null);
+    const payload: Record<string, unknown> = {};
+    const trimmedDest = draft.destinationName.trim();
+    const trimmedDep = draft.departureName.trim();
+    if (trimmedDest !== (trip.destination_name ?? "")) {
+      payload.destinationName = trimmedDest === "" ? null : trimmedDest;
+    }
+    if (trimmedDep !== (trip.departure_name ?? "")) {
+      payload.departureName = trimmedDep === "" ? null : trimmedDep;
+    }
+    if ((draft.startDate || null) !== trip.start_date) {
+      payload.startDate = draft.startDate || null;
+    }
+    if ((draft.endDate || null) !== trip.end_date) {
+      payload.endDate = draft.endDate || null;
+    }
+    if (Object.keys(payload).length === 0) {
+      setSaving(false);
+      setEditing(false);
+      return;
+    }
+    try {
+      const res = await appFetchJson<{ trip: Trip }>(`/api/app/trips/${tripId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      onTripChange?.(res.trip);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof AppApiFetchError ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }, [draft, trip, tripId, onTripChange]);
+
+  return { editing, draft, setDraft, saving, error, open, cancel, save };
+}
+
+type EditorState = ReturnType<typeof useTripEditor>;
+
+function EditToggle({
+  editor,
+  copy,
+}: {
+  editor: EditorState;
+  copy: typeof COPY[keyof typeof COPY];
+}) {
+  if (editor.editing) return null;
+  return (
+    <button
+      type="button"
+      onClick={editor.open}
+      className="ml-auto rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--text-primary)]"
+      aria-label={copy.save === "Save" ? "Edit trip details" : "編輯旅程"}
+    >
+      {copy.save === "Save" ? "Edit" : "編輯"}
+    </button>
+  );
+}
+
+function EditableDestination({
+  trip,
+  editor,
+  copy,
+  className,
+}: {
+  trip: Trip;
+  editor: EditorState;
+  copy: typeof COPY[keyof typeof COPY];
+  className?: string;
+}) {
+  if (editor.editing) {
+    return (
+      <input
+        type="text"
+        value={editor.draft.destinationName}
+        onChange={(e) =>
+          editor.setDraft((d) => ({ ...d, destinationName: e.target.value }))
+        }
+        placeholder={copy.addDestination}
+        aria-label={copy.addDestination}
+        className={cn(
+          "w-full max-w-full rounded-[var(--radius-input)] border border-[var(--border-hairline)] bg-[var(--surface-sunken)] px-3 py-2 text-display text-[var(--text-primary)] outline-none focus:border-[var(--accent-line)]",
+          className
+        )}
+      />
+    );
+  }
+  return (
+    <h1 className={cn("text-display text-[var(--text-primary)]", className)}>
+      {trip.destination_name ?? copy.untitled}
+    </h1>
+  );
+}
+
+function EditableDateRange({
+  trip,
+  editor,
+  copy,
+  locale,
+}: {
+  trip: Trip;
+  editor: EditorState;
+  copy: typeof COPY[keyof typeof COPY];
+  locale: "en" | "zh-TW";
+}) {
+  if (editor.editing) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="date"
+          value={editor.draft.startDate}
+          onChange={(e) =>
+            editor.setDraft((d) => ({ ...d, startDate: e.target.value }))
+          }
+          aria-label={copy.addDates}
+          className="rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-line)]"
+        />
+        <span className="text-xs text-[var(--text-muted)]">—</span>
+        <input
+          type="date"
+          value={editor.draft.endDate}
+          onChange={(e) =>
+            editor.setDraft((d) => ({ ...d, endDate: e.target.value }))
+          }
+          aria-label={copy.addDates}
+          className="rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-line)]"
+        />
+      </div>
+    );
+  }
+  const range = formatDateRange(trip, locale);
+  return <p className="text-caps">{range === "—" ? copy.addDates : range}</p>;
+}
+
+function EditableDeparture({
+  trip,
+  editor,
+  copy,
+}: {
+  trip: Trip;
+  editor: EditorState;
+  copy: typeof COPY[keyof typeof COPY];
+}) {
+  if (editor.editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-caps text-[var(--text-muted)]">
+          {copy.departureFrom}
+        </span>
+        <input
+          type="text"
+          value={editor.draft.departureName}
+          onChange={(e) =>
+            editor.setDraft((d) => ({ ...d, departureName: e.target.value }))
+          }
+          placeholder={copy.addDeparture}
+          aria-label={copy.addDeparture}
+          className="min-w-0 flex-1 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-line)]"
+        />
+      </div>
+    );
+  }
+  if (!trip.departure_name) return null;
+  return (
+    <p className="text-xs text-[var(--text-muted)]">
+      <IconPin size={12} className="mb-0.5 mr-1 inline-block" />
+      {copy.departureFrom} {trip.departure_name}
+    </p>
+  );
+}
+
+function EditorActions({
+  editor,
+  copy,
+}: {
+  editor: EditorState;
+  copy: typeof COPY[keyof typeof COPY];
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {editor.error && (
+        <span className="text-xs text-[var(--status-blocked)]">{editor.error}</span>
+      )}
+      <button
+        type="button"
+        onClick={editor.cancel}
+        disabled={editor.saving}
+        className="rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] disabled:opacity-50"
+      >
+        {copy.cancel}
+      </button>
+      <button
+        type="button"
+        onClick={() => void editor.save()}
+        disabled={editor.saving}
+        className="btn-tactile"
+      >
+        {editor.saving ? copy.saving : copy.save}
+      </button>
+    </div>
+  );
+}
+
 // ─── Variant: Conservative ──────────────────────────────────────────────────
 // Calm. Editorial type, no mesh. The choice for organizers who want quiet.
 
@@ -222,28 +502,40 @@ function ConservativeHero({
   lineDeepLink,
   tripId,
   onPrimary,
+  onTripChange,
 }: HeroProps) {
   const { locale } = useAppLocale();
   const copy = COPY[locale];
   const mode = useMode(trip);
-  const dateRange = formatDateRange(trip, locale);
   const roster = rosterSentence(members, copy);
+  const editor = useTripEditor(trip, tripId, onTripChange);
 
   return (
     <article className="surface-tile relative flex h-full flex-col gap-6 p-7 sm:p-9">
       <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <IconCalendar size={14} className="text-[var(--text-muted)]" />
-        <p className="text-caps">{dateRange}</p>
+        <EditableDateRange trip={trip} editor={editor} copy={copy} locale={locale} />
+        <EditToggle editor={editor} copy={copy} />
       </header>
-      <h1 className="text-display text-[clamp(2.4rem,5vw,3.6rem)] text-[var(--text-primary)]">
-        {trip.destination_name ?? copy.untitled}
-      </h1>
+      <EditableDestination
+        trip={trip}
+        editor={editor}
+        copy={copy}
+        className="text-[clamp(2.4rem,5vw,3.6rem)]"
+      />
+      <EditableDeparture trip={trip} editor={editor} copy={copy} />
       <p className="text-sm text-[var(--text-secondary)]">{roster}</p>
       <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-2">
         <Countdown {...mode} copy={copy} size="md" />
         <div className="flex items-center gap-3">
-          <SecondaryActions tripId={tripId} trip={trip} lineDeepLink={lineDeepLink} copy={copy} />
-          <PrimaryCta mode={mode.mode} copy={copy} onClick={onPrimary} />
+          {editor.editing ? (
+            <EditorActions editor={editor} copy={copy} />
+          ) : (
+            <>
+              <SecondaryActions trip={trip} lineDeepLink={lineDeepLink} copy={copy} />
+              <PrimaryCta mode={mode.mode} copy={copy} tripId={tripId} onClick={onPrimary} />
+            </>
+          )}
         </div>
       </div>
     </article>
@@ -259,29 +551,35 @@ function BalancedHero({
   lineDeepLink,
   tripId,
   onPrimary,
+  onTripChange,
 }: HeroProps) {
   const { locale } = useAppLocale();
   const copy = COPY[locale];
   const mode = useMode(trip);
-  const dateRange = formatDateRange(trip, locale);
   const roster = rosterSentence(members, copy);
+  const editor = useTripEditor(trip, tripId, onTripChange);
 
   return (
     <article className="surface-tile relative isolate flex h-full flex-col gap-7 overflow-hidden p-7 sm:p-9">
-      <header className="relative flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <p className="text-caps">{dateRange}</p>
-        {trip.destination_formatted_address && (
+      <header className="relative flex flex-wrap items-baseline gap-x-4 gap-y-2">
+        <EditableDateRange trip={trip} editor={editor} copy={copy} locale={locale} />
+        {!editor.editing && trip.destination_formatted_address && (
           <p className="text-xs text-[var(--text-muted)]">
             <IconPin size={12} className="mb-0.5 mr-1 inline-block" />
             {trip.destination_formatted_address}
           </p>
         )}
+        <EditToggle editor={editor} copy={copy} />
       </header>
 
       <div className="relative flex flex-col gap-3">
-        <h1 className="text-display text-[clamp(2.8rem,6.4vw,4.5rem)] text-[var(--text-primary)]">
-          {trip.destination_name ?? copy.untitled}
-        </h1>
+        <EditableDestination
+          trip={trip}
+          editor={editor}
+          copy={copy}
+          className="text-[clamp(2.8rem,6.4vw,4.5rem)]"
+        />
+        <EditableDeparture trip={trip} editor={editor} copy={copy} />
         <p className="text-sm text-[var(--text-secondary)]">
           <IconUsers size={14} className="mr-1.5 inline-block align-[-2px] text-[var(--text-muted)]" />
           {roster}
@@ -291,8 +589,14 @@ function BalancedHero({
       <div className="relative mt-auto flex flex-wrap items-end justify-between gap-4">
         <Countdown {...mode} copy={copy} size="lg" />
         <div className="flex flex-wrap items-center gap-3">
-          <SecondaryActions tripId={tripId} trip={trip} lineDeepLink={lineDeepLink} copy={copy} />
-          <PrimaryCta mode={mode.mode} copy={copy} onClick={onPrimary} />
+          {editor.editing ? (
+            <EditorActions editor={editor} copy={copy} />
+          ) : (
+            <>
+              <SecondaryActions trip={trip} lineDeepLink={lineDeepLink} copy={copy} />
+              <PrimaryCta mode={mode.mode} copy={copy} tripId={tripId} onClick={onPrimary} />
+            </>
+          )}
         </div>
       </div>
     </article>
@@ -309,14 +613,15 @@ function ExpressiveHero({
   lineDeepLink,
   tripId,
   onPrimary,
+  onTripChange,
 }: HeroProps) {
   const { locale } = useAppLocale();
   const copy = COPY[locale];
   const mode = useMode(trip);
-  const dateRange = formatDateRange(trip, locale);
   const roster = rosterSentence(members, copy);
   const avatars = members.slice(0, 5);
   const overflow = Math.max(0, members.length - avatars.length);
+  const editor = useTripEditor(trip, tripId, onTripChange);
 
   return (
     <article className="surface-tile relative isolate flex h-full flex-col gap-7 overflow-hidden p-7 sm:p-10">
@@ -330,15 +635,20 @@ function ExpressiveHero({
         </span>
       </div>
 
-      <header className="relative">
-        <p className="text-caps">{dateRange}</p>
+      <header className="relative flex flex-wrap items-baseline gap-x-4 gap-y-2">
+        <EditableDateRange trip={trip} editor={editor} copy={copy} locale={locale} />
+        <EditToggle editor={editor} copy={copy} />
       </header>
 
       <div className="relative flex flex-col gap-4">
-        <h1 className="text-display text-[clamp(3rem,7.5vw,5.4rem)] leading-[1] text-[var(--text-primary)]">
-          {trip.destination_name ?? copy.untitled}
-        </h1>
-        {trip.title && trip.title !== trip.destination_name && (
+        <EditableDestination
+          trip={trip}
+          editor={editor}
+          copy={copy}
+          className="text-[clamp(3rem,7.5vw,5.4rem)] leading-[1]"
+        />
+        <EditableDeparture trip={trip} editor={editor} copy={copy} />
+        {!editor.editing && trip.title && trip.title !== trip.destination_name && (
           <p className="text-display text-xl italic text-[var(--text-muted)]">
             {trip.title}
           </p>
@@ -377,8 +687,14 @@ function ExpressiveHero({
           />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <SecondaryActions tripId={tripId} trip={trip} lineDeepLink={lineDeepLink} copy={copy} />
-          <PrimaryCta mode={mode.mode} copy={copy} onClick={onPrimary} />
+          {editor.editing ? (
+            <EditorActions editor={editor} copy={copy} />
+          ) : (
+            <>
+              <SecondaryActions trip={trip} lineDeepLink={lineDeepLink} copy={copy} />
+              <PrimaryCta mode={mode.mode} copy={copy} tripId={tripId} onClick={onPrimary} />
+            </>
+          )}
         </div>
       </div>
     </article>
