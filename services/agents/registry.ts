@@ -1,4 +1,4 @@
-import type { AgentDefinition } from "./types";
+import type { AgentDefinition, AgentMode } from "./types";
 import { flightPriceTracker } from "./flight-price-tracker";
 
 const AGENTS: AgentDefinition[] = [flightPriceTracker as AgentDefinition];
@@ -22,6 +22,7 @@ export interface PublicAgent {
   label: string;
   description: string;
   icon: string;
+  mode: AgentMode;
   defaultFrequencyHours: number;
   configFields: AgentDefinition["configFields"];
   defaultConfig: unknown;
@@ -33,6 +34,7 @@ export function publicAgents(): PublicAgent[] {
     label: a.label,
     description: a.description,
     icon: a.icon,
+    mode: a.mode,
     defaultFrequencyHours: a.defaultFrequencyHours,
     configFields: a.configFields,
     defaultConfig: a.defaultConfig,
