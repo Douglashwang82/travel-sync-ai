@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TravelSync AI — Group travel, simplified",
+  title: "TravelSync AI — 多人旅遊規劃，輕鬆搞定",
   description:
-    "AI-powered group travel planning that lives inside LINE. Parse chats, vote on options, split expenses — without leaving your group.",
+    "由 AI 驅動的多人旅遊規劃工具，直接在 LINE 中使用。解析對話、發起投票、分攤費用，全程不用離開群組。",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="zh-TW" className="h-full antialiased">
       <body id="root-body" className="min-h-full flex flex-col">{children}</body>
     </html>
   );
