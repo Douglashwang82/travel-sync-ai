@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { appFetchJson } from "@/lib/app-client";
 import { GridTileError, GridTileSkeleton } from "@/components/app/grids/grid-tile";
 import { ShareLinkDialog } from "@/components/app/grids/share-link-dialog";
+import { SocialEmbed } from "@/components/app/social-embed";
+import { detectSocial } from "@/lib/social/detect";
 import type { ItemType } from "@/lib/types";
 import type { SharedItem } from "@/app/api/app/trips/[tripId]/shared/route";
 
@@ -91,11 +93,15 @@ export function SharedGrid({ tripId }: { tripId: string }) {
 
         {!error && items && items.length > 0 && (
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {items.map((item) => (
-              <li key={item.id}>
-                <SharedCard item={item} />
-              </li>
-            ))}
+            {items.map((item) => {
+              const isSocial =
+                item.bookingUrl != null && detectSocial(item.bookingUrl) != null;
+              return (
+                <li key={item.id} className={isSocial ? "sm:col-span-2" : undefined}>
+                  <SharedCard item={item} />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -104,6 +110,9 @@ export function SharedGrid({ tripId }: { tripId: string }) {
 }
 
 function SharedCard({ item }: { item: SharedItem }) {
+  const social = item.bookingUrl ? detectSocial(item.bookingUrl) : null;
+  if (social) return <SocialCard item={item} url={item.bookingUrl!} />;
+
   const meta: string[] = [];
   if (typeof item.rating === "number") meta.push(`⭐ ${item.rating.toFixed(1)}`);
   if (item.priceLevel) meta.push(item.priceLevel);
@@ -168,6 +177,27 @@ function SharedCard({ item }: { item: SharedItem }) {
     );
   }
   return inner;
+}
+
+function SocialCard({ item, url }: { item: SharedItem; url: string }) {
+  return (
+    <div className="flex h-full flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--surface-base)] p-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 truncate text-sm font-semibold text-[var(--text-primary)]">
+          {item.title}
+        </p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 text-[10px] uppercase tracking-wide text-[var(--text-faint)] hover:text-[var(--text-primary)]"
+        >
+          Open ↗
+        </a>
+      </div>
+      <SocialEmbed url={url} />
+    </div>
+  );
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
