@@ -46,6 +46,7 @@ export function HeroGrid({ tripId }: { tripId: string }) {
       lineDeepLink={null}
       tripId={tripId}
       onPrimary={() => router.push(`/app/trips/${tripId}/publish`)}
+      onTripChange={(trip) => setData((prev) => (prev ? { ...prev, trip } : prev))}
     />
   );
 }

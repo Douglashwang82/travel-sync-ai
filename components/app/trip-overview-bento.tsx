@@ -251,6 +251,14 @@ export function TripOverviewBento({ tripId }: { tripId: string }) {
             lineDeepLink={lineDeepLink}
             tripId={tripId}
             onPrimary={() => router.push(`/app/trips/${tripId}/publish`)}
+            onTripChange={(nextTrip) => {
+              setData((prev) => {
+                if (!prev) return prev;
+                const next = { ...prev, trip: nextTrip };
+                writeAppBrowserCache(OVERVIEW_CACHE_BUCKET, tripId, next);
+                return next;
+              });
+            }}
           />
         </div>
 

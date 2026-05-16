@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppOrganizer, requireAppTripAccess } from "@/lib/app-server";
+import { requireAppTripAccess } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
 
 const TripPatchSchema = z
   .object({
     title: z.string().min(1).max(200).nullable().optional(),
     destinationName: z.string().min(1).max(200).nullable().optional(),
+    departureName: z.string().min(1).max(200).nullable().optional(),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     status: z.enum(["draft", "active", "completed", "cancelled"]).optional(),
@@ -44,10 +45,13 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   });
 }
 
-/** PATCH /api/app/trips/:tripId — organizer-only edits to title, dates, destination, status. */
+/**
+ * PATCH /api/app/trips/:tripId — edits to title, dates, destination, departure, status.
+ * Any trip member (organizer or member) may edit. Status changes still flow through here.
+ */
 export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppOrganizer(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   let body: unknown;
@@ -71,6 +75,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   const patch: Record<string, unknown> = {};
   if (parsed.data.title !== undefined) patch.title = parsed.data.title;
   if (parsed.data.destinationName !== undefined) patch.destination_name = parsed.data.destinationName;
+  if (parsed.data.departureName !== undefined) patch.departure_name = parsed.data.departureName;
   if (parsed.data.startDate !== undefined) patch.start_date = parsed.data.startDate;
   if (parsed.data.endDate !== undefined) patch.end_date = parsed.data.endDate;
   if (parsed.data.status !== undefined) patch.status = parsed.data.status;
