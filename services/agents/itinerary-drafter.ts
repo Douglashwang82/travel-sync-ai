@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { generateJson, GeminiUnavailableError } from "@/lib/gemini";
+import { createItem } from "@/services/trip-state";
+import { pushAgentAck } from "@/services/notifications/agent-ack";
 import type { AgentDefinition, AgentRunContext, AgentRunResult } from "./types";
 
 const ConfigSchema = z.object({
@@ -170,10 +172,65 @@ function normalize(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/**
+ * When autonomy is `auto_apply_with_undo` or `auto_apply`, also promote each
+ * fresh suggestion to a `trip_items` row tagged with provenance. Dismissing
+ * the corresponding ghost card in the AI Updates tile is the undo path —
+ * the item soft-disappears from the lane; a future API can hard-delete it.
+ */
+async function autoApplyToItems(
+  tripId: string,
+  runId: string,
+  config: DrafterConfig,
+  days: DraftedDay[],
+): Promise<number> {
+  let created = 0;
+  for (const day of days) {
+    for (const s of day.suggestions) {
+      const itemType = itemTypeFor(s.category);
+      const title = `${day.title}: ${s.text}`;
+      const res = await createItem({
+        tripId,
+        title,
+        itemType,
+        source: "ai",
+        sourceAgent: AGENT_KEY,
+        sourceRunId: runId,
+        sourceInputs: { date: day.date, vibe: config.vibe, originalCategory: s.category },
+      });
+      if (res.ok) created++;
+    }
+  }
+  return created;
+}
+
+function itemTypeFor(raw: string): "activity" | "hotel" | "restaurant" | "other" {
+  const v = raw.toLowerCase();
+  if (v.includes("hotel") || v.includes("stay")) return "hotel";
+  if (v.includes("restaurant") || v.includes("food") || v.includes("eat")) return "restaurant";
+  if (v.includes("activity") || v.includes("see") || v.includes("visit")) return "activity";
+  return "other";
+}
+
 async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
   const config = ConfigSchema.parse(ctx.config);
   const draft = await draftWithLLM(config);
   const persisted = await persistAsIdeas(ctx.tripId, ctx.customGridId, config, draft.days);
+
+  let itemsCreated = 0;
+  if (ctx.autonomy !== "propose_only" && persisted.created > 0) {
+    itemsCreated = await autoApplyToItems(ctx.tripId, ctx.customGridId, config, draft.days);
+    if (itemsCreated > 0) {
+      const msg = `🤖 Itinerary drafter added ${itemsCreated} new ${itemsCreated === 1 ? "activity" : "activities"} to the To-Do board for ${config.destination}. Open the app to review.`;
+      await pushAgentAck(ctx.tripId, msg);
+    }
+  } else if (persisted.created > 0 && ctx.autonomy === "propose_only") {
+    // Even in propose_only mode, a one-line nudge to the group is useful so
+    // members know to glance at Ideas. Keep this opt-out for the future if it
+    // proves noisy.
+    const msg = `✦ Itinerary drafter posted ${persisted.created} new suggestion${persisted.created === 1 ? "" : "s"} in Ideas for ${config.destination}.`;
+    await pushAgentAck(ctx.tripId, msg);
+  }
 
   return {
     outputKind: "list",
@@ -184,6 +241,8 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
       overview: draft.overview,
       created: persisted.created,
       skipped: persisted.skipped,
+      itemsCreated,
+      autonomy: ctx.autonomy,
       checkedAt: new Date().toISOString(),
     },
   };

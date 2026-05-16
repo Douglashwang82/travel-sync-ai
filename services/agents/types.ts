@@ -20,10 +20,19 @@ export type AgentOutputKind =
  */
 export type AgentMode = "monitor" | "propose" | "assist";
 
+/**
+ * Per-grid trust dial. Controls whether a `propose`-mode agent only writes
+ * to the ghost lane (`propose_only`, default) or also applies its proposals
+ * to committed state. `monitor`-mode agents ignore this — they have nothing
+ * to apply.
+ */
+export type AgentAutonomy = "propose_only" | "auto_apply_with_undo" | "auto_apply";
+
 export interface AgentRunContext {
   tripId: string;
   customGridId: string;
   config: unknown;
+  autonomy: AgentAutonomy;
 }
 
 export interface AgentRunResult {

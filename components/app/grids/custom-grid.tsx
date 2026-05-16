@@ -70,6 +70,9 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
               ? `Last run ${formatRelative(grid.lastRunAt)}`
               : "Not yet run"}
           </div>
+          <div className="mt-1">
+            <AutonomyChip tripId={tripId} grid={grid} onChange={onChange} />
+          </div>
         </div>
         <div className="flex shrink-0 gap-1">
           <button
@@ -216,6 +219,68 @@ function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}h ${m}m`;
+}
+
+const AUTONOMY_LABEL: Record<CustomGridData["autonomy"], string> = {
+  propose_only: "Propose only",
+  auto_apply_with_undo: "Auto + undo",
+  auto_apply: "Auto",
+};
+
+const AUTONOMY_NEXT: Record<CustomGridData["autonomy"], CustomGridData["autonomy"]> = {
+  propose_only: "auto_apply_with_undo",
+  auto_apply_with_undo: "auto_apply",
+  auto_apply: "propose_only",
+};
+
+/**
+ * Inline cycle button for the autonomy dial. Click cycles through the three
+ * levels and PATCHes the row. Best-effort — on failure we revert locally and
+ * let the user retry. The chip is hidden for monitor-mode agents (flight,
+ * weather, chat_digest) because they have no proposals to apply.
+ */
+function AutonomyChip({
+  tripId,
+  grid,
+  onChange,
+}: {
+  tripId: string;
+  grid: CustomGridData;
+  onChange: (next: CustomGridData) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  // Only propose-mode agents act on autonomy. Hide the chip for the others.
+  if (grid.agentType !== "itinerary_drafter") return null;
+
+  async function cycle() {
+    const next = AUTONOMY_NEXT[grid.autonomy];
+    const prev = grid.autonomy;
+    setSaving(true);
+    onChange({ ...grid, autonomy: next });
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/custom-grids/${grid.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ autonomy: next }),
+      });
+    } catch {
+      onChange({ ...grid, autonomy: prev });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={saving}
+      onClick={cycle}
+      className="rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--accent-line)] disabled:opacity-50"
+      title="Click to change autonomy"
+    >
+      ✦ {AUTONOMY_LABEL[grid.autonomy]}
+    </button>
+  );
 }
 
 interface DayForecast {

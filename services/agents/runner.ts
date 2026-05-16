@@ -2,6 +2,8 @@ import { createAdminClient } from "@/lib/db";
 import { captureError } from "@/lib/monitoring";
 import { getAgent } from "./registry";
 
+import type { AgentAutonomy } from "./types";
+
 export interface CustomGridRow {
   id: string;
   trip_id: string;
@@ -9,6 +11,7 @@ export interface CustomGridRow {
   config: unknown;
   frequency_hours: number;
   consecutive_failures: number;
+  autonomy: AgentAutonomy;
 }
 
 export type RunOutcome =
@@ -62,6 +65,7 @@ export async function runCustomGrid(grid: CustomGridRow): Promise<RunOutcome> {
       tripId: grid.trip_id,
       customGridId: grid.id,
       config: grid.config,
+      autonomy: grid.autonomy,
     });
     const finishedAt = new Date();
 

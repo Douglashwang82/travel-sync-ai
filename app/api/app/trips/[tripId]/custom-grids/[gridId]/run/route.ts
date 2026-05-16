@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const db = createAdminClient();
   const { data, error } = await db
     .from("custom_grids")
-    .select("id, trip_id, agent_type, config, frequency_hours, consecutive_failures")
+    .select("id, trip_id, agent_type, config, frequency_hours, consecutive_failures, autonomy")
     .eq("id", gridId)
     .eq("trip_id", tripId)
     .single();
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const { data: updated } = await db
     .from("custom_grids")
     .select(
-      "id, trip_id, agent_type, title, config, is_active, frequency_hours, next_run_at, last_run_at, last_status, last_output, last_error, created_at",
+      "id, trip_id, agent_type, title, config, is_active, frequency_hours, next_run_at, last_run_at, last_status, last_output, last_error, created_at, autonomy",
     )
     .eq("id", gridId)
     .single();
