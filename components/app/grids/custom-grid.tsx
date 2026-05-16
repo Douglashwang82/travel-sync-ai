@@ -125,6 +125,14 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
       {hasRun && grid.agentType === "packing_suggester" && (
         <PackingSuggesterOutput tripId={tripId} output={output as Record<string, unknown>} />
       )}
+
+      {hasRun && grid.agentType === "hotel_price_watch" && (
+        <HotelPriceOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "consensus_radar" && (
+        <ConsensusRadarOutput output={output as Record<string, unknown>} />
+      )}
     </div>
   );
 }
@@ -538,6 +546,146 @@ function PackingSuggesterOutput({
       >
         Open Pack ↗
       </a>
+    </div>
+  );
+}
+
+function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
+  const currency = (output.currency as string) ?? "USD";
+  const perNight = output.cheapestPricePerNight as number;
+  const total = output.cheapestTotal as number;
+  const nights = output.nights as number;
+  const name = output.cheapestName as string;
+  const area = output.cheapestArea as string;
+  const rating = output.cheapestRating as number;
+  const city = output.city as string;
+  const checkIn = output.checkIn as string;
+  const checkOut = output.checkOut as string;
+  const budgetTotal = output.budgetTotal as number | null;
+  const underBudget = output.underBudget as boolean | null;
+  const bookingUrl = output.bookingUrl as string;
+  const summary = output.summary as string;
+  const quotes =
+    (output.quotes as Array<{ name: string; pricePerNight: number; area: string; rating: number }>) ?? [];
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {city} · {checkIn} → {checkOut} · {nights}n
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="text-3xl font-semibold text-[var(--text-primary)]">
+            {currency} {perNight}
+          </span>
+          <span className="text-xs text-[var(--text-muted)]">/ night</span>
+          {budgetTotal != null && (
+            <span
+              className={
+                underBudget
+                  ? "rounded-full bg-[var(--status-ok-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-ok)]"
+                  : "rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]"
+              }
+            >
+              {underBudget ? "Under budget" : `Over ${currency} ${budgetTotal}`}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 text-xs text-[var(--text-muted)]">
+          {name} · {area} · {rating}★ · Total {currency} {total}
+        </div>
+      </div>
+
+      {summary && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+
+      {quotes.length > 1 && (
+        <div className="mt-auto">
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Other options
+          </div>
+          <ul className="mt-1 space-y-1 text-xs">
+            {quotes
+              .slice()
+              .sort((a, b) => a.pricePerNight - b.pricePerNight)
+              .slice(1, 4)
+              .map((q, i) => (
+                <li
+                  key={`${q.name}-${i}`}
+                  className="flex items-center justify-between text-[var(--text-muted)]"
+                >
+                  <span className="truncate">
+                    {q.name} · {q.area}
+                  </span>
+                  <span>
+                    {currency} {q.pricePerNight} · {q.rating}★
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+
+      {bookingUrl && (
+        <a
+          href={bookingUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
+        >
+          Book ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+function ConsensusRadarOutput({ output }: { output: Record<string, unknown> }) {
+  const summary = (output.summary as string) ?? "";
+  const candidates =
+    (output.candidates as Array<{
+      topic: string;
+      leaningOption: string;
+      confidence: number;
+      rationale: string;
+    }>) ?? [];
+  const usedDigest = !!output.usedDigest;
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          Soft consensus{usedDigest ? " · reading digest" : ""}
+        </div>
+        {summary && (
+          <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+        )}
+      </div>
+
+      {candidates.length > 0 && (
+        <ul className="space-y-2 overflow-y-auto pr-1">
+          {candidates.map((c, i) => (
+            <li
+              key={`${c.topic}-${i}`}
+              className="rounded-md border border-[var(--border-hairline)] px-2.5 py-2"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-[var(--text-primary)]">{c.topic}</span>
+                <span className="rounded-full bg-[var(--accent-line-soft)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--accent-line)]">
+                  {Math.round(c.confidence * 100)}%
+                </span>
+              </div>
+              <div className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                Leaning: <strong>{c.leaningOption}</strong>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+                {c.rationale}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

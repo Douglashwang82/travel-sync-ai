@@ -4,6 +4,8 @@ import { weatherForecast } from "./weather-forecast";
 import { chatDigest } from "./chat-digest";
 import { itineraryDrafter } from "./itinerary-drafter";
 import { packingSuggester } from "./packing-suggester";
+import { hotelPriceWatch } from "./hotel-price-watch";
+import { consensusRadar } from "./consensus-radar";
 
 const AGENTS: AgentDefinition[] = [
   flightPriceTracker as AgentDefinition,
@@ -11,6 +13,8 @@ const AGENTS: AgentDefinition[] = [
   chatDigest as AgentDefinition,
   itineraryDrafter as AgentDefinition,
   packingSuggester as AgentDefinition,
+  hotelPriceWatch as AgentDefinition,
+  consensusRadar as AgentDefinition,
 ];
 
 const AGENT_MAP = new Map(AGENTS.map((a) => [a.type, a]));
