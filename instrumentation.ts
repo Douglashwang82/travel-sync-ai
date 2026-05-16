@@ -8,7 +8,7 @@
 // API route and background job monitoring.
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
+  if (process.env.NEXT_RUNTIME === "nodejs" && process.env.SENTRY_DSN) {
     await import("./sentry.server.config");
   }
   // Edge Runtime: @sentry/node is Node.js-only — skip for edge functions.

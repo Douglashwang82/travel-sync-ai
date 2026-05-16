@@ -9,7 +9,7 @@ function getClient(): GoogleGenAI {
   return _client;
 }
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash";
 
 // ─── Circuit Breaker ──────────────────────────────────────────────────────────
 // Prevents hammering a degraded Gemini API. State resets on cold start, which

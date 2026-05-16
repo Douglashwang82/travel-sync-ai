@@ -123,6 +123,7 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
 
   const { votes, memberCount, members, todo, role, currentUserId } = state;
   const isOrganizer = role === "organizer";
+  const votableTodo = todo.filter((item) => item.item_kind === "decision");
 
   return (
     <div className="space-y-6">
@@ -174,17 +175,17 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
             subtitle="將待辦項目轉成群組決策，加入至少 2 個選項與截止時間。"
             trailing={
               <span className="text-mono text-[11px] text-[var(--text-muted)]">
-                {todo.length} 個待辦項目
+                {votableTodo.length} 個可投票項目
               </span>
             }
           />
-          {todo.length === 0 ? (
+          {votableTodo.length === 0 ? (
             <p className="mt-4 text-xs italic text-[var(--text-muted)]">
-              目前沒有可投票的待辦項目。請先從總覽新增一個。
+              目前沒有可投票的群組決策。請先從總覽新增一個群組決策。
             </p>
           ) : (
             <ul className="mt-4 divide-y divide-[var(--border-hairline)]">
-              {todo.map((item) => (
+              {votableTodo.map((item) => (
                 <li
                   key={item.id}
                   className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
@@ -215,7 +216,9 @@ export function TripVotesClient({ tripId }: { tripId: string }) {
         <StartVoteDialog
           tripId={tripId}
           itemId={startItemId}
-          itemTitle={todo.find((t) => t.id === startItemId)?.title ?? "這個項目"}
+          itemTitle={
+            votableTodo.find((t) => t.id === startItemId)?.title ?? "這個項目"
+          }
           onClose={() => setStartItemId(null)}
           onStarted={() => {
             setStartItemId(null);

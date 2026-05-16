@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db";
 import { requireAppTripAccess } from "@/lib/app-server";
 import { runCustomGrid, type CustomGridRow } from "@/services/agents/runner";
+import { rowToGrid } from "@/app/api/app/trips/[tripId]/custom-grids/route";
 
 type RouteContext = { params: Promise<{ tripId: string; gridId: string }> };
 
@@ -49,5 +50,5 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     .eq("id", gridId)
     .single();
 
-  return NextResponse.json({ grid: updated, outcome });
+  return NextResponse.json({ grid: updated ? rowToGrid(updated as Record<string, unknown>) : null, outcome });
 }

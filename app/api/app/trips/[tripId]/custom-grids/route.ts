@@ -29,7 +29,7 @@ export interface CustomGrid {
   createdAt: string;
 }
 
-function rowToGrid(row: Record<string, unknown>): CustomGrid {
+export function rowToGrid(row: Record<string, unknown>): CustomGrid {
   return {
     id: row.id as string,
     tripId: row.trip_id as string,

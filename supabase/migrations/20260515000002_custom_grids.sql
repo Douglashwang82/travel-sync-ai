@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- TravelSync AI — Custom Bento Grids + AI Agents
--- Migration: 20260515000000_custom_grids
+-- Migration: 20260515000002_custom_grids
 --
 -- Lets a trip member add a custom bento tile backed by a "predefined agent".
 -- Each grid stores: the agent type (registry key), per-grid config (JSON
@@ -15,15 +15,20 @@
 -- `next_run_at`; a cron at /api/cron/agent-grids picks up due rows.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create type custom_grid_run_status as enum (
-  'pending',
-  'running',
-  'success',
-  'failed'
-);
+do $$
+begin
+  create type custom_grid_run_status as enum (
+    'pending',
+    'running',
+    'success',
+    'failed'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
 -- ─── custom_grids ────────────────────────────────────────────────────────────
-create table custom_grids (
+create table if not exists custom_grids (
   id                 uuid primary key default gen_random_uuid(),
   trip_id            uuid not null references trips (id) on delete cascade,
   created_by         uuid not null references app_users (id) on delete cascade,
@@ -42,21 +47,27 @@ create table custom_grids (
   updated_at         timestamptz not null default now()
 );
 
-create index custom_grids_trip_idx on custom_grids (trip_id);
-create index custom_grids_due_idx on custom_grids (is_active, next_run_at)
+create index if not exists custom_grids_trip_idx on custom_grids (trip_id);
+create index if not exists custom_grids_due_idx on custom_grids (is_active, next_run_at)
   where is_active = true;
 
+drop trigger if exists custom_grids_updated_at on custom_grids;
 create trigger custom_grids_updated_at
   before update on custom_grids
   for each row execute function update_updated_at_column();
 
 alter table custom_grids enable row level security;
-create policy "no anon access" on custom_grids for all to anon using (false);
+do $$
+begin
+  create policy "no anon access" on custom_grids for all to anon using (false);
+exception
+  when duplicate_object then null;
+end $$;
 
 -- ─── custom_grid_runs ────────────────────────────────────────────────────────
 -- Per-run history. We keep these for observability and to enable trend lines
 -- (e.g. "flight price over the last 30 days").
-create table custom_grid_runs (
+create table if not exists custom_grid_runs (
   id                 uuid primary key default gen_random_uuid(),
   custom_grid_id     uuid not null references custom_grids (id) on delete cascade,
   status             custom_grid_run_status not null,
@@ -67,5 +78,5 @@ create table custom_grid_runs (
   finished_at        timestamptz
 );
 
-create index custom_grid_runs_grid_started_idx
+create index if not exists custom_grid_runs_grid_started_idx
   on custom_grid_runs (custom_grid_id, started_at desc);
