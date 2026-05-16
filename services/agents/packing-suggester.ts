@@ -50,18 +50,18 @@ function fallbackSuggestions(
   weather: WeatherSnapshot | null,
 ): { summary: string; items: Suggestion[] } {
   const base: Suggestion[] = [
-    { label: "Passport", category: "documents" },
-    { label: "Toothbrush + toothpaste", category: "toiletries" },
-    { label: "Phone charger", category: "electronics" },
-    { label: "Underwear × " + Math.max(3, config.days), category: "clothing" },
-    { label: "Pyjamas", category: "clothing" },
+    { label: "護照", category: "documents" },
+    { label: "牙刷與牙膏", category: "toiletries" },
+    { label: "手機充電器", category: "electronics" },
+    { label: "內衣褲 × " + Math.max(3, config.days), category: "clothing" },
+    { label: "睡衣", category: "clothing" },
   ];
-  if (weather?.willRain) base.push({ label: "Compact umbrella", category: "general" });
-  if (weather && weather.coldest <= 5) base.push({ label: "Warm jacket", category: "clothing" });
-  if (weather && weather.hottest >= 28) base.push({ label: "Sunscreen", category: "toiletries" });
+  if (weather?.willRain) base.push({ label: "折疊雨傘", category: "general" });
+  if (weather && weather.coldest <= 5) base.push({ label: "保暖外套", category: "clothing" });
+  if (weather && weather.hottest >= 28) base.push({ label: "防曬乳", category: "toiletries" });
 
   return {
-    summary: `Generic ${config.tripType} packing list (Gemini unavailable).`,
+    summary: `${config.tripType} 行程的通用打包清單(無法連線 Gemini)。`,
     items: base,
   };
 }
@@ -97,14 +97,15 @@ async function suggestWithLLM(
   try {
     const raw = await generateJson<unknown>(
       [
-        `You are packing for a ${config.days}-day ${config.tripType} trip${weather ? ` in ${weather.location}` : ""}.`,
+        `你正在為一趟 ${config.days} 天的「${config.tripType}」旅程打包${weather ? `,目的地是 ${weather.location}` : ""}。`,
         weather
-          ? `Forecast: highs around ${weather.hottest}°C, lows ${weather.coldest}°C. Rain on ${weather.rainyDates.length} day(s).`
-          : "No weather data available.",
-        config.notes ? `Traveler notes: ${config.notes}` : "",
-        "Produce strict JSON: { summary: string, items: [{ label: string, category: 'documents'|'clothing'|'toiletries'|'electronics'|'safety'|'general' }] }.",
-        "Cap items at ~20. Be specific (\"3 t-shirts\" not \"shirts\"). Skip obvious universals like 'wallet'.",
-        "Adjust quantities to the trip length. If weather is cold, include layers. If rain, include rain gear.",
+          ? `天氣預報:最高溫約 ${weather.hottest}°C,最低溫 ${weather.coldest}°C,共 ${weather.rainyDates.length} 天可能下雨。`
+          : "目前沒有天氣資料。",
+        config.notes ? `旅客備註:${config.notes}` : "",
+        "請輸出嚴格 JSON:{ summary: string, items: [{ label: string, category: 'documents'|'clothing'|'toiletries'|'electronics'|'safety'|'general' }] }。",
+        "所有顯示文字(summary、label)請使用繁體中文。",
+        "項目數上限約 20。請寫得具體(例如「T恤 3 件」而非「衣服」),不要列出明顯的萬用物品(如「錢包」)。",
+        "請依旅程天數調整數量。天氣冷請加入保暖層,會下雨則加入雨具。",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -186,7 +187,7 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
     if (created > 0) {
       await pushAgentAck(
         ctx.tripId,
-        `🤖 Packing suggester added ${created} item${created === 1 ? "" : "s"} to the shared pack list.`,
+        `🤖 打包小幫手已新增 ${created} 項物品到共享打包清單。`,
       );
     }
   }
@@ -207,9 +208,9 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
 export const packingSuggester: AgentDefinition<SuggesterConfig> = {
   type: AGENT_KEY,
-  label: "Packing suggester",
+  label: "打包小幫手",
   description:
-    "Builds a packing list tailored to your trip. Reads the Weather forecast tile (if present) to add layers or rain gear.",
+    "依旅程量身打造一份打包清單。若有「天氣預報」格子,會自動加入保暖層或雨具。",
   icon: "🧳",
   mode: "propose",
   defaultFrequencyHours: 24 * 7,
@@ -219,19 +220,19 @@ export const packingSuggester: AgentDefinition<SuggesterConfig> = {
   configFields: [
     {
       name: "tripType",
-      label: "Trip type",
+      label: "旅程類型",
       type: "select",
       options: [
-        { value: "leisure", label: "Leisure" },
-        { value: "business", label: "Business" },
-        { value: "adventure", label: "Adventure" },
-        { value: "beach", label: "Beach" },
-        { value: "city", label: "City" },
-        { value: "ski", label: "Ski / snow" },
+        { value: "leisure", label: "休閒度假" },
+        { value: "business", label: "商務出差" },
+        { value: "adventure", label: "冒險探險" },
+        { value: "beach", label: "海邊度假" },
+        { value: "city", label: "都市旅遊" },
+        { value: "ski", label: "滑雪/雪地" },
       ],
     },
-    { name: "days", label: "Number of days", type: "number", placeholder: "5", min: 1, max: 60 },
-    { name: "notes", label: "Notes (optional)", type: "text", placeholder: "Two kids, light packers" },
+    { name: "days", label: "天數", type: "number", placeholder: "5", min: 1, max: 60 },
+    { name: "notes", label: "備註(選填)", type: "text", placeholder: "兩位小孩,輕裝出行" },
   ],
   run,
 };

@@ -41,7 +41,7 @@ export function GhostLane({
       )}
     >
       <header className="mb-2 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-        <span className="font-semibold">{label ?? "AI suggestions"}</span>
+        <span className="font-semibold">{label ?? "AI 建議"}</span>
         {hint && <span className="truncate">{hint}</span>}
       </header>
       <ul className="space-y-2">{children}</ul>
@@ -157,7 +157,7 @@ interface GhostCopy {
 }
 
 const DEFAULT_COPY: GhostCopy = {
-  confirm: "Confirm",
-  edit: "Edit",
-  dismiss: "Dismiss",
+  confirm: "確認",
+  edit: "編輯",
+  dismiss: "忽略",
 };

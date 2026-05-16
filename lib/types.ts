@@ -97,6 +97,7 @@ export interface Trip {
   destination_photo_name: string | null;
   destination_timezone: string | null;
   destination_source_last_synced_at: string | null;
+  departure_name: string | null;
   start_date: string | null;
   end_date: string | null;
   status: TripStatus;

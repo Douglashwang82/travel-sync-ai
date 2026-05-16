@@ -70,12 +70,12 @@ async function summarize(config: WeatherConfig, days: DayForecast[]): Promise<st
   const totalRainy = rainy.length;
   const fallback =
     totalRainy === 0
-      ? `Clear stretch ahead in ${config.location} — no rain forecast in the next ${days.length} days.`
-      : `Rain expected on ${totalRainy}/${days.length} days in ${config.location}. Heaviest on ${rainy[0]!.date} (${rainy[0]!.condition}, ${rainy[0]!.precipChance}%).`;
+      ? `${config.location} 接下來 ${days.length} 天天氣晴朗,預測沒有下雨。`
+      : `${config.location} 接下來 ${days.length} 天有 ${totalRainy} 天會下雨,${rainy[0]!.date} 最明顯(${rainy[0]!.condition},降雨機率 ${rainy[0]!.precipChance}%)。`;
 
   try {
     const text = await generateText(
-      "You are a concise travel weather assistant. Given a JSON forecast, write 1–2 short sentences highlighting whether the trip will be sunny or rainy and which day stands out (best or worst). No emojis. No greetings.",
+      "你是一位簡潔的旅行天氣助理。請根據 JSON 格式的天氣預報,用 1-2 句繁體中文簡短指出旅程是晴是雨,以及哪一天特別好或特別糟。不要使用表情符號,也不要寒暄。",
       JSON.stringify({ location: config.location, days }),
     );
     return text.trim() || fallback;
@@ -107,9 +107,9 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
 export const weatherForecast: AgentDefinition<WeatherConfig> = {
   type: "weather_forecast",
-  label: "Weather forecast",
+  label: "天氣預報",
   description:
-    "Watches the forecast for your destination across the trip dates and flags rainy days.",
+    "監看旅程目的地在出發期間的天氣預報,並標示可能下雨的日子。",
   icon: "⛅",
   mode: "monitor",
   defaultFrequencyHours: 12,
@@ -121,16 +121,16 @@ export const weatherForecast: AgentDefinition<WeatherConfig> = {
     units: "c",
   } as WeatherConfig,
   configFields: [
-    { name: "location", label: "Destination", type: "text", placeholder: "Kyoto, Japan", required: true },
-    { name: "startDate", label: "Start date", type: "date", required: true },
-    { name: "days", label: "Days to forecast", type: "number", placeholder: "7", min: 1, max: 14 },
+    { name: "location", label: "目的地", type: "text", placeholder: "京都,日本", required: true },
+    { name: "startDate", label: "開始日期", type: "date", required: true },
+    { name: "days", label: "預報天數", type: "number", placeholder: "7", min: 1, max: 14 },
     {
       name: "units",
-      label: "Units",
+      label: "溫度單位",
       type: "select",
       options: [
-        { value: "c", label: "Celsius" },
-        { value: "f", label: "Fahrenheit" },
+        { value: "c", label: "攝氏" },
+        { value: "f", label: "華氏" },
       ],
     },
   ],

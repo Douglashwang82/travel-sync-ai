@@ -60,10 +60,10 @@ async function summarize(
   totalCheapest: number,
 ): Promise<string> {
   const budgetTotal = config.budgetPerNight ? config.budgetPerNight * nightsBetween(config.checkIn, config.checkOut) : null;
-  const fallback = `Cheapest: ${config.currency} ${cheapest.pricePerNight}/night at ${cheapest.name} (${cheapest.area}, ${cheapest.rating}★). Total ${config.currency} ${totalCheapest}.`;
+  const fallback = `最便宜:${cheapest.name}(${cheapest.area},${cheapest.rating}★),每晚 ${config.currency} ${cheapest.pricePerNight},總計 ${config.currency} ${totalCheapest}。`;
   try {
     const text = await generateText(
-      "You are a concise travel-deals assistant. Given hotel quotes in JSON, write 1-2 short sentences naming the cheapest option, the area, the rating, and whether the total beats the user's budget if one is provided. No emojis. No greetings.",
+      "你是一位簡潔的旅遊特惠助理。請根據 JSON 格式的飯店報價,用 1-2 句繁體中文短句點出最便宜的飯店、所在區域、評分,以及若使用者設定預算時是否在預算內。不要使用表情符號,也不要寒暄。",
       JSON.stringify({ config, cheapest, totalCheapest, budgetTotal }),
     );
     return text.trim() || fallback;
@@ -108,9 +108,9 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
 export const hotelPriceWatch: AgentDefinition<HotelConfig> = {
   type: "hotel_price_watch",
-  label: "Hotel price watch",
+  label: "飯店價格追蹤",
   description:
-    "Watches hotel prices for a city + date range, and flags the cheapest option (optionally vs. a per-night budget).",
+    "監看指定城市與入住期間的飯店價格,並標示最便宜的選項(可選擇與每晚預算比對)。",
   icon: "🏨",
   mode: "monitor",
   defaultFrequencyHours: 24,
@@ -123,14 +123,14 @@ export const hotelPriceWatch: AgentDefinition<HotelConfig> = {
     currency: "USD",
   } as HotelConfig,
   configFields: [
-    { name: "city", label: "City", type: "text", placeholder: "Tokyo", required: true },
-    { name: "checkIn", label: "Check-in", type: "date", required: true },
-    { name: "checkOut", label: "Check-out", type: "date", required: true },
-    { name: "guests", label: "Guests", type: "number", placeholder: "2", min: 1, max: 10 },
-    { name: "budgetPerNight", label: "Budget per night (optional)", type: "number", placeholder: "200", min: 1 },
+    { name: "city", label: "城市", type: "text", placeholder: "東京", required: true },
+    { name: "checkIn", label: "入住日期", type: "date", required: true },
+    { name: "checkOut", label: "退房日期", type: "date", required: true },
+    { name: "guests", label: "入住人數", type: "number", placeholder: "2", min: 1, max: 10 },
+    { name: "budgetPerNight", label: "每晚預算(選填)", type: "number", placeholder: "200", min: 1 },
     {
       name: "currency",
-      label: "Currency",
+      label: "幣別",
       type: "select",
       options: [
         { value: "USD", label: "USD" },

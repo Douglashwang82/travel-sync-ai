@@ -50,10 +50,10 @@ async function fetchFlightQuotes(config: FlightConfig): Promise<FlightQuote[]> {
 
 async function summarizeQuotes(config: FlightConfig, quotes: FlightQuote[]): Promise<string> {
   const cheapest = quotes.reduce((a, b) => (a.price < b.price ? a : b));
-  const fallback = `Cheapest today: ${config.currency} ${cheapest.price} on ${cheapest.airline} (${cheapest.stops === 0 ? "direct" : `${cheapest.stops} stop`}).`;
+  const fallback = `今日最低票價:${config.currency} ${cheapest.price} 由 ${cheapest.airline}(${cheapest.stops === 0 ? "直飛" : `轉機 ${cheapest.stops} 次`})提供。`;
   try {
     const text = await generateText(
-      "You are a concise travel-deals assistant. Given a list of flight quotes in JSON, write 1-2 short sentences highlighting the cheapest option, whether it beats the user's budget (if provided), and any notable trade-off (stops, duration). No emojis. No greetings.",
+      "你是一位簡潔的機票特惠助理。請根據 JSON 格式的航班報價列表,用 1-2 句繁體中文短句指出最便宜的選項、是否符合使用者預算(若有提供),以及任何值得注意的取捨(轉機次數、飛行時間)。不要使用表情符號,也不要寒暄。",
       JSON.stringify({ config, quotes }),
     );
     const trimmed = text.trim();
@@ -93,9 +93,9 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
 export const flightPriceTracker: AgentDefinition<FlightConfig> = {
   type: "flight_price_tracker",
-  label: "Flight price tracker",
+  label: "機票價格追蹤",
   description:
-    "Checks daily flight prices for a route and date, and flags the cheapest option (optionally vs. a budget).",
+    "每天查詢指定航線與日期的機票價格,並標示最便宜的選項(可選擇與預算比對)。",
   icon: "✈️",
   mode: "monitor",
   defaultFrequencyHours: 24,
@@ -107,14 +107,14 @@ export const flightPriceTracker: AgentDefinition<FlightConfig> = {
     currency: "USD",
   } as FlightConfig,
   configFields: [
-    { name: "origin", label: "Origin (IATA or city)", type: "text", placeholder: "TPE", required: true },
-    { name: "destination", label: "Destination (IATA or city)", type: "text", placeholder: "NRT", required: true },
-    { name: "departDate", label: "Depart date", type: "date", required: true },
-    { name: "returnDate", label: "Return date (optional)", type: "date" },
-    { name: "budget", label: "Budget alert (optional)", type: "number", placeholder: "500", min: 1 },
+    { name: "origin", label: "出發地(IATA 代碼或城市)", type: "text", placeholder: "TPE", required: true },
+    { name: "destination", label: "目的地(IATA 代碼或城市)", type: "text", placeholder: "NRT", required: true },
+    { name: "departDate", label: "出發日期", type: "date", required: true },
+    { name: "returnDate", label: "回程日期(選填)", type: "date" },
+    { name: "budget", label: "預算提醒(選填)", type: "number", placeholder: "500", min: 1 },
     {
       name: "currency",
-      label: "Currency",
+      label: "幣別",
       type: "select",
       options: [
         { value: "USD", label: "USD" },
