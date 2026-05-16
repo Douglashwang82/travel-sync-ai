@@ -114,6 +114,17 @@ function dateKey(iso: string | null): string {
   return new Date(iso).toISOString().split("T")[0];
 }
 
+function sourceInputDate(item: ItineraryEntry): string | null {
+  const value = item.source_inputs?.date;
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? value
+    : null;
+}
+
+function itemDateKey(item: ItineraryEntry): string {
+  return item.deadline_at ? dateKey(item.deadline_at) : sourceInputDate(item) ?? UNSCHEDULED_KEY;
+}
+
 function timeOfDayBucket(iso: string | null): "morning" | "afternoon" | "evening" | "anytime" {
   if (!iso) return "anytime";
   const h = new Date(iso).getHours();
@@ -227,7 +238,7 @@ export function TripItineraryClient({
     if (!data) return [];
 
     const displayItems = scheduledOnly
-      ? data.items.filter((i) => i.deadline_at)
+      ? data.items.filter((i) => itemDateKey(i) !== UNSCHEDULED_KEY)
       : data.items;
 
     const filtered = displayItems.filter((i) =>
@@ -236,7 +247,7 @@ export function TripItineraryClient({
 
     const buckets = new Map<string, ItineraryEntry[]>();
     for (const item of filtered) {
-      const key = dateKey(item.deadline_at);
+      const key = itemDateKey(item);
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(item);
     }
@@ -329,15 +340,15 @@ export function TripItineraryClient({
   }
 
   const counts = {
-    all: data.items.filter((i) => !scheduledOnly || i.deadline_at).length,
+    all: data.items.filter((i) => !scheduledOnly || itemDateKey(i) !== UNSCHEDULED_KEY).length,
     confirmed: data.items.filter(
-      (i) => (!scheduledOnly || i.deadline_at) && i.stage === "confirmed"
+      (i) => (!scheduledOnly || itemDateKey(i) !== UNSCHEDULED_KEY) && i.stage === "confirmed"
     ).length,
     pending: data.items.filter(
-      (i) => (!scheduledOnly || i.deadline_at) && i.stage === "pending"
+      (i) => (!scheduledOnly || itemDateKey(i) !== UNSCHEDULED_KEY) && i.stage === "pending"
     ).length,
     todo: data.items.filter(
-      (i) => (!scheduledOnly || i.deadline_at) && i.stage === "todo"
+      (i) => (!scheduledOnly || itemDateKey(i) !== UNSCHEDULED_KEY) && i.stage === "todo"
     ).length,
   };
 
@@ -819,27 +830,27 @@ function DayBlock({
       />
 
       {/* Body */}
-      {day.isEmpty ? (
-        <EmptyDayBlock
-          date={day.key}
-          tripId={tripId}
-          isOrganizer={isOrganizer}
-          onAdded={onUpdated}
-        />
-      ) : (
-        <div className="space-y-3">
-          {day.items.map((item) => (
-            <TimelineEvent
-              key={item.id}
-              item={item}
-              tripId={tripId}
-              members={members}
-              isOrganizer={isOrganizer}
-              onUpdated={onUpdated}
-            />
-          ))}
-        </div>
-      )}
+      <div className="space-y-3">
+        {day.items.map((item) => (
+          <TimelineEvent
+            key={item.id}
+            item={item}
+            tripId={tripId}
+            members={members}
+            isOrganizer={isOrganizer}
+            onUpdated={onUpdated}
+          />
+        ))}
+        {!day.isUnscheduled && (
+          <DaySuggestionBlock
+            date={day.key}
+            tripId={tripId}
+            isOrganizer={isOrganizer}
+            onAdded={onUpdated}
+            variant={day.isEmpty ? "empty" : "compact"}
+          />
+        )}
+      </div>
       {manualOpen && (
         <ManualItineraryItemDialog
           tripId={tripId}
@@ -1169,18 +1180,20 @@ function TimelineEvent({
   );
 }
 
-// ─── Empty day block ──────────────────────────────────────────────────────────
+// ─── Day suggestion block ─────────────────────────────────────────────────────
 
-function EmptyDayBlock({
+function DaySuggestionBlock({
   date,
   tripId,
   isOrganizer,
   onAdded,
+  variant,
 }: {
   date: string;
   tripId: string;
   isOrganizer: boolean;
   onAdded: () => void;
+  variant: "empty" | "compact";
 }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "error">(
     "idle"
@@ -1241,11 +1254,16 @@ function EmptyDayBlock({
           <button
             type="button"
             onClick={() => void handleSuggest()}
-            className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-[var(--border)] px-4 py-4 text-left transition-colors hover:border-[var(--primary)]/40 hover:bg-[var(--secondary)]/40"
+            className={cn(
+              "group flex w-full items-center justify-between gap-3 border border-dashed border-[var(--border)] text-left transition-colors hover:border-[var(--primary)]/40 hover:bg-[var(--secondary)]/40",
+              variant === "empty"
+                ? "rounded-2xl px-4 py-4"
+                : "rounded-xl px-3 py-2.5"
+            )}
           >
             <div className="space-y-0.5">
               <p className="text-sm font-medium text-[var(--text-muted)]">
-                尚未安排
+                {variant === "empty" ? "尚未安排" : "繼續補上這一天"}
               </p>
               <p className="text-[11px] text-[var(--text-muted)]/80">
                 點一下取得適合這一天的 AI 建議

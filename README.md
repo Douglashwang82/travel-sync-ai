@@ -82,6 +82,9 @@ Copy `.env.example` → `.env.local` and fill in:
 | `SUPABASE_SECRET_KEY` | Yes | Supabase service-role key (server-only) |
 | `GEMINI_API_KEY` | Yes | Google Gemini API key |
 | `GEMINI_MODEL` | No | Gemini model override; defaults to `gemini-2.5-flash` |
+| `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY` | No | Browser-safe Maps JavaScript API key for the interactive trip map |
+| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | No | Optional Google Maps Map ID for vector maps and Advanced Markers |
+| `GOOGLE_MAPS_SERVER_API_KEY` | No | Unified server-side Google Maps Platform key for Places, Routes, Time Zone, Weather, and Static Maps |
 | `GOOGLE_PLACES_API_KEY` | No | Enables Places enrichment in voting |
 | `CRON_SECRET` | Yes (prod) | Bearer token for Vercel cron authentication |
 | `SENTRY_DSN` | No | Sentry DSN for error monitoring |

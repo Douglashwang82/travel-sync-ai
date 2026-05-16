@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppLocale } from "@/components/app/app-locale-provider";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
@@ -30,6 +29,8 @@ const COPY = {
     going: "going",
     plus: (n: number) => `+${n}`,
     inviteCta: "Invite trip member",
+    copied: "Invite link copied",
+    copyFailed: "Copy failed",
     openToday: "Open today",
     settle: "Settle expenses",
     map: "Open in Maps",
@@ -55,6 +56,8 @@ const COPY = {
     going: "一同出發",
     plus: (n: number) => `+${n}`,
     inviteCta: "邀請旅伴加入",
+    copied: "已複製邀請連結",
+    copyFailed: "複製失敗",
     openToday: "查看今日",
     settle: "結算費用",
     map: "在地圖開啟",
@@ -181,6 +184,31 @@ function PrimaryCta({
   tripId: string;
   onClick?: () => void;
 }) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  const copyInviteUrl = useCallback(async () => {
+    const inviteUrl = `${window.location.origin}/app/join/${encodeURIComponent(tripId)}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteUrl);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = inviteUrl;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+    window.setTimeout(() => setCopyState("idle"), 1800);
+  }, [tripId]);
+
   if (mode === "in") {
     return (
       <button type="button" onClick={onClick} className="btn-tactile">
@@ -198,11 +226,17 @@ function PrimaryCta({
     );
   }
   // Pre-trip and T-minus: the primary action is to bring more travellers in.
+  const label =
+    copyState === "copied"
+      ? copy.copied
+      : copyState === "failed"
+        ? copy.copyFailed
+        : copy.inviteCta;
   return (
-    <Link href={`/app/trips/${tripId}/settings`} className="btn-tactile">
-      {copy.inviteCta}
+    <button type="button" onClick={() => void copyInviteUrl()} className="btn-tactile">
+      <span aria-live="polite">{label}</span>
       <IconArrowUpRight size={16} />
-    </Link>
+    </button>
   );
 }
 

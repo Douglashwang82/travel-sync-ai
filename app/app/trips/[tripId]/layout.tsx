@@ -49,26 +49,48 @@ async function loadTripContext(
   const { data: trip } = await db.from("trips").select("*").eq("id", tripId).single();
   if (!trip) return null;
 
-  const { data: membership } = await db
-    .from("group_members")
-    .select("role")
-    .eq("group_id", trip.group_id)
-    .eq("line_user_id", lineUserId)
-    .is("left_at", null)
-    .single();
+  const groupId = (trip.group_id as string | null) ?? null;
+  let role: "organizer" | "member" | null = null;
+  let groupName: string | null = null;
 
-  if (!membership) return null;
+  if (groupId) {
+    const { data: membership } = await db
+      .from("group_members")
+      .select("role")
+      .eq("group_id", groupId)
+      .eq("line_user_id", lineUserId)
+      .is("left_at", null)
+      .maybeSingle();
 
-  const { data: group } = await db
-    .from("line_groups")
-    .select("name")
-    .eq("id", trip.group_id)
-    .single();
+    if (membership) {
+      role = (membership.role as string) === "organizer" ? "organizer" : "member";
+    }
+
+    const { data: group } = await db
+      .from("line_groups")
+      .select("name")
+      .eq("id", groupId)
+      .maybeSingle();
+    groupName = (group?.name as string | null) ?? null;
+  }
+
+  if (!role) {
+    const { data: tripMember } = await db
+      .from("trip_members")
+      .select("role")
+      .eq("trip_id", tripId)
+      .eq("line_user_id", lineUserId)
+      .is("left_at", null)
+      .maybeSingle();
+
+    if (!tripMember) return null;
+    role = (tripMember.role as string) === "organizer" ? "organizer" : "member";
+  }
 
   return {
     trip: trip as Trip,
-    role: (membership.role as string) === "organizer" ? "organizer" : "member",
-    groupName: (group?.name as string | null) ?? null,
+    role,
+    groupName,
   };
 }
 

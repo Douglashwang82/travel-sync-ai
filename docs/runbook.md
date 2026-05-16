@@ -73,6 +73,9 @@ vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
 vercel env add SUPABASE_SECRET_KEY production
 vercel env add GEMINI_API_KEY production
+vercel env add NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY production
+vercel env add NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID production
+vercel env add GOOGLE_MAPS_SERVER_API_KEY production
 vercel env add GOOGLE_PLACES_API_KEY production
 vercel env add CRON_SECRET production
 vercel env add SENTRY_DSN production

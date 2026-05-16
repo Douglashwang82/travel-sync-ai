@@ -22,6 +22,8 @@ const SERVER_ENV_VARS: EnvVar[] = [
   { key: "SUPABASE_SECRET_KEY", required: true, description: "Supabase service role key (server-side only)" },
   { key: "GEMINI_API_KEY", required: true, description: "Google Gemini API key for LLM parsing" },
   { key: "GEMINI_MODEL", required: false, description: "Optional Gemini model override; defaults to gemini-2.5-flash" },
+  { key: "NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY", required: false, description: "Browser-safe Google Maps JavaScript API key for the interactive trip map" },
+  { key: "NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID", required: false, description: "Optional Google Maps Map ID for vector maps and Advanced Marker styling" },
   { key: "GOOGLE_PLACES_API_KEY", required: false, description: "Google Places API key for place search and enrichment" },
   { key: "GOOGLE_MAPS_SERVER_API_KEY", required: false, description: "Unified Google Maps Platform server-side key for Places, Routes, Time Zone, Weather, and Static Maps" },
   { key: "GOOGLE_ROUTES_API_KEY", required: false, description: "Google Routes API key for travel time estimation" },

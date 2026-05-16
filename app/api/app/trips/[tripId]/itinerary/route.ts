@@ -25,6 +25,7 @@ export interface ItineraryEntry {
   description: string | null;
   stage: string;
   deadline_at: string | null;
+  source_inputs: Record<string, unknown> | null;
   assigned_to_line_user_id: string | null;
   booking_status: string;
   booking_ref: string | null;
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const { data, error } = await db
     .from("trip_items")
     .select(
-      `id, title, item_type, description, stage, deadline_at, assigned_to_line_user_id, booking_status, booking_ref, confirmed_option_id,
+      `id, title, item_type, description, stage, deadline_at, source_inputs, assigned_to_line_user_id, booking_status, booking_ref, confirmed_option_id,
        item_kind,
        trip_item_options!trip_items_confirmed_option_id_fkey (
          id, name, address, image_url, rating, price_level, booking_url, google_maps_url, lat, lng
@@ -103,6 +104,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       description: (row.description as string | null) ?? null,
       stage: row.stage as string,
       deadline_at: (row.deadline_at as string | null) ?? null,
+      source_inputs: (row.source_inputs as Record<string, unknown> | null) ?? null,
       assigned_to_line_user_id: (row.assigned_to_line_user_id as string | null) ?? null,
       booking_status: (row.booking_status as string) ?? "not_required",
       booking_ref: (row.booking_ref as string | null) ?? null,
