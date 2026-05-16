@@ -66,6 +66,7 @@ export async function runCustomGrid(grid: CustomGridRow): Promise<RunOutcome> {
       customGridId: grid.id,
       config: grid.config,
       autonomy: grid.autonomy,
+      getOutputOf: (agentType) => getOutputOf(grid.trip_id, agentType),
     });
     const finishedAt = new Date();
 
@@ -110,6 +111,31 @@ export async function runCustomGrid(grid: CustomGridRow): Promise<RunOutcome> {
     await markFailure(grid, errMsg);
     return { status: "failed", error: errMsg };
   }
+}
+
+/**
+ * Look up the latest `last_output` for another agent on the same trip. Used
+ * by dependent agents (e.g. `packing_suggester` reads `weather_forecast`).
+ *
+ * If the upstream agent has never been added to the trip, or never had a
+ * successful run, returns `null` and the dependent agent falls back.
+ */
+async function getOutputOf(
+  tripId: string,
+  agentType: string,
+): Promise<Record<string, unknown> | null> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("custom_grids")
+    .select("last_output, last_status, last_run_at")
+    .eq("trip_id", tripId)
+    .eq("agent_type", agentType)
+    .eq("last_status", "success")
+    .order("last_run_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data?.last_output) return null;
+  return data.last_output as Record<string, unknown>;
 }
 
 async function markFailure(grid: CustomGridRow, error: string): Promise<void> {

@@ -121,6 +121,10 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
       {hasRun && grid.agentType === "itinerary_drafter" && (
         <ItineraryDrafterOutput tripId={tripId} output={output as Record<string, unknown>} />
       )}
+
+      {hasRun && grid.agentType === "packing_suggester" && (
+        <PackingSuggesterOutput tripId={tripId} output={output as Record<string, unknown>} />
+      )}
     </div>
   );
 }
@@ -251,7 +255,9 @@ function AutonomyChip({
   const [saving, setSaving] = useState(false);
 
   // Only propose-mode agents act on autonomy. Hide the chip for the others.
-  if (grid.agentType !== "itinerary_drafter") return null;
+  if (grid.agentType !== "itinerary_drafter" && grid.agentType !== "packing_suggester") {
+    return null;
+  }
 
   async function cycle() {
     const next = AUTONOMY_NEXT[grid.autonomy];
@@ -464,6 +470,73 @@ function ItineraryDrafterOutput({
         className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
       >
         Review in Ideas ↗
+      </a>
+    </div>
+  );
+}
+
+function PackingSuggesterOutput({
+  tripId,
+  output,
+}: {
+  tripId: string;
+  output: Record<string, unknown>;
+}) {
+  const summary = (output.summary as string) ?? "";
+  const items = (output.items as Array<{ label: string; category: string }>) ?? [];
+  const weatherAware = !!output.weatherAware;
+  const weatherLocation = output.weatherLocation as string | null;
+  const created = (output.created as number) ?? 0;
+
+  const grouped = items.reduce<Record<string, Array<{ label: string; category: string }>>>(
+    (acc, item) => {
+      const cat = item.category;
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat]!.push(item);
+      return acc;
+    },
+    {},
+  );
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {items.length} item{items.length === 1 ? "" : "s"}
+          {weatherAware && weatherLocation ? ` · weather-aware (${weatherLocation})` : ""}
+        </div>
+        {summary && (
+          <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+        )}
+        {created > 0 && (
+          <div className="mt-1 inline-block rounded-full bg-[var(--status-ok-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-ok)]">
+            {created} added to Pack
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 overflow-y-auto pr-1">
+        {Object.entries(grouped).map(([cat, list]) => (
+          <div key={cat}>
+            <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+              {cat}
+            </div>
+            <ul className="mt-1 grid grid-cols-1 gap-0.5 text-[11px] text-[var(--text-muted)] sm:grid-cols-2">
+              {list.map((i, idx) => (
+                <li key={`${cat}-${idx}`} className="truncate">
+                  · {i.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <a
+        href={`/app/trips/${tripId}/pack`}
+        className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
+      >
+        Open Pack ↗
       </a>
     </div>
   );

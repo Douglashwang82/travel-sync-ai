@@ -33,6 +33,16 @@ export interface AgentRunContext {
   customGridId: string;
   config: unknown;
   autonomy: AgentAutonomy;
+  /**
+   * Returns the latest persisted output of another agent for the same trip,
+   * or `null` if no successful run is on record. Use this in `dependsOn`
+   * agents (e.g. `packing_suggester` reading `weather_forecast`).
+   *
+   * The result is whatever the upstream agent wrote to
+   * `custom_grids.last_output` — typed as `Record<string, unknown>` here;
+   * downstream agents own the cast.
+   */
+  getOutputOf: (agentType: string) => Promise<Record<string, unknown> | null>;
 }
 
 export interface AgentRunResult {
