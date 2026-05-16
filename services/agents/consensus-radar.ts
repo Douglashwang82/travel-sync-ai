@@ -86,13 +86,14 @@ async function detect(
   try {
     const raw = await generateJson<unknown>(
       [
-        "You are scanning a trip-planning chat for 'soft consensus' — places where the group seems to be leaning toward a particular option without anyone having formally proposed a vote.",
+        "你正在掃描一段旅程規劃的聊天紀錄,尋找「軟共識」——也就是群組似乎已經偏向某個選項,但還沒有人正式提議投票的議題。",
         digestOpenQuestions.length > 0
-          ? `Known open questions from the digest agent: ${JSON.stringify(digestOpenQuestions)}.`
+          ? `來自聊天摘要代理的已知未決議題:${JSON.stringify(digestOpenQuestions)}。`
           : "",
-        "Return strict JSON: { candidates: [{ topic: string, leaningOption: string, confidence: 0..1, rationale: string }] }.",
-        "Skip rhetorical comments and small talk. Confidence above 0.7 means strong lean; below 0.4 means weak signal — omit those.",
-        "Never invent facts the chat doesn't support. Max 6 candidates.",
+        "請輸出嚴格 JSON:{ candidates: [{ topic: string, leaningOption: string, confidence: 0..1, rationale: string }] }。",
+        "所有顯示文字(topic、leaningOption、rationale)請使用繁體中文。",
+        "請略過反問與閒聊。信心值高於 0.7 代表明顯偏好;低於 0.4 為微弱訊號,請省略。",
+        "不可捏造聊天中不存在的事實。最多回傳 6 條候選。",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -117,7 +118,7 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
     return {
       outputKind: "list",
       output: {
-        summary: "This trip isn't linked to a LINE group — nothing to scan.",
+        summary: "這個旅程尚未綁定 LINE 群組,沒有聊天可掃描。",
         candidates: [],
         usedDigest: digestOutput !== null,
         checkedAt: new Date().toISOString(),
@@ -130,8 +131,8 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
   const summary =
     candidates.length === 0
-      ? `Scanned ${messages.length} messages. No clear consensus to flag yet.`
-      : `Found ${candidates.length} topic${candidates.length === 1 ? "" : "s"} where the group seems to be leaning. Consider opening a /vote to make it official.`;
+      ? `已掃描 ${messages.length} 則訊息,目前尚未發現明顯共識。`
+      : `發現 ${candidates.length} 個議題群組似乎已有偏好,建議用 /vote 正式確認。`;
 
   return {
     outputKind: "list",
@@ -147,9 +148,9 @@ async function run(ctx: AgentRunContext): Promise<AgentRunResult> {
 
 export const consensusRadar: AgentDefinition<RadarConfig> = {
   type: "consensus_radar",
-  label: "Consensus radar",
+  label: "共識雷達",
   description:
-    "Scans recent chat for topics the group seems to be leaning on without a formal vote. Reads the Chat digest tile when present.",
+    "掃描近期聊天,找出群組似乎已經傾向、但尚未正式投票的議題。若有「聊天摘要」格子也會一併參考。",
   icon: "🎯",
   mode: "assist",
   defaultFrequencyHours: 24,
@@ -159,7 +160,7 @@ export const consensusRadar: AgentDefinition<RadarConfig> = {
   configFields: [
     {
       name: "minConfidence",
-      label: "Minimum confidence (0–1)",
+      label: "最低信心值(0–1)",
       type: "number",
       placeholder: "0.6",
       min: 0,
@@ -167,7 +168,7 @@ export const consensusRadar: AgentDefinition<RadarConfig> = {
     },
     {
       name: "windowHours",
-      label: "Window (hours)",
+      label: "時間範圍(小時)",
       type: "number",
       placeholder: "72",
       min: 1,
@@ -175,7 +176,7 @@ export const consensusRadar: AgentDefinition<RadarConfig> = {
     },
     {
       name: "maxMessages",
-      label: "Max messages",
+      label: "訊息數上限",
       type: "number",
       placeholder: "80",
       min: 10,

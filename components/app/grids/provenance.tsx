@@ -49,7 +49,7 @@ export function ProvenanceBadge({
         onClick && "hover:bg-[var(--accent-line)]/15",
         className,
       )}
-      title={onClick ? "Why was this proposed?" : undefined}
+      title={onClick ? "為什麼會被建議?" : undefined}
     >
       <span aria-hidden>✦</span>
       <span>
@@ -76,27 +76,26 @@ export function ProvenanceSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Why this was proposed</SheetTitle>
+          <SheetTitle>為什麼會被建議</SheetTitle>
           <SheetDescription>
-            This row was created by an AI agent. Nothing here is auto-applied —
-            you confirm, edit, or dismiss.
+            這項內容由 AI 代理產生,不會自動套用——你可以確認、編輯或忽略。
           </SheetDescription>
         </SheetHeader>
 
         <dl className="mt-6 grid gap-3 text-sm">
           <div className="grid grid-cols-[100px_1fr] gap-2">
-            <dt className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">Agent</dt>
+            <dt className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">代理</dt>
             <dd className="text-[var(--text-primary)]">{label}</dd>
           </div>
           <div className="grid grid-cols-[100px_1fr] gap-2">
-            <dt className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">When</dt>
+            <dt className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">時間</dt>
             <dd className="text-[var(--text-primary)]">
-              {new Date(provenance.createdAt).toLocaleString()}
+              {new Date(provenance.createdAt).toLocaleString("zh-TW")}
             </dd>
           </div>
           {provenance.runId && (
             <div className="grid grid-cols-[100px_1fr] gap-2">
-              <dt className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">Run</dt>
+              <dt className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">執行編號</dt>
               <dd className="font-mono text-xs text-[var(--text-secondary)]">
                 {provenance.runId}
               </dd>
@@ -107,7 +106,7 @@ export function ProvenanceSheet({
         {inputs && Object.keys(inputs).length > 0 && (
           <div className="mt-6">
             <div className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
-              Inputs
+              輸入內容
             </div>
             <pre className="mt-2 max-h-72 overflow-auto rounded-md border border-[var(--border-hairline)] bg-[var(--surface-sunken)] p-3 text-[11px] leading-relaxed text-[var(--text-secondary)]">
               {JSON.stringify(inputs, null, 2)}
@@ -134,7 +133,19 @@ export function ProvenanceTag({ provenance }: { provenance: ProvenanceInfo }) {
   );
 }
 
+const AGENT_LABEL_ZH: Record<string, string> = {
+  flight_price_tracker: "機票價格追蹤",
+  weather_forecast: "天氣預報",
+  chat_digest: "聊天摘要",
+  itinerary_drafter: "行程規劃師",
+  packing_suggester: "打包小幫手",
+  hotel_price_watch: "飯店價格追蹤",
+  consensus_radar: "共識雷達",
+  group_chat_parser: "群組訊息解析",
+};
+
 function humanizeAgent(agent: string): string {
+  if (AGENT_LABEL_ZH[agent]) return AGENT_LABEL_ZH[agent]!;
   return agent
     .split("_")
     .map((part) => (part.length ? part[0]!.toUpperCase() + part.slice(1) : part))
@@ -144,9 +155,9 @@ function humanizeAgent(agent: string): string {
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return "剛剛";
+  if (minutes < 60) return `${minutes} 分鐘前`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return `${hours} 小時前`;
+  return `${Math.floor(hours / 24)} 天前`;
 }

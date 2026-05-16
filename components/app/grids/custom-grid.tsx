@@ -32,14 +32,14 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
       );
       onChange(res.grid);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Run failed");
+      setError(err instanceof Error ? err.message : "執行失敗");
     } finally {
       setRunning(false);
     }
   }
 
   async function remove() {
-    if (!confirm(`Delete "${grid.title}"?`)) return;
+    if (!confirm(`刪除「${grid.title}」?`)) return;
     setDeleting(true);
     try {
       await appFetchJson(`/api/app/trips/${tripId}/custom-grids/${grid.id}`, {
@@ -47,7 +47,7 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
       });
       onDelete(grid.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : "刪除失敗");
       setDeleting(false);
     }
   }
@@ -65,10 +65,10 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
             {grid.title}
           </div>
           <div className="truncate">
-            Every {grid.frequencyHours}h ·{" "}
+            每 {grid.frequencyHours} 小時 ·{" "}
             {grid.lastRunAt
-              ? `Last run ${formatRelative(grid.lastRunAt)}`
-              : "Not yet run"}
+              ? `上次執行 ${formatRelative(grid.lastRunAt)}`
+              : "尚未執行"}
           </div>
           <div className="mt-1">
             <AutonomyChip tripId={tripId} grid={grid} onChange={onChange} />
@@ -81,7 +81,7 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
             onClick={runNow}
             className="rounded-md border border-[var(--border-hairline)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] disabled:opacity-50"
           >
-            {running ? "Running…" : "Run now"}
+            {running ? "執行中…" : "立即執行"}
           </button>
           <button
             type="button"
@@ -96,13 +96,13 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
 
       {!hasRun && grid.lastStatus === "failed" && (
         <div className="rounded-md border border-[var(--status-blocked)] bg-[var(--status-blocked-soft)] px-3 py-2 text-xs text-[var(--status-blocked)]">
-          Last run failed: {grid.lastError ?? "unknown error"}
+          上次執行失敗:{grid.lastError ?? "未知錯誤"}
         </div>
       )}
 
       {!hasRun && grid.lastStatus !== "failed" && (
         <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-[var(--border-hairline)] p-4 text-center text-xs text-[var(--text-muted)]">
-          Waiting for the first run. Click <strong className="px-1">Run now</strong> to fetch data immediately.
+          等待首次執行。點擊 <strong className="px-1">立即執行</strong> 即可立刻取得資料。
         </div>
       )}
 
@@ -173,12 +173,12 @@ function FlightPriceOutput({ output }: { output: Record<string, unknown> }) {
                   : "rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]"
               }
             >
-              {underBudget ? "Under budget" : `Over ${currency} ${budget}`}
+              {underBudget ? "符合預算" : `超出 ${currency} ${budget}`}
             </span>
           )}
         </div>
         <div className="mt-1 text-xs text-[var(--text-muted)]">
-          {airline} · {stops === 0 ? "Direct" : `${stops} stop${stops > 1 ? "s" : ""}`} ·{" "}
+          {airline} · {stops === 0 ? "直飛" : `轉機 ${stops} 次`} ·{" "}
           {formatDuration(duration)}
         </div>
       </div>
@@ -190,7 +190,7 @@ function FlightPriceOutput({ output }: { output: Record<string, unknown> }) {
       {quotes.length > 1 && (
         <div className="mt-auto">
           <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-            Other options
+            其他選項
           </div>
           <ul className="mt-1 space-y-1 text-xs">
             {quotes
@@ -205,7 +205,7 @@ function FlightPriceOutput({ output }: { output: Record<string, unknown> }) {
                   <span className="truncate">{q.airline}</span>
                   <span>
                     {currency} {q.price} ·{" "}
-                    {q.stops === 0 ? "Direct" : `${q.stops} stop${q.stops > 1 ? "s" : ""}`}
+                    {q.stops === 0 ? "直飛" : `轉機 ${q.stops} 次`}
                   </span>
                 </li>
               ))}
@@ -220,7 +220,7 @@ function FlightPriceOutput({ output }: { output: Record<string, unknown> }) {
           rel="noreferrer noopener"
           className="text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
         >
-          Book ↗
+          前往訂位 ↗
         </a>
       )}
     </div>
@@ -230,13 +230,13 @@ function FlightPriceOutput({ output }: { output: Record<string, unknown> }) {
 function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return `${h}h ${m}m`;
+  return `${h} 小時 ${m} 分`;
 }
 
 const AUTONOMY_LABEL: Record<CustomGridData["autonomy"], string> = {
-  propose_only: "Propose only",
-  auto_apply_with_undo: "Auto + undo",
-  auto_apply: "Auto",
+  propose_only: "僅建議",
+  auto_apply_with_undo: "自動 + 可復原",
+  auto_apply: "全自動",
 };
 
 const AUTONOMY_NEXT: Record<CustomGridData["autonomy"], CustomGridData["autonomy"]> = {
@@ -290,7 +290,7 @@ function AutonomyChip({
       disabled={saving}
       onClick={cycle}
       className="rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--accent-line)] disabled:opacity-50"
-      title="Click to change autonomy"
+      title="點擊切換自主權"
     >
       ✦ {AUTONOMY_LABEL[grid.autonomy]}
     </button>
@@ -332,7 +332,7 @@ function WeatherForecastOutput({ output }: { output: Record<string, unknown> }) 
         )}
         {rainyDates.length > 0 && (
           <div className="mt-1 inline-block rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]">
-            Rain on {rainyDates.length} day{rainyDates.length > 1 ? "s" : ""}
+            {rainyDates.length} 天可能下雨
           </div>
         )}
       </div>
@@ -344,7 +344,7 @@ function WeatherForecastOutput({ output }: { output: Record<string, unknown> }) 
       {days.length > 1 && (
         <div className="mt-auto">
           <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-            Forecast
+            天氣預報
           </div>
           <ul className="mt-1 grid grid-cols-2 gap-1 text-[11px] sm:grid-cols-3">
             {days.slice(0, 6).map((d) => (
@@ -382,7 +382,7 @@ function ChatDigestOutput({ output }: { output: Record<string, unknown> }) {
       {decisions.length > 0 && (
         <div>
           <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-            Decisions
+            決議
           </div>
           <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-[var(--text-secondary)]">
             {decisions.map((d, i) => (
@@ -394,7 +394,7 @@ function ChatDigestOutput({ output }: { output: Record<string, unknown> }) {
       {openQuestions.length > 0 && (
         <div>
           <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-            Open questions
+            待解問題
           </div>
           <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-[var(--text-secondary)]">
             {openQuestions.map((q, i) => (
@@ -414,7 +414,7 @@ function formatTemp(c: number, units: "c" | "f"): string {
 
 function shortDate(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
-  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+  return d.toLocaleDateString("zh-TW", { weekday: "short", day: "numeric" });
 }
 
 interface DraftedDay {
@@ -440,13 +440,11 @@ function ItineraryDrafterOutput({
     <div className="flex flex-1 flex-col gap-3">
       <div>
         <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-          {destination} · {days.length} day{days.length === 1 ? "" : "s"}
+          {destination} · {days.length} 天
         </div>
         <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <span>
-            {created} new suggestion{created === 1 ? "" : "s"} added to Ideas
-          </span>
-          {skipped > 0 && <span>· {skipped} skipped (duplicates)</span>}
+          <span>已新增 {created} 條建議到「點子」</span>
+          {skipped > 0 && <span>· 略過 {skipped} 條(重複)</span>}
         </div>
       </div>
 
@@ -477,7 +475,7 @@ function ItineraryDrafterOutput({
         href={`/app/trips/${tripId}/ideas`}
         className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
       >
-        Review in Ideas ↗
+        到「點子」檢視 ↗
       </a>
     </div>
   );
@@ -510,15 +508,15 @@ function PackingSuggesterOutput({
     <div className="flex flex-1 flex-col gap-3">
       <div>
         <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-          {items.length} item{items.length === 1 ? "" : "s"}
-          {weatherAware && weatherLocation ? ` · weather-aware (${weatherLocation})` : ""}
+          {items.length} 項物品
+          {weatherAware && weatherLocation ? ` · 依天氣(${weatherLocation})調整` : ""}
         </div>
         {summary && (
           <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
         )}
         {created > 0 && (
           <div className="mt-1 inline-block rounded-full bg-[var(--status-ok-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-ok)]">
-            {created} added to Pack
+            已加入打包清單 {created} 項
           </div>
         )}
       </div>
@@ -527,7 +525,7 @@ function PackingSuggesterOutput({
         {Object.entries(grouped).map(([cat, list]) => (
           <div key={cat}>
             <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-              {cat}
+              {PACK_CATEGORY_LABEL[cat] ?? cat}
             </div>
             <ul className="mt-1 grid grid-cols-1 gap-0.5 text-[11px] text-[var(--text-muted)] sm:grid-cols-2">
               {list.map((i, idx) => (
@@ -544,11 +542,20 @@ function PackingSuggesterOutput({
         href={`/app/trips/${tripId}/pack`}
         className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
       >
-        Open Pack ↗
+        開啟打包清單 ↗
       </a>
     </div>
   );
 }
+
+const PACK_CATEGORY_LABEL: Record<string, string> = {
+  documents: "證件文件",
+  clothing: "衣物",
+  toiletries: "盥洗用品",
+  electronics: "電子用品",
+  safety: "安全用品",
+  general: "其他",
+};
 
 function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
   const currency = (output.currency as string) ?? "USD";
@@ -572,13 +579,13 @@ function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
     <div className="flex flex-1 flex-col gap-3">
       <div>
         <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-          {city} · {checkIn} → {checkOut} · {nights}n
+          {city} · {checkIn} → {checkOut} · {nights} 晚
         </div>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="text-3xl font-semibold text-[var(--text-primary)]">
             {currency} {perNight}
           </span>
-          <span className="text-xs text-[var(--text-muted)]">/ night</span>
+          <span className="text-xs text-[var(--text-muted)]">/ 每晚</span>
           {budgetTotal != null && (
             <span
               className={
@@ -587,12 +594,12 @@ function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
                   : "rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]"
               }
             >
-              {underBudget ? "Under budget" : `Over ${currency} ${budgetTotal}`}
+              {underBudget ? "符合預算" : `超出 ${currency} ${budgetTotal}`}
             </span>
           )}
         </div>
         <div className="mt-1 text-xs text-[var(--text-muted)]">
-          {name} · {area} · {rating}★ · Total {currency} {total}
+          {name} · {area} · {rating}★ · 總計 {currency} {total}
         </div>
       </div>
 
@@ -603,7 +610,7 @@ function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
       {quotes.length > 1 && (
         <div className="mt-auto">
           <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-            Other options
+            其他選項
           </div>
           <ul className="mt-1 space-y-1 text-xs">
             {quotes
@@ -634,7 +641,7 @@ function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
           rel="noreferrer noopener"
           className="text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
         >
-          Book ↗
+          前往訂位 ↗
         </a>
       )}
     </div>
@@ -656,7 +663,7 @@ function ConsensusRadarOutput({ output }: { output: Record<string, unknown> }) {
     <div className="flex flex-1 flex-col gap-3">
       <div>
         <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-          Soft consensus{usedDigest ? " · reading digest" : ""}
+          軟共識{usedDigest ? " · 已參考摘要" : ""}
         </div>
         {summary && (
           <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
@@ -677,7 +684,7 @@ function ConsensusRadarOutput({ output }: { output: Record<string, unknown> }) {
                 </span>
               </div>
               <div className="mt-0.5 text-xs text-[var(--text-secondary)]">
-                Leaning: <strong>{c.leaningOption}</strong>
+                傾向:<strong>{c.leaningOption}</strong>
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
                 {c.rationale}
@@ -693,9 +700,9 @@ function ConsensusRadarOutput({ output }: { output: Record<string, unknown> }) {
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return "剛剛";
+  if (minutes < 60) return `${minutes} 分鐘前`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return `${hours} 小時前`;
+  return `${Math.floor(hours / 24)} 天前`;
 }
