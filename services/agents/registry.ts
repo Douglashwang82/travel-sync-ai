@@ -1,7 +1,15 @@
 import type { AgentDefinition, AgentMode } from "./types";
 import { flightPriceTracker } from "./flight-price-tracker";
+import { weatherForecast } from "./weather-forecast";
+import { chatDigest } from "./chat-digest";
+import { itineraryDrafter } from "./itinerary-drafter";
 
-const AGENTS: AgentDefinition[] = [flightPriceTracker as AgentDefinition];
+const AGENTS: AgentDefinition[] = [
+  flightPriceTracker as AgentDefinition,
+  weatherForecast as AgentDefinition,
+  chatDigest as AgentDefinition,
+  itineraryDrafter as AgentDefinition,
+];
 
 const AGENT_MAP = new Map(AGENTS.map((a) => [a.type, a]));
 

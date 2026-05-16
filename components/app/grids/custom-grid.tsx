@@ -106,6 +106,18 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
       {hasRun && grid.agentType === "flight_price_tracker" && (
         <FlightPriceOutput output={output as Record<string, unknown>} />
       )}
+
+      {hasRun && grid.agentType === "weather_forecast" && (
+        <WeatherForecastOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "chat_digest" && (
+        <ChatDigestOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "itinerary_drafter" && (
+        <ItineraryDrafterOutput tripId={tripId} output={output as Record<string, unknown>} />
+      )}
     </div>
   );
 }
@@ -204,6 +216,192 @@ function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}h ${m}m`;
+}
+
+interface DayForecast {
+  date: string;
+  condition: string;
+  highTempC: number;
+  lowTempC: number;
+  precipChance: number;
+}
+
+function WeatherForecastOutput({ output }: { output: Record<string, unknown> }) {
+  const location = output.location as string;
+  const units = (output.units as "c" | "f") ?? "c";
+  const summary = output.summary as string;
+  const days = (output.days as DayForecast[]) ?? [];
+  const rainyDates = (output.rainyDates as string[]) ?? [];
+
+  const today = days[0];
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {location}
+        </div>
+        {today && (
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-3xl font-semibold text-[var(--text-primary)]">
+              {formatTemp(today.highTempC, units)}
+            </span>
+            <span className="text-sm text-[var(--text-muted)]">
+              / {formatTemp(today.lowTempC, units)}
+            </span>
+            <span className="text-xs text-[var(--text-muted)]">· {today.condition}</span>
+          </div>
+        )}
+        {rainyDates.length > 0 && (
+          <div className="mt-1 inline-block rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]">
+            Rain on {rainyDates.length} day{rainyDates.length > 1 ? "s" : ""}
+          </div>
+        )}
+      </div>
+
+      {summary && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+
+      {days.length > 1 && (
+        <div className="mt-auto">
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Forecast
+          </div>
+          <ul className="mt-1 grid grid-cols-2 gap-1 text-[11px] sm:grid-cols-3">
+            {days.slice(0, 6).map((d) => (
+              <li
+                key={d.date}
+                className="flex items-center justify-between rounded-md border border-[var(--border-hairline)] px-2 py-1 text-[var(--text-muted)]"
+              >
+                <span className="truncate">{shortDate(d.date)}</span>
+                <span className="font-medium text-[var(--text-secondary)]">
+                  {formatTemp(d.highTempC, units)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChatDigestOutput({ output }: { output: Record<string, unknown> }) {
+  const summary = (output.summary as string) ?? "";
+  const decisions = (output.decisions as string[]) ?? [];
+  const openQuestions = (output.openQuestions as string[]) ?? [];
+  const since = output.sinceLabel as string | undefined;
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      {since && (
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">{since}</div>
+      )}
+      {summary && (
+        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+      {decisions.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Decisions
+          </div>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-[var(--text-secondary)]">
+            {decisions.map((d, i) => (
+              <li key={`d-${i}`}>{d}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {openQuestions.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Open questions
+          </div>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-[var(--text-secondary)]">
+            {openQuestions.map((q, i) => (
+              <li key={`q-${i}`}>{q}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatTemp(c: number, units: "c" | "f"): string {
+  if (units === "f") return `${Math.round(c * 9 / 5 + 32)}°F`;
+  return `${Math.round(c)}°C`;
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+}
+
+interface DraftedDay {
+  date: string;
+  title: string;
+  suggestions: Array<{ category: string; text: string }>;
+}
+
+function ItineraryDrafterOutput({
+  tripId,
+  output,
+}: {
+  tripId: string;
+  output: Record<string, unknown>;
+}) {
+  const destination = output.destination as string;
+  const overview = output.overview as string;
+  const days = (output.days as DraftedDay[]) ?? [];
+  const created = (output.created as number) ?? 0;
+  const skipped = (output.skipped as number) ?? 0;
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {destination} · {days.length} day{days.length === 1 ? "" : "s"}
+        </div>
+        <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+          <span>
+            {created} new suggestion{created === 1 ? "" : "s"} added to Ideas
+          </span>
+          {skipped > 0 && <span>· {skipped} skipped (duplicates)</span>}
+        </div>
+      </div>
+
+      {overview && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{overview}</p>
+      )}
+
+      <ul className="space-y-2 overflow-y-auto pr-1">
+        {days.slice(0, 4).map((day) => (
+          <li
+            key={day.date}
+            className="rounded-md border border-[var(--border-hairline)] px-2.5 py-2"
+          >
+            <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+              {shortDate(day.date)}
+            </div>
+            <div className="text-xs font-medium text-[var(--text-primary)]">{day.title}</div>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-[var(--text-muted)]">
+              {day.suggestions.slice(0, 3).map((s, i) => (
+                <li key={`${day.date}-${i}`}>{s.text}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+
+      <a
+        href={`/app/trips/${tripId}/ideas`}
+        className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
+      >
+        Review in Ideas ↗
+      </a>
+    </div>
+  );
 }
 
 function formatRelative(iso: string): string {

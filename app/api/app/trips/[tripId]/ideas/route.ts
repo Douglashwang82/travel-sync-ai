@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const { data, error } = await db
     .from("trip_ideas")
     .select(
-      "id, category, text, submitted_by, display_name, promoted, promoted_item_id, created_at"
+      "id, category, text, submitted_by, display_name, promoted, promoted_item_id, created_at, source_agent, source_run_id"
     )
     .eq("trip_id", tripId)
     .order("created_at", { ascending: false })
@@ -48,6 +48,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     promotedItemId: (row.promoted_item_id as string | null) ?? null,
     createdAt: row.created_at as string,
     isMine: (row.submitted_by as string) === auth.lineUserId,
+    sourceAgent: (row.source_agent as string | null) ?? null,
+    sourceRunId: (row.source_run_id as string | null) ?? null,
   }));
 
   return NextResponse.json<TripIdeasResponse>({ ideas });
@@ -135,6 +137,8 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     promotedItemId: (inserted.promoted_item_id as string | null) ?? null,
     createdAt: inserted.created_at as string,
     isMine: true,
+    sourceAgent: null,
+    sourceRunId: null,
   };
 
   return NextResponse.json<{ idea: TripIdea }>({ idea }, { status: 201 });
