@@ -97,6 +97,7 @@ export const flightPriceTracker: AgentDefinition<FlightConfig> = {
   description:
     "Checks daily flight prices for a route and date, and flags the cheapest option (optionally vs. a budget).",
   icon: "✈️",
+  mode: "monitor",
   defaultFrequencyHours: 24,
   configSchema: ConfigSchema,
   defaultConfig: {

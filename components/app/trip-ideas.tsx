@@ -26,6 +26,7 @@ import {
   type TripIdea,
   type TripIdeasResponse,
 } from "@/lib/app-ideas";
+import { ProvenanceTag } from "@/components/app/grids/provenance";
 
 const CATEGORY_LABEL: Record<IdeaCategory, string> = {
   destination: "目的地",
@@ -288,8 +289,14 @@ function IdeaCard({
   const author = idea.displayName ?? idea.submittedBy.slice(0, 6);
   const when = formatRelative(idea.createdAt);
   const canDelete = idea.isMine && !idea.promoted;
+  const isAi = idea.sourceAgent !== null;
   return (
-    <li className="surface-tile tile-interactive p-4">
+    <li
+      className={cn(
+        "surface-tile tile-interactive p-4",
+        isAi && "ghost-card !border-dashed",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant="secondary"
@@ -309,6 +316,15 @@ function IdeaCard({
           <span className="rounded-full bg-[var(--accent-line-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-line)]">
             你
           </span>
+        )}
+        {isAi && (
+          <ProvenanceTag
+            provenance={{
+              agent: idea.sourceAgent!,
+              createdAt: idea.createdAt,
+              runId: idea.sourceRunId,
+            }}
+          />
         )}
       </div>
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-primary)]">

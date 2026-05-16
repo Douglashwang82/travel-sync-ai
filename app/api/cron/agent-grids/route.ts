@@ -24,7 +24,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const { data: grids, error } = await db
     .from("custom_grids")
-    .select("id, trip_id, agent_type, config, frequency_hours, consecutive_failures")
+    .select("id, trip_id, agent_type, config, frequency_hours, consecutive_failures, autonomy")
     .eq("is_active", true)
     .or(`next_run_at.is.null,next_run_at.lte.${nowIso}`)
     .order("next_run_at", { ascending: true, nullsFirst: true })

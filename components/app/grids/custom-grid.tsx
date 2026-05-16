@@ -70,6 +70,9 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
               ? `Last run ${formatRelative(grid.lastRunAt)}`
               : "Not yet run"}
           </div>
+          <div className="mt-1">
+            <AutonomyChip tripId={tripId} grid={grid} onChange={onChange} />
+          </div>
         </div>
         <div className="flex shrink-0 gap-1">
           <button
@@ -105,6 +108,30 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
 
       {hasRun && grid.agentType === "flight_price_tracker" && (
         <FlightPriceOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "weather_forecast" && (
+        <WeatherForecastOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "chat_digest" && (
+        <ChatDigestOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "itinerary_drafter" && (
+        <ItineraryDrafterOutput tripId={tripId} output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "packing_suggester" && (
+        <PackingSuggesterOutput tripId={tripId} output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "hotel_price_watch" && (
+        <HotelPriceOutput output={output as Record<string, unknown>} />
+      )}
+
+      {hasRun && grid.agentType === "consensus_radar" && (
+        <ConsensusRadarOutput output={output as Record<string, unknown>} />
       )}
     </div>
   );
@@ -204,6 +231,463 @@ function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}h ${m}m`;
+}
+
+const AUTONOMY_LABEL: Record<CustomGridData["autonomy"], string> = {
+  propose_only: "Propose only",
+  auto_apply_with_undo: "Auto + undo",
+  auto_apply: "Auto",
+};
+
+const AUTONOMY_NEXT: Record<CustomGridData["autonomy"], CustomGridData["autonomy"]> = {
+  propose_only: "auto_apply_with_undo",
+  auto_apply_with_undo: "auto_apply",
+  auto_apply: "propose_only",
+};
+
+/**
+ * Inline cycle button for the autonomy dial. Click cycles through the three
+ * levels and PATCHes the row. Best-effort — on failure we revert locally and
+ * let the user retry. The chip is hidden for monitor-mode agents (flight,
+ * weather, chat_digest) because they have no proposals to apply.
+ */
+function AutonomyChip({
+  tripId,
+  grid,
+  onChange,
+}: {
+  tripId: string;
+  grid: CustomGridData;
+  onChange: (next: CustomGridData) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  // Only propose-mode agents act on autonomy. Hide the chip for the others.
+  if (grid.agentType !== "itinerary_drafter" && grid.agentType !== "packing_suggester") {
+    return null;
+  }
+
+  async function cycle() {
+    const next = AUTONOMY_NEXT[grid.autonomy];
+    const prev = grid.autonomy;
+    setSaving(true);
+    onChange({ ...grid, autonomy: next });
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/custom-grids/${grid.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ autonomy: next }),
+      });
+    } catch {
+      onChange({ ...grid, autonomy: prev });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={saving}
+      onClick={cycle}
+      className="rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--accent-line)] disabled:opacity-50"
+      title="Click to change autonomy"
+    >
+      ✦ {AUTONOMY_LABEL[grid.autonomy]}
+    </button>
+  );
+}
+
+interface DayForecast {
+  date: string;
+  condition: string;
+  highTempC: number;
+  lowTempC: number;
+  precipChance: number;
+}
+
+function WeatherForecastOutput({ output }: { output: Record<string, unknown> }) {
+  const location = output.location as string;
+  const units = (output.units as "c" | "f") ?? "c";
+  const summary = output.summary as string;
+  const days = (output.days as DayForecast[]) ?? [];
+  const rainyDates = (output.rainyDates as string[]) ?? [];
+
+  const today = days[0];
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {location}
+        </div>
+        {today && (
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-3xl font-semibold text-[var(--text-primary)]">
+              {formatTemp(today.highTempC, units)}
+            </span>
+            <span className="text-sm text-[var(--text-muted)]">
+              / {formatTemp(today.lowTempC, units)}
+            </span>
+            <span className="text-xs text-[var(--text-muted)]">· {today.condition}</span>
+          </div>
+        )}
+        {rainyDates.length > 0 && (
+          <div className="mt-1 inline-block rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]">
+            Rain on {rainyDates.length} day{rainyDates.length > 1 ? "s" : ""}
+          </div>
+        )}
+      </div>
+
+      {summary && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+
+      {days.length > 1 && (
+        <div className="mt-auto">
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Forecast
+          </div>
+          <ul className="mt-1 grid grid-cols-2 gap-1 text-[11px] sm:grid-cols-3">
+            {days.slice(0, 6).map((d) => (
+              <li
+                key={d.date}
+                className="flex items-center justify-between rounded-md border border-[var(--border-hairline)] px-2 py-1 text-[var(--text-muted)]"
+              >
+                <span className="truncate">{shortDate(d.date)}</span>
+                <span className="font-medium text-[var(--text-secondary)]">
+                  {formatTemp(d.highTempC, units)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChatDigestOutput({ output }: { output: Record<string, unknown> }) {
+  const summary = (output.summary as string) ?? "";
+  const decisions = (output.decisions as string[]) ?? [];
+  const openQuestions = (output.openQuestions as string[]) ?? [];
+  const since = output.sinceLabel as string | undefined;
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      {since && (
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">{since}</div>
+      )}
+      {summary && (
+        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+      {decisions.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Decisions
+          </div>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-[var(--text-secondary)]">
+            {decisions.map((d, i) => (
+              <li key={`d-${i}`}>{d}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {openQuestions.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Open questions
+          </div>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-[var(--text-secondary)]">
+            {openQuestions.map((q, i) => (
+              <li key={`q-${i}`}>{q}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatTemp(c: number, units: "c" | "f"): string {
+  if (units === "f") return `${Math.round(c * 9 / 5 + 32)}°F`;
+  return `${Math.round(c)}°C`;
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+}
+
+interface DraftedDay {
+  date: string;
+  title: string;
+  suggestions: Array<{ category: string; text: string }>;
+}
+
+function ItineraryDrafterOutput({
+  tripId,
+  output,
+}: {
+  tripId: string;
+  output: Record<string, unknown>;
+}) {
+  const destination = output.destination as string;
+  const overview = output.overview as string;
+  const days = (output.days as DraftedDay[]) ?? [];
+  const created = (output.created as number) ?? 0;
+  const skipped = (output.skipped as number) ?? 0;
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {destination} · {days.length} day{days.length === 1 ? "" : "s"}
+        </div>
+        <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+          <span>
+            {created} new suggestion{created === 1 ? "" : "s"} added to Ideas
+          </span>
+          {skipped > 0 && <span>· {skipped} skipped (duplicates)</span>}
+        </div>
+      </div>
+
+      {overview && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{overview}</p>
+      )}
+
+      <ul className="space-y-2 overflow-y-auto pr-1">
+        {days.slice(0, 4).map((day) => (
+          <li
+            key={day.date}
+            className="rounded-md border border-[var(--border-hairline)] px-2.5 py-2"
+          >
+            <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+              {shortDate(day.date)}
+            </div>
+            <div className="text-xs font-medium text-[var(--text-primary)]">{day.title}</div>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-[var(--text-muted)]">
+              {day.suggestions.slice(0, 3).map((s, i) => (
+                <li key={`${day.date}-${i}`}>{s.text}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+
+      <a
+        href={`/app/trips/${tripId}/ideas`}
+        className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
+      >
+        Review in Ideas ↗
+      </a>
+    </div>
+  );
+}
+
+function PackingSuggesterOutput({
+  tripId,
+  output,
+}: {
+  tripId: string;
+  output: Record<string, unknown>;
+}) {
+  const summary = (output.summary as string) ?? "";
+  const items = (output.items as Array<{ label: string; category: string }>) ?? [];
+  const weatherAware = !!output.weatherAware;
+  const weatherLocation = output.weatherLocation as string | null;
+  const created = (output.created as number) ?? 0;
+
+  const grouped = items.reduce<Record<string, Array<{ label: string; category: string }>>>(
+    (acc, item) => {
+      const cat = item.category;
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat]!.push(item);
+      return acc;
+    },
+    {},
+  );
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {items.length} item{items.length === 1 ? "" : "s"}
+          {weatherAware && weatherLocation ? ` · weather-aware (${weatherLocation})` : ""}
+        </div>
+        {summary && (
+          <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+        )}
+        {created > 0 && (
+          <div className="mt-1 inline-block rounded-full bg-[var(--status-ok-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-ok)]">
+            {created} added to Pack
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 overflow-y-auto pr-1">
+        {Object.entries(grouped).map(([cat, list]) => (
+          <div key={cat}>
+            <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+              {cat}
+            </div>
+            <ul className="mt-1 grid grid-cols-1 gap-0.5 text-[11px] text-[var(--text-muted)] sm:grid-cols-2">
+              {list.map((i, idx) => (
+                <li key={`${cat}-${idx}`} className="truncate">
+                  · {i.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <a
+        href={`/app/trips/${tripId}/pack`}
+        className="mt-auto text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
+      >
+        Open Pack ↗
+      </a>
+    </div>
+  );
+}
+
+function HotelPriceOutput({ output }: { output: Record<string, unknown> }) {
+  const currency = (output.currency as string) ?? "USD";
+  const perNight = output.cheapestPricePerNight as number;
+  const total = output.cheapestTotal as number;
+  const nights = output.nights as number;
+  const name = output.cheapestName as string;
+  const area = output.cheapestArea as string;
+  const rating = output.cheapestRating as number;
+  const city = output.city as string;
+  const checkIn = output.checkIn as string;
+  const checkOut = output.checkOut as string;
+  const budgetTotal = output.budgetTotal as number | null;
+  const underBudget = output.underBudget as boolean | null;
+  const bookingUrl = output.bookingUrl as string;
+  const summary = output.summary as string;
+  const quotes =
+    (output.quotes as Array<{ name: string; pricePerNight: number; area: string; rating: number }>) ?? [];
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {city} · {checkIn} → {checkOut} · {nights}n
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="text-3xl font-semibold text-[var(--text-primary)]">
+            {currency} {perNight}
+          </span>
+          <span className="text-xs text-[var(--text-muted)]">/ night</span>
+          {budgetTotal != null && (
+            <span
+              className={
+                underBudget
+                  ? "rounded-full bg-[var(--status-ok-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-ok)]"
+                  : "rounded-full bg-[var(--status-blocked-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-blocked)]"
+              }
+            >
+              {underBudget ? "Under budget" : `Over ${currency} ${budgetTotal}`}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 text-xs text-[var(--text-muted)]">
+          {name} · {area} · {rating}★ · Total {currency} {total}
+        </div>
+      </div>
+
+      {summary && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+
+      {quotes.length > 1 && (
+        <div className="mt-auto">
+          <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+            Other options
+          </div>
+          <ul className="mt-1 space-y-1 text-xs">
+            {quotes
+              .slice()
+              .sort((a, b) => a.pricePerNight - b.pricePerNight)
+              .slice(1, 4)
+              .map((q, i) => (
+                <li
+                  key={`${q.name}-${i}`}
+                  className="flex items-center justify-between text-[var(--text-muted)]"
+                >
+                  <span className="truncate">
+                    {q.name} · {q.area}
+                  </span>
+                  <span>
+                    {currency} {q.pricePerNight} · {q.rating}★
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+
+      {bookingUrl && (
+        <a
+          href={bookingUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-[10px] uppercase tracking-wide text-[var(--accent-line)] hover:underline"
+        >
+          Book ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+function ConsensusRadarOutput({ output }: { output: Record<string, unknown> }) {
+  const summary = (output.summary as string) ?? "";
+  const candidates =
+    (output.candidates as Array<{
+      topic: string;
+      leaningOption: string;
+      confidence: number;
+      rationale: string;
+    }>) ?? [];
+  const usedDigest = !!output.usedDigest;
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          Soft consensus{usedDigest ? " · reading digest" : ""}
+        </div>
+        {summary && (
+          <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+        )}
+      </div>
+
+      {candidates.length > 0 && (
+        <ul className="space-y-2 overflow-y-auto pr-1">
+          {candidates.map((c, i) => (
+            <li
+              key={`${c.topic}-${i}`}
+              className="rounded-md border border-[var(--border-hairline)] px-2.5 py-2"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-[var(--text-primary)]">{c.topic}</span>
+                <span className="rounded-full bg-[var(--accent-line-soft)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--accent-line)]">
+                  {Math.round(c.confidence * 100)}%
+                </span>
+              </div>
+              <div className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                Leaning: <strong>{c.leaningOption}</strong>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+                {c.rationale}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function formatRelative(iso: string): string {

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import type { PublicAgent } from "@/services/agents/registry";
 import type { CustomGrid } from "@/app/api/app/trips/[tripId]/custom-grids/route";
-import type { AgentConfigField } from "@/services/agents/types";
+import type { AgentAutonomy, AgentConfigField } from "@/services/agents/types";
 
 interface Props {
   tripId: string;
@@ -31,6 +31,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
   const [selected, setSelected] = useState<PublicAgent | null>(null);
   const [title, setTitle] = useState("");
   const [config, setConfig] = useState<Record<string, unknown>>({});
+  const [autonomy, setAutonomy] = useState<AgentAutonomy>("propose_only");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +56,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
       setSelected(null);
       setTitle("");
       setConfig({});
+      setAutonomy("propose_only");
       setError(null);
       setSubmitting(false);
     }
@@ -80,6 +82,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
             agentType: selected.type,
             title: title.trim() || selected.label,
             config,
+            autonomy,
           }),
         },
       );
@@ -165,6 +168,9 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
                 onChange={(v) => setConfig((prev) => ({ ...prev, [f.name]: v }))}
               />
             ))}
+            {selected.mode === "propose" && (
+              <AutonomyPicker value={autonomy} onChange={setAutonomy} />
+            )}
           </div>
         )}
 
@@ -251,6 +257,69 @@ function ConfigFieldInput({
           ))}
         </select>
       )}
+    </div>
+  );
+}
+
+const AUTONOMY_OPTIONS: Array<{
+  value: AgentAutonomy;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: "propose_only",
+    label: "Propose only",
+    hint: "Suggestions land in Ideas. Nothing is added to the trip until a human confirms.",
+  },
+  {
+    value: "auto_apply_with_undo",
+    label: "Auto-apply with undo",
+    hint: "Suggestions are also added to the To-Do board, with a Dismiss button to remove them.",
+  },
+  {
+    value: "auto_apply",
+    label: "Auto-apply",
+    hint: "Suggestions are added to the To-Do board silently. Trust the agent.",
+  },
+];
+
+function AutonomyPicker({
+  value,
+  onChange,
+}: {
+  value: AgentAutonomy;
+  onChange: (next: AgentAutonomy) => void;
+}) {
+  return (
+    <div className="grid gap-2">
+      <label className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
+        Autonomy
+      </label>
+      <div className="grid gap-1">
+        {AUTONOMY_OPTIONS.map((opt) => (
+          <label
+            key={opt.value}
+            className={`flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2 text-xs ${
+              value === opt.value
+                ? "border-[var(--accent-line)] bg-[var(--accent-line-soft)]"
+                : "border-[var(--border-hairline)] hover:border-[var(--border-strong)]"
+            }`}
+          >
+            <input
+              type="radio"
+              name="agent-autonomy"
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              className="mt-0.5"
+            />
+            <span className="flex-1">
+              <span className="block font-semibold text-[var(--text-primary)]">{opt.label}</span>
+              <span className="mt-0.5 block text-[11px] text-[var(--text-muted)]">{opt.hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

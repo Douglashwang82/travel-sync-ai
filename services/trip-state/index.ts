@@ -10,6 +10,12 @@ export interface CreateItemInput {
   description?: string;
   source?: ItemSource;
   deadlineAt?: string;
+  /** Registry key of the agent that produced this item, when source === 'ai'. */
+  sourceAgent?: string;
+  /** Soft FK to the agent run row that produced this item. */
+  sourceRunId?: string;
+  /** Trimmed inputs the agent saw — chat snippet, config, etc. */
+  sourceInputs?: Record<string, unknown>;
 }
 
 export interface UpdateItemInput {
@@ -40,6 +46,9 @@ export async function createItem(input: CreateItemInput): Promise<TransitionResu
       description: input.description ?? null,
       stage: "todo",
       source: input.source ?? "manual",
+      source_agent: input.sourceAgent ?? null,
+      source_run_id: input.sourceRunId ?? null,
+      source_inputs: input.sourceInputs ?? null,
       deadline_at: input.deadlineAt ?? null,
     })
     .select("*")

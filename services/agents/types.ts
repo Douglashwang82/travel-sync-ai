@@ -5,10 +5,44 @@ export type AgentOutputKind =
   | "summary"         // markdown summary
   | "list";           // bulleted items
 
+/**
+ * Collaboration mode — how the agent interacts with the trip and its members.
+ *
+ *  - `monitor`: read-only. Polls external state, writes only to its own
+ *    custom-grid output. Never mutates trip rows.
+ *  - `propose`: drafts ghost items into a "pending" lane that a human must
+ *    explicitly Confirm / Edit / Dismiss before they become committed state.
+ *  - `assist`: on-demand. Triggered by a human action (palette command,
+ *    button, slash). Produces a single transient output; no schedule.
+ *
+ * The bento frame shows the mode as a small chip; this is what users read to
+ * know whether something is "just an observation" vs. "needs my decision".
+ */
+export type AgentMode = "monitor" | "propose" | "assist";
+
+/**
+ * Per-grid trust dial. Controls whether a `propose`-mode agent only writes
+ * to the ghost lane (`propose_only`, default) or also applies its proposals
+ * to committed state. `monitor`-mode agents ignore this — they have nothing
+ * to apply.
+ */
+export type AgentAutonomy = "propose_only" | "auto_apply_with_undo" | "auto_apply";
+
 export interface AgentRunContext {
   tripId: string;
   customGridId: string;
   config: unknown;
+  autonomy: AgentAutonomy;
+  /**
+   * Returns the latest persisted output of another agent for the same trip,
+   * or `null` if no successful run is on record. Use this in `dependsOn`
+   * agents (e.g. `packing_suggester` reading `weather_forecast`).
+   *
+   * The result is whatever the upstream agent wrote to
+   * `custom_grids.last_output` — typed as `Record<string, unknown>` here;
+   * downstream agents own the cast.
+   */
+  getOutputOf: (agentType: string) => Promise<Record<string, unknown> | null>;
 }
 
 export interface AgentRunResult {
@@ -21,10 +55,17 @@ export interface AgentDefinition<Config = unknown> {
   label: string;                             // human-readable name in pickers
   description: string;                       // shown in the "Add grid" dialog
   icon: string;                              // single emoji for the tile header
+  mode: AgentMode;                           // collaboration contract — see AgentMode docs
   defaultFrequencyHours: number;
   configSchema: z.ZodType<Config>;           // validates `config` on create
   defaultConfig: Config;                     // initial values for the form
   configFields: AgentConfigField[];          // metadata to render the form
+  /**
+   * Optional list of agent types this one reads from. The cron sweeper runs
+   * dependencies before dependents on the same tick so `propose`/`assist`
+   * agents can use the latest `monitor` outputs.
+   */
+  dependsOn?: string[];
   run(ctx: AgentRunContext): Promise<AgentRunResult>;
 }
 

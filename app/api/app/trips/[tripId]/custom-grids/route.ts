@@ -3,11 +3,15 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { requireAppTripAccess } from "@/lib/app-server";
 import { getAgent } from "@/services/agents/registry";
+import type { AgentAutonomy } from "@/services/agents/types";
+
+const AutonomyEnum = z.enum(["propose_only", "auto_apply_with_undo", "auto_apply"]);
 
 const CreateSchema = z.object({
   agentType: z.string().min(1).max(64),
   title: z.string().min(1).max(120),
   frequencyHours: z.number().int().min(1).max(24 * 7).optional(),
+  autonomy: AutonomyEnum.optional(),
   config: z.record(z.string(), z.unknown()),
 });
 
@@ -21,6 +25,7 @@ export interface CustomGrid {
   config: unknown;
   isActive: boolean;
   frequencyHours: number;
+  autonomy: AgentAutonomy;
   nextRunAt: string | null;
   lastRunAt: string | null;
   lastStatus: "pending" | "running" | "success" | "failed" | null;
@@ -38,6 +43,7 @@ export function rowToGrid(row: Record<string, unknown>): CustomGrid {
     config: row.config,
     isActive: row.is_active as boolean,
     frequencyHours: row.frequency_hours as number,
+    autonomy: ((row.autonomy as AgentAutonomy | null) ?? "propose_only"),
     nextRunAt: (row.next_run_at as string | null) ?? null,
     lastRunAt: (row.last_run_at as string | null) ?? null,
     lastStatus: (row.last_status as CustomGrid["lastStatus"]) ?? null,
@@ -57,7 +63,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const { data, error } = await db
     .from("custom_grids")
     .select(
-      "id, trip_id, agent_type, title, config, is_active, frequency_hours, next_run_at, last_run_at, last_status, last_output, last_error, created_at",
+      "id, trip_id, agent_type, title, config, is_active, frequency_hours, autonomy, next_run_at, last_run_at, last_status, last_output, last_error, created_at",
     )
     .eq("trip_id", tripId)
     .order("created_at", { ascending: true });
@@ -123,10 +129,11 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       title: parsed.data.title,
       config: configParsed.data,
       frequency_hours: parsed.data.frequencyHours ?? agent.defaultFrequencyHours,
+      autonomy: parsed.data.autonomy ?? "propose_only",
       next_run_at: new Date().toISOString(),
     })
     .select(
-      "id, trip_id, agent_type, title, config, is_active, frequency_hours, next_run_at, last_run_at, last_status, last_output, last_error, created_at",
+      "id, trip_id, agent_type, title, config, is_active, frequency_hours, autonomy, next_run_at, last_run_at, last_status, last_output, last_error, created_at",
     )
     .single();
 
