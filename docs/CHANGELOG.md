@@ -10,6 +10,9 @@
 - Supabase migration `20260409010000_trip_item_kinds.sql` — adds `item_kind TEXT NOT NULL DEFAULT 'task'` to `trip_items` with check constraint `('task', 'decision')`
 - `__tests__/unit/option-command.test.ts` — 10 unit tests covering input validation, trip/item lookup, task-vs-decision guard, successful addition on todo and pending items, duplicate rejection, item-kind preference, and DB error path
 
+### Changed
+- Gemini client now defaults to `gemini-2.5-flash` and supports `GEMINI_MODEL` override.
+
 ## [Unreleased] — Phase 5: Automation and Hardening
 
 ### Added
@@ -60,7 +63,7 @@
 - `GET /api/cron/stale-reminders` — nudges groups with 48h+ untouched To-Do items (runs hourly)
 - `GET /api/cron/cleanup` — purges expired raw_messages, old line_events, old analytics (runs daily)
 - Supabase migration: `increment_retry_count` RPC for atomic retry tracking
-- Gemini client (`lib/gemini.ts`) — `generateJson<T>()` and `generateText()` using `gemini-2.0-flash`
+- Gemini client (`lib/gemini.ts`) — `generateJson<T>()` and `generateText()` using Google Gemini
 - Switched LLM dependency from `openai` to `@google/genai`
 
 ## [Unreleased] — Phase 1: Foundation

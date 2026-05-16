@@ -91,6 +91,59 @@ export async function updateItem(
 }
 
 /**
+ * Move an item directly between board stages from the web app.
+ * This is separate from vote/confirm flows, which carry option and notification semantics.
+ */
+export async function moveItemStage(
+  itemId: string,
+  stage: ItemStage
+): Promise<TransitionResult> {
+  const db = createAdminClient();
+
+  const { data: existing } = await db
+    .from("trip_items")
+    .select("id, item_type, stage")
+    .eq("id", itemId)
+    .single();
+
+  if (!existing) {
+    return { ok: false, error: "Item not found", code: "NOT_FOUND" };
+  }
+
+  const patch: Record<string, unknown> = { stage };
+
+  if (stage === "confirmed") {
+    patch.deadline_at = null;
+    patch.booking_status = BOOKABLE_ITEM_TYPES.includes(existing.item_type as ItemType)
+      ? "needed"
+      : "not_required";
+  } else {
+    patch.confirmed_option_id = null;
+    patch.booking_status = "not_required";
+    patch.booking_ref = null;
+    patch.booked_by_line_user_id = null;
+    patch.booked_at = null;
+    if (stage === "todo") {
+      patch.deadline_at = null;
+      patch.status_reason = null;
+      patch.tie_extension_count = 0;
+    }
+  }
+
+  const { data, error } = await db
+    .from("trip_items")
+    .update(patch)
+    .eq("id", itemId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: "Failed to move item", code: "DB_ERROR" };
+  }
+  return { ok: true, item: data as TripItem };
+}
+
+/**
  * Soft-delete: move item back to todo and clear confirmed option.
  * Hard delete is not exposed to prevent accidental data loss.
  */

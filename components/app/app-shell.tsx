@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "@/components/app/app-sidebar";
 
@@ -13,6 +14,8 @@ export function AppShell({
   children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname();
+  const isTripWorkspace = pathname?.startsWith("/app/trips/");
 
   return (
     <div
@@ -34,7 +37,10 @@ export function AppShell({
       >
         <main
           id="app-main"
-          className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8"
+          className={cn(
+            "mx-auto w-full px-4 py-6 sm:px-6 sm:py-8",
+            isTripWorkspace ? "md:max-w-none lg:px-8 2xl:px-10" : "max-w-6xl"
+          )}
         >
           {children}
         </main>

@@ -9,12 +9,13 @@ import {
 import {
   createItem,
   updateItem,
+  moveItemStage,
   deleteItem,
   reopenItem,
   confirmBooking,
 } from "@/services/trip-state";
 import { rememberPlace } from "@/services/memory";
-import type { ItemType } from "@/lib/types";
+import type { ItemKind, ItemStage, ItemType } from "@/lib/types";
 
 const PLACE_ITEM_TYPES: ReadonlyArray<ItemType> = [
   "hotel",
@@ -36,6 +37,8 @@ const ItemTypeEnum = z.enum([
   "other",
 ]);
 
+const ItemKindEnum = z.enum(["task", "decision"]);
+
 const PlaceSchema = z.object({
   name: z.string().min(1).max(200),
   address: z.string().max(400).optional().nullable(),
@@ -48,6 +51,7 @@ const CreateSchema = z.object({
   action: z.literal("create"),
   title: z.string().min(1).max(200),
   itemType: ItemTypeEnum.optional(),
+  itemKind: ItemKindEnum.optional(),
   description: z.string().max(1000).optional(),
   deadlineAt: z.string().datetime().nullable().optional(),
   fromSuggestion: z.boolean().optional(),
@@ -80,9 +84,16 @@ const MarkBookedSchema = z.object({
   bookingRef: z.string().min(1).max(500),
 });
 
+const MoveStageSchema = z.object({
+  action: z.literal("move_stage"),
+  itemId: z.string().uuid(),
+  stage: z.enum(["todo", "pending", "confirmed"]),
+});
+
 const BodySchema = z.discriminatedUnion("action", [
   CreateSchema,
   UpdateSchema,
+  MoveStageSchema,
   ReopenSchema,
   DeleteSchema,
   MarkBookedSchema,
@@ -135,6 +146,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
         tripId,
         title: data.title,
         itemType: data.itemType as ItemType | undefined,
+        itemKind: data.itemKind as ItemKind | undefined,
         description: data.description,
         deadlineAt: data.deadlineAt ?? undefined,
         source: data.fromSuggestion ? "ai" : "manual",
@@ -215,6 +227,20 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
         assignedToLineUserId: data.assignedTo ?? undefined,
       });
 
+      if (!result.ok) {
+        return NextResponse.json(
+          { error: result.error, code: result.code },
+          { status: result.code === "NOT_FOUND" ? 404 : 500 }
+        );
+      }
+      return NextResponse.json(result.item);
+    }
+
+    case "move_stage": {
+      const auth = await requireAppOrganizerForItem(req, data.itemId);
+      if (!auth.ok) return auth.response;
+
+      const result = await moveItemStage(data.itemId, data.stage as ItemStage);
       if (!result.ok) {
         return NextResponse.json(
           { error: result.error, code: result.code },
