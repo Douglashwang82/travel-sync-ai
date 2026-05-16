@@ -3,5 +3,5 @@
 import { TripItineraryClient } from "@/components/app/trip-itinerary";
 
 export function ItineraryGrid({ tripId }: { tripId: string }) {
-  return <TripItineraryClient tripId={tripId} />;
+  return <TripItineraryClient tripId={tripId} scheduledOnly />;
 }

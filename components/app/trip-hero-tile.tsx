@@ -6,6 +6,7 @@ import { useAppLocale } from "@/components/app/app-locale-provider";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
 import type { Trip } from "@/lib/types";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
+import { dispatchTripUpdated } from "@/components/app/trip-update-events";
 import {
   IconArrowUpRight,
   IconCalendar,
@@ -316,6 +317,7 @@ function useTripEditor(trip: Trip, tripId: string, onTripChange?: (t: Trip) => v
         body: JSON.stringify(payload),
       });
       onTripChange?.(res.trip);
+      dispatchTripUpdated(res.trip);
       setEditing(false);
     } catch (err) {
       setError(err instanceof AppApiFetchError ? err.message : "Save failed");

@@ -8,7 +8,7 @@ A collaborative group-trip planning bot for LINE. It reads your group chat, turn
 
 ## Features
 
-- **AI message parsing** — Gemini 2.0 Flash extracts destinations, dates, preferences automatically
+- **AI message parsing** — Gemini extracts destinations, dates, preferences automatically
 - **Slash commands** — `/start`, `/vote`, `/exp`, `/status`, `/ready`, `/ops`, `/incident`, and 15 more
 - **Group voting** — Flex Message carousels with Google Places enrichment; majority auto-confirms
 - **Expense splitting** — optimal settlement (minimum transfers) with per-trip summaries
@@ -81,6 +81,7 @@ Copy `.env.example` → `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase anon key (browser-safe) |
 | `SUPABASE_SECRET_KEY` | Yes | Supabase service-role key (server-only) |
 | `GEMINI_API_KEY` | Yes | Google Gemini API key |
+| `GEMINI_MODEL` | No | Gemini model override; defaults to `gemini-2.5-flash` |
 | `GOOGLE_PLACES_API_KEY` | No | Enables Places enrichment in voting |
 | `CRON_SECRET` | Yes (prod) | Bearer token for Vercel cron authentication |
 | `SENTRY_DSN` | No | Sentry DSN for error monitoring |

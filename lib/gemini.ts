@@ -9,7 +9,23 @@ function getClient(): GoogleGenAI {
   return _client;
 }
 
-const MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEPRECATED_MODEL_FALLBACKS = new Set(["gemini-2.0-flash", "gemini-2.0-flash-001"]);
+
+export function getModel(): string {
+  const configuredModel = process.env.GEMINI_MODEL?.trim();
+  if (!configuredModel) return DEFAULT_MODEL;
+
+  const normalizedModel = configuredModel.replace(/^models\//, "");
+  if (DEPRECATED_MODEL_FALLBACKS.has(normalizedModel)) {
+    console.warn(
+      `[gemini] ${configuredModel} is deprecated/unavailable; falling back to ${DEFAULT_MODEL}`
+    );
+    return DEFAULT_MODEL;
+  }
+
+  return configuredModel;
+}
 
 // ─── Circuit Breaker ──────────────────────────────────────────────────────────
 // Prevents hammering a degraded Gemini API. State resets on cold start, which
@@ -85,10 +101,11 @@ export async function generateJson<T>(
   }
 
   const client = getClient();
-  console.log(`[gemini] calling ${MODEL} with JSON output...`);
+  const model = getModel();
+  console.log(`[gemini] calling ${model} with JSON output...`);
   try {
     const response = await client.models.generateContent({
-      model: MODEL,
+      model,
       contents: [{ role: "user", parts: [{ text: userMessage }] }],
       config: {
         systemInstruction: systemPrompt,
@@ -126,9 +143,11 @@ export async function generateText(
   }
 
   const client = getClient();
+  const model = getModel();
+  console.log(`[gemini] calling ${model} with text output...`);
   try {
     const response = await client.models.generateContent({
-      model: MODEL,
+      model,
       contents: [{ role: "user", parts: [{ text: userMessage }] }],
       config: { systemInstruction: systemPrompt },
     });
@@ -162,6 +181,7 @@ export async function generateConversation(
   }
 
   const client = getClient();
+  const model = getModel();
   const contents = [
     ...history.map((msg) => ({
       role: msg.role === "agent" ? "model" : "user",
@@ -171,8 +191,9 @@ export async function generateConversation(
   ];
 
   try {
+    console.log(`[gemini] calling ${model} with conversation output...`);
     const response = await client.models.generateContent({
-      model: MODEL,
+      model,
       contents,
       config: { systemInstruction: systemPrompt },
     });

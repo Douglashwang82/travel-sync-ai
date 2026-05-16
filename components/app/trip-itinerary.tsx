@@ -25,6 +25,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
 import {
+  isTripUpdatedEvent,
+  TRIP_UPDATED_EVENT,
+} from "@/components/app/trip-update-events";
+import {
   TabPageHeader,
   TabError,
   TabSkeleton,
@@ -159,7 +163,13 @@ interface TimelineDay {
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
-export function TripItineraryClient({ tripId }: { tripId: string }) {
+export function TripItineraryClient({
+  tripId,
+  scheduledOnly = false,
+}: {
+  tripId: string;
+  scheduledOnly?: boolean;
+}) {
   const [data, setData] = useState<ItineraryResponse | null>(null);
   const [members, setMembers] = useState<AppMember[]>([]);
   const [role, setRole] = useState<"organizer" | "member">("member");
@@ -189,10 +199,38 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
     })();
   }, [load]);
 
+  useEffect(() => {
+    function handleTripUpdated(event: Event) {
+      if (!isTripUpdatedEvent(event) || event.detail.tripId !== tripId) return;
+
+      const trip = event.detail.trip;
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              trip: {
+                ...prev.trip,
+                destination_name: trip.destination_name,
+                start_date: trip.start_date,
+                end_date: trip.end_date,
+              },
+            }
+          : prev
+      );
+    }
+
+    window.addEventListener(TRIP_UPDATED_EVENT, handleTripUpdated);
+    return () => window.removeEventListener(TRIP_UPDATED_EVENT, handleTripUpdated);
+  }, [tripId]);
+
   const days: TimelineDay[] = useMemo(() => {
     if (!data) return [];
 
-    const filtered = data.items.filter((i) =>
+    const displayItems = scheduledOnly
+      ? data.items.filter((i) => i.deadline_at)
+      : data.items;
+
+    const filtered = displayItems.filter((i) =>
       filter === "all" ? true : i.stage === filter
     );
 
@@ -265,16 +303,15 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
     }
 
     return result;
-  }, [data, filter]);
+  }, [data, filter, scheduledOnly]);
 
-  useEffect(() => {
-    if (selectedDayKey && !days.some((day) => day.key === selectedDayKey)) {
-      setSelectedDayKey(null);
-    }
-  }, [days, selectedDayKey]);
+  const activeSelectedDayKey =
+    selectedDayKey && days.some((day) => day.key === selectedDayKey)
+      ? selectedDayKey
+      : null;
 
-  const visibleDays = selectedDayKey
-    ? days.filter((day) => day.key === selectedDayKey)
+  const visibleDays = activeSelectedDayKey
+    ? days.filter((day) => day.key === activeSelectedDayKey)
     : days;
 
   if (error) {
@@ -292,10 +329,16 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
   }
 
   const counts = {
-    all: data.items.length,
-    confirmed: data.items.filter((i) => i.stage === "confirmed").length,
-    pending: data.items.filter((i) => i.stage === "pending").length,
-    todo: data.items.filter((i) => i.stage === "todo").length,
+    all: data.items.filter((i) => !scheduledOnly || i.deadline_at).length,
+    confirmed: data.items.filter(
+      (i) => (!scheduledOnly || i.deadline_at) && i.stage === "confirmed"
+    ).length,
+    pending: data.items.filter(
+      (i) => (!scheduledOnly || i.deadline_at) && i.stage === "pending"
+    ).length,
+    todo: data.items.filter(
+      (i) => (!scheduledOnly || i.deadline_at) && i.stage === "todo"
+    ).length,
   };
 
   return (
@@ -305,7 +348,7 @@ export function TripItineraryClient({ tripId }: { tripId: string }) {
         setFilter={setFilter}
         counts={counts}
         days={days}
-        selectedDayKey={selectedDayKey}
+        selectedDayKey={activeSelectedDayKey}
         onSelectDay={setSelectedDayKey}
       />
 
