@@ -1,0 +1,104 @@
+{
+  "region": "Niseko",
+  "prefecture": "Hokkaido",
+  "country": "Japan",
+  "season": {
+    "typical_open": "early December",
+    "typical_close": "early May",
+    "peak_powder": "January to mid-February"
+  },
+  "resorts": [
+    {
+      "id": "niseko-grand-hirafu",
+      "name": "Niseko Grand Hirafu",
+      "name_ja": "ニセコグラン・ヒラフ",
+      "part_of": "Niseko United",
+      "address": "204 Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8627,
+      "lng": 140.7068,
+      "website": "https://www.grand-hirafu.jp/winter/en/",
+      "lifts": 13,
+      "courses": 22,
+      "vertical_m": 940,
+      "longest_run_m": 5600,
+      "top_elevation_m": 1200,
+      "base_elevation_m": 260,
+      "night_skiing": true,
+      "notes": "Largest of the four Niseko United resorts; busiest base village with most lodging, restaurants and nightlife."
+    },
+    {
+      "id": "niseko-hanazono",
+      "name": "Niseko Hanazono Resort",
+      "name_ja": "ニセコHANAZONOリゾート",
+      "part_of": "Niseko United",
+      "address": "328-36 Aza-Iwaobetsu, Kutchan, Abuta District, Hokkaido 044-0084",
+      "lat": 42.8804,
+      "lng": 140.7283,
+      "website": "https://hanazononiseko.com/en/winter",
+      "lifts": 5,
+      "courses": 9,
+      "vertical_m": 760,
+      "night_skiing": false,
+      "notes": "Connected to Hirafu via lifts and Niseko United pass. Wide groomers, family terrain park, premium gondola, and Park Hyatt at the base."
+    },
+    {
+      "id": "niseko-village",
+      "name": "Niseko Village",
+      "name_ja": "ニセコビレッジ",
+      "part_of": "Niseko United",
+      "address": "Higashiyama Onsen, Niseko-cho, Abuta-gun, Hokkaido 048-1592",
+      "lat": 42.8388,
+      "lng": 140.6826,
+      "website": "https://www.niseko-village.com/en/winter/",
+      "lifts": 8,
+      "courses": 27,
+      "vertical_m": 890,
+      "longest_run_m": 5000,
+      "night_skiing": true,
+      "notes": "Self-contained ski-in/ski-out village with Hilton, Green Leaf and Kasara properties at the base of the gondola."
+    },
+    {
+      "id": "niseko-annupuri",
+      "name": "Niseko Annupuri International",
+      "name_ja": "ニセコアンヌプリ国際スキー場",
+      "part_of": "Niseko United",
+      "address": "485 Aza-Niseko, Niseko-cho, Abuta District, Hokkaido 048-1511",
+      "lat": 42.8344,
+      "lng": 140.6608,
+      "website": "https://annupuri.info/winter/english/",
+      "lifts": 6,
+      "courses": 14,
+      "vertical_m": 760,
+      "longest_run_m": 4000,
+      "night_skiing": true,
+      "notes": "Quietest of the four, wide and forgiving runs, good for families and intermediates. Connects to Niseko Village mid-mountain."
+    },
+    {
+      "id": "niseko-moiwa",
+      "name": "Niseko Moiwa Ski Resort",
+      "name_ja": "ニセコモイワスキーリゾート",
+      "part_of": null,
+      "address": "448 Aza-Niseko, Niseko-cho, Abuta District, Hokkaido 048-1511",
+      "lat": 42.8265,
+      "lng": 140.6451,
+      "website": "https://niseko-moiwa.jp/en/",
+      "lifts": 4,
+      "courses": 11,
+      "vertical_m": 555,
+      "night_skiing": false,
+      "notes": "Not part of the Niseko United pass; separate ticket. Small, quiet, locals' favorite with excellent tree skiing on powder days."
+    }
+  ],
+  "lift_passes": [
+    {
+      "name": "Niseko United All-Mountain Pass",
+      "covers": ["niseko-grand-hirafu", "niseko-hanazono", "niseko-village", "niseko-annupuri"],
+      "indicative_price_jpy": {
+        "1_day_adult": 9700,
+        "5_day_adult": 41600
+      },
+      "url": "https://www.niseko.ne.jp/en/lift/",
+      "notes": "Indicative 2024/25 walk-up rates; online and multi-day passes are cheaper. Verify before purchase."
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "region": "Niseko",
+  "price_band_legend": {
+    "$": "under 2,500 JPY / person",
+    "$$": "2,500 – 6,000 JPY / person",
+    "$$$": "6,000 – 15,000 JPY / person",
+    "$$$$": "15,000+ JPY / person"
+  },
+  "restaurants": [
+    {
+      "id": "kamimura",
+      "name": "Kamimura",
+      "cuisine": "modern_french_japanese",
+      "price_band": "$$$$",
+      "village": "Hirafu",
+      "address": "190-4 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8623,
+      "lng": 140.7099,
+      "website": "https://kamimura-niseko.com/",
+      "reservation_required": true,
+      "notes": "Niseko's flagship fine-dining restaurant by chef Yuichi Kamimura (formerly Tetsuya's). Tasting menu only; book months ahead in peak season."
+    },
+    {
+      "id": "rakuichi-soba",
+      "name": "Rakuichi Soba",
+      "cuisine": "soba",
+      "price_band": "$$",
+      "village": "Niseko (Hanazono side)",
+      "address": "431 Aza Niseko, Niseko-cho, Abuta District, Hokkaido 048-1511",
+      "lat": 42.8252,
+      "lng": 140.6740,
+      "reservation_required": true,
+      "notes": "Tiny 12-seat counter making hand-cut soba; featured by Anthony Bourdain. Lunch only; reservations essential."
+    },
+    {
+      "id": "bang-bang",
+      "name": "Bang Bang",
+      "cuisine": "izakaya_yakitori",
+      "price_band": "$$",
+      "village": "Hirafu",
+      "address": "188-24 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8631,
+      "lng": 140.7102,
+      "reservation_required": false,
+      "notes": "Classic Hirafu yakitori counter; long queues at peak season. Walk-in only."
+    },
+    {
+      "id": "abucha-2",
+      "name": "Abucha 2",
+      "cuisine": "izakaya",
+      "price_band": "$$",
+      "village": "Hirafu",
+      "address": "167-3 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8617,
+      "lng": 140.7081,
+      "reservation_required": true,
+      "notes": "Cozy izakaya in lower Hirafu. Hot pot, sashimi, sake. Book a few days ahead."
+    },
+    {
+      "id": "ezo-seafoods",
+      "name": "Ezo Seafoods",
+      "cuisine": "seafood_oyster_bar",
+      "price_band": "$$",
+      "village": "Hirafu",
+      "address": "188-19 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081 (Skye Niseko, ground floor)",
+      "lat": 42.8633,
+      "lng": 140.7090,
+      "website": "https://ezoseafoods.com/",
+      "reservation_required": true,
+      "notes": "Hokkaido oysters, scallops and crab in a casual bar setting at the base of Hirafu."
+    },
+    {
+      "id": "niseko-pizza",
+      "name": "Niseko Pizza",
+      "cuisine": "pizza",
+      "price_band": "$$",
+      "village": "Hirafu",
+      "address": "188-14 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8628,
+      "lng": 140.7088,
+      "website": "https://www.nisekopizza.com/",
+      "reservation_required": false,
+      "notes": "Wood-fired pizzas; reliable family-friendly option in Hirafu Village."
+    },
+    {
+      "id": "an-dining",
+      "name": "An Dining",
+      "cuisine": "kaiseki_steak",
+      "price_band": "$$$$",
+      "village": "Hanazono",
+      "address": "Park Hyatt Niseko Hanazono, 328-36 Aza-Iwaobetsu, Kutchan, Hokkaido 044-0084",
+      "lat": 42.8804,
+      "lng": 140.7295,
+      "website": "https://www.hyatt.com/park-hyatt/en-US/spkph-park-hyatt-niseko-hanazono/dining",
+      "reservation_required": true,
+      "notes": "Hyatt-run kaiseki and Hokkaido beef restaurant. One of the few high-end options on the Hanazono side."
+    },
+    {
+      "id": "the-barn-by-odin",
+      "name": "The Barn by Odin",
+      "cuisine": "modern_european",
+      "price_band": "$$$",
+      "village": "Hirafu",
+      "address": "188-19 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8634,
+      "lng": 140.7088,
+      "reservation_required": true,
+      "notes": "Wood-fired modern European with a strong wine list; under the AYA Niseko building."
+    },
+    {
+      "id": "tsubara-tsubara",
+      "name": "Tsubara Tsubara",
+      "cuisine": "japanese_curry",
+      "price_band": "$",
+      "village": "Hirafu",
+      "address": "190-15 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8625,
+      "lng": 140.7100,
+      "reservation_required": false,
+      "notes": "Cheap, hearty soup curry — perfect post-ski lunch. Cash only."
+    },
+    {
+      "id": "graubunden",
+      "name": "Graubünden Café",
+      "cuisine": "cafe_sandwiches",
+      "price_band": "$",
+      "village": "Lower Hirafu",
+      "address": "132-26 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8601,
+      "lng": 140.7062,
+      "reservation_required": false,
+      "notes": "Long-running Swiss-style cafe; sandwiches, soups, baked goods. Great breakfast or take-away lunch stop."
+    },
+    {
+      "id": "kumo-bar",
+      "name": "Kumo Bar",
+      "cuisine": "cocktail_bar",
+      "price_band": "$$",
+      "village": "Hirafu",
+      "address": "190 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8627,
+      "lng": 140.7097,
+      "reservation_required": false,
+      "notes": "Speakeasy-style cocktail bar; good late-night stop after dinner."
+    },
+    {
+      "id": "boot-bar-and-grill",
+      "name": "The Fridge Door Bar / Boot Bar & Grill",
+      "cuisine": "pub_grill",
+      "price_band": "$$",
+      "village": "Hirafu",
+      "address": "188-7 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8629,
+      "lng": 140.7079,
+      "reservation_required": false,
+      "notes": "Apres-ski staple — burgers, beers and live music on weekends."
+    },
+    {
+      "id": "boyoso-onsen-resturant",
+      "name": "Boyo-so Mountain Lodge (lunch)",
+      "cuisine": "japanese_curry_ramen",
+      "price_band": "$",
+      "village": "Mid-mountain, Annupuri side",
+      "address": "On the Niseko Annupuri ski area, mid-station",
+      "lat": 42.8400,
+      "lng": 140.6670,
+      "reservation_required": false,
+      "notes": "Old-school mountain hut for soup curry, ramen and a quiet beer mid-day."
+    }
+  ]
+}
