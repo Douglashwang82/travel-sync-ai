@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db";
 import { requireAppTripAccess } from "@/lib/app-server";
+import { geocodeAddress } from "@/services/decisions/places";
 
 type RouteContext = { params: Promise<{ tripId: string }> };
 
@@ -51,6 +52,8 @@ export interface ItineraryResponse {
   items: ItineraryEntry[];
 }
 
+const GEOCODE_BACKFILL_LIMIT = 5;
+
 export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
   const auth = await requireAppTripAccess(req, tripId);
@@ -92,10 +95,40 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     );
   }
 
-  const items: ItineraryEntry[] = (data ?? []).map((row) => {
+  const items: ItineraryEntry[] = await Promise.all((data ?? []).map(async (row) => {
     const opt = Array.isArray(row.trip_item_options)
       ? row.trip_item_options[0]
       : row.trip_item_options;
+    if (
+      opt?.address &&
+      (opt.lat == null || opt.lng == null) &&
+      GEOCODE_BACKFILL_LIMIT > 0
+    ) {
+      const addressOnlyRows = (data ?? []).filter((candidate) => {
+        const candidateOpt = Array.isArray(candidate.trip_item_options)
+          ? candidate.trip_item_options[0]
+          : candidate.trip_item_options;
+        return (
+          candidateOpt?.address &&
+          (candidateOpt.lat == null || candidateOpt.lng == null)
+        );
+      });
+      const shouldBackfill = addressOnlyRows
+        .slice(0, GEOCODE_BACKFILL_LIMIT)
+        .some((candidate) => candidate.id === row.id);
+
+      if (shouldBackfill) {
+        const coords = await geocodeAddress(opt.address as string);
+        if (coords) {
+          opt.lat = coords.lat;
+          opt.lng = coords.lng;
+          await db
+            .from("trip_item_options")
+            .update({ lat: coords.lat, lng: coords.lng })
+            .eq("id", opt.id);
+        }
+      }
+    }
     return {
       id: row.id as string,
       title: row.title as string,
@@ -123,7 +156,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
           }
         : null,
     };
-  });
+  }));
 
   return NextResponse.json<ItineraryResponse>({
     trip: {
