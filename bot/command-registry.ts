@@ -21,6 +21,7 @@ import { handleOps } from "./commands/ops";
 import { handleOption } from "./commands/option";
 import { handleOptin, handleOptout } from "./commands/optout";
 import { handlePack } from "./commands/pack";
+import { handlePlan } from "./commands/plan";
 import { handleReady } from "./commands/ready";
 import { handleRecommend } from "./commands/recommend";
 import { handleShare } from "./commands/share";
@@ -51,6 +52,7 @@ export type CommandRoute = CommandCatalogEntry & {
 const COMMAND_HANDLERS = {
   "/start": handleStart,
   "/status": noArgs(handleStatus),
+  "/plan": handlePlan,
   "/itinerary": handleItinerary,
   "/add": handleAdd,
   "/idea": handleIdea,

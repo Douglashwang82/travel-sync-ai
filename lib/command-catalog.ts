@@ -40,6 +40,15 @@ export const COMMAND_CATALOG = [
     category: "trip",
   },
   {
+    command: "/plan",
+    example: "/plan",
+    purpose: "用問答方式產生旅程草稿。",
+    description:
+      "回答幾個必選題，AI 會生成一份私人範本，確認後就會展開到旅程看板。",
+    icon: "AI",
+    category: "trip",
+  },
+  {
     command: "/itinerary",
     usage: "[date?]",
     example: "/itinerary 2026-07-15",
