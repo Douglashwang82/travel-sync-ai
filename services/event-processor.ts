@@ -175,6 +175,13 @@ async function handlePostback(
   const data = (postback?.data ?? payload.data) as string | undefined;
   if (!data) return;
 
+  // Survey postback scheme: survey|{sessionId}|{questionKey}|{value?}
+  // See design/trip-generation.md. Stubbed until /plan is implemented.
+  if (data.startsWith("survey|")) {
+    logger.info("survey postback received (stub)", { groupId: ctx.dbGroupId ?? undefined });
+    return;
+  }
+
   // Vote postback format: vote|{itemId}|{optionId}
   if (data.startsWith("vote|")) {
     const [, itemId, optionId] = data.split("|");
