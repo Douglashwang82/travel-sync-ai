@@ -39,4 +39,5 @@ export type SurveyAnswers = {
 };
 
 export { startOrResumeSurvey, recordAnswer, abandonSurvey } from "./survey";
-export { generateTemplateFromSurvey } from "./generator";
+export { generateTemplateFromSurvey, GenerationFailedError } from "./generator";
+export type { GenerationFailureReason } from "./generator";

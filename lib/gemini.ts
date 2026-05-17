@@ -162,6 +162,42 @@ export async function generateText(
   }
 }
 
+// ─── Embeddings ──────────────────────────────────────────────────────────────
+
+const EMBEDDING_MODEL = "text-embedding-004";
+const EMBEDDING_DIMS = 768;
+
+/**
+ * Embed a single text into a 768-dim vector suitable for pgvector.
+ * Used by the itinerary POI engine for vibe-based candidate retrieval.
+ * Throws GeminiUnavailableError when the circuit breaker is open.
+ */
+export async function generateEmbedding(text: string): Promise<number[]> {
+  if (!isCircuitAllowing()) {
+    throw new GeminiUnavailableError(`Gemini circuit breaker is OPEN — skipping embed`);
+  }
+
+  const client = getClient();
+  try {
+    const response = await client.models.embedContent({
+      model: EMBEDDING_MODEL,
+      contents: [{ role: "user", parts: [{ text }] }],
+    });
+    const values =
+      response.embeddings?.[0]?.values ?? (response as { embedding?: { values?: number[] } }).embedding?.values;
+    if (!values || values.length !== EMBEDDING_DIMS) {
+      throw new Error(`Unexpected embedding shape (got ${values?.length ?? 0} dims)`);
+    }
+    recordSuccess();
+    return values;
+  } catch (err) {
+    if (err instanceof GeminiUnavailableError) throw err;
+    recordFailure();
+    console.error(`[gemini] embed call failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw err;
+  }
+}
+
 export type ConversationMessage = { role: "user" | "agent"; content: string };
 
 /**

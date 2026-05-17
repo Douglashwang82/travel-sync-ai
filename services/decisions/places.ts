@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/db";
 import type { ItemType } from "@/lib/types";
 
 export interface PlaceCandidate {
@@ -364,6 +365,132 @@ interface GooglePlace {
     latitude?: number;
     longitude?: number;
   };
+  regularOpeningHours?: {
+    periods?: Array<{
+      open?: { day?: number; hour?: number; minute?: number };
+      close?: { day?: number; hour?: number; minute?: number };
+    }>;
+    weekdayDescriptions?: string[];
+  };
+}
+
+// ─── Batch live-data enrichment for the itinerary POI engine ─────────────────
+// Returns opening hours, rating, price level, lat/lng for a list of place_ids.
+// Backed by `place_details_cache` (7-day TTL) to keep Google Places spend in
+// check — details cost ~$17/1k calls and opening hours rarely change.
+
+export interface OpeningHoursPeriod {
+  /** 0 = Sunday … 6 = Saturday, matching Google's weekday numbering. */
+  openDay: number;
+  openMinutes: number;
+  closeDay: number;
+  closeMinutes: number;
+}
+
+export interface PlaceLiveData {
+  placeId: string;
+  name: string | null;
+  address: string | null;
+  rating: number | null;
+  priceLevel: string | null;
+  lat: number | null;
+  lng: number | null;
+  /** Empty array means "no hours known"; an always-open place returns one 0–10080 period. */
+  openingPeriods: OpeningHoursPeriod[];
+}
+
+const PLACE_DETAILS_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const LIVE_DETAILS_FIELDS =
+  "id,displayName,formattedAddress,rating,priceLevel,location,regularOpeningHours";
+
+export async function getPlaceDetailsBatch(placeIds: string[]): Promise<PlaceLiveData[]> {
+  const unique = Array.from(new Set(placeIds.filter((id) => id && id.length > 0)));
+  if (unique.length === 0) return [];
+
+  const db = createAdminClient();
+  const cutoff = new Date(Date.now() - PLACE_DETAILS_CACHE_TTL_MS).toISOString();
+
+  const { data: cachedRows } = await db
+    .from("place_details_cache")
+    .select("place_id, payload, fetched_at")
+    .in("place_id", unique)
+    .gte("fetched_at", cutoff);
+
+  const cached = new Map<string, PlaceLiveData>();
+  for (const row of cachedRows ?? []) {
+    cached.set(row.place_id as string, row.payload as PlaceLiveData);
+  }
+
+  const missing = unique.filter((id) => !cached.has(id));
+  const fetched = await Promise.all(missing.map((id) => fetchPlaceLiveData(id)));
+
+  const toUpsert: Array<{ place_id: string; payload: PlaceLiveData }> = [];
+  for (const live of fetched) {
+    if (!live) continue;
+    cached.set(live.placeId, live);
+    toUpsert.push({ place_id: live.placeId, payload: live });
+  }
+  if (toUpsert.length > 0) {
+    await db.from("place_details_cache").upsert(
+      toUpsert.map((r) => ({ ...r, fetched_at: new Date().toISOString() })),
+      { onConflict: "place_id" }
+    );
+  }
+
+  return unique.map((id) => cached.get(id)).filter((v): v is PlaceLiveData => v != null);
+}
+
+async function fetchPlaceLiveData(placeId: string): Promise<PlaceLiveData | null> {
+  const apiKey = getPlacesApiKey();
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+      headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": LIVE_DETAILS_FIELDS },
+    });
+    if (!res.ok) {
+      console.error("[places] live details API error", res.status, await res.text());
+      return null;
+    }
+    const data = (await res.json()) as GooglePlace;
+    return {
+      placeId: data.id,
+      name: data.displayName?.text ?? null,
+      address: data.formattedAddress ?? null,
+      rating: data.rating ?? null,
+      priceLevel: normalizePriceLevel(data.priceLevel),
+      lat: data.location?.latitude ?? null,
+      lng: data.location?.longitude ?? null,
+      openingPeriods: normalizeOpeningHours(data.regularOpeningHours?.periods),
+    };
+  } catch (err) {
+    console.error("[places] live details threw", err);
+    return null;
+  }
+}
+
+type GooglePeriod = NonNullable<NonNullable<GooglePlace["regularOpeningHours"]>["periods"]>[number];
+
+function normalizeOpeningHours(periods: GooglePeriod[] | undefined): OpeningHoursPeriod[] {
+  if (!periods || !Array.isArray(periods)) return [];
+  const out: OpeningHoursPeriod[] = [];
+  for (const p of periods) {
+    if (p.open?.day == null || p.open.hour == null) continue;
+    const openMinutes = (p.open.hour ?? 0) * 60 + (p.open.minute ?? 0);
+    // 24/7 places omit `close` entirely; represent as a single 0–10080 period.
+    if (!p.close) {
+      out.push({ openDay: 0, openMinutes: 0, closeDay: 6, closeMinutes: 24 * 60 });
+      return out;
+    }
+    const closeMinutes = (p.close.hour ?? 0) * 60 + (p.close.minute ?? 0);
+    out.push({
+      openDay: p.open.day,
+      openMinutes,
+      closeDay: p.close.day ?? p.open.day,
+      closeMinutes,
+    });
+  }
+  return out;
 }
 
 function normalizePlaceCandidate(place: GooglePlace): PlaceCandidate {
