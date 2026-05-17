@@ -38,6 +38,14 @@ export type SurveyAnswers = {
   must_haves?: string | null;
 };
 
-export { startOrResumeSurvey, recordAnswer, abandonSurvey } from "./survey";
+export {
+  startOrResumeSurvey,
+  recordAnswer,
+  abandonSurvey,
+  getSession,
+  markGenerated,
+  markForked,
+} from "./survey";
+export type { SurveySession } from "./survey";
 export { generateTemplateFromSurvey, GenerationFailedError } from "./generator";
 export type { GenerationFailureReason } from "./generator";
