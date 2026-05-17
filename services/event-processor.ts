@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/db";
 import { pushText, pushFlex } from "@/lib/line";
 import { track } from "@/lib/analytics";
@@ -31,6 +32,14 @@ interface EventContext {
   replyToken: string | undefined;
   messageText: string | undefined;
 }
+
+/**
+ * Internal event_type used to enqueue heavy work (currently itinerary
+ * generation) on the line_events queue. Defined here so the switch
+ * statement that dispatches it can reference it before the worker
+ * function is declared further down the file.
+ */
+export const INTERNAL_EVENT_GENERATE_TEMPLATE = "internal:generate_template";
 
 /**
  * Process a persisted LINE event asynchronously.
@@ -68,6 +77,10 @@ export async function processLineEvent(
 
       case "postback":
         await handlePostback(payload, ctx);
+        break;
+
+      case INTERNAL_EVENT_GENERATE_TEMPLATE:
+        await runGenerationJob(payload);
         break;
 
       default:
@@ -307,8 +320,10 @@ async function handleSurveyPostback(data: string, ctx: EventContext): Promise<vo
 
 /**
  * After any answer (postback or free-text), either push the next question or
- * trigger generation. Generation is awaited inline — slow but bounded; if we
- * see >10s p95 we'll move it onto the line_events queue.
+ * enqueue the generation job. Generation runs out-of-band on the line_events
+ * queue (event_type = INTERNAL_EVENT_GENERATE_TEMPLATE) so the postback
+ * handler can return in <1s and a generation failure gets the usual queue
+ * retry/backoff for free.
  */
 async function advanceSurveyOrFinish(
   session: SurveySession,
@@ -324,41 +339,138 @@ async function advanceSurveyOrFinish(
     return;
   }
 
-  // current_step === 'done' → run the generator.
   await pushText(lineGroupId, "✨ 正在生成草稿，這可能要 10–30 秒…");
+  await enqueueGenerationJob({ sessionId: session.id, lineGroupId, userId, dbGroupId });
+}
+
+// ─── Internal queue: generation job ─────────────────────────────────────────
+// Reuses line_events as the durable queue (see AGENTS.md). The cron sweeper
+// retries failed/stalled rows with exponential backoff; the hot path also
+// kicks off processing immediately via after().
+
+interface GenerationJobPayload {
+  sessionId: string;
+  lineGroupId: string;
+  userId: string;
+  dbGroupId: string;
+}
+
+async function enqueueGenerationJob(payload: GenerationJobPayload): Promise<void> {
+  const db = createAdminClient();
+  // line_event_uid is UNIQUE — namespace per session so retries via /plan
+  // re-runs get a fresh row without colliding with old ones.
+  const uid = `internal:gen:${payload.sessionId}:${Date.now()}`;
+
+  const { data: row, error } = await db
+    .from("line_events")
+    .insert({
+      line_event_uid: uid,
+      event_type: INTERNAL_EVENT_GENERATE_TEMPLATE,
+      group_id: payload.dbGroupId,
+      payload_json: payload,
+      processing_status: "pending",
+    })
+    .select("id")
+    .single();
+  if (error || !row) {
+    logger.error("enqueueGenerationJob insert failed", { groupId: payload.dbGroupId, error: String(error) });
+    // Surface to the user — they're already staring at "正在生成…".
+    await pushText(payload.lineGroupId, "排隊生成失敗，請稍後再試。");
+    return;
+  }
+
+  const rowId = row.id as string;
+  // Kick the worker immediately so users don't wait for the next cron tick.
+  // The cron still picks it up if this after() crashes.
+  after(async () => {
+    try {
+      await processLineEvent(rowId, INTERNAL_EVENT_GENERATE_TEMPLATE, payload as unknown as Record<string, unknown>, {
+        dbGroupId: payload.dbGroupId,
+        lineGroupId: payload.lineGroupId,
+        userId: payload.userId,
+        replyToken: undefined,
+        messageText: undefined,
+      });
+    } catch (err) {
+      // processLineEvent already marks the row failed; this catch is just
+      // belt-and-suspenders so the postback handler's after() doesn't crash.
+      logger.error("generation after() crashed", { rowId, error: String(err) });
+    }
+  });
+}
+
+/**
+ * Worker for INTERNAL_EVENT_GENERATE_TEMPLATE rows. Runs the three-tier
+ * generator and pushes a preview bubble. Throws on failure so processLineEvent
+ * marks the row failed and the cron retries with backoff.
+ */
+async function runGenerationJob(payload: Record<string, unknown>): Promise<void> {
+  const job = payload as unknown as GenerationJobPayload;
+  if (!job.sessionId || !job.lineGroupId || !job.userId || !job.dbGroupId) {
+    throw new Error("runGenerationJob: malformed payload");
+  }
+
+  const session = await getSession(job.sessionId);
+  if (!session) throw new Error(`runGenerationJob: session ${job.sessionId} not found`);
+  // Idempotency: if a prior attempt already generated for this session, just
+  // re-push the preview instead of re-running the generator.
+  if (session.status === "generated" && session.templateId) {
+    await pushGenerationPreview(session, job, session.templateId);
+    return;
+  }
 
   try {
     const out = await generateTemplateFromSurvey({
       answers: session.answers,
-      authorLineUserId: userId,
+      authorLineUserId: job.userId,
     });
     await markGenerated(session.id, out.templateId);
-
-    // Pull title/summary back for the preview bubble.
-    const db = createAdminClient();
-    const { data: ver } = await db
-      .from("trip_template_versions")
-      .select("title, summary, duration_days, destination_name")
-      .eq("id", out.versionId)
-      .single();
-
-    const preview = buildPreviewBubble(
-      session.id,
-      (ver?.title as string) ?? "你的旅程草稿",
-      (ver?.summary as string) ?? "",
-      (ver?.duration_days as number) ?? (session.answers.duration_days ?? 0),
-      (ver?.destination_name as string | null) ?? session.answers.destination ?? null
-    );
-    await pushFlex(lineGroupId, "AI 旅程草稿完成", preview, dbGroupId);
+    await pushGenerationPreview(session, job, out.templateId);
   } catch (err) {
     if (err instanceof GenerationFailedError) {
-      logger.warn("generation failed", { groupId: dbGroupId, reason: err.reason });
-      await pushText(lineGroupId, generationFailureMessage(err.reason));
-    } else {
-      logger.error("generation crashed", { groupId: dbGroupId, error: String(err) });
-      await pushText(lineGroupId, "生成失敗，請稍後再試一次。");
+      logger.warn("generation failed", { groupId: job.dbGroupId, reason: err.reason });
+      await pushText(job.lineGroupId, generationFailureMessage(err.reason));
+      // Don't re-throw for terminal user-input failures — queue retry won't help.
+      if (err.reason === "invalid_answers" || err.reason === "irreparable" || err.reason === "no_candidates") {
+        return;
+      }
     }
+    // Throw so processLineEvent marks the row failed → cron retries with backoff.
+    throw err;
   }
+}
+
+async function pushGenerationPreview(
+  session: SurveySession,
+  job: GenerationJobPayload,
+  templateId: string
+): Promise<void> {
+  const db = createAdminClient();
+  const { data: tmpl } = await db
+    .from("trip_templates")
+    .select("current_version_id")
+    .eq("id", templateId)
+    .single();
+  const versionId = (tmpl?.current_version_id as string | undefined) ?? null;
+  if (!versionId) {
+    await pushText(job.lineGroupId, "生成完成但找不到版本，請稍後再試。");
+    return;
+  }
+
+  const { data: ver } = await db
+    .from("trip_template_versions")
+    .select("title, summary, duration_days, destination_name")
+    .eq("id", versionId)
+    .single();
+
+  const preview = buildPreviewBubble(
+    session.id,
+    (ver?.title as string) ?? "你的旅程草稿",
+    (ver?.summary as string) ?? "",
+    (ver?.duration_days as number) ?? (session.answers.duration_days ?? 0),
+    (ver?.destination_name as string | null) ?? session.answers.destination ?? null
+  );
+  await pushFlex(job.lineGroupId, "AI 旅程草稿完成", preview, job.dbGroupId);
 }
 
 async function handleSurveyFork(sessionId: string, ctx: EventContext): Promise<void> {

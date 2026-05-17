@@ -24,14 +24,19 @@ import { GenerationFailedError } from "@/services/trip-generation/orchestrator";
 import type { EnrichedPoi } from "@/services/trip-generation/poi-engine";
 
 function poi(id: string, type: EnrichedPoi["itemType"] = "activity"): EnrichedPoi {
+  // Deterministic coords keyed off the id so test runs don't flake on
+  // unlucky brute-force orderings.
+  const seed = Array.from(id).reduce((acc, c) => acc + c.charCodeAt(0), 0) % 100;
+  const lat = 35 + seed * 0.0001;
+  const lng = 139 + seed * 0.0001;
   return {
     placeId: id,
     name: `Place ${id}`,
     itemType: type,
     tags: [],
     description: `${id} description`,
-    lat: 35 + Math.random() * 0.01,
-    lng: 139 + Math.random() * 0.01,
+    lat,
+    lng,
     similarity: 0.9,
     live: {
       placeId: id,
@@ -39,8 +44,8 @@ function poi(id: string, type: EnrichedPoi["itemType"] = "activity"): EnrichedPo
       address: "addr",
       rating: 4.2,
       priceLevel: "$$",
-      lat: 35,
-      lng: 139,
+      lat,
+      lng,
       openingPeriods: [],
     },
   };
