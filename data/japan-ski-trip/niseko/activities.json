@@ -1,0 +1,107 @@
+{
+  "region": "Niseko",
+  "activities": [
+    {
+      "id": "yukoro-onsen",
+      "name": "Yukoro Onsen",
+      "type": "onsen",
+      "village": "Hirafu",
+      "address": "204-7 Aza Yamada, Kutchan, Abuta District, Hokkaido 044-0081",
+      "lat": 42.8607,
+      "lng": 140.7077,
+      "indicative_price_jpy": { "adult_entry": 800 },
+      "notes": "Walk-in public onsen in Hirafu Village. Tattoos allowed. Indoor + small outdoor bath."
+    },
+    {
+      "id": "goshiki-onsen",
+      "name": "Goshiki Onsen Ryokan",
+      "type": "onsen",
+      "village": "Niseko backcountry",
+      "address": "510 Aza Niseko, Niseko-cho, Abuta District, Hokkaido 048-1511",
+      "lat": 42.8721,
+      "lng": 140.6440,
+      "indicative_price_jpy": { "adult_entry": 800 },
+      "website": "https://goshiki-onsen.com/",
+      "notes": "Remote sulphur-rich rotenburo in the mountains; magical in snow. Drive or taxi only."
+    },
+    {
+      "id": "niseko-konbu-onsen-tsuruga",
+      "name": "Tsuruga Besso Moku-no-Sho (day use onsen)",
+      "type": "onsen",
+      "village": "Konbu Onsen",
+      "address": "415 Konbu, Niseko-cho, Abuta District, Hokkaido 048-1522",
+      "lat": 42.8068,
+      "lng": 140.7240,
+      "indicative_price_jpy": { "day_use_adult": 1800 },
+      "website": "https://tsuruga-mokunosho.com/",
+      "notes": "Upscale ryokan day-bath; large outdoor pools surrounded by forest."
+    },
+    {
+      "id": "niseko-night-tubing",
+      "name": "Hanazono Night Tubing",
+      "type": "snow_activity",
+      "village": "Hanazono",
+      "address": "Hanazono Resort base, 328 Aza-Iwaobetsu, Kutchan, Hokkaido",
+      "lat": 42.8804,
+      "lng": 140.7283,
+      "indicative_price_jpy": { "session_adult": 3500 },
+      "website": "https://hanazononiseko.com/en/winter/activities",
+      "notes": "Lit snow-tubing lanes; good non-ski evening activity for families."
+    },
+    {
+      "id": "niseko-snowmobile",
+      "name": "Hanazono Snowmobile Tour",
+      "type": "snow_activity",
+      "village": "Hanazono",
+      "address": "Hanazono Resort base, 328 Aza-Iwaobetsu, Kutchan, Hokkaido",
+      "lat": 42.8804,
+      "lng": 140.7283,
+      "indicative_price_jpy": { "tour_adult": 14000 },
+      "website": "https://hanazononiseko.com/en/winter/activities/snowmobile",
+      "notes": "Guided snowmobile tours through Hanazono forests; multiple session lengths."
+    },
+    {
+      "id": "niseko-backcountry-guide",
+      "name": "Niseko Powder Connection (guided backcountry)",
+      "type": "guided_backcountry",
+      "village": "Various",
+      "lat": 42.8627,
+      "lng": 140.7068,
+      "indicative_price_jpy": { "full_day_per_person": 22000 },
+      "website": "https://nisekopowderconnection.com/",
+      "notes": "JMGA / IFMGA certified guides for sidecountry and backcountry days off Annupuri and Mt Yotei."
+    },
+    {
+      "id": "ski-school-gosnow",
+      "name": "GoSnow Ski & Snowboard School (Hanazono)",
+      "type": "ski_school",
+      "village": "Hanazono",
+      "address": "Hanazono base lodge, Kutchan, Hokkaido",
+      "lat": 42.8804,
+      "lng": 140.7283,
+      "indicative_price_jpy": { "private_half_day": 45000, "group_full_day": 18000 },
+      "website": "https://hanazononiseko.com/en/winter/gosnow",
+      "notes": "English-language ski/snowboard lessons; group and private. Kids program available."
+    },
+    {
+      "id": "niseko-niss",
+      "name": "Niseko International Snowsports School (NISS)",
+      "type": "ski_school",
+      "village": "Hirafu",
+      "address": "190-12 Aza Yamada, Kutchan, Hokkaido",
+      "lat": 42.8629,
+      "lng": 140.7099,
+      "website": "https://www.nissniseko.com/",
+      "notes": "Independent English-speaking school based in Hirafu, with kids' programs and adult clinics."
+    },
+    {
+      "id": "mt-yotei-view",
+      "name": "Mt. Yōtei viewpoint",
+      "type": "sightseeing",
+      "village": "Across Hirafu Valley",
+      "lat": 42.8262,
+      "lng": 140.8108,
+      "notes": "The 1,898 m 'Ezo Fuji' volcano; visible from most Hirafu lifts. Backcountry skiers tour it on clear days with a guide."
+    }
+  ]
+}

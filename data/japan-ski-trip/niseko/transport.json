@@ -1,0 +1,144 @@
+{
+  "region": "Niseko",
+  "gateways": [
+    {
+      "id": "cts-airport",
+      "name": "New Chitose Airport",
+      "name_ja": "新千歳空港",
+      "iata": "CTS",
+      "type": "airport",
+      "lat": 42.7752,
+      "lng": 141.6923,
+      "website": "https://www.new-chitose-airport.jp/en/",
+      "notes": "Primary international gateway to Hokkaido. ~2h45m by bus to Niseko."
+    },
+    {
+      "id": "sapporo-station",
+      "name": "Sapporo Station",
+      "name_ja": "札幌駅",
+      "type": "train_station",
+      "lat": 43.0686,
+      "lng": 141.3506,
+      "notes": "Use as a stopover for a night or two in Sapporo en route to Niseko."
+    },
+    {
+      "id": "kutchan-station",
+      "name": "Kutchan Station",
+      "name_ja": "倶知安駅",
+      "type": "train_station",
+      "lat": 42.9018,
+      "lng": 140.7563,
+      "notes": "Closest JR Hakodate Main Line station to Hirafu (~10 min by taxi). Future shinkansen terminus (Hokkaido Shinkansen extension, est. 2030+)."
+    },
+    {
+      "id": "niseko-station",
+      "name": "Niseko Station",
+      "name_ja": "ニセコ駅",
+      "type": "train_station",
+      "lat": 42.8081,
+      "lng": 140.6863,
+      "notes": "JR station serving Niseko town and Annupuri base; small, limited service."
+    }
+  ],
+  "routes": [
+    {
+      "id": "cts-to-niseko-resort-liner",
+      "from": "cts-airport",
+      "to": "Niseko hotel pickup (Hirafu / Hanazono / Village / Annupuri)",
+      "operator": "Hokkaido Resort Liner",
+      "type": "shuttle_bus",
+      "duration_min": 165,
+      "frequency": "5-8 departures per day in peak season",
+      "indicative_price_jpy": { "one_way_adult": 4500, "round_trip_adult": 8000 },
+      "booking_url": "https://www.access-n.jp/en/",
+      "notes": "Reserved-seat door-to-door coach. Book online in advance; sells out on busy weekends."
+    },
+    {
+      "id": "cts-to-niseko-good-day-bus",
+      "from": "cts-airport",
+      "to": "Niseko hotel pickup",
+      "operator": "Good Day Tours / White Liner",
+      "type": "shuttle_bus",
+      "duration_min": 170,
+      "indicative_price_jpy": { "one_way_adult": 4500 },
+      "booking_url": "https://goodday-sports.com/",
+      "notes": "Alternative shuttle operator with similar pricing and routes."
+    },
+    {
+      "id": "cts-to-niseko-chuo-bus",
+      "from": "cts-airport",
+      "to": "Hirafu / Niseko Village / Annupuri",
+      "operator": "Hokkaido Chuo Bus 'High Decker Niseko-go'",
+      "type": "express_bus",
+      "duration_min": 195,
+      "indicative_price_jpy": { "one_way_adult": 3950 },
+      "booking_url": "https://teikan.chuo-bus.co.jp/en/highway/niseko",
+      "notes": "Public express bus; cheaper, fewer stops. Runs December–March."
+    },
+    {
+      "id": "cts-to-sapporo-rapid",
+      "from": "cts-airport",
+      "to": "sapporo-station",
+      "operator": "JR Hokkaido",
+      "type": "train",
+      "duration_min": 37,
+      "indicative_price_jpy": { "one_way_adult": 1150 },
+      "notes": "Airport Rapid runs every 15 min. Covered by JR Hokkaido Rail Pass."
+    },
+    {
+      "id": "sapporo-to-kutchan-train",
+      "from": "sapporo-station",
+      "to": "kutchan-station",
+      "operator": "JR Hokkaido (Hakodate Main Line)",
+      "type": "train",
+      "duration_min": 130,
+      "indicative_price_jpy": { "one_way_adult": 2200 },
+      "notes": "Scenic but slow; usually requires a transfer at Otaru. Not recommended with bulky ski gear."
+    },
+    {
+      "id": "kutchan-to-hirafu-taxi",
+      "from": "kutchan-station",
+      "to": "niseko-grand-hirafu",
+      "type": "taxi",
+      "duration_min": 12,
+      "indicative_price_jpy": { "one_way": 2500 }
+    },
+    {
+      "id": "cts-rental-car",
+      "from": "cts-airport",
+      "to": "Niseko area",
+      "operator": "Toyota / Nippon / Times / Budget",
+      "type": "rental_car",
+      "duration_min": 150,
+      "indicative_price_jpy": { "per_day_compact": 8000 },
+      "notes": "Winter tyres and 4WD are mandatory. International Driving Permit required for non-Japanese licenses. Allow extra time in storms."
+    }
+  ],
+  "in_resort_transport": [
+    {
+      "id": "niseko-united-shuttle",
+      "name": "Niseko United Shuttle",
+      "type": "shuttle_bus",
+      "operator": "Niseko United",
+      "indicative_price_jpy": { "fare": 0 },
+      "frequency": "Every 15–30 min during lift hours",
+      "url": "https://www.niseko.ne.jp/en/access/shuttle.html",
+      "notes": "Free shuttle connecting all four Niseko United bases. Covered by All-Mountain pass holders."
+    },
+    {
+      "id": "hirafu-village-shuttle",
+      "name": "Hirafu Village Shuttle (Night Bus)",
+      "type": "shuttle_bus",
+      "indicative_price_jpy": { "fare": 0 },
+      "frequency": "Every 20 min, evenings",
+      "notes": "Free loop around upper and lower Hirafu village for restaurants and the Welcome Center."
+    },
+    {
+      "id": "local-taxi",
+      "name": "Niseko Taxi / Kutchan Hire",
+      "type": "taxi",
+      "indicative_price_jpy": { "flagfall": 700, "per_km": 350 },
+      "notes": "Limited fleet; book at least 1 hour ahead on weekend evenings."
+    }
+  ]
+}
