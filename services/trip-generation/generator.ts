@@ -1,11 +1,13 @@
-// Gemini-backed template generator — TODO.
+// Public entry for the v1.2 three-tier itinerary generator. The heavy lifting
+// (POI retrieval, LLM pick, solver, repair loop, persistence) lives in
+// services/trip-generation/orchestrator.ts. This file is intentionally thin so
+// callers (LINE postback handler, web POST route) only ever depend on a stable
+// shape.
 //
-// Takes completed survey answers, asks the LLM for a day-by-day skeleton,
-// writes a private trip_template + version + items, returns the ids.
-// Callers (bot postback handler, web API route) then invoke
-// services/templates#forkTemplate to produce the live trip.
+// See design/trip-generation.md.
 
 import type { SurveyAnswers } from "./index";
+import { runGenerationPipeline, GenerationFailedError } from "./orchestrator";
 
 export interface GenerateInput {
   answers: SurveyAnswers;
@@ -17,6 +19,9 @@ export interface GenerateOutput {
   versionId: string;
 }
 
-export async function generateTemplateFromSurvey(_input: GenerateInput): Promise<GenerateOutput> {
-  throw new Error("not implemented — see design/trip-generation.md");
+export async function generateTemplateFromSurvey(input: GenerateInput): Promise<GenerateOutput> {
+  return runGenerationPipeline(input);
 }
+
+export { GenerationFailedError };
+export type { GenerationFailureReason } from "./orchestrator";

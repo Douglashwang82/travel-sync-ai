@@ -1,21 +1,34 @@
 import type { CommandContext } from "../router";
+import { pushFlex } from "@/lib/line";
+import { startOrResumeSurvey } from "@/services/trip-generation";
+import { buildQuestionBubble } from "@/services/trip-generation/flex";
 
-// Stub for /plan — survey-driven trip generation.
-// See design/trip-generation.md. Wires through services/trip-generation
-// and the survey| postback branch in services/event-processor.ts.
-
+/**
+ * /plan — kicks off (or resumes) the trip-generation survey in this group.
+ * One in-progress survey per group at a time. Resuming on a second /plan tap
+ * is intentional; explicit cancel happens via the `survey|...|cancel` postback
+ * on the preview bubble. See design/trip-generation.md.
+ */
 export async function handlePlan(
   _args: string[],
   ctx: CommandContext,
   reply: (text: string) => Promise<void>
 ): Promise<void> {
-  if (!ctx.dbGroupId || !ctx.userId) {
-    await reply("我無法在這裡開始問答，請在 LINE 群組中再試一次。");
+  if (!ctx.dbGroupId || !ctx.userId || !ctx.lineGroupId) {
+    await reply("/plan 需要在 LINE 群組中執行。");
     return;
   }
 
-  await reply(
-    "/plan 正在開發中：我會用幾個必選問題幫你產生旅程草稿。\n" +
-      "暫時可以用 /start 快速建立旅程。"
-  );
+  const session = await startOrResumeSurvey({
+    groupId: ctx.dbGroupId,
+    startedByUserId: ctx.userId,
+  });
+
+  if (session.currentStep === "done") {
+    await reply("這個群組目前已有完成的草稿，請查看 App 中的旅程看板。");
+    return;
+  }
+
+  const bubble = buildQuestionBubble(session.id, session.currentStep);
+  await pushFlex(ctx.lineGroupId, "AI 旅程草稿問答", bubble, ctx.dbGroupId);
 }
