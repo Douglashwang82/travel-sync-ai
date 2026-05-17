@@ -15,6 +15,7 @@ import {
   confirmBooking,
 } from "@/services/trip-state";
 import { rememberPlace } from "@/services/memory";
+import { geocodeAddress } from "@/services/decisions/places";
 import type { ItemKind, ItemStage, ItemType } from "@/lib/types";
 
 const PLACE_ITEM_TYPES: ReadonlyArray<ItemType> = [
@@ -64,6 +65,7 @@ const UpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).nullable().optional(),
   itemType: ItemTypeEnum.optional(),
+  address: z.string().max(400).nullable().optional(),
   deadlineAt: z.string().datetime().nullable().optional(),
   assignedTo: z.string().min(1).nullable().optional(),
 });
@@ -219,6 +221,14 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       const auth = await requireAppOrganizerForItem(req, data.itemId);
       if (!auth.ok) return auth.response;
 
+      const db = createAdminClient();
+      const address =
+        data.address === undefined
+          ? undefined
+          : data.address === null
+            ? null
+            : data.address.trim() || null;
+
       const result = await updateItem(data.itemId, {
         title: data.title,
         description: data.description ?? undefined,
@@ -233,6 +243,78 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
           { status: result.code === "NOT_FOUND" ? 404 : 500 }
         );
       }
+
+      if (address !== undefined) {
+        const coords = address ? await geocodeAddress(address) : null;
+        const addressPatch = address
+          ? {
+              address,
+              lat: coords?.lat ?? null,
+              lng: coords?.lng ?? null,
+            }
+          : { address: null, lat: null, lng: null };
+        const { data: item } = await db
+          .from("trip_items")
+          .select("id, title, confirmed_option_id")
+          .eq("id", data.itemId)
+          .single();
+
+        if (!item) {
+          return NextResponse.json(
+            { error: "Item not found", code: "NOT_FOUND" },
+            { status: 404 }
+          );
+        }
+
+        const confirmedOptionId =
+          (item.confirmed_option_id as string | null) ?? null;
+
+        if (confirmedOptionId) {
+          const { error } = await db
+            .from("trip_item_options")
+            .update(addressPatch)
+            .eq("id", confirmedOptionId)
+            .eq("trip_item_id", data.itemId);
+
+          if (error) {
+            return NextResponse.json(
+              { error: "Failed to update address", code: "DB_ERROR" },
+              { status: 500 }
+            );
+          }
+        } else if (address) {
+          const { data: option, error: optionError } = await db
+            .from("trip_item_options")
+            .insert({
+              trip_item_id: data.itemId,
+              provider: "manual",
+              name: (item.title as string | null) ?? result.item.title,
+              ...addressPatch,
+            })
+            .select("id")
+            .single();
+
+          if (optionError || !option) {
+            return NextResponse.json(
+              { error: "Failed to create address option", code: "DB_ERROR" },
+              { status: 500 }
+            );
+          }
+
+          const { error: linkError } = await db
+            .from("trip_items")
+            .update({ confirmed_option_id: option.id })
+            .eq("id", data.itemId);
+
+          if (linkError) {
+            return NextResponse.json(
+              { error: "Failed to link address option", code: "DB_ERROR" },
+              { status: 500 }
+            );
+          }
+        }
+      }
+
       return NextResponse.json(result.item);
     }
 

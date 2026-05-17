@@ -5,6 +5,7 @@ import {
   APIProvider,
   Map,
   AdvancedMarker,
+  Marker,
   InfoWindow,
   useMap,
   useMapsLibrary,
@@ -69,10 +70,12 @@ function PinMarker({
   pin,
   selected,
   onClick,
+  useAdvancedMarker,
 }: {
   pin: MapPin;
   selected: boolean;
   onClick: () => void;
+  useAdvancedMarker: boolean;
 }) {
   const color = TYPE_COLOR[pin.itemType] ?? TYPE_COLOR.other;
   const glyph = TYPE_GLYPH[pin.itemType] ?? TYPE_GLYPH.other;
@@ -86,6 +89,22 @@ function PinMarker({
       : pin.kind === "memory"
         ? "2px dotted white"
         : undefined;
+
+  if (!useAdvancedMarker) {
+    return (
+      <Marker
+        position={{ lat: pin.lat, lng: pin.lng }}
+        onClick={onClick}
+        zIndex={selected ? 1000 : pin.kind === "memory" ? 1 : 2}
+        title={pin.title}
+        label={{
+          text: glyph,
+          color: "white",
+          fontSize: selected ? "16px" : "14px",
+        }}
+      />
+    );
+  }
 
   return (
     <AdvancedMarker
@@ -275,6 +294,7 @@ function CanvasInner({
   // without an effect that resets local state.
   const [dismissedId, setDismissedId] = useState<string | null>(null);
   const showInfo = selectedPin != null && dismissedId !== selectedPin.id;
+  const useAdvancedMarkers = Boolean(mapId?.trim());
 
   return (
     <Map
@@ -293,23 +313,31 @@ function CanvasInner({
       <DayRoutes routes={dayRoutes} />
 
       {destination.lat != null && destination.lng != null && (
-        <AdvancedMarker
-          position={{ lat: destination.lat, lng: destination.lng }}
-          zIndex={0}
-          title={destination.name ?? "Trip destination"}
-        >
-          <div
-            style={{
-              width: 12,
-              height: 12,
-              background: "#111827",
-              border: "2px solid white",
-              borderRadius: "9999px",
-              boxShadow:
-                "0 0 0 2px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2)",
-            }}
+        useAdvancedMarkers ? (
+          <AdvancedMarker
+            position={{ lat: destination.lat, lng: destination.lng }}
+            zIndex={0}
+            title={destination.name ?? "Trip destination"}
+          >
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                background: "#111827",
+                border: "2px solid white",
+                borderRadius: "9999px",
+                boxShadow:
+                  "0 0 0 2px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.2)",
+              }}
+            />
+          </AdvancedMarker>
+        ) : (
+          <Marker
+            position={{ lat: destination.lat, lng: destination.lng }}
+            zIndex={0}
+            title={destination.name ?? "Trip destination"}
           />
-        </AdvancedMarker>
+        )
       )}
 
       {pins.map((pin) => (
@@ -318,6 +346,7 @@ function CanvasInner({
           pin={pin}
           selected={selectedPinId === pin.id}
           onClick={() => onPinSelect(pin)}
+          useAdvancedMarker={useAdvancedMarkers}
         />
       ))}
 

@@ -166,8 +166,7 @@ export async function geocodeAddress(
 
   const apiKey = getPlacesApiKey();
   if (!apiKey) {
-    console.warn("[places] geocodeAddress skipped because no Places or unified Maps API key is set");
-    return null;
+    return geocodeAddressWithOpenStreetMap(trimmed);
   }
 
   try {
@@ -186,15 +185,91 @@ export async function geocodeAddress(
 
     if (!res.ok) {
       console.error("[places] geocodeAddress API error", res.status, await res.text());
+    } else {
+      const data = (await res.json()) as { places?: GooglePlace[] };
+      const loc = data.places?.[0]?.location;
+      if (loc?.latitude != null && loc.longitude != null) {
+        return { lat: loc.latitude, lng: loc.longitude };
+      }
+    }
+  } catch (err) {
+    console.error("[places] geocodeAddress threw", err);
+  }
+
+  const googleGeocode = await geocodeAddressWithGoogleGeocoding(trimmed, apiKey);
+  if (googleGeocode) return googleGeocode;
+
+  return geocodeAddressWithOpenStreetMap(trimmed);
+}
+
+async function geocodeAddressWithGoogleGeocoding(
+  address: string,
+  apiKey: string
+): Promise<{ lat: number; lng: number } | null> {
+  const params = new URLSearchParams({ address, key: apiKey });
+
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`
+    );
+    if (!res.ok) {
+      console.error("[places] Google Geocoding API error", res.status, await res.text());
       return null;
     }
 
-    const data = (await res.json()) as { places?: GooglePlace[] };
-    const loc = data.places?.[0]?.location;
-    if (loc?.latitude == null || loc?.longitude == null) return null;
-    return { lat: loc.latitude, lng: loc.longitude };
+    const data = (await res.json()) as {
+      status?: string;
+      error_message?: string;
+      results?: Array<{ geometry?: { location?: { lat?: number; lng?: number } } }>;
+    };
+
+    if (data.status !== "OK") {
+      console.warn("[places] Google Geocoding returned non-OK status", data.status, data.error_message);
+      return null;
+    }
+
+    const loc = data.results?.[0]?.geometry?.location;
+    if (loc?.lat == null || loc?.lng == null) return null;
+    return { lat: loc.lat, lng: loc.lng };
   } catch (err) {
-    console.error("[places] geocodeAddress threw", err);
+    console.error("[places] Google Geocoding threw", err);
+    return null;
+  }
+}
+
+async function geocodeAddressWithOpenStreetMap(
+  address: string
+): Promise<{ lat: number; lng: number } | null> {
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    q: address,
+    limit: "1",
+  });
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      {
+        headers: {
+          "User-Agent": "travel-sync-ai/0.1 (itinerary map geocoding)",
+          Accept: "application/json",
+        },
+      }
+    );
+    if (!res.ok) {
+      console.error("[places] OpenStreetMap geocode API error", res.status, await res.text());
+      return null;
+    }
+
+    const data = (await res.json()) as Array<{ lat?: string; lon?: string }>;
+    const first = data[0];
+    if (!first?.lat || !first.lon) return null;
+    const lat = Number(first.lat);
+    const lng = Number(first.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
+  } catch (err) {
+    console.error("[places] OpenStreetMap geocode threw", err);
     return null;
   }
 }
@@ -324,9 +399,17 @@ function sleep(ms: number): Promise<void> {
 }
 
 function getPlacesApiKey(): string | undefined {
-  return process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_SERVER_API_KEY;
+  return (
+    process.env.GOOGLE_PLACES_API_KEY ||
+    process.env.GOOGLE_MAPS_SERVER_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY
+  );
 }
 
 function getMapsApiKey(): string | undefined {
-  return process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
+  return (
+    process.env.GOOGLE_MAPS_SERVER_API_KEY ||
+    process.env.GOOGLE_PLACES_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY
+  );
 }

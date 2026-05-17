@@ -883,12 +883,21 @@ function TimelineEvent({
 }) {
   const [editing, setEditing] = useState(false);
   const [deadline, setDeadline] = useState(toInputLocal(item.deadline_at));
+  const [address, setAddress] = useState(item.confirmed_option?.address ?? "");
   const [assignee, setAssignee] = useState(
     item.assigned_to_line_user_id ?? UNASSIGNED
   );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [addOptionOpen, setAddOptionOpen] = useState(false);
+
+  function beginEditing() {
+    setDeadline(toInputLocal(item.deadline_at));
+    setAddress(item.confirmed_option?.address ?? "");
+    setAssignee(item.assigned_to_line_user_id ?? UNASSIGNED);
+    setSaveError(null);
+    setEditing(true);
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -900,6 +909,7 @@ function TimelineEvent({
           action: "update",
           itemId: item.id,
           deadlineAt: deadline ? new Date(deadline).toISOString() : null,
+          address: address.trim() || null,
           assignedTo: assignee === UNASSIGNED ? null : assignee,
         }),
       });
@@ -1107,6 +1117,21 @@ function TimelineEvent({
                           </SelectContent>
                         </Select>
                       </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label
+                          htmlFor={`it-address-${item.id}`}
+                          className="text-[10px]"
+                        >
+                          地址（選填）
+                        </Label>
+                        <Input
+                          id={`it-address-${item.id}`}
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          className="h-8 text-xs"
+                          maxLength={400}
+                        />
+                      </div>
                     </div>
                     {saveError && (
                       <p className="text-[10px] text-destructive">
@@ -1121,6 +1146,7 @@ function TimelineEvent({
                         onClick={() => {
                           setEditing(false);
                           setDeadline(toInputLocal(item.deadline_at));
+                          setAddress(item.confirmed_option?.address ?? "");
                           setAssignee(
                             item.assigned_to_line_user_id ?? UNASSIGNED
                           );
@@ -1144,10 +1170,10 @@ function TimelineEvent({
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setEditing(true)}
+                      onClick={beginEditing}
                       className="text-[11px] text-[var(--text-muted)] underline underline-offset-2 hover:text-[var(--foreground)]"
                     >
-                      編輯時間 / 指派
+                      編輯時間 / 地址 / 指派
                     </button>
                     {canAddOption && (
                       <button
