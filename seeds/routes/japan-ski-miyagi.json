@@ -1,0 +1,34 @@
+{
+  "destination": "Miyagi, Japan",
+  "destination_aliases": [
+    "miyagi, japan",
+    "miyagi",
+    "宮城",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "鬼首 滑雪一日",
+      "summary": "鬼首滑雪場分山脊部和山腳部，由雪道連接，合理的佈局適合初級到專業滑雪者自由滑雪。為極限滑雪愛好者精心設計全套專業滑道園地，還為家庭遊客提供家庭專用滑道以及托兒服務。 Two-level layout (ridge + base) connected by linking trails. 7 km of slopes; family-friendly with childcare on site.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "onikoube"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

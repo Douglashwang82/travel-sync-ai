@@ -27,6 +27,13 @@ export interface SolverInput {
   startWeekday: number;
   /** When stops in a day should start (minutes after midnight, local). */
   dayStartMinutes?: number;
+  /**
+   * Optional parallel array (same length as daysAssignment). When true for a
+   * given index, the day's stops are treated as a curator-ordered route:
+   * skip permutation enumeration and simulate in the given order. Opening
+   * hours and meal anchor still apply.
+   */
+  preorderedDays?: boolean[];
 }
 
 export interface RoutedStop {
@@ -117,6 +124,7 @@ export function solveItinerary(input: SolverInput): SolverResult {
       stops,
       weekday,
       dayStart: input.dayStartMinutes ?? DAY_START_MINUTES_DEFAULT,
+      preordered: input.preorderedDays?.[d] ?? false,
     });
 
     if (!routed.ok) {
@@ -136,6 +144,8 @@ interface SolveDayInput {
   stops: EnrichedPoi[];
   weekday: number;
   dayStart: number;
+  /** Skip permutation; curator already ordered these stops. */
+  preordered: boolean;
 }
 
 type DaySolveResult =
@@ -157,8 +167,9 @@ function solveDay(input: SolveDayInput): DaySolveResult {
     };
   }
 
-  const permutations =
-    stops.length <= MAX_PERMUTATION_STOPS
+  const permutations = input.preordered
+    ? [stops.slice()]
+    : stops.length <= MAX_PERMUTATION_STOPS
       ? enumeratePermutations(stops)
       : [nearestNeighborOrder(stops)];
 

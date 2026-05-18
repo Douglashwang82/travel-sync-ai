@@ -1,0 +1,35 @@
+{
+  "destination": "Tochigi, Japan",
+  "destination_aliases": [
+    "tochigi, japan",
+    "tochigi",
+    "栃木",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "鹽原温泉 (Hunter Mountain) 滑雪一日",
+      "summary": "那須高原，是日光國家公園的一部份。這裡是本州從青森縣下來的第一高山群，西伯利亞冷氣團和南方的暖氣團在此交會。 Largest ski resort in the Tokyo metropolitan area; developed by the owners of New York's Hunter Mountain. 3 km flagship trail, terrain park, kids' park.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "family"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hunter-mountain-shiobara"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

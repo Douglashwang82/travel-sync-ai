@@ -34,6 +34,12 @@ export interface PoiCandidate {
   lat: number | null;
   lng: number | null;
   similarity: number;
+  /**
+   * Curated rows (non-Google place_ids) carry their own live data here so
+   * enrichWithLiveData doesn't waste a Google call that would 404. Null for
+   * Google-sourced rows; those still flow through getPlaceDetailsBatch.
+   */
+  liveData?: PlaceLiveData | null;
 }
 
 export interface EnrichedPoi extends PoiCandidate {
@@ -139,11 +145,60 @@ async function liveTextSearchFallback(input: VibeSearchInput, k: number): Promis
   return results.slice(0, k);
 }
 
+/**
+ * Load specific place_ids from the embeddings corpus as PoiCandidate rows.
+ * Used by the orchestrator to materialize route place_ids alongside the
+ * vibe-searched candidates so the solver and enrichment treat both uniformly.
+ *
+ * `similarity` is set to 1.0 — routes are pre-curated, they don't need to
+ * compete with vibe-search scores.
+ */
+export async function loadPoisByIds(placeIds: string[]): Promise<PoiCandidate[]> {
+  const unique = Array.from(new Set(placeIds.filter((id) => id && id.length > 0)));
+  if (unique.length === 0) return [];
+
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("poi_embeddings")
+    .select("place_id, name, item_type, tags, description, lat, lng, live_data")
+    .in("place_id", unique);
+  if (error) {
+    console.error("[poi-engine] loadPoisByIds failed", error);
+    return [];
+  }
+
+  const rows = (data ?? []) as Array<{
+    place_id: string;
+    name: string;
+    item_type: string;
+    tags: string[] | null;
+    description: string | null;
+    lat: number | null;
+    lng: number | null;
+    live_data: PlaceLiveData | null;
+  }>;
+  return rows.map((r) => ({
+    placeId: r.place_id,
+    name: r.name,
+    itemType: coerceItemType(r.item_type),
+    tags: r.tags ?? [],
+    description: r.description ?? "",
+    lat: r.lat,
+    lng: r.lng,
+    similarity: 1,
+    liveData: r.live_data,
+  }));
+}
+
 export async function enrichWithLiveData(candidates: PoiCandidate[]): Promise<EnrichedPoi[]> {
-  const live = await getPlaceDetailsBatch(candidates.map((c) => c.placeId));
-  const byId = new Map(live.map((l) => [l.placeId, l]));
+  // Split: curated rows already carry liveData; only fetch live details for
+  // the rest (typically Google-sourced place_ids).
+  const needsFetch = candidates.filter((c) => c.liveData == null).map((c) => c.placeId);
+  const fetched = needsFetch.length > 0 ? await getPlaceDetailsBatch(needsFetch) : [];
+  const byId = new Map(fetched.map((l) => [l.placeId, l]));
+
   return candidates.map((c) => {
-    const l = byId.get(c.placeId) ?? null;
+    const l = c.liveData ?? byId.get(c.placeId) ?? null;
     // Promote the live lat/lng onto the candidate so downstream code never has to
     // remember which field to read.
     if (l && (c.lat == null || c.lng == null)) {

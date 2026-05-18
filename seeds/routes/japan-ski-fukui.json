@@ -1,0 +1,34 @@
+{
+  "destination": "Fukui, Japan",
+  "destination_aliases": [
+    "fukui, japan",
+    "fukui",
+    "福井",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "SKIJAM勝山 滑雪一日",
+      "summary": "日本關西規模最大滑雪場，有多條雪道可滿足不同級別滑雪者的需求，初學者到資深滑雪者都有適合的滑道。雪場也提供小朋友遊玩的兒童樂園。 Western Japan's largest ski area, operated by Tokyu Resort Group. Longest run 5.8 km. About 3 h from Osaka.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "skijam-katsuyama"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

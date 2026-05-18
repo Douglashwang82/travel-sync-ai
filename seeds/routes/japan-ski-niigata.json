@@ -1,0 +1,92 @@
+{
+  "destination": "Niigata, Japan",
+  "destination_aliases": [
+    "niigata, japan",
+    "niigata",
+    "新潟",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "苗場 滑雪一日",
+      "summary": "越後湯澤全區共有多達 19 座滑雪場，其中佔地面積最廣、最具人氣指標的就首推苗場滑雪場。『雪鄉』的新潟縣，下雪天數超過全季的50％，平均雪量達 2 公尺以上。 Yuzawa-area flagship. Connected to neighbouring Kagura by the 5.5 km Dragondola (Japan's longest gondola). ~2.5 M annual skier visits.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "naeba"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "上越國際 滑雪一日",
+      "summary": "上越雪場佔地1000萬平方米，配置有25條基本道和22條變化豐富的雪道，日本屈指可數的大滑雪場之一。本雪場也是日本滑板玩家口中，相當熱門的地點。 1,000 ha terrain split into 4 zones (Mother's, Panorama, Active, Forest). Niigata-style heavy snow; popular with snowboarders.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "joetsu-kokusai"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "妙高高原 / 赤倉温泉 滑雪一日",
+      "summary": "「赤倉温泉滑雪場」位於妙高山是日本古温泉且是日本Mt.6高山六大温泉滑雪區之一。鬆軟的天然雪況和22條豐富多彩的路線，讓你盡情暢遊在妙高温泉滑雪場！ Largest Myoko Kogen ski area; operating since 1937. Three sections (Yodel, Kumado, Ginrei). Night skiing available. Linked-pass with neighbouring Akakura Kanko.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "akakura-onsen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "舞子 滑雪一日",
+      "summary": "舞子滑雪場位於新潟縣南魚沼市，是四季皆宜的度假勝地。雪場共3大區域，擁有全長約6,000公尺的滑道，總共有26條滑雪道。ski-in、ski-out的設計非常的方便。 Three connected zones (Maiko / Nagamine / Okusoechi). 6 km top-to-bottom. Free shuttle from Echigo-Yuzawa Shinkansen station.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "maiko-snow-resort"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "destination": "Gunma, Japan",
+  "destination_aliases": [
+    "gunma, japan",
+    "gunma",
+    "群馬",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "草津温泉 滑雪一日",
+      "summary": "草津温泉距今已有1000年以上的歷史。尤其以號稱治病健體的著名温泉而遠近聞名。由於年平均溫度只有7度，櫃花開得晚，4月底之前，整個草津都仍處於白雪皓皓的世界。 On Mt. Shirane above the historic Kusatsu onsen town. 4.3 km longest run; new 8-seater Pulse Gondola from 2023/24. Higher base elevation than most Gunma resorts.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "family"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "kusatsu-onsen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "尾瀬岩鞍 滑雪一日",
+      "summary": "日本關東最大規模的滑雪場 尾瀬岩鞍，這裡不但雪質優良、雪場規模大，雪道更是變化豐富，適合各種程度的滑雪客前來拜訪。 Largest ski area in Kanto region. Gondola plus 9 lifts; 18 courses span beginner cruisers to ungroomed advanced terrain.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "oze-iwakura"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "萬座温泉 滑雪一日",
+      "summary": "萬座温泉位於白根山與萬座山之間的山麓，於綠色環抱的上信越高原國立公園內，泉質屬於乳白色帶硫磺味的優質温泉，由於是標高1800m的高山温泉，又稱為雲上的温泉。 Highest-base resort in Gunma (1,800 m). Operated by Prince Hotels; small but light powder thanks to elevation. Sulphurous milky onsen on site.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "family"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "manza-onsen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

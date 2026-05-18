@@ -1,0 +1,35 @@
+{
+  "destination": "Yamagata, Japan",
+  "destination_aliases": [
+    "yamagata, japan",
+    "yamagata",
+    "山形",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "藏王温泉 滑雪一日",
+      "summary": "身為Mt.6的日本老字號的滑雪場『藏王温泉』ZAO，雪量豐富時當地人俗稱的樹冰雪怪佔據整個山頭，奇景『樹冰原』由於嚴厲的冬季季風氣候所產生。 Tohoku's largest ski area, famous for juhyo (snow monster) ice-encrusted trees. 14 interconnected zones across the slopes of Mt. Zao; 9 km top-to-bottom run.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "zao-onsen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}
