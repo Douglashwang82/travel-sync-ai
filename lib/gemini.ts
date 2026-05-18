@@ -164,7 +164,7 @@ export async function generateText(
 
 // ─── Embeddings ──────────────────────────────────────────────────────────────
 
-const EMBEDDING_MODEL = "text-embedding-004";
+const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2";
 const EMBEDDING_DIMS = 768;
 
 /**
@@ -181,7 +181,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const response = await client.models.embedContent({
       model: EMBEDDING_MODEL,
-      contents: [{ role: "user", parts: [{ text }] }],
+      contents: text,
+      config: { outputDimensionality: EMBEDDING_DIMS },
     });
     const values =
       response.embeddings?.[0]?.values ?? (response as { embedding?: { values?: number[] } }).embedding?.values;

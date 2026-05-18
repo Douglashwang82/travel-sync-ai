@@ -614,7 +614,7 @@ function PackToggle({
       {busy ? (
         <Loader2 className="size-4 animate-spin" />
       ) : packed ? (
-        <Check className="size-4" />
+        <Check key="packed" className="bento-tick-pop size-4" />
       ) : (
         <Circle className="size-4" />
       )}

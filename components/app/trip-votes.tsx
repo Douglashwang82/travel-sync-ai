@@ -415,7 +415,7 @@ function VoteCard({
                 )}
               >
                 <div
-                  className="absolute inset-y-0 left-0 bg-[var(--primary)]/10 transition-all"
+                  className="bento-progress-fill absolute inset-y-0 left-0 bg-[var(--primary)]/10"
                   style={{ width: `${Math.min(100, share)}%` }}
                   aria-hidden
                 />
@@ -668,7 +668,7 @@ function VoteProgress({
       <div className="relative h-1.5 overflow-hidden rounded-full bg-[var(--secondary)]">
         <div
           className={cn(
-            "h-full transition-all",
+            "bento-progress-fill h-full",
             reached ? "bg-emerald-500" : "bg-[var(--primary)]"
           )}
           style={{ width: `${pct}%` }}

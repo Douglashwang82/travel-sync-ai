@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { HeroGrid } from "@/components/app/grids/hero-grid";
 import { ItineraryGrid } from "@/components/app/grids/itinerary-grid";
@@ -142,6 +142,19 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
     return () => clearTimeout(t);
   }, [searchParams]);
 
+  // After the mount cascade completes, freeze it so later re-renders (drag
+  // reorders, size cycles, custom-grid hydration) don't replay the fade-up.
+  // The longest possible delay is 9 * 40ms = 360ms plus duration-confirm
+  // (220ms) — round up to 700ms for safety.
+  useEffect(() => {
+    const root = tilesRef.current;
+    if (!root) return;
+    const t = window.setTimeout(() => {
+      root.classList.add("bento-mounted");
+    }, 700);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // j/k tile nav, ? to open command palette.
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -219,7 +232,7 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
       </div>
 
       <div ref={tilesRef} className="bento-grid">
-        {entries.map(({ entry, def }) => {
+        {entries.map(({ entry, def }, index) => {
           const Component = def.Component;
           const customGrid = isCustomTileId(entry.id)
             ? customGridMap.get(entry.id)
@@ -228,6 +241,7 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
             <div
               key={entry.id}
               className={`bento-cell bento-size-${entry.size}`}
+              style={{ "--bento-i": index } as CSSProperties}
             >
               <BentoFrame
                 id={entry.id}
