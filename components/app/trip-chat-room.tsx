@@ -10,7 +10,7 @@ import {
 } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { appFetchJson } from "@/lib/app-client";
+import { appFetch, appFetchJson } from "@/lib/app-client";
 import { cn } from "@/lib/utils";
 import type { ChatThread } from "@/app/api/app/trips/[tripId]/chat/threads/route";
 import type { ChatMessage } from "@/app/api/app/trips/[tripId]/chat/threads/[threadId]/messages/route";
@@ -31,9 +31,15 @@ interface TripChatRoomProps {
     icon?: string;
     request: OpenRequest;
   } | null;
+  /** Fires when the caller marks a thread as read; lets the navbar refresh. */
+  onMarkedRead?: () => void;
 }
 
-const POLL_INTERVAL_MS = 5000;
+type StreamEvent =
+  | { type: "hello"; threadId: string }
+  | { type: "ping" }
+  | { type: "message"; message: ChatMessage }
+  | { type: "read"; read: { appUserId: string; lastReadAt: string } };
 
 export function TripChatRoom({
   tripId,
@@ -41,22 +47,44 @@ export function TripChatRoom({
   open,
   onClose,
   target,
+  onMarkedRead,
 }: TripChatRoomProps) {
   const [thread, setThread] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [reads, setReads] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Open or find the thread whenever the target changes.
+  const markRead = useCallback(
+    async (threadId: string) => {
+      try {
+        const res = await appFetch(
+          `/api/app/trips/${tripId}/chat/threads/${threadId}/read`,
+          { method: "POST" },
+        );
+        if (res.ok) {
+          const { lastReadAt } = (await res.json()) as { lastReadAt: string };
+          setReads((prev) => ({ ...prev, [currentAppUserId]: lastReadAt }));
+          onMarkedRead?.();
+        }
+      } catch {
+        // Silent — read state is non-critical; next call will retry.
+      }
+    },
+    [tripId, currentAppUserId, onMarkedRead],
+  );
+
+  // Open or find the thread whenever the target changes. Mark as read on open.
   useEffect(() => {
     if (!open || !target) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
     setMessages([]);
+    setReads({});
     setThread(null);
     setDraft("");
 
@@ -68,11 +96,14 @@ export function TripChatRoom({
         );
         if (cancelled) return;
         setThread(t);
-        const { messages: m } = await appFetchJson<{ messages: ChatMessage[] }>(
-          `/api/app/trips/${tripId}/chat/threads/${t.id}/messages`,
-        );
+        const initial = await appFetchJson<{
+          messages: ChatMessage[];
+          reads: Record<string, string>;
+        }>(`/api/app/trips/${tripId}/chat/threads/${t.id}/messages`);
         if (cancelled) return;
-        setMessages(m);
+        setMessages(initial.messages);
+        setReads(initial.reads);
+        await markRead(t.id);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to open chat");
       } finally {
@@ -83,25 +114,42 @@ export function TripChatRoom({
     return () => {
       cancelled = true;
     };
-  }, [open, target, tripId]);
+  }, [open, target, tripId, markRead]);
 
-  // Poll for new messages while the dialog is open.
+  // Subscribe to the server-side SSE relay for realtime message + read events.
   useEffect(() => {
     if (!open || !thread) return;
-    const id = setInterval(() => {
-      void (async () => {
-        try {
-          const { messages: m } = await appFetchJson<{ messages: ChatMessage[] }>(
-            `/api/app/trips/${tripId}/chat/threads/${thread.id}/messages`,
-          );
-          setMessages((prev) => (m.length === prev.length ? prev : m));
-        } catch {
-          // Silent — next tick will retry.
+    const url = `/api/app/trips/${tripId}/chat/threads/${thread.id}/stream`;
+    const source = new EventSource(url, { withCredentials: true });
+
+    source.onmessage = (ev: MessageEvent<string>) => {
+      let payload: StreamEvent;
+      try {
+        payload = JSON.parse(ev.data) as StreamEvent;
+      } catch {
+        return;
+      }
+      if (payload.type === "message") {
+        setMessages((prev) =>
+          prev.some((m) => m.id === payload.message.id) ? prev : [...prev, payload.message],
+        );
+        // If a remote party sent it, mark the thread as read immediately
+        // since the dialog is in the foreground.
+        if (
+          payload.message.senderKind === "agent" ||
+          payload.message.senderAppUserId !== currentAppUserId
+        ) {
+          void markRead(thread.id);
         }
-      })();
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [open, thread, tripId]);
+      } else if (payload.type === "read") {
+        setReads((prev) => ({ ...prev, [payload.read.appUserId]: payload.read.lastReadAt }));
+      }
+    };
+
+    return () => {
+      source.close();
+    };
+  }, [open, thread, tripId, currentAppUserId, markRead]);
 
   // Auto-scroll to bottom on new messages.
   useEffect(() => {
@@ -123,18 +171,22 @@ export function TripChatRoom({
           body: JSON.stringify({ content }),
         });
         setMessages((prev) => {
-          const next = [...prev, res.message];
-          if (res.agentMessage) next.push(res.agentMessage);
+          // Server-sent realtime may have already delivered these.
+          const seen = new Set(prev.map((m) => m.id));
+          const next = [...prev];
+          if (!seen.has(res.message.id)) next.push(res.message);
+          if (res.agentMessage && !seen.has(res.agentMessage.id)) next.push(res.agentMessage);
           return next;
         });
         setDraft("");
+        await markRead(thread.id);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to send");
       } finally {
         setSending(false);
       }
     },
-    [thread, tripId],
+    [thread, tripId, markRead],
   );
 
   function handleSubmit(e: FormEvent) {
@@ -146,6 +198,23 @@ export function TripChatRoom({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       void send(draft);
+    }
+  }
+
+  // Find the index of my last outgoing message — that's where the "Read"
+  // indicator goes (DMs only).
+  const isDm = thread?.kind === "member_dm";
+  const otherAppUserId = isDm
+    ? thread.memberAppUserIdLo === currentAppUserId
+      ? thread.memberAppUserIdHi
+      : thread.memberAppUserIdLo
+    : null;
+  const otherLastReadAt = otherAppUserId ? reads[otherAppUserId] : undefined;
+  let lastMineIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].senderAppUserId === currentAppUserId) {
+      lastMineIndex = i;
+      break;
     }
   }
 
@@ -195,14 +264,20 @@ export function TripChatRoom({
             </p>
           ) : (
             <ul className="space-y-2">
-              {messages.map((m) => {
+              {messages.map((m, idx) => {
                 const mine = m.senderAppUserId === currentAppUserId;
+                const showReadReceipt =
+                  isDm &&
+                  mine &&
+                  idx === lastMineIndex &&
+                  otherLastReadAt !== undefined &&
+                  otherLastReadAt >= m.createdAt;
                 return (
                   <li
                     key={m.id}
                     className={cn(
-                      "flex",
-                      mine ? "justify-end" : "justify-start",
+                      "flex flex-col",
+                      mine ? "items-end" : "items-start",
                     )}
                   >
                     <div
@@ -217,6 +292,11 @@ export function TripChatRoom({
                     >
                       <p className="whitespace-pre-wrap break-words">{m.content}</p>
                     </div>
+                    {showReadReceipt && (
+                      <span className="mt-0.5 text-[10px] text-[var(--text-faint)]">
+                        Read
+                      </span>
+                    )}
                   </li>
                 );
               })}

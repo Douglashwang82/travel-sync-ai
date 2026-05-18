@@ -17,6 +17,7 @@ import type { AppLocale } from "@/lib/app-locale";
 import type { AppMember } from "@/app/api/app/trips/[tripId]/members/route";
 import type { CustomGrid } from "@/app/api/app/trips/[tripId]/custom-grids/route";
 import type { PublicAgent } from "@/services/agents/registry";
+import type { UnreadOverview } from "@/app/api/app/trips/[tripId]/chat/unread/route";
 
 const COPY: Record<
   AppLocale,
@@ -66,6 +67,14 @@ interface TripChatNavbarProps {
 
 type SelectedTarget = React.ComponentProps<typeof TripChatRoom>["target"];
 
+const EMPTY_UNREAD: UnreadOverview = {
+  total: 0,
+  byMemberAppUserId: {},
+  byCustomGridId: {},
+};
+
+const UNREAD_REFRESH_MS = 30_000;
+
 export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps) {
   const { locale } = useAppLocale();
   const copy = COPY[locale];
@@ -73,6 +82,7 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
   const [members, setMembers] = useState<AppMember[] | null>(null);
   const [grids, setGrids] = useState<CustomGrid[] | null>(null);
   const [agents, setAgents] = useState<PublicAgent[]>([]);
+  const [unread, setUnread] = useState<UnreadOverview>(EMPTY_UNREAD);
   const [error, setError] = useState<string | null>(null);
   const [chatTarget, setChatTarget] = useState<SelectedTarget>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -93,12 +103,38 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
     }
   }, [tripId]);
 
+  const refreshUnread = useCallback(async () => {
+    try {
+      const res = await appFetchJson<UnreadOverview>(
+        `/api/app/trips/${tripId}/chat/unread`,
+      );
+      setUnread(res);
+    } catch {
+      // Silent — unread counts are non-critical.
+    }
+  }, [tripId]);
+
   useEffect(() => {
     if (!open || members !== null || grids !== null) return;
     void (async () => {
       await load();
     })();
   }, [open, members, grids, load]);
+
+  // Poll unread counts at a slow interval — the SSE stream covers in-room
+  // realtime; this is the catch-all for messages received while the dialog
+  // is closed.
+  useEffect(() => {
+    void (async () => {
+      await refreshUnread();
+    })();
+    const id = setInterval(() => {
+      void (async () => {
+        await refreshUnread();
+      })();
+    }, UNREAD_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [refreshUnread]);
 
   const agentByType = new Map<string, PublicAgent>(agents.map((a) => [a.type, a]));
 
@@ -137,10 +173,18 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
           <button
             type="button"
             aria-label={copy.open}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
+            className="relative inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
           >
             <MessageSquare className="h-3 w-3" aria-hidden />
             {copy.title}
+            {unread.total > 0 && (
+              <span
+                aria-label={`${unread.total} unread`}
+                className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent-line)] px-1 text-[9px] font-semibold text-white"
+              >
+                {unread.total > 99 ? "99+" : unread.total}
+              </span>
+            )}
           </button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col gap-4 p-4 sm:max-w-xs">
@@ -172,33 +216,38 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
                 <p className="text-xs text-[var(--text-muted)]">{copy.noMembers}</p>
               ) : (
                 <ul className="space-y-1">
-                  {otherMembers.map((m) => (
-                    <li key={m.lineUserId}>
-                      <button
-                        type="button"
-                        onClick={() => openMemberChat(m)}
-                        className={cn(
-                          "flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left",
-                          "hover:bg-[var(--surface-sunken)]",
-                        )}
-                      >
-                        <span
-                          aria-hidden
-                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-line-soft)] text-sm font-semibold text-[var(--accent-line)]"
+                  {otherMembers.map((m) => {
+                    const count = m.appUserId ? unread.byMemberAppUserId[m.appUserId] ?? 0 : 0;
+                    return (
+                      <li key={m.lineUserId}>
+                        <button
+                          type="button"
+                          onClick={() => openMemberChat(m)}
+                          className={cn(
+                            "flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left",
+                            "hover:bg-[var(--surface-sunken)]",
+                          )}
                         >
-                          {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm text-[var(--text-primary)]">
-                            {m.displayName ?? "Unknown"}
+                          <span
+                            aria-hidden
+                            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-line-soft)] text-sm font-semibold text-[var(--accent-line)]"
+                          >
+                            {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
+                            {count > 0 && <UnreadDot />}
                           </span>
-                          <span className="block text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-                            {m.role}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm text-[var(--text-primary)]">
+                              {m.displayName ?? "Unknown"}
+                            </span>
+                            <span className="block text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+                              {m.role}
+                            </span>
                           </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                          {count > 0 && <UnreadCount count={count} />}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -215,6 +264,7 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
                 <ul className="space-y-1">
                   {activeGrids.map((g) => {
                     const agent = agentByType.get(g.agentType);
+                    const count = unread.byCustomGridId[g.id] ?? 0;
                     return (
                       <li key={g.id}>
                         <button
@@ -224,9 +274,10 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
                         >
                           <span
                             aria-hidden
-                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--status-needs-decision-soft)] text-sm text-[var(--status-needs-decision)]"
+                            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--status-needs-decision-soft)] text-sm text-[var(--status-needs-decision)]"
                           >
                             {agent?.icon ?? "✨"}
+                            {count > 0 && <UnreadDot />}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm text-[var(--text-primary)]">
@@ -236,6 +287,7 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
                               {agent?.label ?? g.agentType}
                             </span>
                           </span>
+                          {count > 0 && <UnreadCount count={count} />}
                         </button>
                       </li>
                     );
@@ -253,6 +305,7 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         target={chatTarget}
+        onMarkedRead={() => void refreshUnread()}
       />
     </>
   );
@@ -265,5 +318,22 @@ function SkeletonRows() {
         <div key={i} className="skeleton h-10 rounded-[var(--radius-md)]" />
       ))}
     </div>
+  );
+}
+
+function UnreadDot() {
+  return (
+    <span
+      aria-hidden
+      className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface-raised)] bg-[var(--accent-line)]"
+    />
+  );
+}
+
+function UnreadCount({ count }: { count: number }) {
+  return (
+    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent-line)] px-1 text-[9px] font-semibold text-white">
+      {count > 99 ? "99+" : count}
+    </span>
   );
 }

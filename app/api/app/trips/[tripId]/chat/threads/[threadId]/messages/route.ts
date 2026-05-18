@@ -108,7 +108,23 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       { status: 500 },
     );
   }
-  return NextResponse.json({ messages: (data ?? []).map(rowToMessage) });
+
+  // Surface per-participant last_read_at so the client can render read
+  // receipts on the caller's outgoing messages.
+  const { data: reads } = await db
+    .from("trip_chat_thread_reads")
+    .select("app_user_id, last_read_at")
+    .eq("thread_id", threadId);
+
+  const readsByAppUserId: Record<string, string> = {};
+  for (const r of reads ?? []) {
+    readsByAppUserId[r.app_user_id as string] = r.last_read_at as string;
+  }
+
+  return NextResponse.json({
+    messages: (data ?? []).map(rowToMessage),
+    reads: readsByAppUserId,
+  });
 }
 
 /** POST /api/app/trips/:tripId/chat/threads/:threadId/messages */
