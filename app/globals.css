@@ -553,3 +553,127 @@ body {
 .bento-stagger > *:nth-child(10) { --bento-row-i: 9; }
 .bento-stagger > *:nth-child(11) { --bento-row-i: 10; }
 .bento-stagger > *:nth-child(n+12) { --bento-row-i: 11; }
+
+/* ─── Wizard motion ─────────────────────────────────────────────────────── */
+/*
+ * Survey wizard (app/app/trips/new). All motion communicates state:
+ *   - segmented progress bar fills as the user advances
+ *   - step transitions are direction-aware (forward = slide-from-right)
+ *   - selected radio/pill answers pop a check + slide a left stripe
+ *   - over-cap pill toggles nudge instead of error-banner
+ *   - submit phase rotates a status phrase + shimmer ribbon
+ *
+ * Tokens reused: --duration-confirm, --duration-morph, --ease-confirm,
+ * --spring-snappy. Reduced-motion is honored by the global block above.
+ */
+
+/* 1. Segmented progress */
+.wizard-seg {
+  background: color-mix(in oklab, var(--muted) 100%, transparent);
+  transition:
+    background-color var(--duration-morph) var(--ease-confirm),
+    transform var(--duration-confirm) var(--ease-confirm);
+}
+.wizard-seg[data-state="done"] {
+  background: var(--primary);
+}
+.wizard-seg[data-state="current"] {
+  background: color-mix(in oklab, var(--primary) 60%, var(--muted));
+  animation: wizard-seg-pulse var(--duration-glow) ease-in-out infinite;
+}
+@keyframes wizard-seg-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+
+/* 2. Direction-aware step transitions. The wizard sets data-dir on the
+ * container; the step pane keyed by step replays the enter animation. */
+@keyframes wizard-step-in-forward {
+  0%   { opacity: 0; transform: translateX(12px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes wizard-step-in-back {
+  0%   { opacity: 0; transform: translateX(-12px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+[data-dir="forward"] > .wizard-step {
+  animation: wizard-step-in-forward var(--duration-confirm) var(--ease-confirm) both;
+}
+[data-dir="back"] > .wizard-step {
+  animation: wizard-step-in-back var(--duration-confirm) var(--ease-confirm) both;
+}
+
+/* 3. Selected radio row: left accent stripe slides in, check pops. */
+.wizard-radio {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color var(--duration-confirm) var(--ease-confirm),
+    border-color var(--duration-confirm) var(--ease-confirm),
+    transform var(--duration-confirm) var(--ease-confirm);
+}
+.wizard-radio::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--primary);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform var(--duration-confirm) var(--ease-confirm);
+}
+.wizard-radio[data-active="true"]::before { transform: scaleY(1); }
+.wizard-radio:active { transform: scale(0.995); }
+
+/* Pills: tactile raise on select. */
+.wizard-pill {
+  transition:
+    background-color var(--duration-confirm) var(--ease-confirm),
+    border-color var(--duration-confirm) var(--ease-confirm),
+    color var(--duration-confirm) var(--ease-confirm),
+    transform var(--duration-confirm) var(--spring-snappy),
+    box-shadow var(--duration-confirm) var(--ease-confirm);
+}
+.wizard-pill[data-active="true"] {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-tactile);
+}
+.wizard-pill[data-nudge="true"] { animation: wizard-nudge 220ms var(--ease-confirm); }
+@keyframes wizard-nudge {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+
+/* 4. Submit ribbon + rotating phrase */
+.wizard-ribbon {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  border-radius: 999px;
+}
+.wizard-ribbon::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  animation: wizard-ribbon-sweep 1.4s var(--ease-confirm) infinite;
+}
+@keyframes wizard-ribbon-sweep {
+  0%   { left: -40%; }
+  100% { left: 100%; }
+}
+.wizard-phrase {
+  animation: wizard-phrase-in var(--duration-confirm) var(--ease-confirm);
+}
+@keyframes wizard-phrase-in {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Error fade-up */
+.wizard-error { animation: wizard-phrase-in var(--duration-confirm) var(--ease-confirm); }
