@@ -187,7 +187,7 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
             )}
           </button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col gap-4 p-4 sm:max-w-xs">
+        <SheetContent side="right" className="flex flex-col gap-4 p-4 sm:max-w-xs">
           <SheetHeader>
             <SheetTitle className="text-base">{copy.title}</SheetTitle>
           </SheetHeader>
