@@ -41,7 +41,7 @@ export function MembersGrid({ tripId }: { tripId: string }) {
     return <p className="text-sm text-[var(--text-muted)]">No members yet.</p>;
   }
   return (
-    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    <ul className="bento-stagger grid grid-cols-2 gap-2 sm:grid-cols-3">
       {members.map((m) => (
         <li
           key={m.lineUserId}

@@ -440,3 +440,116 @@ body {
 .bento-embed > div > .space-y-4 > * + * {
   margin-top: 0.75rem;
 }
+
+/* ─── Bento tile motion ─────────────────────────────────────────────────── */
+/*
+ * Three layers of motion own the bento workspace:
+ *   1. mount cascade  — tiles fade-up in source order on first paint
+ *   2. hover lift     — the frame itself reacts, not just child content
+ *   3. FLIP reorder   — set --bento-flip-{x,y} on a frame and it glides
+ *
+ * All durations come from the shared --duration-* tokens. The global
+ * prefers-reduced-motion block (above) collapses every animation to ~0ms.
+ */
+@keyframes bento-mount {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.bento-cell {
+  animation: bento-mount var(--duration-confirm) var(--ease-confirm) both;
+  animation-delay: calc(min(var(--bento-i, 0), 9) * 40ms);
+}
+
+/* Once the cascade is done, tiles should not replay it on re-render
+ * (e.g. when localStorage hydrates and `order` changes). The `.bento-mounted`
+ * class is added by the page after the first frame. */
+.bento-mounted .bento-cell { animation: none; }
+
+.bento-frame {
+  transition:
+    transform var(--duration-confirm) var(--ease-confirm),
+    box-shadow var(--duration-confirm) var(--ease-confirm),
+    border-color var(--duration-confirm) var(--ease-confirm),
+    background-color var(--duration-confirm) var(--ease-confirm);
+}
+.bento-frame:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-raise);
+}
+.bento-frame:focus-within {
+  border-color: var(--border-strong);
+}
+
+/* Drop-target: replace the hard ring with a calm tint + outline that fades. */
+.bento-frame[data-drag-over="true"] {
+  background-color: color-mix(in oklab, var(--accent-line-soft) 50%, var(--surface-raised));
+  outline: 1px solid var(--accent-line);
+  outline-offset: -1px;
+}
+
+/* While a drag is in progress the source tile dims slightly. */
+.bento-frame[data-dragging="true"] {
+  opacity: 0.55;
+  transform: scale(0.99);
+}
+
+/* FLIP reorder: page sets --bento-flip-x/y as the inverse delta, then clears
+ * them on the next frame. The transform animates from the inverted offset
+ * back to 0, making it look like the tile slid into place. */
+.bento-cell[data-flip="true"] {
+  transform: translate(var(--bento-flip-x, 0), var(--bento-flip-y, 0));
+}
+.bento-cell[data-flip="play"] {
+  transform: translate(0, 0);
+  transition: transform var(--duration-morph) var(--ease-confirm);
+}
+
+/* Smooth size morph: when a tile cycles size, the content opacity dips
+ * briefly while the column count shifts. Pure opacity, so it's cheap. */
+.bento-frame[data-resizing="true"] > div {
+  opacity: 0.7;
+  transition: opacity var(--duration-confirm) var(--ease-confirm);
+}
+
+/* ─── Bento per-tile micro-interactions ─────────────────────────────────── */
+
+/* Reusable progress-bar transition — used by Budget and Votes. The default
+ * `transition-all` shipped with the components is replaced via this class
+ * for a slightly slower, eased fill. */
+.bento-progress-fill {
+  transition:
+    width var(--duration-morph) var(--ease-confirm),
+    background-color var(--duration-confirm) var(--ease-confirm);
+}
+
+/* Pack-toggle check: small overshoot when an item is freshly checked. */
+@keyframes bento-tick-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.bento-tick-pop { animation: bento-tick-pop var(--duration-confirm) var(--ease-confirm); }
+
+/* List-row enter: avatar / member / shared card / idea card slide in.
+ * Applied via .bento-stagger on a parent; children inherit --bento-row-i. */
+@keyframes bento-row-enter {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.bento-stagger > * {
+  animation: bento-row-enter var(--duration-confirm) var(--ease-confirm) both;
+  animation-delay: calc(min(var(--bento-row-i, 0), 11) * 30ms);
+}
+.bento-stagger > *:nth-child(1)  { --bento-row-i: 0; }
+.bento-stagger > *:nth-child(2)  { --bento-row-i: 1; }
+.bento-stagger > *:nth-child(3)  { --bento-row-i: 2; }
+.bento-stagger > *:nth-child(4)  { --bento-row-i: 3; }
+.bento-stagger > *:nth-child(5)  { --bento-row-i: 4; }
+.bento-stagger > *:nth-child(6)  { --bento-row-i: 5; }
+.bento-stagger > *:nth-child(7)  { --bento-row-i: 6; }
+.bento-stagger > *:nth-child(8)  { --bento-row-i: 7; }
+.bento-stagger > *:nth-child(9)  { --bento-row-i: 8; }
+.bento-stagger > *:nth-child(10) { --bento-row-i: 9; }
+.bento-stagger > *:nth-child(11) { --bento-row-i: 10; }
+.bento-stagger > *:nth-child(n+12) { --bento-row-i: 11; }
