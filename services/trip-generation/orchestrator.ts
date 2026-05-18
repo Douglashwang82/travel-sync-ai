@@ -152,7 +152,7 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
   //    were route-covered first try), synthesize the title/summary/tags
   //    from the routes themselves.
   const finalPick = pick ?? synthesizePickFromRoutes(compose, destination);
-  return persistTemplate(input, finalPick, routed.days, enriched);
+  return persistTemplate(input, finalPick, routed.days, enriched, compose);
 }
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
@@ -318,7 +318,8 @@ async function persistTemplate(
   input: GenerateInput,
   pick: PickResult,
   routedDays: RoutedDay[],
-  enriched: EnrichedPoi[]
+  enriched: EnrichedPoi[],
+  compose: RouteComposition
 ): Promise<GenerateOutput> {
   const db = createAdminClient();
   const byId = new Map(enriched.map((p) => [p.placeId, p]));
@@ -380,6 +381,16 @@ async function persistTemplate(
   }
 
   await db.from("trip_templates").update({ current_version_id: versionId }).eq("id", templateId);
+
+  // Accumulate a usage signal on routes that contributed. Fire-and-forget:
+  // a quality-score blip should never fail a successful generation.
+  const usedRouteIds = Array.from(new Set(Array.from(compose.coveredDays.values()).map((r) => r.routeId)));
+  if (usedRouteIds.length > 0) {
+    db.rpc("bump_route_quality", { p_route_ids: usedRouteIds, p_delta: 1 })
+      .then(({ error }) => {
+        if (error) console.error("[orchestrator] bump_route_quality failed", error);
+      });
+  }
 
   return { templateId, versionId };
 }

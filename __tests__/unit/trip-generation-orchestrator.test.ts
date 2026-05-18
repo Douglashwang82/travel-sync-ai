@@ -96,8 +96,11 @@ function mockDbHappyPath() {
     return {};
   };
   const from = vi.fn((table: string) => fromBuilder(table));
-  (createAdminClient as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({ from });
-  return { from };
+  // rpc returns a thenable-shaped Promise so the orchestrator's fire-and-forget
+  // bump_route_quality call resolves without a network hit.
+  const rpc = vi.fn(() => Promise.resolve({ error: null }));
+  (createAdminClient as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({ from, rpc });
+  return { from, rpc };
 }
 
 beforeEach(() => {
@@ -224,7 +227,7 @@ describe("orchestrator — route layer", () => {
     // a bit later. Adjust by giving the restaurant a wider window via opening hours.
     enriched[2].live!.openingPeriods = [{ openDay: 0, openMinutes: 12 * 60, closeDay: 6, closeMinutes: 14 * 60 }];
 
-    mockDbHappyPath();
+    const { rpc } = mockDbHappyPath();
 
     const out = await runGenerationPipeline({
       authorLineUserId: "U_route",
@@ -241,6 +244,10 @@ describe("orchestrator — route layer", () => {
 
     expect(out.templateId).toBe("tmpl_1");
     expect(generateJson).not.toHaveBeenCalled(); // no LLM pick when all days route-covered
+    expect(rpc).toHaveBeenCalledWith("bump_route_quality", {
+      p_route_ids: ["r1"],
+      p_delta: 1,
+    });
   });
 
   it("calls the LLM only for uncovered days when coverage is partial", async () => {

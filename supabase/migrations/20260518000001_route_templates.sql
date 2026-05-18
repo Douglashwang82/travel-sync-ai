@@ -94,6 +94,19 @@ create or replace function search_routes_by_vibe(
   limit p_limit;
 $$;
 
+-- ─── bump_route_quality RPC ──────────────────────────────────────────────────
+-- Called by the orchestrator after a successful generation to accumulate a
+-- usage signal on routes that contributed to the trip. Atomic increment
+-- avoids the read-modify-write race the PostgREST table API would create.
+create or replace function bump_route_quality(
+  p_route_ids uuid[],
+  p_delta     numeric default 1
+) returns void language sql as $$
+  update route_templates
+     set quality_score = quality_score + p_delta
+   where id = any(p_route_ids);
+$$;
+
 -- ─── updated_at trigger ──────────────────────────────────────────────────────
 create or replace function route_templates_touch_updated_at()
 returns trigger language plpgsql as $$
