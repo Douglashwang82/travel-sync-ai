@@ -32,7 +32,8 @@ export function AppShell({
         id="app-content"
         className={cn(
           "flex flex-col transition-[padding-left] duration-300 ease-in-out",
-          collapsed ? "lg:pl-14" : "lg:pl-56"
+          collapsed ? "lg:pl-14" : "lg:pl-56",
+          isTripWorkspace && "lg:pr-72",
         )}
       >
         <main
