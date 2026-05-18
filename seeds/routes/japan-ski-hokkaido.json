@@ -1,0 +1,80 @@
+{
+  "destination": "Hokkaido, Japan",
+  "routes": [
+    {
+      "title": "留壽都 滑雪一日",
+      "summary": "位於日本北海道羊蹄山山麓的留壽都滑雪場Rusutsu，飯店包含了RUSUTSU RESORT以及24層樓高的RUSUTSU TOWER。冬季時變身成北海道有名的滑雪、度假聖地，並以粉狀雪質而聞名全世。 Hokkaido's largest single resort, spread across three peaks (West Mountain, East Mountain, Mount Isola). World-renowned for powder.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "rusutsu"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "KIRORO 滑雪一日",
+      "summary": "以朝里岳為中心，位於豪雪地帶距札幌不遠的KIRORO滑雪度假村，這裡是北海道雪量跟雪質都是一絕的滑雪場。 Inland resort known for exceptional snow quality. Gondola to summit with the Asari panoramic restaurant overlooking the Sea of Japan.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "kiroro-resort"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "富良野 滑雪一日",
+      "summary": "位於道北富良野市西側的富良野滑雪場，擁有廣大滑雪區域，兩個山頭的最高點分別為海拔1209m與940m，滑行最長距離約4000m，共有23條難易度各異的滑雪道。 Operated by Prince Hotels. Two zones (Kitanomine + Furano) linked by lifts. Hosts FIS competitions; one of the steepest mountains in Hokkaido.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "furano"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "佐幌度假村 滑雪一日",
+      "summary": "位於海拔1,059公尺的滑雪場，整個滑雪季節中的晴天率達 70%，整座山都被粉雪包裹。既有適合初、中級滑雪者而設的緩坡長距離雪道，還有最大70度的超陟滑道。 Central Hokkaido. 70% sunny days through the season; views over the Tokachi plain. Family-friendly with one steep advanced run.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "sahoro-resort"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

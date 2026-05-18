@@ -1,0 +1,61 @@
+{
+  "destination": "Iwate, Japan",
+  "routes": [
+    {
+      "title": "安比高原 滑雪一日",
+      "summary": "安比高原位於日本本州的東北部，鄰接八幡平十和田國立公園的安比高原，整座山被粉狀白雪覆蓋，擁有最高品質的積雪與標高差828公尺、最長5.5公里的滑雪道。 Adjacent to Towada-Hachimantai National Park. 21 courses including a 5.5 km top-to-bottom; 2 km night skiing piste. Two gondolas, three high-speed quads.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "appi-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "雫石高原 滑雪一日",
+      "summary": "從雪場遙望壯麗的岩手山，視野開闊是雫石高原滑雪場的一大特色。雪道變化豐富的11條滑道，從初學者到上級雪友都可以盡情享受其中，下雪過後的未壓雪滑道更是不能錯過。 Prince Hotels resort with a 4.5 km World Cup downhill course. Views of Mt. Iwate; gondola to the upper station.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "shizukuishi"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "八幡平 滑雪一日",
+      "summary": "八幡平滑雪場位於日本岩手縣，以其絕佳的自然風景、多樣化的滑道和優質的雪質而聞名。 Two linked resorts (Panorama + Shimokura) at the foot of Mt. Iwate inside Towada-Hachimantai National Park. Shuttles connect the two.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hachimantai-panorama-shimokura"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "destination": "Fukushima, Japan",
+  "routes": [
+    {
+      "title": "豬苗代 滑雪一日",
+      "summary": "福島是一個日本滑雪場聚集的熱門地點。主要的滑雪場圍繞在豬苗代湖及盤梯山，除了湖光山色令人留連忘返外，豐富的温泉資源也是這裡得天獨厚的特色。 On the slopes of Mt. Bandai overlooking Lake Inawashiro. Gondola + 4 hooded high-speed quads. Two contiguous ski areas with a 3.5 km top-to-bottom.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "inawashiro"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "星野貓魔山 滑雪一日",
+      "summary": "貓魔山滑雪場是星野集團打造的世界級滑雪勝地，它坐落在磐梯山，根駒嶽，馬屋山三座雄偉的山峰之間。兩座雪場加總面積為993公頃、多達 33 條滑道與 13 座纜車，為東北最大的滑雪場！ Re-launched in 2023/24 by Hoshino Resorts merging Alts Bandai (south) and Nekoma (north) into one pass. 993 ha across north and south slopes of Mt. Nekoma.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "nekoma-mountain"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "裏磐梯GRANDECO 滑雪一日",
+      "summary": "Grandeco滑雪場是日本福島縣的一個知名滑雪勝地，擁有豐富的雪量、優質的粉雪及多樣化的滑道。滑雪場位於裏磐梯山腳下，周圍環繞著壯麗的自然景觀。 Urabandai (north Bandai) ski area with a gondola + 3 hooded quad lifts. Ski-in / ski-out hotel; all-northern-slope orientation preserves powder.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "grandeco"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}
