@@ -1,5 +1,15 @@
 {
   "destination": "Hokkaido, Japan",
+  "destination_aliases": [
+    "hokkaido, japan",
+    "hokkaido",
+    "北海道",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
   "routes": [
     {
       "title": "留壽都 滑雪一日",

@@ -34,6 +34,7 @@
 import { readFileSync } from "node:fs";
 import { createAdminClient } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
+import { normalizeAliases } from "@/lib/destination-aliases";
 
 interface RouteSeed {
   title: string;
@@ -46,6 +47,12 @@ interface RouteSeed {
 
 interface SeedFile {
   destination: string;
+  /**
+   * Optional aliases applied to every route in the file. Combined with the
+   * destination name itself; normalized (lowercased, trimmed, deduped) before
+   * being written so the alias-aware RPCs can `lower($1) = any(aliases)`.
+   */
+  destination_aliases?: string[];
   routes: RouteSeed[];
 }
 
@@ -67,7 +74,11 @@ async function validatePlaceIds(placeIds: string[]): Promise<{ missing: string[]
   return { missing: placeIds.filter((id) => !found.has(id)) };
 }
 
-async function seedRoute(destination: string, seed: RouteSeed): Promise<void> {
+async function seedRoute(
+  destination: string,
+  aliases: string[],
+  seed: RouteSeed
+): Promise<void> {
   const { missing } = await validatePlaceIds(seed.place_ids);
   if (missing.length > 0) {
     console.error(`[seed]   ✗ ${seed.title}: missing place_ids: ${missing.join(", ")}`);
@@ -81,6 +92,7 @@ async function seedRoute(destination: string, seed: RouteSeed): Promise<void> {
   const { error } = await db.from("route_templates").upsert(
     {
       destination_name: destination,
+      destination_aliases: aliases,
       title: seed.title,
       summary: seed.summary,
       vibe_tags: seed.vibe_tags,
@@ -117,10 +129,14 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  console.log(`[seed] ${file.destination} (${file.routes.length} routes)`);
+  // The canonical destination_name is always the first alias (after
+  // normalization) so the RPCs match it via either branch of the OR.
+  const aliases = normalizeAliases([file.destination, ...(file.destination_aliases ?? [])]);
+
+  console.log(`[seed] ${file.destination} (${file.routes.length} routes, ${aliases.length} aliases)`);
   for (const route of file.routes) {
     try {
-      await seedRoute(file.destination, route);
+      await seedRoute(file.destination, aliases, route);
     } catch (err) {
       console.error(`[seed]   ✗ ${route.title}:`, err);
     }

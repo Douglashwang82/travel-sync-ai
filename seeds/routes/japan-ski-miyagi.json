@@ -1,5 +1,15 @@
 {
   "destination": "Miyagi, Japan",
+  "destination_aliases": [
+    "miyagi, japan",
+    "miyagi",
+    "宮城",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
   "routes": [
     {
       "title": "鬼首 滑雪一日",

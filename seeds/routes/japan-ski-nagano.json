@@ -1,5 +1,15 @@
 {
   "destination": "Nagano, Japan",
+  "destination_aliases": [
+    "nagano, japan",
+    "nagano",
+    "長野",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
   "routes": [
     {
       "title": "白馬八方尾根 滑雪一日",

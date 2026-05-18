@@ -1,5 +1,15 @@
 {
   "destination": "Fukushima, Japan",
+  "destination_aliases": [
+    "fukushima, japan",
+    "fukushima",
+    "福島",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
   "routes": [
     {
       "title": "豬苗代 滑雪一日",

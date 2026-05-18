@@ -1,5 +1,15 @@
 {
   "destination": "Fukui, Japan",
+  "destination_aliases": [
+    "fukui, japan",
+    "fukui",
+    "福井",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
   "routes": [
     {
       "title": "SKIJAM勝山 滑雪一日",

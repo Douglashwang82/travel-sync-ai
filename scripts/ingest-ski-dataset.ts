@@ -27,6 +27,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createAdminClient } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
+import { normalizeAliases } from "@/lib/destination-aliases";
 
 // ─── Input shape (matches data/japan-ski-trip/national/resorts.json) ─────────
 
@@ -68,6 +69,51 @@ interface NationalIndex {
 
 function destinationFor(prefecture: string): string {
   return `${prefecture}, Japan`;
+}
+
+// Traditional / Simplified Chinese prefecture names so a "北海道" or "長野"
+// survey answer hits the same row as "Hokkaido".
+const PREFECTURE_ZH: Record<string, string> = {
+  Hokkaido: "北海道",
+  Iwate: "岩手",
+  Yamagata: "山形",
+  Aomori: "青森",
+  Miyagi: "宮城",
+  Fukushima: "福島",
+  Tochigi: "栃木",
+  Nagano: "長野",
+  Niigata: "新潟",
+  Gunma: "群馬",
+  Fukui: "福井",
+  Gifu: "岐阜",
+};
+
+/**
+ * Aliases for a prefecture-level destination. Resort-specific aliases (the
+ * resort name in EN/ZH/JA, plus the slug) are added per row by aliasesForResort.
+ */
+function aliasesForPrefecture(prefecture: string): string[] {
+  const zh = PREFECTURE_ZH[prefecture];
+  return normalizeAliases([
+    destinationFor(prefecture),
+    prefecture,
+    zh ?? null,
+    "Japan",
+    "Japan ski",
+    "Japan ski trip",
+    "Japan snow",
+    "ski japan",
+  ]);
+}
+
+function aliasesForResort(r: Resort, prefecture: string): string[] {
+  return normalizeAliases([
+    ...aliasesForPrefecture(prefecture),
+    r.id,
+    r.name,
+    r.name_ja,
+    r.name_zh,
+  ]);
 }
 
 function vibeTagsFor(r: Resort): string[] {
@@ -179,6 +225,7 @@ async function ingestPois(index: NationalIndex): Promise<void> {
           {
             place_id: r.id,
             destination_name: destinationFor(region.prefecture),
+            destination_aliases: aliasesForResort(r, region.prefecture),
             name: r.name,
             item_type: "activity",
             tags: vibeTagsFor(r),
@@ -215,8 +262,12 @@ function writeRouteSeeds(index: NationalIndex, outDir: string): void {
   let total = 0;
 
   for (const region of index.regions) {
+    // Route-level aliases are prefecture-level (a single seed file covers all
+    // resorts in the prefecture, so per-resort aliases like a slug don't help
+    // here — they're carried on the POI row instead).
     const seed = {
       destination: destinationFor(region.prefecture),
+      destination_aliases: aliasesForPrefecture(region.prefecture),
       routes: region.resorts.map((r) => ({
         title: routeTitleFor(r),
         summary: routeSummaryFor(r),

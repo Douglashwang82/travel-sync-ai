@@ -17,6 +17,7 @@ state (`boost`, `quality_score`, `is_archived`) is preserved.
 ```json
 {
   "destination": "Kyoto, Japan",
+  "destination_aliases": ["kyoto", "京都", "japan"],
   "routes": [
     {
       "title": "Gion Cultural Morning",
@@ -29,6 +30,12 @@ state (`boost`, `quality_score`, `is_archived`) is preserved.
   ]
 }
 ```
+
+`destination_aliases` (optional) applies to every route in the file. The
+seeder normalizes entries (lowercase, trim, dedupe) and combines them with
+the canonical `destination` before writing, so a survey answer of
+`"Kyoto"`, `"京都"`, or `"japan"` all hit this file's routes via the
+alias-aware `search_routes_by_vibe` RPC.
 
 ## Constraints
 
