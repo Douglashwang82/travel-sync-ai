@@ -11,6 +11,7 @@ type RouteContext = { params: Promise<{ tripId: string }> };
 
 export interface AppMember {
   lineUserId: string;
+  appUserId: string | null;
   displayName: string | null;
   role: string;
   joinedAt: string;
@@ -53,10 +54,23 @@ export async function GET(
       );
     }
 
+    const lineUserIds = (lineMembers ?? []).map((m) => m.line_user_id as string);
+    const appUserByLineId = new Map<string, string>();
+    if (lineUserIds.length) {
+      const { data: appUsers } = await db
+        .from("app_users")
+        .select("id, line_user_id")
+        .in("line_user_id", lineUserIds);
+      for (const u of appUsers ?? []) {
+        appUserByLineId.set(u.line_user_id as string, u.id as string);
+      }
+    }
+
     for (const m of lineMembers ?? []) {
       const lineUserId = m.line_user_id as string;
       byLineUserId.set(lineUserId, {
         lineUserId,
+        appUserId: appUserByLineId.get(lineUserId) ?? null,
         displayName: (m.display_name as string | null) ?? null,
         role: m.role as string,
         joinedAt: m.joined_at as string,
@@ -88,6 +102,7 @@ export async function GET(
     if (byLineUserId.has(lineUserId)) continue;
     byLineUserId.set(lineUserId, {
       lineUserId,
+      appUserId: (user.id as string | null) ?? null,
       displayName: (user.display_name as string | null) ?? null,
       role: m.role as string,
       joinedAt: m.joined_at as string,

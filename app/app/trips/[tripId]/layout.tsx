@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/db";
 import { parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
+import { TripChatNavbar } from "@/components/app/trip-chat-navbar";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ interface TripContextSummary {
   trip: Trip;
   role: "organizer" | "member";
   groupName: string | null;
+  appUserId: string | null;
 }
 
 async function loadTripContext(
@@ -48,6 +50,13 @@ async function loadTripContext(
   const db = createAdminClient();
   const { data: trip } = await db.from("trips").select("*").eq("id", tripId).single();
   if (!trip) return null;
+
+  const { data: appUser } = await db
+    .from("app_users")
+    .select("id")
+    .eq("line_user_id", lineUserId)
+    .maybeSingle();
+  const appUserId = (appUser?.id as string | null) ?? null;
 
   const groupId = (trip.group_id as string | null) ?? null;
   let role: "organizer" | "member" | null = null;
@@ -91,6 +100,7 @@ async function loadTripContext(
     trip: trip as Trip,
     role,
     groupName,
+    appUserId,
   };
 }
 
@@ -110,7 +120,7 @@ export default async function TripLayout({
   const ctx = await loadTripContext(tripId, lineUserId);
   if (!ctx) notFound();
 
-  const { trip, role, groupName } = ctx;
+  const { trip, role, groupName, appUserId } = ctx;
 
   /*
    * Layout no longer renders the hero — that responsibility moved into the
@@ -145,6 +155,9 @@ export default async function TripLayout({
         <span className="rounded-full bg-[var(--surface-sunken)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">
           {copy.you}: {copy.role[role]}
         </span>
+        {appUserId && (
+          <TripChatNavbar tripId={tripId} currentAppUserId={appUserId} />
+        )}
       </nav>
 
       <div id="trip-content" className="pt-2">{children}</div>
