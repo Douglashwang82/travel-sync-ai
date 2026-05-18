@@ -18,7 +18,9 @@ import { forkTemplate } from "@/services/templates";
 // web the bento workspace IS the preview, so we skip the intermediate step.
 
 const BodySchema = z.object({
-  groupId: z.string().uuid(),
+  // Optional: when omitted, the trip is created without a LINE group binding
+  // and the caller is added directly via `trip_members`.
+  groupId: z.string().uuid().nullish(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   answers: z.object({
     destination: z.string().min(2).max(120),
@@ -46,17 +48,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Membership check — only let users fork into a group they're part of.
   const db = createAdminClient();
-  const { data: membership } = await db
-    .from("group_members")
-    .select("group_id")
-    .eq("group_id", body.groupId)
-    .eq("line_user_id", auth.lineUserId)
-    .is("left_at", null)
-    .maybeSingle();
-  if (!membership) {
-    return NextResponse.json({ error: "forbidden", message: "Not a member of this group" }, { status: 403 });
+  // Membership check — only let users fork into a group they're part of.
+  // Skipped for group-less trips (the caller is added via trip_members on fork).
+  if (body.groupId) {
+    const { data: membership } = await db
+      .from("group_members")
+      .select("group_id")
+      .eq("group_id", body.groupId)
+      .eq("line_user_id", auth.lineUserId)
+      .is("left_at", null)
+      .maybeSingle();
+    if (!membership) {
+      return NextResponse.json({ error: "forbidden", message: "Not a member of this group" }, { status: 403 });
+    }
   }
 
   // 1. Generate the private template
@@ -90,9 +95,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const result = await forkTemplate({
     slug: tmpl.slug as string,
-    groupId: body.groupId,
+    groupId: body.groupId ?? null,
     startDate: body.startDate,
     lineUserId: auth.lineUserId,
+    appUserId: auth.appUserId,
   });
   if (!result.ok) {
     return NextResponse.json({ error: "fork_failed", message: result.error, code: result.code }, { status: 422 });
