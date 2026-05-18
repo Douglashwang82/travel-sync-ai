@@ -87,6 +87,55 @@ function vibeTagsFor(r: Resort): string[] {
   return Array.from(tags);
 }
 
+// ─── Live data (default ski lift hours) ──────────────────────────────────────
+// Approximated, not researched per-resort: 08:30–16:30 daytime everywhere,
+// plus 17:00–20:30 for resorts with night_skiing=true. Individual schedules
+// drift week-to-week in practice; refine here when we want resort-specific
+// hours.
+
+const DAY_OPEN_MIN = 8 * 60 + 30;   // 08:30
+const DAY_CLOSE_MIN = 16 * 60 + 30; // 16:30
+const NIGHT_OPEN_MIN = 17 * 60;     // 17:00
+const NIGHT_CLOSE_MIN = 20 * 60 + 30; // 20:30
+
+interface OpeningPeriod {
+  openDay: number;
+  openMinutes: number;
+  closeDay: number;
+  closeMinutes: number;
+}
+
+interface PlaceLiveDataShape {
+  placeId: string;
+  name: string | null;
+  address: string | null;
+  rating: number | null;
+  priceLevel: string | null;
+  lat: number | null;
+  lng: number | null;
+  openingPeriods: OpeningPeriod[];
+}
+
+function liveDataFor(r: Resort): PlaceLiveDataShape {
+  const periods: OpeningPeriod[] = [];
+  for (let d = 0; d < 7; d++) {
+    periods.push({ openDay: d, openMinutes: DAY_OPEN_MIN, closeDay: d, closeMinutes: DAY_CLOSE_MIN });
+    if (r.night_skiing) {
+      periods.push({ openDay: d, openMinutes: NIGHT_OPEN_MIN, closeDay: d, closeMinutes: NIGHT_CLOSE_MIN });
+    }
+  }
+  return {
+    placeId: r.id,
+    name: r.name,
+    address: r.address,
+    rating: null,
+    priceLevel: null,
+    lat: r.lat,
+    lng: r.lng,
+    openingPeriods: periods,
+  };
+}
+
 function poiEmbeddingText(r: Resort, prefecture: string): string {
   // Mirror buildVibeQuery's surface shape so this corpus lives in the same
   // semantic space as Google-Places-sourced rows.
@@ -137,6 +186,7 @@ async function ingestPois(index: NationalIndex): Promise<void> {
             embedding,
             lat: r.lat,
             lng: r.lng,
+            live_data: liveDataFor(r),
             source: "curated:japan-ski-national",
             last_seen_at: new Date().toISOString(),
           },
