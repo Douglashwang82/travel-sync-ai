@@ -23,7 +23,19 @@ import { randomBytes, createHash } from "node:crypto";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { generateJson, GeminiUnavailableError } from "@/lib/gemini";
-import { searchPoisByVibe, enrichWithLiveData, type EnrichedPoi } from "./poi-engine";
+import {
+  searchPoisByVibe,
+  enrichWithLiveData,
+  loadPoisByIds,
+  type EnrichedPoi,
+  type PoiCandidate,
+} from "./poi-engine";
+import {
+  searchRoutesByVibe,
+  composeFromRoutes,
+  type RouteCandidate,
+  type RouteComposition,
+} from "./route-engine";
 import { solveItinerary, type RoutedDay, type InfeasibilityIssue } from "./solver";
 import type { GenerateInput, GenerateOutput } from "./generator";
 
@@ -71,40 +83,76 @@ const MAX_REPAIR_ATTEMPTS = 2;
 
 export async function runGenerationPipeline(input: GenerateInput): Promise<GenerateOutput> {
   validateAnswers(input);
+  const destination = input.answers.destination!;
+  const durationDays = input.answers.duration_days!;
 
-  // 1. Retrieve POIs (vector + live data)
-  const candidates = await searchPoisByVibe({
-    destination: input.answers.destination ?? "",
+  // 1. Route layer — curated 1-day routes (may be empty).
+  const routes = await searchRoutesByVibe({
+    destination,
+    vibe: input.answers.vibe,
+    pace: input.answers.pace,
+    budget: input.answers.budget_tier,
+    k: 10,
+  });
+  const compose: RouteComposition = composeFromRoutes(routes, durationDays);
+
+  // 2. POI layer — always retrieved. Routes can fail at solve time and demote
+  //    days to the LLM flow on repair, so the LLM needs a candidate pool ready.
+  const poiCandidates = await searchPoisByVibe({
+    destination,
     vibe: input.answers.vibe,
     pace: input.answers.pace,
     budget: input.answers.budget_tier,
     k: 30,
   });
-  if (candidates.length === 0) {
-    throw new GenerationFailedError("no_candidates", "POI engine returned zero candidates");
-  }
-  const enriched = await enrichWithLiveData(candidates);
 
-  // 2. LLM pick → 3. solve → 4. repair loop
+  // 3. Materialize route place_ids as PoiCandidates and union with POI search.
+  const routePois = await loadPoisByIds(Array.from(compose.usedPlaceIds));
+  const allCandidates = unionByPlaceId(routePois, poiCandidates);
+  if (allCandidates.length === 0) {
+    throw new GenerationFailedError("no_candidates", "no routes or POIs available");
+  }
+  const enriched = await enrichWithLiveData(allCandidates);
+
+  // 4. LLM pick → 5. solve → 6. repair loop (now also demotes failed routes).
   const startWeekday = deriveStartWeekday();
-  let pick = await llmPickAssignment(input, enriched, []);
-  let routed = trySolve(pick, enriched, input, startWeekday);
+  let pick: PickResult | null = null;
+  let routed: SolveTry | null = null;
 
-  for (let attempt = 1; routed.kind === "infeasible" && attempt <= MAX_REPAIR_ATTEMPTS; attempt++) {
-    pick = await llmPickAssignment(input, enriched, routed.issues, pick);
-    routed = trySolve(pick, enriched, input, startWeekday);
+  for (let attempt = 0; attempt <= MAX_REPAIR_ATTEMPTS; attempt++) {
+    if (compose.uncoveredDays.length > 0) {
+      const llmIssues = routed?.kind === "infeasible" ? issuesForLlmDays(routed.issues, compose) : [];
+      pick = await llmPickAssignment(input, enriched, llmIssues, pick ?? undefined, {
+        onlyDays: compose.uncoveredDays,
+        excludePlaceIds: compose.usedPlaceIds,
+      });
+    }
+
+    routed = trySolve(pick, enriched, input, startWeekday, compose);
+    if (routed.kind === "feasible") break;
+
+    // Demote any preordered-day failures so the next attempt's LLM call
+    // covers those days. Place_ids freed by the dropped route become
+    // eligible again for the LLM shortlist.
+    if (attempt < MAX_REPAIR_ATTEMPTS) {
+      demoteFailedRoutes(routed.issues, compose);
+    }
   }
 
-  if (routed.kind === "infeasible") {
+  if (!routed || routed.kind === "infeasible") {
+    const issues = routed?.kind === "infeasible" ? routed.issues : [];
     throw new GenerationFailedError(
       "irreparable",
       `Solver still infeasible after ${MAX_REPAIR_ATTEMPTS} repair attempts: ` +
-        routed.issues.map((i) => `day ${i.dayNumber}/${i.reason}`).join(", ")
+        issues.map((i) => `day ${i.dayNumber}/${i.reason}`).join(", ")
     );
   }
 
-  // 5. Persist as private trip template
-  return persistTemplate(input, pick, routed.days, enriched);
+  // 7. Persist as private trip template. When the LLM never ran (all days
+  //    were route-covered first try), synthesize the title/summary/tags
+  //    from the routes themselves.
+  const finalPick = pick ?? synthesizePickFromRoutes(compose, destination);
+  return persistTemplate(input, finalPick, routed.days, enriched, compose);
 }
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
@@ -130,16 +178,32 @@ interface PickPromptInput {
   issues: InfeasibilityIssue[];
 }
 
+interface PickConstraints {
+  /** When set, the LLM is asked to pick only for these day numbers. */
+  onlyDays?: number[];
+  /** When set, these place_ids are filtered out of the shortlist (route-reserved). */
+  excludePlaceIds?: Set<string>;
+}
+
 async function llmPickAssignment(
   input: GenerateInput,
   shortlist: EnrichedPoi[],
   issues: InfeasibilityIssue[],
-  prior?: PickResult
+  prior?: PickResult,
+  constraints?: PickConstraints
 ): Promise<PickResult> {
+  const onlyDays = constraints?.onlyDays;
+  const excludeIds = constraints?.excludePlaceIds ?? new Set<string>();
+  const filteredShortlist = shortlist.filter((p) => !excludeIds.has(p.placeId));
+  const daysClause = onlyDays && onlyDays.length > 0
+    ? `本次僅需安排以下天數(其他天已由策展路線覆蓋):${onlyDays.join("、")}`
+    : `共 ${input.answers.duration_days} 天`;
+
   const system = [
     `你正在從候選清單中,為 ${input.answers.destination} 的 ${input.answers.duration_days} 天行程挑選並分配每天的景點。`,
     `團體類型:${input.answers.party}(${input.answers.party_size} 人)。預算:${input.answers.budget_tier}。節奏:${input.answers.pace}。氛圍:${(input.answers.vibe ?? []).join("、") || "均衡"}。`,
     input.answers.must_haves ? `額外需求:${input.answers.must_haves}` : null,
+    daysClause,
     "規則:",
     "1) 你只能使用候選清單中的 place_id;不可虛構或新增。",
     `2) 每日選 3–6 個地點(依照節奏:chill ≤3 / balanced 3–5 / packed 5–6)。`,
@@ -162,7 +226,7 @@ async function llmPickAssignment(
 
   const userPayload = {
     instruction: repairBlock ?? "請從候選清單中挑選並分配每天的地點。",
-    shortlist: shortlist.map((p) => ({
+    shortlist: filteredShortlist.map((p) => ({
       place_id: p.placeId,
       name: p.name,
       type: p.itemType,
@@ -183,17 +247,21 @@ async function llmPickAssignment(
   const parsed = PickSchema.safeParse(raw);
   if (!parsed.success) throw new GenerationFailedError("schema_invalid", parsed.error.message);
 
-  // Defense in depth: drop any hallucinated place_ids and dedupe across days.
-  const valid = new Set(shortlist.map((p) => p.placeId));
+  // Defense in depth: drop hallucinated/excluded place_ids, dedupe across days,
+  // and (when constrained) drop any day_number outside onlyDays.
+  const valid = new Set(filteredShortlist.map((p) => p.placeId));
+  const allowedDays = onlyDays && onlyDays.length > 0 ? new Set(onlyDays) : null;
   const seen = new Set<string>();
-  parsed.data.days = parsed.data.days.map((d) => ({
-    ...d,
-    place_ids: d.place_ids.filter((id) => {
-      if (!valid.has(id) || seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    }),
-  }));
+  parsed.data.days = parsed.data.days
+    .filter((d) => (allowedDays ? allowedDays.has(d.day_number) : true))
+    .map((d) => ({
+      ...d,
+      place_ids: d.place_ids.filter((id) => {
+        if (!valid.has(id) || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      }),
+    }));
 
   return parsed.data;
 }
@@ -203,23 +271,39 @@ type SolveTry =
   | { kind: "infeasible"; issues: InfeasibilityIssue[] };
 
 function trySolve(
-  pick: PickResult,
+  pick: PickResult | null,
   enriched: EnrichedPoi[],
   input: GenerateInput,
-  startWeekday: number
+  startWeekday: number,
+  compose: RouteComposition
 ): SolveTry {
   const byId = new Map(enriched.map((p) => [p.placeId, p]));
   const daysAssignment: EnrichedPoi[][] = [];
+  const preorderedDays: boolean[] = [];
+
   for (let d = 1; d <= input.answers.duration_days!; d++) {
-    const slot = pick.days.find((x) => x.day_number === d);
-    const pois = (slot?.place_ids ?? []).map((id) => byId.get(id)).filter((v): v is EnrichedPoi => v != null);
+    const route = compose.coveredDays.get(d);
+    if (route) {
+      const pois = route.placeIds
+        .map((id) => byId.get(id))
+        .filter((v): v is EnrichedPoi => v != null);
+      daysAssignment.push(pois);
+      preorderedDays.push(true);
+      continue;
+    }
+    const slot = pick?.days.find((x) => x.day_number === d);
+    const pois = (slot?.place_ids ?? [])
+      .map((id) => byId.get(id))
+      .filter((v): v is EnrichedPoi => v != null);
     daysAssignment.push(pois);
+    preorderedDays.push(false);
   }
 
   const result = solveItinerary({
     daysAssignment,
     pace: input.answers.pace,
     startWeekday,
+    preorderedDays,
   });
   return result.ok
     ? { kind: "feasible", days: result.days }
@@ -234,7 +318,8 @@ async function persistTemplate(
   input: GenerateInput,
   pick: PickResult,
   routedDays: RoutedDay[],
-  enriched: EnrichedPoi[]
+  enriched: EnrichedPoi[],
+  compose: RouteComposition
 ): Promise<GenerateOutput> {
   const db = createAdminClient();
   const byId = new Map(enriched.map((p) => [p.placeId, p]));
@@ -297,10 +382,62 @@ async function persistTemplate(
 
   await db.from("trip_templates").update({ current_version_id: versionId }).eq("id", templateId);
 
+  // Accumulate a usage signal on routes that contributed. Fire-and-forget:
+  // a quality-score blip should never fail a successful generation.
+  const usedRouteIds = Array.from(new Set(Array.from(compose.coveredDays.values()).map((r) => r.routeId)));
+  if (usedRouteIds.length > 0) {
+    db.rpc("bump_route_quality", { p_route_ids: usedRouteIds, p_delta: 1 })
+      .then(({ error }) => {
+        if (error) console.error("[orchestrator] bump_route_quality failed", error);
+      });
+  }
+
   return { templateId, versionId };
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+function unionByPlaceId(a: PoiCandidate[], b: PoiCandidate[]): PoiCandidate[] {
+  const seen = new Set<string>();
+  const out: PoiCandidate[] = [];
+  for (const c of [...a, ...b]) {
+    if (seen.has(c.placeId)) continue;
+    seen.add(c.placeId);
+    out.push(c);
+  }
+  return out;
+}
+
+function issuesForLlmDays(issues: InfeasibilityIssue[], compose: RouteComposition): InfeasibilityIssue[] {
+  // Repair feedback should only mention days the LLM actually picked for —
+  // route-day failures are handled by demoteFailedRoutes, not by asking the
+  // LLM to swap.
+  return issues.filter((i) => !compose.coveredDays.has(i.dayNumber));
+}
+
+function demoteFailedRoutes(issues: InfeasibilityIssue[], compose: RouteComposition): void {
+  for (const issue of issues) {
+    const route = compose.coveredDays.get(issue.dayNumber);
+    if (!route) continue;
+    compose.coveredDays.delete(issue.dayNumber);
+    compose.uncoveredDays.push(issue.dayNumber);
+    for (const id of route.placeIds) compose.usedPlaceIds.delete(id);
+  }
+  compose.uncoveredDays.sort((a, b) => a - b);
+}
+
+function synthesizePickFromRoutes(compose: RouteComposition, destination: string): PickResult {
+  const routes = Array.from(compose.coveredDays.values());
+  if (routes.length === 0) {
+    // Shouldn't happen — we only synthesize when at least one route covered a day —
+    // but keep the shape valid in case.
+    return { title: `${destination} Highlights`, summary: `A curated trip to ${destination}.`, tags: [], days: [] };
+  }
+  const title = routes.length === 1 ? routes[0].title : `${destination} — ${routes[0].title} + more`;
+  const summary = routes.map((r) => r.summary).join(" ").slice(0, 800);
+  const tags = Array.from(new Set(routes.flatMap((r) => r.vibeTags))).slice(0, 8);
+  return { title, summary, tags, days: [] };
+}
 
 function deriveStartWeekday(): number {
   return new Date().getDay();

@@ -1,0 +1,33 @@
+{
+  "destination": "Gifu, Japan",
+  "destination_aliases": [
+    "gifu, japan",
+    "gifu",
+    "岐阜",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "高鷲 滑雪一日",
+      "summary": "高鷲山是西日本最大的滑雪勝地之一！TAKASU MOUNTAINS由岐阜縣上市高鷲町的6個滑雪場（WhitePIA、鷲之岳滑雪場、高鷲滑雪場、Dynaland、晝野高原滑雪場、郡上Vacance Mura滑雪場）組成。 Six-resort cluster on a joint lift pass (Takasu Snow Park, Dynaland, WhitePIA, Hirugano Kogen, Washigatake, Gujo Vacance-mura). ~2 h from Nagoya. Dynaland night skiing runs late.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "takasu-mountains"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

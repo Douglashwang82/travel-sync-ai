@@ -1,0 +1,197 @@
+{
+  "destination": "Nagano, Japan",
+  "destination_aliases": [
+    "nagano, japan",
+    "nagano",
+    "長野",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "白馬八方尾根 滑雪一日",
+      "summary": "長野是日本比較罕見的內陸縣之一，被稱作日本的屋脊。這裡廣為人知的是白馬八方尾根，這個曾經舉辦過1998年冬奥運會的滑雪場，是日本知名的滑雪勝地。 Hakuba Valley's largest and most central resort; hosted the 1998 Olympic alpine events. Some of the steepest piste in the valley.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hakuba-happo-one"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "栀池高原 滑雪一日",
+      "summary": "相當受初中級者歡迎的滑雪場，適合全家同遊，超寬敞的初中級滑道佔了全體的80%，緩斜面全長14,000m，箱型纜車直達山頂。 Hakuba Valley resort renowned for the widest, gentlest greens in the area. 80% beginner / intermediate; 4.6 km longest run; lift-accessed tree runs above.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "tsugaike-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "野澤温泉 滑雪一日",
+      "summary": "飄溢著温泉香味，恬静安詳的野澤温泉村充滿了溫暖人心的魅力。以豐富的泉量而自豪的温泉，是日本Mt.6六大高山温泉滑雪区之一。 MT.6 resort with an attached traditional onsen town. 50 km of trails, 10 km top-to-bottom run, two main gondolas.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "nozawa-onsen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "志賀高原 滑雪一日",
+      "summary": "長野！這個以高山風光著稱的滑雪大縣，志賀高原是為其中著名的滑雪勝地之一(1998年長野冬季奥運會滑雪的比賽主場地)。『日本六大高山滑雪度假村』(MT.6)中的三個都在長野縣。 Japan's largest interconnected ski area: 18 sub-resorts, ~50 interconnected lifts, 80+ km of trails. Hosted 1998 Olympic giant slalom.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "shiga-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "北志賀龍王 滑雪一日",
+      "summary": "搭乘著SKYLAND EXPRESS箱型纜車上山，從山頂一覽北信濃的美麗山景，雪場有超過一半的初中級滑道，讓初學者在學習上沒有壓力。 166-passenger Skyland Express ropeway to the SORA Terrace at 1,770 m. Famous Kiotoshi advanced course at 36°.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "ryuoo-ski-park"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "白樺池之平 滑雪一日",
+      "summary": "白樺高原位處號稱「日本小瑞士」的地帶。海拔超過 1400m, 加上高品質的粉雪, 白樺高原在日本也受到許多滑雪客的稱許。 Family resort attached to Ikenotaira Hotel. High sunshine rate (~80%). Beginner-friendly with strong ski-school presence.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "family"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "shirakaba-ikenotaira"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "木島平 滑雪一日",
+      "summary": "木島平滑雪場位於長野縣，信州是自古至今長野縣的別稱。木島平全區有7條纜車，10條滑道。最長滑走距離可達 3公里。 Rebranded as 'Snow Resort Romance no Kamisama' for 2023/24. Quiet, beginner-friendly Iiyama-area resort.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "family"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "kijimadaira"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "軽井澤 滑雪一日",
+      "summary": "由王子飯店集團所屬的軽井澤王子飯店滑雪場，海拔1155m，從山頂仰視軽井澤街道美不勝收，號稱90%晴天率的軽井澤讓你盡情享受滑雪的藍天美景。軽井澤雪場旁邊即是新幹線車站。 10-minute walk from Karuizawa Shinkansen station; one of the easiest ski resorts to reach from Tokyo. 90% sunny days, heavy snowmaking, beginner-leaning.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "family"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "karuizawa-prince"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "斑尾高原 滑雪一日",
+      "summary": "斑尾高原位於長野縣北面，介於野澤温泉滑雪場及妙高高原滑雪場之間。斑尾高原滑雪場中60%為非壓雪雪道，可盡情享受粉雪。斑尾高原滑雪場與斑尾東急滑雪場相連。 Japan's first tree-skiing-focused resort: 10 official glades, 60% ungroomed. Connected via pass with neighbouring Tangram. Famed for 'Madapow'.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "madarao-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "菅平高原 滑雪一日",
+      "summary": "菅平高原滑雪場坐落在海拔2,207m的根子岳山腳下的高原上，是一個被壯觀的山景和美麗的自然環境所包圍的地方。它因為有著和瑞士的達沃斯一樣的景色，而被稱為「日本達沃斯」。 Three linked zones (Pine Beak, Taro, Davos). 60 courses across 175 ha; nicknamed 'Davos of Japan' for its high-altitude setting.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "nightlife",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "sugadaira-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

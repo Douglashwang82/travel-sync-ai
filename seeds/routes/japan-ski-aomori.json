@@ -1,0 +1,34 @@
+{
+  "destination": "Aomori, Japan",
+  "destination_aliases": [
+    "aomori, japan",
+    "aomori",
+    "青森",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "青森春泉 滑雪一日",
+      "summary": "青森春泉滑雪場坐落於壯麗的岩木山山腳下，共5條纜車、22條雪道，包含最大傾斜角30度的高級雪道。SKI IN、SKI OUT的設計，滑完雪直接回飯店泲湯放鬆。 Tohoku's northernmost major resort, at the base of Mt. Iwaki. Open-air onsen looks out over the Sea of Japan. Includes two covered high-speed quads and a gondola.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "relaxed",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "aomori-spring"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

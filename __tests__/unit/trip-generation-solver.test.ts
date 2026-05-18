@@ -142,6 +142,70 @@ describe("solver — meal anchors", () => {
   });
 });
 
+describe("solver — preordered days", () => {
+  it("respects curator order and does not permute", () => {
+    // Wide-open hours; B is closer to start, A is farther. With permutation
+    // the solver would prefer [A_or_B that minimizes travel] — but preordered
+    // forces the caller's order [A, B] regardless.
+    const a = poi({ placeId: "a", lat: 35.0, lng: 139.0 });
+    const b = poi({ placeId: "b", lat: 35.05, lng: 139.05 });
+    const r = solveItinerary({
+      daysAssignment: [[a, b]],
+      pace: "balanced",
+      startWeekday: 1,
+      dayStartMinutes: 9 * 60,
+      preorderedDays: [true],
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.days[0].stops.map((s) => s.poi.placeId)).toEqual(["a", "b"]);
+    }
+  });
+
+  it("still flags infeasibility when the curator order violates opening hours", () => {
+    // [A then B], but A only opens after B closes — order is forced, so fails.
+    const a = poi({
+      placeId: "a",
+      lat: 35.0,
+      lng: 139.0,
+      live: {
+        placeId: "a",
+        name: null,
+        address: null,
+        rating: null,
+        priceLevel: null,
+        lat: 35.0,
+        lng: 139.0,
+        openingPeriods: [{ openDay: 1, openMinutes: 15 * 60, closeDay: 1, closeMinutes: 17 * 60 }],
+      },
+    });
+    const b = poi({
+      placeId: "b",
+      lat: 35.001,
+      lng: 139.001,
+      live: {
+        placeId: "b",
+        name: null,
+        address: null,
+        rating: null,
+        priceLevel: null,
+        lat: 35.001,
+        lng: 139.001,
+        openingPeriods: [{ openDay: 1, openMinutes: 9 * 60, closeDay: 1, closeMinutes: 11 * 60 }],
+      },
+    });
+    const r = solveItinerary({
+      daysAssignment: [[a, b]],
+      pace: "balanced",
+      startWeekday: 1,
+      dayStartMinutes: 9 * 60,
+      preorderedDays: [true],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.issues[0].reason).toBe("no_valid_permutation");
+  });
+});
+
 describe("solver — pure helpers", () => {
   it("haversineKm yields ~0 for identical points", () => {
     expect(__testing.haversineKm(35, 139, 35, 139)).toBeCloseTo(0, 5);
