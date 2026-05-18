@@ -139,6 +139,49 @@ async function liveTextSearchFallback(input: VibeSearchInput, k: number): Promis
   return results.slice(0, k);
 }
 
+/**
+ * Load specific place_ids from the embeddings corpus as PoiCandidate rows.
+ * Used by the orchestrator to materialize route place_ids alongside the
+ * vibe-searched candidates so the solver and enrichment treat both uniformly.
+ *
+ * `similarity` is set to 1.0 — routes are pre-curated, they don't need to
+ * compete with vibe-search scores.
+ */
+export async function loadPoisByIds(placeIds: string[]): Promise<PoiCandidate[]> {
+  const unique = Array.from(new Set(placeIds.filter((id) => id && id.length > 0)));
+  if (unique.length === 0) return [];
+
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("poi_embeddings")
+    .select("place_id, name, item_type, tags, description, lat, lng")
+    .in("place_id", unique);
+  if (error) {
+    console.error("[poi-engine] loadPoisByIds failed", error);
+    return [];
+  }
+
+  const rows = (data ?? []) as Array<{
+    place_id: string;
+    name: string;
+    item_type: string;
+    tags: string[] | null;
+    description: string | null;
+    lat: number | null;
+    lng: number | null;
+  }>;
+  return rows.map((r) => ({
+    placeId: r.place_id,
+    name: r.name,
+    itemType: coerceItemType(r.item_type),
+    tags: r.tags ?? [],
+    description: r.description ?? "",
+    lat: r.lat,
+    lng: r.lng,
+    similarity: 1,
+  }));
+}
+
 export async function enrichWithLiveData(candidates: PoiCandidate[]): Promise<EnrichedPoi[]> {
   const live = await getPlaceDetailsBatch(candidates.map((c) => c.placeId));
   const byId = new Map(live.map((l) => [l.placeId, l]));
