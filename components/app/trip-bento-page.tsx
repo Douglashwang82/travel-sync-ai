@@ -8,6 +8,7 @@ import { CalendarGrid } from "@/components/app/grids/calendar-grid";
 import { BudgetGrid } from "@/components/app/grids/budget-grid";
 import { TaskGrid } from "@/components/app/grids/task-grid";
 import { IdeasGrid } from "@/components/app/grids/ideas-grid";
+import { PlanMasterGrid } from "@/components/app/grids/plan-master-grid";
 import { VotesGrid } from "@/components/app/grids/votes-grid";
 import { MapGrid } from "@/components/app/grids/map-grid";
 import { PackGrid } from "@/components/app/grids/pack-grid";
@@ -39,6 +40,7 @@ interface TileDef {
 
 const TILES: TileDef[] = [
   { id: "hero", title: "Trip", icon: "✦", Component: HeroGrid, defaultSize: "xl" },
+  { id: "plan-master", title: "Plan master", icon: "🧭", Component: PlanMasterGrid, defaultSize: "lg" },
   { id: "itinerary", title: "Itinerary", icon: "📅", Component: ItineraryGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/itinerary` },
   { id: "calendar", title: "Calendar", icon: "📆", Component: CalendarGrid, defaultSize: "lg" },
   { id: "budget", title: "Budget", icon: "💰", Component: BudgetGrid, defaultSize: "md", href: (t) => `/app/trips/${t}/expenses` },
