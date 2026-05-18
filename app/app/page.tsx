@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Plus } from "lucide-react";
 import { createAdminClient } from "@/lib/db";
 import { getIntlLocale, parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
@@ -29,6 +30,7 @@ const COPY: Record<
     pastSection: string;
     emptyTitle: string;
     emptyBody: string;
+    startWizard: string;
     howItWorks: string;
     datesTbd: string;
     untitledTrip: string;
@@ -47,6 +49,7 @@ const COPY: Record<
     emptyTitle: "No trips yet",
     emptyBody:
       "Add the TravelSync bot to a LINE group and type /start Osaka Jul 15-20 to create your first trip. It will show up here automatically.",
+    startWizard: "Plan new trip",
     howItWorks: "How it works",
     datesTbd: "Dates to be decided",
     untitledTrip: "Untitled trip",
@@ -70,6 +73,7 @@ const COPY: Record<
     emptyTitle: "還沒有旅程",
     emptyBody:
       "把 TravelSync 機器人加入 LINE 群組，並輸入 /start Osaka Jul 15-20 建立第一個旅程。建立後會自動顯示在這裡。",
+    startWizard: "建立新旅程",
     howItWorks: "查看介紹",
     datesTbd: "日期尚未決定",
     untitledTrip: "未命名旅程",
@@ -202,7 +206,15 @@ export default async function AppTripsPage() {
             {copy.subheading}
           </p>
         </div>
-        <div className="text-xs text-[var(--muted-foreground)]">{copy.totalTrips(trips.length)}</div>
+        <div className="flex flex-col items-start gap-3 sm:items-end">
+          <Button asChild className="rounded-full">
+            <Link href="/app/trips/new">
+              <Plus className="size-4" aria-hidden="true" />
+              {copy.startWizard}
+            </Link>
+          </Button>
+          <div className="text-xs text-[var(--muted-foreground)]">{copy.totalTrips(trips.length)}</div>
+        </div>
       </section>
 
       {trips.length === 0 && <EmptyTrips locale={locale} />}
@@ -245,7 +257,13 @@ function EmptyTrips({ locale }: { locale: AppLocale }) {
         </code>{" "}
         {copy.emptyBody.split("/start Osaka Jul 15-20")[1]}
       </p>
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        <Button asChild className="rounded-full">
+          <Link href="/app/trips/new">
+            <Plus className="size-4" aria-hidden="true" />
+            {copy.startWizard}
+          </Link>
+        </Button>
         <Button asChild variant="outline" className="rounded-full">
           <Link href="/">{copy.howItWorks}</Link>
         </Button>
