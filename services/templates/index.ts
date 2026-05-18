@@ -354,9 +354,12 @@ export async function getTemplate(
 
 export interface ForkInput {
   slug: string;
-  groupId: string;
+  // Null = create a group-less trip owned by the calling user. When null,
+  // `appUserId` must be provided so the creator gets a `trip_members` row.
+  groupId: string | null;
   startDate: string;
   lineUserId: string;
+  appUserId?: string;
 }
 
 export async function forkTemplate(
@@ -377,8 +380,12 @@ export async function forkTemplate(
     };
   }
 
-  if (!await validateActiveMember(db, input.groupId, input.lineUserId)) {
-    return { ok: false, error: "You are not a member of the selected group", code: "FORBIDDEN" };
+  if (input.groupId) {
+    if (!await validateActiveMember(db, input.groupId, input.lineUserId)) {
+      return { ok: false, error: "You are not a member of the selected group", code: "FORBIDDEN" };
+    }
+  } else if (!input.appUserId) {
+    return { ok: false, error: "appUserId is required for group-less forks", code: "INVALID" };
   }
 
   const startTs = new Date(input.startDate + "T00:00:00");
@@ -425,6 +432,20 @@ export async function forkTemplate(
     const { error: itemsErr } = await db.from("trip_items").insert(tripItems);
     if (itemsErr) {
       console.error("Failed to insert forked trip items:", itemsErr);
+    }
+  }
+
+  // For group-less trips, materialize the creator as the trip organizer so
+  // they show up in /api/app/session and trip-level membership queries.
+  if (!input.groupId && input.appUserId) {
+    const { error: memberErr } = await db.from("trip_members").insert({
+      trip_id: newTrip.id as string,
+      app_user_id: input.appUserId,
+      line_user_id: input.lineUserId,
+      role: "organizer",
+    });
+    if (memberErr) {
+      console.error("Failed to insert organizer trip_member:", memberErr);
     }
   }
 

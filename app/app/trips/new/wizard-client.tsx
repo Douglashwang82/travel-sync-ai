@@ -21,6 +21,11 @@ interface GroupOption {
   name: string;
 }
 
+// Sentinel value used by the group-picker radio when the user explicitly opts
+// out of binding the trip to a LINE group. Anything not in `groups` works;
+// using a fixed string keeps the radio's value type stable.
+const NO_GROUP_VALUE = "__none__";
+
 type StepKey =
   | "group"
   | "destination"
@@ -73,15 +78,19 @@ interface SubmitResponse {
 export function NewTripWizard({ groups }: { groups: GroupOption[] }): React.ReactElement {
   const router = useRouter();
 
-  // If the user has exactly one group, skip the group-picker step.
-  const startStep: StepKey = groups.length === 1 ? "destination" : "group";
+  // The group step is only shown when the user actually has groups to pick
+  // from. With zero groups, the trip is always created group-less; the group
+  // step would have nothing to render.
+  const startStep: StepKey = groups.length > 0 ? "group" : "destination";
 
-  const [state, setState] = useState<WizardState>(() =>
-    defaultState(groups.length === 1 ? groups[0].id : null)
-  );
+  const [state, setState] = useState<WizardState>(() => defaultState(null));
   const [step, setStep] = useState<StepKey>(startStep);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Tracks whether the user has interacted with the group step. We need this
+  // because `groupId === null` is both the initial "unanswered" state and a
+  // legitimate "no group" selection — the touched flag disambiguates the two.
+  const [groupStepTouched, setGroupStepTouched] = useState(false);
 
   const steps = useMemo<StepKey[]>(() => {
     const base: StepKey[] = [
@@ -95,7 +104,7 @@ export function NewTripWizard({ groups }: { groups: GroupOption[] }): React.Reac
       "must_haves",
       "review",
     ];
-    return groups.length > 1 ? (["group", ...base] as StepKey[]) : base;
+    return groups.length > 0 ? (["group", ...base] as StepKey[]) : base;
   }, [groups.length]);
 
   const stepIndex = steps.indexOf(step);
@@ -111,26 +120,12 @@ export function NewTripWizard({ groups }: { groups: GroupOption[] }): React.Reac
     if (prev) setStep(prev);
   }
 
-  if (groups.length === 0) {
-    return (
-      <main className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">先加入一個群組</h1>
-        <p className="text-muted-foreground">
-          AI 旅程草稿會建在 LINE 群組裡。請先把 TravelSync 加到群組，再回到這裡用問答產生草稿。
-        </p>
-        <Button asChild>
-          <Link href="/app">回到旅程列表</Link>
-        </Button>
-      </main>
-    );
-  }
-
   async function handleSubmit(): Promise<void> {
     setSubmitting(true);
     setSubmitError(null);
 
     const body = {
-      groupId: state.groupId,
+      groupId: state.groupId ?? null,
       startDate: state.startDate,
       answers: {
         destination: state.destination.trim(),
@@ -180,11 +175,17 @@ export function NewTripWizard({ groups }: { groups: GroupOption[] }): React.Reac
 
       <div className="flex flex-1 flex-col gap-6 pt-4">
         {step === "group" && (
-          <StepShell title="這趟旅程要建在哪個群組？" hint="生成的草稿會 fork 到這個群組的看板。">
+          <StepShell title="這趟旅程要建在哪個群組？" hint="可選擇綁定 LINE 群組，或建立個人旅程。">
             <RadioList
-              options={groups.map((g) => ({ value: g.id, label: g.name }))}
-              value={state.groupId}
-              onChange={(v) => setState({ ...state, groupId: v })}
+              options={[
+                ...groups.map((g) => ({ value: g.id, label: g.name })),
+                { value: NO_GROUP_VALUE, label: "不綁定群組（個人旅程）" },
+              ]}
+              value={state.groupId ?? (groupStepTouched ? NO_GROUP_VALUE : null)}
+              onChange={(v) => {
+                setGroupStepTouched(true);
+                setState({ ...state, groupId: v === NO_GROUP_VALUE ? null : v });
+              }}
             />
           </StepShell>
         )}
@@ -324,7 +325,7 @@ export function NewTripWizard({ groups }: { groups: GroupOption[] }): React.Reac
         )}
 
         {step !== "review" ? (
-          <Button onClick={advance} disabled={!canAdvance(state, step)}>
+          <Button onClick={advance} disabled={!canAdvance(state, step, groupStepTouched)}>
             下一步 →
           </Button>
         ) : (
@@ -443,7 +444,7 @@ function ReviewSummary({
   groupName: string | null;
 }): React.ReactElement {
   const rows: Array<[string, string]> = [
-    ["群組", groupName ?? "—"],
+    ["群組", groupName ?? "（不綁定群組）"],
     ["目的地", state.destination || "—"],
     ["天數", state.duration_days ? `${state.duration_days} 天` : "—"],
     ["人數", state.party_size != null ? `${state.party_size} 人（${humanParty(state.party)}）` : "—"],
@@ -469,10 +470,16 @@ function ReviewSummary({
 
 // ─── Validation + display helpers ───────────────────────────────────────────
 
-function canAdvance(state: WizardState, step: StepKey): boolean {
+function canAdvance(
+  state: WizardState,
+  step: StepKey,
+  groupStepTouched: boolean
+): boolean {
   switch (step) {
     case "group":
-      return !!state.groupId;
+      // Either a specific group or the explicit "no group" selection counts as
+      // answered. `state.groupId === null` alone is ambiguous (see touched).
+      return state.groupId != null || groupStepTouched;
     case "destination":
       return state.destination.trim().length >= 2;
     case "duration_days":
@@ -496,7 +503,6 @@ function canAdvance(state: WizardState, step: StepKey): boolean {
 
 function canSubmit(state: WizardState): boolean {
   return (
-    !!state.groupId &&
     state.destination.trim().length >= 2 &&
     state.duration_days != null &&
     state.party != null &&
