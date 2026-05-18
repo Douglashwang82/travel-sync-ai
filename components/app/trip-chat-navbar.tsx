@@ -66,6 +66,7 @@ interface TripChatNavbarProps {
 }
 
 type SelectedTarget = React.ComponentProps<typeof TripChatRoom>["target"];
+type Copy = (typeof COPY)[AppLocale];
 
 const EMPTY_UNREAD: UnreadOverview = {
   total: 0,
@@ -75,6 +76,12 @@ const EMPTY_UNREAD: UnreadOverview = {
 
 const UNREAD_REFRESH_MS = 30_000;
 
+/**
+ * Trip chat navbar. Two presentations sharing one data layer:
+ *   • lg+: a fixed right rail (`<aside>`), always visible alongside the trip
+ *     workspace. Layout reserves the gutter via `lg:pr-72` in `app-shell`.
+ *   • <lg: a Sheet drawer triggered by a chip in the breadcrumb.
+ */
 export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps) {
   const { locale } = useAppLocale();
   const copy = COPY[locale];
@@ -114,16 +121,14 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
     }
   }, [tripId]);
 
+  // Load member + agent lists on mount so the fixed rail is populated even
+  // before the drawer is opened.
   useEffect(() => {
-    if (!open || members !== null || grids !== null) return;
     void (async () => {
       await load();
     })();
-  }, [open, members, grids, load]);
+  }, [load]);
 
-  // Poll unread counts at a slow interval — the SSE stream covers in-room
-  // realtime; this is the catch-all for messages received while the dialog
-  // is closed.
   useEffect(() => {
     void (async () => {
       await refreshUnread();
@@ -152,6 +157,7 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
       request: { kind: "member_dm", targetAppUserId: m.appUserId },
     });
     setChatOpen(true);
+    setOpen(false);
   }
 
   function openAgentChat(g: CustomGrid) {
@@ -164,140 +170,77 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
       request: { kind: "agent", customGridId: g.id },
     });
     setChatOpen(true);
+    setOpen(false);
   }
+
+  const panelProps: ChatPanelProps = {
+    copy,
+    error,
+    onRetry: load,
+    members,
+    otherMembers,
+    grids,
+    activeGrids,
+    agentByType,
+    unread,
+    onOpenMember: openMemberChat,
+    onOpenAgent: openAgentChat,
+  };
 
   return (
     <>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <button
-            type="button"
-            aria-label={copy.open}
-            className="relative inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
-          >
-            <MessageSquare className="h-3 w-3" aria-hidden />
+      {/* Mobile + tablet: the existing drawer + breadcrumb chip. */}
+      <div className="lg:hidden">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              aria-label={copy.open}
+              className="relative inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-sunken)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
+            >
+              <MessageSquare className="h-3 w-3" aria-hidden />
+              {copy.title}
+              {unread.total > 0 && (
+                <span
+                  aria-label={`${unread.total} unread`}
+                  className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent-line)] px-1 text-[9px] font-semibold text-white"
+                >
+                  {unread.total > 99 ? "99+" : unread.total}
+                </span>
+              )}
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="flex flex-col gap-4 p-4 sm:max-w-xs">
+            <SheetHeader>
+              <SheetTitle className="text-base">{copy.title}</SheetTitle>
+            </SheetHeader>
+            <ChatPanel {...panelProps} />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop: fixed right rail. Width matches `lg:pr-72` in app-shell. */}
+      <aside
+        id="trip-chat-rail"
+        aria-label={copy.title}
+        className="hidden lg:fixed lg:right-0 lg:top-0 lg:z-30 lg:flex lg:h-screen lg:w-72 lg:flex-col lg:gap-3 lg:border-l lg:border-[var(--border-hairline)] lg:bg-[var(--surface-base)] lg:p-4"
+      >
+        <header className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+            <MessageSquare className="h-4 w-4" aria-hidden />
             {copy.title}
-            {unread.total > 0 && (
-              <span
-                aria-label={`${unread.total} unread`}
-                className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent-line)] px-1 text-[9px] font-semibold text-white"
-              >
-                {unread.total > 99 ? "99+" : unread.total}
-              </span>
-            )}
-          </button>
-        </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col gap-4 p-4 sm:max-w-xs">
-          <SheetHeader>
-            <SheetTitle className="text-base">{copy.title}</SheetTitle>
-          </SheetHeader>
-
-          {error && (
-            <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--status-blocked-soft)] px-3 py-2 text-xs text-[var(--status-blocked)]">
-              <span>{copy.failed}</span>
-              <button
-                type="button"
-                onClick={() => void load()}
-                className="font-semibold underline"
-              >
-                {copy.retry}
-              </button>
-            </div>
+          </h2>
+          {unread.total > 0 && (
+            <span
+              aria-label={`${unread.total} unread`}
+              className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent-line)] px-1.5 text-[10px] font-semibold text-white"
+            >
+              {unread.total > 99 ? "99+" : unread.total}
+            </span>
           )}
-
-          <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-            <div>
-              <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-faint)]">
-                {copy.members}
-              </h3>
-              {members === null ? (
-                <SkeletonRows />
-              ) : otherMembers.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)]">{copy.noMembers}</p>
-              ) : (
-                <ul className="space-y-1">
-                  {otherMembers.map((m) => {
-                    const count = m.appUserId ? unread.byMemberAppUserId[m.appUserId] ?? 0 : 0;
-                    return (
-                      <li key={m.lineUserId}>
-                        <button
-                          type="button"
-                          onClick={() => openMemberChat(m)}
-                          className={cn(
-                            "flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left",
-                            "hover:bg-[var(--surface-sunken)]",
-                          )}
-                        >
-                          <span
-                            aria-hidden
-                            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-line-soft)] text-sm font-semibold text-[var(--accent-line)]"
-                          >
-                            {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
-                            {count > 0 && <UnreadDot />}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm text-[var(--text-primary)]">
-                              {m.displayName ?? "Unknown"}
-                            </span>
-                            <span className="block text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-                              {m.role}
-                            </span>
-                          </span>
-                          {count > 0 && <UnreadCount count={count} />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-faint)]">
-                {copy.agents}
-              </h3>
-              {grids === null ? (
-                <SkeletonRows />
-              ) : activeGrids.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)]">{copy.noAgents}</p>
-              ) : (
-                <ul className="space-y-1">
-                  {activeGrids.map((g) => {
-                    const agent = agentByType.get(g.agentType);
-                    const count = unread.byCustomGridId[g.id] ?? 0;
-                    return (
-                      <li key={g.id}>
-                        <button
-                          type="button"
-                          onClick={() => openAgentChat(g)}
-                          className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left hover:bg-[var(--surface-sunken)]"
-                        >
-                          <span
-                            aria-hidden
-                            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--status-needs-decision-soft)] text-sm text-[var(--status-needs-decision)]"
-                          >
-                            {agent?.icon ?? "✨"}
-                            {count > 0 && <UnreadDot />}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm text-[var(--text-primary)]">
-                              {g.title}
-                            </span>
-                            <span className="block truncate text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
-                              {agent?.label ?? g.agentType}
-                            </span>
-                          </span>
-                          {count > 0 && <UnreadCount count={count} />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          </section>
-        </SheetContent>
-      </Sheet>
+        </header>
+        <ChatPanel {...panelProps} />
+      </aside>
 
       <TripChatRoom
         tripId={tripId}
@@ -307,6 +250,143 @@ export function TripChatNavbar({ tripId, currentAppUserId }: TripChatNavbarProps
         target={chatTarget}
         onMarkedRead={() => void refreshUnread()}
       />
+    </>
+  );
+}
+
+interface ChatPanelProps {
+  copy: Copy;
+  error: string | null;
+  onRetry: () => Promise<void> | void;
+  members: AppMember[] | null;
+  otherMembers: AppMember[];
+  grids: CustomGrid[] | null;
+  activeGrids: CustomGrid[];
+  agentByType: Map<string, PublicAgent>;
+  unread: UnreadOverview;
+  onOpenMember: (m: AppMember) => void;
+  onOpenAgent: (g: CustomGrid) => void;
+}
+
+function ChatPanel({
+  copy,
+  error,
+  onRetry,
+  members,
+  otherMembers,
+  grids,
+  activeGrids,
+  agentByType,
+  unread,
+  onOpenMember,
+  onOpenAgent,
+}: ChatPanelProps) {
+  return (
+    <>
+      {error && (
+        <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--status-blocked-soft)] px-3 py-2 text-xs text-[var(--status-blocked)]">
+          <span>{copy.failed}</span>
+          <button
+            type="button"
+            onClick={() => void onRetry()}
+            className="font-semibold underline"
+          >
+            {copy.retry}
+          </button>
+        </div>
+      )}
+
+      <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <div>
+          <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-faint)]">
+            {copy.members}
+          </h3>
+          {members === null ? (
+            <SkeletonRows />
+          ) : otherMembers.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)]">{copy.noMembers}</p>
+          ) : (
+            <ul className="space-y-1">
+              {otherMembers.map((m) => {
+                const count = m.appUserId ? unread.byMemberAppUserId[m.appUserId] ?? 0 : 0;
+                return (
+                  <li key={m.lineUserId}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenMember(m)}
+                      className={cn(
+                        "flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left",
+                        "hover:bg-[var(--surface-sunken)]",
+                      )}
+                    >
+                      <span
+                        aria-hidden
+                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-line-soft)] text-sm font-semibold text-[var(--accent-line)]"
+                      >
+                        {(m.displayName ?? "?").slice(0, 1).toUpperCase()}
+                        {count > 0 && <UnreadDot />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-[var(--text-primary)]">
+                          {m.displayName ?? "Unknown"}
+                        </span>
+                        <span className="block text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+                          {m.role}
+                        </span>
+                      </span>
+                      {count > 0 && <UnreadCount count={count} />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-faint)]">
+            {copy.agents}
+          </h3>
+          {grids === null ? (
+            <SkeletonRows />
+          ) : activeGrids.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)]">{copy.noAgents}</p>
+          ) : (
+            <ul className="space-y-1">
+              {activeGrids.map((g) => {
+                const agent = agentByType.get(g.agentType);
+                const count = unread.byCustomGridId[g.id] ?? 0;
+                return (
+                  <li key={g.id}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenAgent(g)}
+                      className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left hover:bg-[var(--surface-sunken)]"
+                    >
+                      <span
+                        aria-hidden
+                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--status-needs-decision-soft)] text-sm text-[var(--status-needs-decision)]"
+                      >
+                        {agent?.icon ?? "✨"}
+                        {count > 0 && <UnreadDot />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-[var(--text-primary)]">
+                          {g.title}
+                        </span>
+                        <span className="block truncate text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+                          {agent?.label ?? g.agentType}
+                        </span>
+                      </span>
+                      {count > 0 && <UnreadCount count={count} />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
     </>
   );
 }
