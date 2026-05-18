@@ -26,6 +26,8 @@ const COPY = {
     tomorrowKickoff: "Trip starts tomorrow",
     dayOf: (d: number, total: number) => `Day ${d} of ${total}`,
     weekOut: (n: number) => `T-${n}d`,
+    countdownEyebrow: "Before departure",
+    countdownUnit: (n: number) => (n === 1 ? "day" : "days"),
     going: "going",
     plus: (n: number) => `+${n}`,
     inviteCta: "Invite trip member",
@@ -53,6 +55,8 @@ const COPY = {
     tomorrowKickoff: "明天出發",
     dayOf: (d: number, total: number) => `第 ${d} / ${total} 天`,
     weekOut: (n: number) => `T-${n}d`,
+    countdownEyebrow: "距離出發",
+    countdownUnit: () => "天",
     going: "一同出發",
     plus: (n: number) => `+${n}`,
     inviteCta: "邀請旅伴加入",
@@ -170,6 +174,59 @@ function Countdown({ mode, daysToStart, dayIndex, tripLengthDays, copy, size = "
     <span className={cn("text-mono font-semibold tracking-tight", fontSize)} aria-live="polite">
       {text}
     </span>
+  );
+}
+
+function CountdownSpotlight({
+  mode,
+  daysToStart,
+  dayIndex,
+  tripLengthDays,
+  copy,
+}: CountdownProps) {
+  if (mode === "pre" || mode === "tminus") {
+    const isToday = daysToStart === 0;
+    const isTomorrow = daysToStart === 1;
+    return (
+      <div
+        className="hero-countdown-panel min-w-[164px] rounded-[var(--radius-xl)] border border-[var(--border-hairline)] bg-[var(--surface-glass)] px-4 py-4 shadow-[var(--shadow-raise)] backdrop-blur"
+        aria-live="polite"
+      >
+        <div className="mb-2 flex items-center gap-2 text-caps text-[var(--text-muted)]">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-line-soft)] text-[var(--accent-line)]">
+            <IconCalendar size={12} />
+          </span>
+          {copy.countdownEyebrow}
+        </div>
+        {isToday || isTomorrow ? (
+          <p className="text-display text-2xl leading-tight text-[var(--text-primary)]">
+            {isToday ? copy.todayKickoff : copy.tomorrowKickoff}
+          </p>
+        ) : (
+          <div className="flex items-end gap-2">
+            <span className="text-mono text-6xl font-semibold leading-none text-[var(--text-primary)]">
+              {daysToStart}
+            </span>
+            <span className="pb-1 text-sm font-semibold text-[var(--text-secondary)]">
+              {copy.countdownUnit(daysToStart)}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="hero-countdown-panel rounded-[var(--radius-xl)] border border-[var(--border-hairline)] bg-[var(--surface-glass)] px-4 py-4 shadow-[var(--shadow-raise)] backdrop-blur">
+      <Countdown
+        mode={mode}
+        daysToStart={daysToStart}
+        dayIndex={dayIndex}
+        tripLengthDays={tripLengthDays}
+        copy={copy}
+        size="md"
+      />
+    </div>
   );
 }
 
@@ -596,7 +653,11 @@ function BalancedHero({
   const editor = useTripEditor(trip, tripId, onTripChange);
 
   return (
-    <article className="surface-tile relative isolate flex h-full flex-col gap-7 overflow-hidden p-7 sm:p-9">
+    <article className="surface-tile hero-bento-polished relative isolate flex h-full flex-col gap-7 overflow-hidden p-6 sm:p-8">
+      <div
+        aria-hidden
+        className="absolute inset-x-6 top-5 h-px bg-[var(--border-hairline)]"
+      />
       <header className="relative flex flex-wrap items-baseline gap-x-4 gap-y-2">
         <EditableDateRange trip={trip} editor={editor} copy={copy} locale={locale} />
         {!editor.editing && trip.destination_formatted_address && (
@@ -608,22 +669,25 @@ function BalancedHero({
         <EditToggle editor={editor} copy={copy} />
       </header>
 
-      <div className="relative flex flex-col gap-3">
-        <EditableDestination
-          trip={trip}
-          editor={editor}
-          copy={copy}
-          className="text-[clamp(2.8rem,6.4vw,4.5rem)]"
-        />
-        <EditableDeparture trip={trip} editor={editor} copy={copy} />
-        <p className="text-sm text-[var(--text-secondary)]">
-          <IconUsers size={14} className="mr-1.5 inline-block align-[-2px] text-[var(--text-muted)]" />
-          {roster}
-        </p>
+      <div className="relative grid flex-1 items-end gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="flex min-w-0 flex-col gap-3">
+          <EditableDestination
+            trip={trip}
+            editor={editor}
+            copy={copy}
+            className="text-5xl leading-[0.96] sm:text-6xl lg:text-7xl"
+          />
+          <EditableDeparture trip={trip} editor={editor} copy={copy} />
+          <p className="max-w-xl text-sm text-[var(--text-secondary)]">
+            <IconUsers size={14} className="mr-1.5 inline-block align-[-2px] text-[var(--text-muted)]" />
+            {roster}
+          </p>
+        </div>
+
+        <CountdownSpotlight {...mode} copy={copy} />
       </div>
 
-      <div className="relative mt-auto flex flex-wrap items-end justify-between gap-4">
-        <Countdown {...mode} copy={copy} size="lg" />
+      <div className="relative flex flex-wrap items-center justify-end gap-4 border-t border-[var(--border-hairline)] pt-4">
         <div className="flex flex-wrap items-center gap-3">
           {editor.editing ? (
             <EditorActions editor={editor} copy={copy} />

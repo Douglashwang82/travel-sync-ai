@@ -387,6 +387,21 @@ body {
   letter-spacing: 0.02em;
 }
 
+.hero-bento-polished {
+  background: var(--surface-raised);
+}
+.hero-countdown-panel {
+  box-shadow:
+    var(--shadow-raise),
+    inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+.dark .hero-countdown-panel,
+html.dark .hero-countdown-panel {
+  box-shadow:
+    var(--shadow-raise),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
 /* Reduced motion — respect it. */
 @media (prefers-reduced-motion: reduce) {
   *,
