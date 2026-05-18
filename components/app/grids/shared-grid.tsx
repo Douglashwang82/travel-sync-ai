@@ -90,7 +90,7 @@ export function SharedGrid({ tripId }: { tripId: string }) {
         )}
 
         {!error && items && items.length > 0 && (
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <ul className="bento-stagger grid grid-cols-1 gap-2 sm:grid-cols-2">
             {items.map((item) => (
               <li key={item.id}>
                 <SharedCard item={item} />

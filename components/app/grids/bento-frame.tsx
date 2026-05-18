@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { nextSize, type TileSize } from "@/components/app/grids/use-bento-layout";
 
@@ -39,6 +39,17 @@ export function BentoFrame({
   embed?: boolean;
 }) {
   const [dragOver, setDragOver] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [resizing, setResizing] = useState(false);
+  const resizeTimer = useRef<number | null>(null);
+
+  // Briefly mark the frame as `data-resizing` so .bento-frame can dip the
+  // content opacity while the column count shifts. ~duration-confirm long.
+  useEffect(() => {
+    return () => {
+      if (resizeTimer.current != null) window.clearTimeout(resizeTimer.current);
+    };
+  }, []);
 
   return (
     <section
@@ -46,6 +57,9 @@ export function BentoFrame({
       tabIndex={-1}
       data-bento-tile
       data-tile-size={size}
+      data-drag-over={dragOver || undefined}
+      data-dragging={dragging || undefined}
+      data-resizing={resizing || undefined}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes("application/x-bento-tile")) return;
         e.preventDefault();
@@ -64,9 +78,8 @@ export function BentoFrame({
       className={cn(
         "bento-frame group/frame relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[var(--radius-tile)]",
         "border border-[var(--border-hairline)] bg-[var(--surface-raised)] shadow-[var(--shadow-flat)]",
-        "scroll-mt-24 transition-[box-shadow,border-color] duration-150",
+        "scroll-mt-24",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-line)] focus-visible:ring-offset-2",
-        dragOver && "ring-2 ring-[var(--accent-line)] ring-offset-2",
         className
       )}
     >
@@ -84,7 +97,9 @@ export function BentoFrame({
                 ".bento-frame"
               ) as HTMLElement | null;
               if (tile) e.dataTransfer.setDragImage(tile, 20, 20);
+              setDragging(true);
             }}
+            onDragEnd={() => setDragging(false)}
             className="inline-flex h-6 w-6 cursor-grab items-center justify-center rounded-md text-[var(--text-faint)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-secondary)] active:cursor-grabbing"
             title="Drag to reorder"
           >
@@ -112,7 +127,12 @@ export function BentoFrame({
           <button
             type="button"
             aria-label={`Resize ${title} (current: ${size})`}
-            onClick={() => onResize(id, nextSize(size))}
+            onClick={() => {
+              setResizing(true);
+              if (resizeTimer.current != null) window.clearTimeout(resizeTimer.current);
+              resizeTimer.current = window.setTimeout(() => setResizing(false), 240);
+              onResize(id, nextSize(size));
+            }}
             className="inline-flex h-6 min-w-[28px] items-center justify-center rounded-md px-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
             title="Cycle tile size"
           >

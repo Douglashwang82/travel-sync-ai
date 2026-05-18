@@ -372,7 +372,7 @@ function SummaryCard({
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-sunken)]">
           <div
             className={cn(
-              "h-full transition-all",
+              "bento-progress-fill h-full",
               progress >= 90
                 ? "bg-[var(--status-blocked)]"
                 : "bg-[var(--accent-line)]"
