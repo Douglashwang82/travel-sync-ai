@@ -141,6 +141,7 @@ const AGENT_LABEL_ZH: Record<string, string> = {
   packing_suggester: "打包小幫手",
   hotel_price_watch: "飯店價格追蹤",
   consensus_radar: "共識雷達",
+  social_media_photos: "社群照片探索",
   group_chat_parser: "群組訊息解析",
 };
 

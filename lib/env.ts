@@ -36,6 +36,7 @@ const SERVER_ENV_VARS: EnvVar[] = [
   { key: "LINE_LOGIN_CHANNEL_SECRET", required: false, description: "LINE Login (web) channel secret — required with LINE_LOGIN_CHANNEL_ID" },
   { key: "LINE_LOGIN_REDIRECT_URI", required: false, description: "Optional override for the LINE Login callback URL; defaults to {origin}/api/app/auth/line/callback" },
   { key: "CRON_SECRET", required: false, description: "Secret for Vercel cron route auth (required in production)" },
+  { key: "SERPAPI_KEY", required: false, description: "SerpAPI key used by the social_media_photos agent to search Instagram / TikTok via Google Images" },
 ];
 
 let validated = false;

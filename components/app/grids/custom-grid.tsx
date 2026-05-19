@@ -133,6 +133,10 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
       {hasRun && grid.agentType === "consensus_radar" && (
         <ConsensusRadarOutput output={output as Record<string, unknown>} />
       )}
+
+      {hasRun && grid.agentType === "social_media_photos" && (
+        <SocialMediaPhotosOutput output={output as Record<string, unknown>} />
+      )}
     </div>
   );
 }
@@ -692,6 +696,79 @@ function ConsensusRadarOutput({ output }: { output: Record<string, unknown> }) {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+interface SocialPhoto {
+  url: string;
+  sourceUrl: string;
+  platform: "instagram" | "tiktok";
+  title: string;
+}
+
+function SocialMediaPhotosOutput({ output }: { output: Record<string, unknown> }) {
+  const targetName = (output.targetName as string) ?? "";
+  const targetTypeLabel = (output.targetTypeLabel as string) ?? "";
+  const summary = (output.summary as string) ?? "";
+  const photos = (output.photos as SocialPhoto[]) ?? [];
+  const providerError = output.providerError as string | null;
+  const counts =
+    (output.platformCounts as { instagram?: number; tiktok?: number }) ?? {};
+
+  return (
+    <div className="flex flex-1 flex-col gap-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-wide text-[var(--text-faint)]">
+          {targetTypeLabel}
+          {photos.length > 0 && (
+            <>
+              {" · "}
+              {counts.instagram ? `IG ${counts.instagram}` : ""}
+              {counts.instagram && counts.tiktok ? " · " : ""}
+              {counts.tiktok ? `TikTok ${counts.tiktok}` : ""}
+            </>
+          )}
+        </div>
+        <div className="text-sm font-medium text-[var(--text-primary)]">{targetName}</div>
+      </div>
+
+      {summary && (
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{summary}</p>
+      )}
+
+      {providerError && (
+        <div className="rounded-md border border-[var(--status-blocked)] bg-[var(--status-blocked-soft)] px-2.5 py-1.5 text-[11px] text-[var(--status-blocked)]">
+          {providerError}
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div className="grid grid-cols-3 gap-1.5 overflow-y-auto">
+          {photos.map((p, i) => (
+            <a
+              key={`${p.sourceUrl}-${i}`}
+              href={p.sourceUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="group relative aspect-square overflow-hidden rounded-md border border-[var(--border-hairline)] bg-[var(--surface-sunken)]"
+              title={p.title || p.sourceUrl}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.url}
+                alt={p.title || `${targetName} photo`}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="h-full w-full object-cover transition group-hover:scale-105"
+              />
+              <span className="absolute bottom-0.5 right-0.5 rounded-sm bg-black/60 px-1 text-[8px] font-semibold uppercase tracking-wide text-white">
+                {p.platform === "instagram" ? "IG" : "TT"}
+              </span>
+            </a>
+          ))}
+        </div>
       )}
     </div>
   );
