@@ -123,7 +123,7 @@ export const socialMediaPhotos: AgentDefinition<SocialPhotosConfig> = {
   type: "social_media_photos",
   label: "社群照片探索",
   description:
-    "從 Instagram / TikTok 公開貼文搜尋特定目標(度假村、餐廳、景點等)的照片,協助旅伴一起評估。需要設定 SERPAPI_KEY。",
+    "從 Instagram / TikTok 公開貼文搜尋特定目標(度假村、餐廳、景點等)的照片,協助旅伴一起評估。使用 Gemini 內建的 Google 影像搜尋,無需額外 API 金鑰。",
   icon: "📸",
   mode: "assist",
   defaultFrequencyHours: 24,
