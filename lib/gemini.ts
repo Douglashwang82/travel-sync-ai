@@ -162,6 +162,75 @@ export async function generateText(
   }
 }
 
+// ─── Google Search grounding ─────────────────────────────────────────────────
+
+export interface GroundedImage {
+  imageUri: string;
+  sourceUri: string;
+  title: string;
+  domain: string;
+}
+
+export interface GroundedSearchResult {
+  text: string;
+  images: GroundedImage[];
+}
+
+/**
+ * Call Gemini with the built-in Google Search tool in image-search mode. The
+ * model issues a search and returns grounding chunks where each chunk has
+ * `image.imageUri` (the photo URL) and `image.sourceUri` (the source post).
+ *
+ * Used by the social_media_photos agent to surface Instagram / TikTok photos
+ * without a third-party scraping API. The textual response is usually a short
+ * natural-language summary of what was found; callers can ignore it.
+ */
+export async function generateTextWithImageSearch(
+  systemPrompt: string,
+  userMessage: string,
+): Promise<GroundedSearchResult> {
+  if (!isCircuitAllowing()) {
+    throw new GeminiUnavailableError("Gemini circuit breaker is OPEN");
+  }
+
+  const client = getClient();
+  const model = getModel();
+  try {
+    const response = await client.models.generateContent({
+      model,
+      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+      config: {
+        systemInstruction: systemPrompt,
+        tools: [{ googleSearch: { searchTypes: { imageSearch: {} } } }],
+      },
+    });
+
+    const text = response.text ?? "";
+    const chunks =
+      response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+    const images: GroundedImage[] = [];
+    for (const c of chunks) {
+      const img = c.image;
+      if (!img?.imageUri || !img.sourceUri) continue;
+      images.push({
+        imageUri: img.imageUri,
+        sourceUri: img.sourceUri,
+        title: img.title ?? "",
+        domain: img.domain ?? new URL(img.sourceUri).hostname,
+      });
+    }
+    recordSuccess();
+    return { text, images };
+  } catch (err) {
+    if (err instanceof GeminiUnavailableError) throw err;
+    recordFailure();
+    console.error(
+      `[gemini] image-search call failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    throw err;
+  }
+}
+
 // ─── Embeddings ──────────────────────────────────────────────────────────────
 
 const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2";
