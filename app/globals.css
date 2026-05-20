@@ -390,6 +390,40 @@ body {
 .hero-bento-polished {
   background: var(--surface-raised);
 }
+/*
+ * Destination photo backdrop for the bento hero tile. The photo sits behind
+ * every other hero layer (z-index 0) with a vertical gradient that fades the
+ * top to the surface color so the title and countdown stay legible. The
+ * gradient uses the same surface variable as the tile, so it adapts to
+ * light/dark without a media query.
+ */
+.hero-destination-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.hero-destination-photo > img {
+  opacity: 0.32;
+  filter: saturate(1.05);
+}
+.hero-destination-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    var(--surface-raised) 0%,
+    color-mix(in oklab, var(--surface-raised) 70%, transparent) 45%,
+    color-mix(in oklab, var(--surface-raised) 90%, transparent) 100%
+  );
+}
+.hero-bento-polished > :not(.hero-destination-photo) {
+  position: relative;
+  z-index: 1;
+}
 .hero-countdown-panel {
   box-shadow:
     var(--shadow-raise),

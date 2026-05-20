@@ -510,6 +510,24 @@ function buildPhotoUrl(photoName: string): string {
   return `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=400&maxWidthPx=600&key=${apiKey}`;
 }
 
+/**
+ * Build a Google Places photo URL at an explicit size. The result embeds the
+ * API key and is only safe to call server-side — clients should hit the
+ * `/api/app/places/photo/...` proxy instead.
+ */
+export function buildPlacePhotoUrl(
+  photoName: string,
+  opts: { maxWidthPx?: number; maxHeightPx?: number } = {},
+): string | null {
+  const apiKey = getPlacesApiKey();
+  if (!apiKey) return null;
+  const params = new URLSearchParams();
+  if (opts.maxWidthPx) params.set("maxWidthPx", String(opts.maxWidthPx));
+  if (opts.maxHeightPx) params.set("maxHeightPx", String(opts.maxHeightPx));
+  params.set("key", apiKey);
+  return `https://places.googleapis.com/v1/${photoName}/media?${params.toString()}`;
+}
+
 function normalizePriceLevel(raw: string | undefined): string | null {
   const map: Record<string, string> = {
     PRICE_LEVEL_FREE: "Free",

@@ -13,6 +13,7 @@ import {
   IconStamp,
   IconUsers,
 } from "@/components/app/icons";
+import { TileImage } from "@/components/app/grids/tile-image";
 import { cn } from "@/lib/utils";
 
 export type HeroVariant = "conservative" | "balanced" | "expressive";
@@ -88,6 +89,12 @@ interface HeroProps {
   tripId: string;
   onPrimary?: () => void;
   onTripChange?: (trip: Trip) => void;
+  /**
+   * Show the destination Google Places photo as a soft background. Enabled
+   * for the bento `HeroGrid` tile; off elsewhere so the legacy overview page
+   * and the conservative variant stay flat.
+   */
+  showDestinationPhoto?: boolean;
 }
 
 export function TripHeroTile(props: HeroProps) {
@@ -645,19 +652,31 @@ function BalancedHero({
   tripId,
   onPrimary,
   onTripChange,
+  showDestinationPhoto,
 }: HeroProps) {
   const { locale } = useAppLocale();
   const copy = COPY[locale];
   const mode = useMode(trip);
   const roster = rosterSentence(members, copy);
   const editor = useTripEditor(trip, tripId, onTripChange);
+  const photoName = showDestinationPhoto ? trip.destination_photo_name : null;
 
   return (
     <article className="surface-tile hero-bento-polished relative isolate flex h-full flex-col gap-7 overflow-hidden p-6 sm:p-8">
+      {photoName && (
+        <div aria-hidden className="hero-destination-photo">
+          <TileImage
+            photoName={photoName}
+            shape="background"
+            size={{ w: 1600, h: 900 }}
+          />
+        </div>
+      )}
       <div
         aria-hidden
         className="absolute inset-x-6 top-5 h-px bg-[var(--border-hairline)]"
       />
+
       <header className="relative flex flex-wrap items-baseline gap-x-4 gap-y-2">
         <EditableDateRange trip={trip} editor={editor} copy={copy} locale={locale} />
         {!editor.editing && trip.destination_formatted_address && (
