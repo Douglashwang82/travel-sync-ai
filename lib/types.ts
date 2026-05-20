@@ -359,6 +359,16 @@ export interface BoardData {
   todo: TripItem[];
   pending: TripItem[];
   confirmed: TripItem[];
+  /**
+   * Cover image for each item, keyed by item id. Populated from the
+   * `trip_item_options` row referenced by `confirmed_option_id` (when set),
+   * or by the highest-priority option that has an image. Items without any
+   * option imagery are omitted; render a type-based emoji fallback.
+   */
+  covers?: Record<
+    string,
+    { imageUrl: string | null; photoName: string | null }
+  >;
   currentUser: {
     lineUserId: string;
     role: string;
