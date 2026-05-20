@@ -15,6 +15,7 @@ import { PackGrid } from "@/components/app/grids/pack-grid";
 import { MembersGrid } from "@/components/app/grids/members-grid";
 import { SharedGrid } from "@/components/app/grids/shared-grid";
 import { CustomGrid } from "@/components/app/grids/custom-grid";
+import { OrchestratorGrid } from "@/components/app/grids/orchestrator-grid";
 import { AddCustomGridDialog } from "@/components/app/grids/add-custom-grid-dialog";
 import { BentoFrame } from "@/components/app/grids/bento-frame";
 import {
@@ -40,6 +41,7 @@ interface TileDef {
 
 const TILES: TileDef[] = [
   { id: "hero", title: "Trip", icon: "✦", Component: HeroGrid, defaultSize: "xl" },
+  { id: "orchestrator", title: "Orchestrator", icon: "🧠", Component: OrchestratorGrid, defaultSize: "lg" },
   { id: "plan-master", title: "Plan master", icon: "🧭", Component: PlanMasterGrid, defaultSize: "lg" },
   { id: "itinerary", title: "Itinerary", icon: "📅", Component: ItineraryGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/itinerary` },
   { id: "calendar", title: "Calendar", icon: "📆", Component: CalendarGrid, defaultSize: "lg" },

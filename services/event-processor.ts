@@ -8,6 +8,8 @@ import { parseMessage } from "@/services/parsing";
 import { handleDirectMessage } from "@/services/private-chat";
 import { castVote, closeVote } from "@/services/vote";
 import { refreshVoteCarousel, announceWinner } from "@/services/decisions";
+import { wakeOrchestrator } from "@/services/orchestrator";
+import { getActiveTrip } from "@/services/trip-state";
 import {
   getSession,
   recordAnswer,
@@ -205,6 +207,13 @@ async function handleMessage(ctx: EventContext, lineEventId: string): Promise<vo
       lineEventId,
       lineUserId: userId,
     });
+
+    // Nudge the orchestrator: a group message may have introduced facts (a
+    // restaurant idea, a date conflict, a budget concern) that warrant a pass.
+    const activeTrip = await getActiveTrip(dbGroupId);
+    if (activeTrip?.id) {
+      await wakeOrchestrator(activeTrip.id, "group message");
+    }
   }
 }
 
@@ -245,6 +254,10 @@ async function handlePostback(
       const { closed } = await closeVote(itemId, result.majority.winningOptionId, ctx.dbGroupId, result.totalVotes);
       if (closed) {
         await announceWinner(itemId, result.majority.winningOptionId, ctx.lineGroupId, result.majority.winningCount, result.totalVotes);
+        const activeTrip = await getActiveTrip(ctx.dbGroupId);
+        if (activeTrip?.id) {
+          await wakeOrchestrator(activeTrip.id, `vote closed on item ${itemId}`);
+        }
       }
     } else {
       // Refresh the carousel with updated vote counts

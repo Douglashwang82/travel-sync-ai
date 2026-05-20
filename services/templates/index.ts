@@ -9,6 +9,7 @@ import {
   notifyNewComment,
   notifyForked,
 } from "@/services/notifications";
+import { ensureOrchestrator } from "@/services/orchestrator";
 import type {
   TripTemplate,
   TripTemplateVersion,
@@ -464,6 +465,15 @@ export async function forkTemplate(
     slug: template.slug,
     templateTitle: version.title,
   });
+
+  // Materialize the per-trip orchestrator (idempotent). First heartbeat is
+  // scheduled by `ensureOrchestrator` itself; group nudges / mutations will
+  // wake it sooner via wakeOrchestrator.
+  try {
+    await ensureOrchestrator(newTrip.id as string);
+  } catch (err) {
+    console.error("Failed to ensure orchestrator for forked trip:", err);
+  }
 
   return { ok: true, data: { tripId: newTrip.id as string } };
 }
