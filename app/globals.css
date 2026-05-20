@@ -436,6 +436,49 @@ html.dark .hero-countdown-panel {
     inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
+/* Intro page scroll choreography. Elements opt in with data attributes so the
+ * page can stay mostly Tailwind-authored while motion remains consistent. */
+.scroll-reveal-ready [data-scroll-reveal] {
+  opacity: 0;
+  filter: blur(10px);
+  transform:
+    translate3d(var(--reveal-x, 0), var(--reveal-y, 30px), 0)
+    scale(var(--reveal-scale, 0.985));
+  transition:
+    opacity 720ms var(--ease-confirm),
+    filter 720ms var(--ease-confirm),
+    transform 720ms var(--ease-confirm);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, filter, transform;
+}
+
+.scroll-reveal-ready [data-scroll-reveal="left"] {
+  --reveal-x: -34px;
+  --reveal-y: 10px;
+}
+
+.scroll-reveal-ready [data-scroll-reveal="right"] {
+  --reveal-x: 34px;
+  --reveal-y: 10px;
+}
+
+.scroll-reveal-ready [data-scroll-reveal="scale"] {
+  --reveal-y: 12px;
+  --reveal-scale: 0.94;
+}
+
+.scroll-reveal-ready [data-scroll-reveal][data-inview="true"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+[data-scroll-parallax] {
+  transform: translate3d(0, var(--scroll-shift, 0), 0) rotate(var(--scroll-tilt, 0deg));
+  transition: transform 180ms linear;
+  will-change: transform;
+}
+
 /* Reduced motion — respect it. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -445,6 +488,13 @@ html.dark .hero-countdown-panel {
     transition-duration: 0.001ms !important;
   }
   .hero-mesh { animation: none; }
+  [data-scroll-reveal],
+  [data-scroll-parallax] {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 /* ─── Logo animation (legacy) ───────────────────────────────────────────────*/

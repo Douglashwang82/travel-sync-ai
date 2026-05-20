@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TravelSync AI — 多人旅遊規劃，輕鬆搞定",
+  title: "TravelSync AI - Group travel from chat to action",
   description:
-    "由 AI 驅動的多人旅遊規劃工具，直接在 LINE 中使用。解析對話、發起投票、分攤費用，全程不用離開群組。",
+    "AI-powered group travel planning for LINE groups. Turn conversation into votes, expenses, reminders, and a shared trip board.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-TW" className="h-full antialiased">
-      <body id="root-body" className="min-h-full flex flex-col">{children}</body>
+      <body id="root-body" className="flex min-h-full flex-col">
+        {children}
+      </body>
     </html>
   );
 }
