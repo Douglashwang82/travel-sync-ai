@@ -40,11 +40,51 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   }
 
   const all = (items ?? []) as TripItem[];
+
+  // Resolve a cover image per item from `trip_item_options`. Prefer the
+  // confirmed option; fall back to any option on the item that has an image.
+  // One round-trip for the whole board keeps this cheap.
+  const itemIds = all.map((i) => i.id);
+  const covers: NonNullable<BoardData["covers"]> = {};
+  if (itemIds.length > 0) {
+    const { data: options } = await db
+      .from("trip_item_options")
+      .select("trip_item_id, id, image_url, photo_name")
+      .in("trip_item_id", itemIds);
+
+    const byItem = new Map<string, Array<{ id: string; imageUrl: string | null; photoName: string | null }>>();
+    for (const o of options ?? []) {
+      const list = byItem.get(o.trip_item_id as string) ?? [];
+      list.push({
+        id: o.id as string,
+        imageUrl: (o.image_url as string | null) ?? null,
+        photoName: (o.photo_name as string | null) ?? null,
+      });
+      byItem.set(o.trip_item_id as string, list);
+    }
+
+    for (const item of all) {
+      const opts = byItem.get(item.id);
+      if (!opts || opts.length === 0) continue;
+      const confirmed = item.confirmed_option_id
+        ? opts.find((o) => o.id === item.confirmed_option_id)
+        : null;
+      const pick =
+        confirmed && (confirmed.imageUrl || confirmed.photoName)
+          ? confirmed
+          : opts.find((o) => o.imageUrl || o.photoName);
+      if (pick) {
+        covers[item.id] = { imageUrl: pick.imageUrl, photoName: pick.photoName };
+      }
+    }
+  }
+
   const board: BoardData = {
     trip: trip as BoardData["trip"],
     todo: all.filter((i) => i.stage === "todo"),
     pending: all.filter((i) => i.stage === "pending"),
     confirmed: all.filter((i) => i.stage === "confirmed"),
+    covers,
     currentUser: {
       lineUserId: auth.lineUserId,
       role: auth.role,
