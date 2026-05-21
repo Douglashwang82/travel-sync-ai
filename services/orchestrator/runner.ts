@@ -464,7 +464,12 @@ function buildSystemPrompt(
   const agents = listCustomGridAgents()
     .map((a) => `  - ${a.type}: ${a.label} — ${a.description}`)
     .join("\n");
-  const memory = JSON.stringify(orch.memory ?? {});
+  const memoryObj = orch.memory ?? {};
+  const plan = (memoryObj as { plan?: { categories: Array<{ title: string; tasks: Array<{ title: string; done: boolean }> }> } }).plan;
+  const planLine = plan
+    ? `${plan.categories.length} categories, ${plan.categories.reduce((n, c) => n + c.tasks.length, 0)} tasks (${plan.categories.reduce((n, c) => n + c.tasks.filter((t) => t.done).length, 0)} done)`
+    : "(no plan yet)";
+  const memory = JSON.stringify(memoryObj);
   const pending = ctx.pendingProposals.length === 0
     ? "  (none)"
     : ctx.pendingProposals.map((p) => `  - [${p.id.slice(0, 8)}] ${p.tool}: ${p.summary}`).join("\n");
@@ -489,6 +494,7 @@ function buildSystemPrompt(
     "  - Never call destructive tools (items.delete, items.confirm) unless you are certain — these are propose-only by default.",
     "  - For each tool call, the system enforces a per-tool autonomy dial. propose_only writes a proposal a human will Confirm/Dismiss; auto_apply* takes effect immediately. Don't fight the dial — call the tool either way.",
     "  - Don't repeat work that's already in pending proposals; build on them instead.",
+    "  - Maintain the trip's structural plan via `plan.upsert`. If no plan exists, generate one now: 4–8 categories essential for THIS trip (e.g. Stay, Transport, Activities, Food, Budget, Pack, Docs) with 2–6 concrete user-completable tasks each. If a plan exists, only call `plan.upsert` when the trip's structure has materially changed; task `done` state is preserved across upserts when titles match.",
     "  - When you're done, output a short final summary (≤2 sentences) of what you did and why.",
     "",
     "Tool autonomy in effect:",
@@ -515,6 +521,7 @@ function buildSystemPrompt(
     "Recent member chat:",
     msgs,
     "",
+    `Plan: ${planLine}`,
     `Long-running memory: ${memory}`,
   ].join("\n");
 }

@@ -9,6 +9,7 @@ import {
   listCustomGridAgents,
   type ToolAutonomyMap,
 } from "@/services/orchestrator";
+import type { TripPlan } from "@/services/orchestrator/types";
 
 type RouteContext = { params: Promise<{ tripId: string }> };
 
@@ -39,6 +40,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     defaultAutonomy: t.defaultAutonomy,
   }));
 
+  const plan = (orch.memory as { plan?: TripPlan } | null)?.plan ?? null;
+
   return NextResponse.json({
     orchestrator: {
       id: orch.id,
@@ -54,6 +57,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       pendingReason: orch.pending_reason,
       consecutiveFailures: orch.consecutive_failures,
     },
+    plan,
     tools,
     agents: listCustomGridAgents(),
     actions: actions.map(serializeAction),

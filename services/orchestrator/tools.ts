@@ -15,7 +15,14 @@ import { recordExpense, getAllMemberBeneficiaries } from "@/services/expenses";
 import type { ItemStage, ItemType } from "@/lib/types";
 import { listAgents, getAgent } from "@/services/agents/registry";
 import { runCustomGrid, type CustomGridRow } from "@/services/agents/runner";
-import { defineTool, type ToolDefinition, type ToolContext } from "./types";
+import {
+  defineTool,
+  type ToolDefinition,
+  type ToolContext,
+  type TripPlan,
+  type PlanCategory,
+  type PlanTask,
+} from "./types";
 
 /**
  * The orchestrator's tool registry. One tool per atomic user action across
@@ -493,6 +500,141 @@ const tripUpdate = defineTool({
   },
 });
 
+// ─── plan.* (Orchestrator-mode plan tree) ────────────────────────────────────
+
+const PlanTaskSchema = z.object({
+  id: z.string().min(1).max(80).optional(),
+  title: z.string().min(1).max(200),
+  done: z.boolean().optional(),
+  note: z.string().max(500).optional(),
+});
+
+const PlanCategorySchema = z.object({
+  id: z.string().min(1).max(80).optional(),
+  title: z.string().min(1).max(80),
+  summary: z.string().max(280).optional(),
+  tasks: z.array(PlanTaskSchema).min(1).max(20),
+});
+
+const planUpsert = defineTool({
+  name: "plan.upsert",
+  description:
+    "Replace the trip's structural plan shown in Orchestrator mode. The plan is a small set of categories (Stay, Transport, Activities, Food, Budget, Pack, Docs, etc.) — pick the ones essential for THIS trip — each with a few user-completable tasks. Keep it tight: 4–8 categories, 2–6 tasks each. Call this whenever the trip's structure has materially changed or no plan exists yet.",
+  grid: "plan",
+  // Plan is the orchestrator's reasoning artifact — apply directly.
+  defaultAutonomy: "auto_apply",
+  args: z.object({
+    categories: z.array(PlanCategorySchema).min(1).max(12),
+  }),
+  dryDescribe: (a) =>
+    `Update plan (${a.categories.length} categories, ${a.categories.reduce(
+      (n, c) => n + c.tasks.length,
+      0,
+    )} tasks)`,
+  async execute(ctx, a) {
+    const db = createAdminClient();
+    const { data: orch, error: readErr } = await db
+      .from("trip_orchestrators")
+      .select("memory, system_goal")
+      .eq("id", ctx.orchestratorId)
+      .single();
+    if (readErr || !orch) throw new Error(readErr?.message ?? "orchestrator missing");
+
+    const prevPlan = (orch.memory as { plan?: TripPlan } | null)?.plan ?? null;
+    const prevTaskState = new Map<string, boolean>();
+    if (prevPlan) {
+      for (const c of prevPlan.categories) {
+        for (const t of c.tasks) prevTaskState.set(`${c.title}::${t.title}`, t.done);
+      }
+    }
+
+    const categories: PlanCategory[] = a.categories.map((c, ci) => ({
+      id: c.id ?? `cat-${ci}-${slugify(c.title)}`,
+      title: c.title,
+      summary: c.summary,
+      tasks: c.tasks.map((t, ti): PlanTask => {
+        const inheritedDone = prevTaskState.get(`${c.title}::${t.title}`);
+        return {
+          id: t.id ?? `task-${ci}-${ti}-${slugify(t.title)}`,
+          title: t.title,
+          done: t.done ?? inheritedDone ?? false,
+          note: t.note,
+        };
+      }),
+    }));
+
+    const plan: TripPlan = {
+      generatedAt: new Date().toISOString(),
+      categories,
+    };
+
+    const nextMemory = { ...(orch.memory ?? {}), plan };
+    const { error: writeErr } = await db
+      .from("trip_orchestrators")
+      .update({ memory: nextMemory })
+      .eq("id", ctx.orchestratorId);
+    if (writeErr) throw new Error(writeErr.message);
+
+    return {
+      summary: `Plan updated (${categories.length} categories)`,
+      data: { categories: categories.length, tasks: categories.reduce((n, c) => n + c.tasks.length, 0) },
+    };
+  },
+});
+
+const planToggleTask = defineTool({
+  name: "plan.toggle_task",
+  description:
+    "Toggle a single plan task done/undone by category id and task id. Use sparingly — usually the user toggles tasks themselves; only call this when you have concrete evidence a task is complete (e.g. a confirmed booking).",
+  grid: "plan",
+  defaultAutonomy: "auto_apply_with_undo",
+  args: z.object({
+    categoryId: z.string().min(1).max(80),
+    taskId: z.string().min(1).max(80),
+    done: z.boolean(),
+  }),
+  dryDescribe: (a) => `Mark task ${a.taskId.slice(0, 16)} ${a.done ? "done" : "open"}`,
+  async execute(ctx, a) {
+    const db = createAdminClient();
+    const { data: orch } = await db
+      .from("trip_orchestrators")
+      .select("memory")
+      .eq("id", ctx.orchestratorId)
+      .single();
+    const plan = (orch?.memory as { plan?: TripPlan } | null)?.plan;
+    if (!plan) throw new Error("No plan to update");
+    let touched = false;
+    const before = JSON.parse(JSON.stringify(plan)) as TripPlan;
+    const next: TripPlan = {
+      ...plan,
+      categories: plan.categories.map((c) =>
+        c.id !== a.categoryId
+          ? c
+          : {
+              ...c,
+              tasks: c.tasks.map((t) => {
+                if (t.id !== a.taskId) return t;
+                touched = true;
+                return { ...t, done: a.done };
+              }),
+            },
+      ),
+    };
+    if (!touched) throw new Error(`Task ${a.categoryId}/${a.taskId} not found`);
+    const nextMemory = { ...(orch?.memory ?? {}), plan: next };
+    const { error } = await db
+      .from("trip_orchestrators")
+      .update({ memory: nextMemory })
+      .eq("id", ctx.orchestratorId);
+    if (error) throw new Error(error.message);
+    return {
+      summary: `Task ${a.done ? "marked done" : "reopened"}`,
+      data: { categoryId: a.categoryId, taskId: a.taskId, done: a.done },
+      target: { table: "trip_orchestrators", id: ctx.orchestratorId, op: "update", before: { memory: { plan: before } } },
+    };
+  },
+});
+
 // ─── registry ────────────────────────────────────────────────────────────────
 
 const TOOLS: ToolDefinition[] = [
@@ -511,6 +653,8 @@ const TOOLS: ToolDefinition[] = [
   gridsAddAgent,
   gridsRunNow,
   tripUpdate,
+  planUpsert,
+  planToggleTask,
 ];
 
 const TOOL_MAP = new Map(TOOLS.map((t) => [t.name, t]));
@@ -535,6 +679,14 @@ async function snapshot(table: string, id: string): Promise<Record<string, unkno
   const db = createAdminClient();
   const { data } = await db.from(table).select("*").eq("id", id).maybeSingle();
   return (data as Record<string, unknown> | null) ?? null;
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
 }
 
 export type { ToolContext };

@@ -84,7 +84,32 @@ export type ToolGrid =
   | "shared"
   | "trip"         // hero / metadata
   | "chat"
-  | "grids";       // custom-grid CRUD
+  | "grids"        // custom-grid CRUD
+  | "plan";        // structural trip plan (Orchestrator mode)
+
+// ─── plan (Orchestrator-mode plan tree) ──────────────────────────────────────
+// Stored on `trip_orchestrators.memory.plan`. The orchestrator owns this
+// structure; users can toggle task completion but the categories themselves
+// are LLM-generated and overwritten on each `plan.upsert`.
+
+export interface PlanTask {
+  id: string;
+  title: string;
+  done: boolean;
+  note?: string;
+}
+
+export interface PlanCategory {
+  id: string;
+  title: string;
+  summary?: string;
+  tasks: PlanTask[];
+}
+
+export interface TripPlan {
+  generatedAt: string;
+  categories: PlanCategory[];
+}
 
 export interface ToolCallRecord {
   tool: string;
