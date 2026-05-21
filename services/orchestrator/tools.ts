@@ -335,6 +335,42 @@ const packAdd = defineTool({
   },
 });
 
+const packAddMany = defineTool({
+  name: "pack.add_many",
+  description:
+    "Bulk-add packing items. Use when seeding a starter list for a trip (typically 10–25 items spanning essentials, clothing, toiletries, electronics, documents tailored to the destination/season). Skip items that obviously duplicate existing pack rows the context already shows.",
+  grid: "pack",
+  defaultAutonomy: "auto_apply_with_undo",
+  args: z.object({
+    items: z
+      .array(
+        z.object({
+          label: z.string().min(1).max(120),
+          category: z.enum(PACK_CATEGORIES).optional(),
+        }),
+      )
+      .min(1)
+      .max(40),
+  }),
+  dryDescribe: (a) => `Add ${a.items.length} packing items`,
+  async execute(ctx, a) {
+    const db = createAdminClient();
+    const rows = a.items.map((i) => ({
+      trip_id: ctx.tripId,
+      label: i.label,
+      category: i.category ?? "general",
+      added_by: `agent:${ctx.actorKey}`,
+    }));
+    const { data, error } = await db.from("packing_items").insert(rows).select("id, label");
+    if (error || !data) throw new Error(error?.message ?? "failed to insert pack items");
+    return {
+      summary: `Added ${data.length} packing item(s)`,
+      data: { ids: data.map((r) => r.id), labels: data.map((r) => r.label) },
+      // Reversing a bulk insert needs caller-side cleanup, leave target unset.
+    };
+  },
+});
+
 // ─── budget.* ────────────────────────────────────────────────────────────────
 
 const expensesRecord = defineTool({
@@ -607,6 +643,53 @@ const placesSearch = defineTool({
   },
 });
 
+// ─── links.* (deterministic external URL builders) ──────────────────────────
+
+const mapsDeepLink = defineTool({
+  name: "maps.deep_link",
+  description:
+    "Build a Google Maps search URL for an arbitrary query (neighborhood, district, named landmark, generic service like 'airport transfer'). Use this when you don't have a specific Place candidate to attach but still want to give the user a clickable map link. Pair with `places.search` when you need names/photos/ratings; use this when the query is abstract.",
+  grid: "trip",
+  defaultAutonomy: "auto_apply",
+  args: z.object({
+    query: z.string().min(2).max(200),
+  }),
+  dryDescribe: (a) => `Maps link: "${a.query}"`,
+  async execute(_ctx, a) {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.query)}`;
+    return {
+      summary: `Maps link for "${a.query}"`,
+      data: { url, query: a.query },
+    };
+  },
+});
+
+const flightsSearchLink = defineTool({
+  name: "flights.search_link",
+  description:
+    "Build a Google Flights search URL for a route. We do not have a live flight pricing API in the orchestrator, so this is the best-value path: hand the user a pre-filled flight search they can sort by price/duration. If they want continuous tracking, suggest `grids.add_agent` with type='flight_price_tracker' afterwards.",
+  grid: "trip",
+  defaultAutonomy: "auto_apply",
+  args: z.object({
+    origin: z.string().min(2).max(64).describe("IATA code or city name, e.g. 'TPE' or 'Taipei'"),
+    destination: z.string().min(2).max(64).describe("IATA code or city name, e.g. 'IAH' or 'Houston'"),
+    departDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  }),
+  dryDescribe: (a) => `Flights link: ${a.origin} → ${a.destination}${a.departDate ? ` ${a.departDate}` : ""}`,
+  async execute(_ctx, a) {
+    const parts = [`flights from ${a.origin} to ${a.destination}`];
+    if (a.departDate) parts.push(`on ${a.departDate}`);
+    if (a.returnDate) parts.push(`returning ${a.returnDate}`);
+    const q = parts.join(" ");
+    const url = `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}`;
+    return {
+      summary: `Flights link: ${a.origin} → ${a.destination}`,
+      data: { url, query: q },
+    };
+  },
+});
+
 // ─── plan.* (Orchestrator-mode plan tree) ────────────────────────────────────
 
 const PlanTaskSchema = z.object({
@@ -797,12 +880,15 @@ const TOOLS: ToolDefinition[] = [
   itemsDelete,
   ideasAdd,
   packAdd,
+  packAddMany,
   expensesRecord,
   chatNotify,
   gridsAddAgent,
   gridsRunNow,
   tripUpdate,
   placesSearch,
+  mapsDeepLink,
+  flightsSearchLink,
   planUpsert,
   planUpdateTask,
 ];
