@@ -319,24 +319,47 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
 }
 
 /**
- * Chip rendered for each outcome link on a plan task. Deep-links to the
- * relevant bento grid / dedicated route so the user can see the entity the
- * orchestrator created.
+ * Chip rendered for each outcome link on a plan task. Internal kinds deep-link
+ * to the matching bento grid / route; `external` opens the URL in a new tab
+ * (booking pages, Google Maps, official sites).
  */
 function TaskLinkChip({ tripId, link }: { tripId: string; link: PlanTaskLink }) {
-  const { label, href } = chipTarget(tripId, link);
-  return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-1 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--accent-line)]"
-      title={link.label ?? label}
-    >
-      <span>{label}</span>
+  const target = chipTarget(tripId, link);
+  if (!target) return null;
+  const external = link.kind === "external";
+  const className =
+    "inline-flex items-center gap-1 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--accent-line)]";
+  const inner = (
+    <>
+      <span>{target.label}</span>
       {link.label && (
-        <span className="max-w-[120px] truncate normal-case tracking-normal text-[var(--text-secondary)]">
+        <span className="max-w-[160px] truncate normal-case tracking-normal text-[var(--text-secondary)]">
           {link.label}
         </span>
       )}
+      {external && (
+        <span aria-hidden className="text-[var(--text-muted)]">
+          ↗
+        </span>
+      )}
+    </>
+  );
+  if (external) {
+    return (
+      <a
+        href={target.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        title={link.label ?? target.href}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <Link href={target.href} className={className} title={link.label ?? target.label}>
+      {inner}
     </Link>
   );
 }
@@ -344,7 +367,7 @@ function TaskLinkChip({ tripId, link }: { tripId: string; link: PlanTaskLink }) 
 function chipTarget(
   tripId: string,
   link: PlanTaskLink,
-): { label: string; href: string } {
+): { label: string; href: string } | null {
   switch (link.kind) {
     case "item":
       return { label: "Item", href: `/app/trips/${tripId}/board` };
@@ -355,9 +378,28 @@ function chipTarget(
     case "expense":
       return { label: "Expense", href: `/app/trips/${tripId}/expenses` };
     case "customGrid":
-      return { label: "Grid", href: `/app/trips/${tripId}?mode=bento&scroll=custom:${link.id}` };
+      return link.id
+        ? { label: "Grid", href: `/app/trips/${tripId}?mode=bento&scroll=custom:${link.id}` }
+        : null;
     case "trip":
       return { label: "Trip", href: `/app/trips/${tripId}?mode=bento` };
+    case "external":
+      if (!link.url) return null;
+      return { label: labelForExternal(link.url), href: link.url };
+  }
+}
+
+function labelForExternal(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "maps.google.com" || (host === "google.com" && u.pathname.startsWith("/maps"))) {
+      return "Maps";
+    }
+    if (host.endsWith("google.com")) return "Google";
+    return host.split(".")[0]?.slice(0, 14) ?? "Link";
+  } catch {
+    return "Link";
   }
 }
 

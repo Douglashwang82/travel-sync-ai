@@ -15,6 +15,7 @@ import { recordExpense, getAllMemberBeneficiaries } from "@/services/expenses";
 import type { ItemStage, ItemType } from "@/lib/types";
 import { listAgents, getAgent } from "@/services/agents/registry";
 import { runCustomGrid, type CustomGridRow } from "@/services/agents/runner";
+import { searchPlaces, type PlaceCandidate } from "@/services/decisions/places";
 import {
   defineTool,
   type ToolDefinition,
@@ -145,17 +146,57 @@ const itemsStartVote = defineTool({
 
 const itemsAddOption = defineTool({
   name: "items.add_option",
-  description: "Add a voteable option to a decision item (e.g. a candidate hotel or restaurant).",
+  description:
+    "Add a voteable option to a decision item (e.g. a candidate hotel or restaurant). Always include `bookingUrl` (reservation/menu page) and `googleMapsUrl` when you have them — that's how members review and book. Pair with `places.search` to get real candidates with verified URLs and photos.",
   grid: "items",
   defaultAutonomy: "propose_only",
-  args: z.object({ itemId: z.uuid(), name: z.string().min(1).max(160) }),
-  dryDescribe: (a) => `Add option "${a.name}"`,
+  args: z.object({
+    itemId: z.uuid(),
+    name: z.string().min(1).max(160),
+    address: z.string().max(400).optional(),
+    imageUrl: z.string().url().max(1000).optional(),
+    bookingUrl: z.string().url().max(1000).optional(),
+    googleMapsUrl: z.string().url().max(1000).optional(),
+    rating: z.number().min(0).max(5).optional(),
+    priceLevel: z.string().max(20).optional(),
+    externalRef: z.string().max(200).optional(),
+    lat: z.number().gte(-90).lte(90).optional(),
+    lng: z.number().gte(-180).lte(180).optional(),
+  }),
+  dryDescribe: (a) =>
+    a.bookingUrl
+      ? `Add option "${a.name}" with booking link`
+      : `Add option "${a.name}"`,
   async execute(_ctx, a) {
     const r = await addOption({ itemId: a.itemId, name: a.name });
     if (!r.ok) throw new Error(r.error);
+
+    const patch: Record<string, unknown> = {};
+    if (a.address) patch.address = a.address;
+    if (a.imageUrl) patch.image_url = a.imageUrl;
+    if (a.bookingUrl) patch.booking_url = a.bookingUrl;
+    if (a.googleMapsUrl) patch.google_maps_url = a.googleMapsUrl;
+    if (a.rating != null) patch.rating = a.rating;
+    if (a.priceLevel) patch.price_level = a.priceLevel;
+    if (a.externalRef) {
+      patch.external_ref = a.externalRef;
+      patch.provider = "google_places";
+    }
+    if (a.lat != null) patch.lat = a.lat;
+    if (a.lng != null) patch.lng = a.lng;
+
+    if (Object.keys(patch).length > 0) {
+      const db = createAdminClient();
+      const { error } = await db
+        .from("trip_item_options")
+        .update(patch)
+        .eq("id", r.optionId);
+      if (error) throw new Error(`Failed to attach place metadata: ${error.message}`);
+    }
+
     return {
-      summary: `Added option "${a.name}"`,
-      data: { optionId: r.optionId },
+      summary: a.bookingUrl ? `Added "${a.name}" (with booking link)` : `Added option "${a.name}"`,
+      data: { optionId: r.optionId, bookingUrl: a.bookingUrl ?? null },
       target: { table: "trip_item_options", id: r.optionId, op: "insert" },
     };
   },
@@ -501,6 +542,71 @@ const tripUpdate = defineTool({
   },
 });
 
+// ─── places.* ────────────────────────────────────────────────────────────────
+
+const PLACE_KINDS = ["restaurant", "hotel", "activity", "transport"] as const satisfies readonly ItemType[];
+
+const placesSearch = defineTool({
+  name: "places.search",
+  description:
+    "Search Google Places for real candidates (restaurants, hotels, activities, transport). Returns a small list of named results with addresses, ratings, photo URLs, and Google Maps links — use these to populate options on a decision item via `items.add_option` so the user has real links to review and book. Read-only; safe to call freely.",
+  grid: "items",
+  defaultAutonomy: "auto_apply",
+  args: z.object({
+    query: z
+      .string()
+      .min(2)
+      .max(200)
+      .describe(
+        "Free-text query, e.g. 'kid-friendly sushi in Shibuya' or 'boutique hotel near Kyoto station'. The trip's destination is appended automatically when `near` is omitted.",
+      ),
+    kind: z.enum(PLACE_KINDS).optional(),
+    near: z
+      .string()
+      .max(200)
+      .optional()
+      .describe("Optional location override; defaults to the trip's destination_name."),
+    maxResults: z.number().int().min(1).max(8).optional(),
+  }),
+  dryDescribe: (a) => `Search places: "${a.query}"${a.kind ? ` (${a.kind})` : ""}`,
+  async execute(ctx, a) {
+    const db = createAdminClient();
+    const { data: trip } = await db
+      .from("trips")
+      .select("destination_name")
+      .eq("id", ctx.tripId)
+      .single();
+    const near = a.near ?? (trip?.destination_name as string | null) ?? "";
+    const combined = near ? `${a.query} in ${near}` : a.query;
+    const kind: ItemType = a.kind ?? "activity";
+    const max = a.maxResults ?? 5;
+    const res = await searchPlaces(combined, kind, max);
+    if (res.errorKind === "network_error") {
+      throw new Error("Place search failed (network or API key missing)");
+    }
+    const candidates: PlaceCandidate[] = res.candidates;
+    return {
+      summary:
+        candidates.length === 0
+          ? `No places found for "${combined}"`
+          : `Found ${candidates.length} place(s) for "${combined}"`,
+      data: {
+        query: combined,
+        kind,
+        candidates: candidates.map((c) => ({
+          name: c.name,
+          address: c.address,
+          rating: c.rating,
+          priceLevel: c.priceLevel,
+          photoUrl: c.photoUrl,
+          placeId: c.placeId,
+          bookingUrl: c.bookingUrl,
+        })),
+      },
+    };
+  },
+});
+
 // ─── plan.* (Orchestrator-mode plan tree) ────────────────────────────────────
 
 const PlanTaskSchema = z.object({
@@ -586,11 +692,17 @@ const planUpsert = defineTool({
   },
 });
 
-const PlanTaskLinkSchema = z.object({
-  kind: z.enum(["item", "idea", "packItem", "expense", "customGrid", "trip"]),
-  id: z.string().min(1).max(80),
-  label: z.string().max(120).optional(),
-});
+const PlanTaskLinkSchema = z
+  .object({
+    kind: z.enum(["item", "idea", "packItem", "expense", "customGrid", "trip", "external"]),
+    id: z.string().min(1).max(80).optional(),
+    url: z.string().url().max(1000).optional(),
+    label: z.string().max(120).optional(),
+  })
+  .refine((l) => (l.kind === "external" ? !!l.url : !!l.id), {
+    message:
+      "external links require `url`; internal links (item, idea, packItem, expense, customGrid, trip) require `id`",
+  });
 
 const planUpdateTask = defineTool({
   name: "plan.update_task",
@@ -690,6 +802,7 @@ const TOOLS: ToolDefinition[] = [
   gridsAddAgent,
   gridsRunNow,
   tripUpdate,
+  placesSearch,
   planUpsert,
   planUpdateTask,
 ];

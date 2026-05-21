@@ -93,10 +93,15 @@ export type ToolGrid =
 // are LLM-generated and overwritten on each `plan.upsert`.
 
 export interface PlanTaskLink {
-  /** Which bento grid the linked entity lives in. */
-  kind: "item" | "idea" | "packItem" | "expense" | "customGrid" | "trip";
-  /** Primary key of the linked row in the corresponding table. */
-  id: string;
+  /**
+   * Which bento grid the linked entity lives in, or "external" for an
+   * outbound URL (booking page, restaurant site, Google Maps listing, etc.).
+   */
+  kind: "item" | "idea" | "packItem" | "expense" | "customGrid" | "trip" | "external";
+  /** Primary key of the linked row, when the kind refers to an internal entity. */
+  id?: string;
+  /** Outbound URL — required for `external`, optional context for other kinds (e.g. booking URL for an option). */
+  url?: string;
   /** Optional short label shown next to the chip. */
   label?: string;
 }
