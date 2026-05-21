@@ -49,14 +49,17 @@ export function AppHeaderUser({
 
   return (
     <div className="flex items-center gap-2">
-      <div className="hidden text-right sm:block">
-        <p className="text-xs font-medium leading-tight text-[var(--foreground)]">
+      <Link
+        href="/app/profile"
+        className="hidden min-w-0 flex-1 rounded-md px-1.5 py-1 text-right transition-colors hover:bg-[var(--secondary)] sm:block"
+      >
+        <p className="truncate text-xs font-medium leading-tight text-[var(--foreground)]">
           {user.displayName ?? copy.traveler}
         </p>
         <p className="max-w-[140px] truncate text-[10px] leading-tight text-[var(--muted-foreground)]">
           {user.lineUserId}
         </p>
-      </div>
+      </Link>
       <Button
         variant="outline"
         size="sm"

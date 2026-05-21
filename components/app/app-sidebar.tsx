@@ -16,6 +16,7 @@ const COPY = {
     workspace: "Workspace",
     trips: "Trips",
     templates: "Templates",
+    profile: "Profile",
     home: "Home",
     openMenu: "Open menu",
     closeMenu: "Close menu",
@@ -26,6 +27,7 @@ const COPY = {
     workspace: "工作區",
     trips: "旅程",
     templates: "範本",
+    profile: "個人檔案",
     home: "首頁",
     openMenu: "開啟選單",
     closeMenu: "關閉選單",
@@ -37,6 +39,7 @@ const COPY = {
 const NAV_ITEMS = [
   { key: "trips" as const, href: "/app", icon: "✈" },
   { key: "templates" as const, href: "/app/templates", icon: "📋" },
+  { key: "profile" as const, href: "/app/profile", icon: "👤", requiresUser: true },
   { key: "home" as const, href: "/", icon: "🏠" },
 ] as const;
 
@@ -72,6 +75,10 @@ export function AppSidebar({
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
+
+  const navItems = NAV_ITEMS.filter(
+    (item) => !("requiresUser" in item && item.requiresUser) || Boolean(user),
+  );
 
   const sidebarContent = (
     <div id="sidebar-inner" className="flex h-full flex-col overflow-hidden">
@@ -131,7 +138,7 @@ export function AppSidebar({
       {/* Primary nav */}
       <nav id="sidebar-nav" className="flex-1 overflow-y-auto py-4" style={{ padding: collapsed ? "1rem 0" : undefined }}>
         <ul id="sidebar-nav-list" className={cn("space-y-0.5", collapsed ? "px-1" : "px-3")}>
-          {NAV_ITEMS.map(({ key, href, icon }) => (
+          {navItems.map(({ key, href, icon }) => (
             <li key={href}>
               <Link
                 id={`sidebar-nav-${key}`}
