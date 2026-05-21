@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { appFetchJson } from "@/lib/app-client";
 import { GridTileError, GridTileSkeleton } from "@/components/app/grids/grid-tile";
-import type { TripPlan } from "@/services/orchestrator/types";
+import type { PlanTaskLink, TripPlan } from "@/services/orchestrator/types";
 
 interface OrchestratorState {
   id: string;
@@ -238,7 +239,7 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
                     </p>
                   )}
                 </header>
-                <ul className="flex-1 space-y-1.5">
+                <ul className="flex-1 space-y-2">
                   {c.tasks.map((t) => (
                     <li key={t.id} className="flex items-start gap-2 text-xs">
                       <input
@@ -247,7 +248,7 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
                         onChange={(e) => void toggleTask(c.id, t.id, e.currentTarget.checked)}
                         className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-[var(--accent-line)]"
                       />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div
                           className={
                             t.done
@@ -259,6 +260,20 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
                         </div>
                         {t.note && (
                           <div className="mt-0.5 text-[10px] text-[var(--text-muted)]">{t.note}</div>
+                        )}
+                        {t.outcome && (
+                          <div className="mt-1 rounded-md border border-[var(--border-hairline)] bg-[var(--surface-base)] px-2 py-1">
+                            <div className="text-[10px] leading-snug text-[var(--text-secondary)]">
+                              <span className="text-[var(--accent-line)]">✦</span> {t.outcome.summary}
+                            </div>
+                            {t.outcome.links.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {t.outcome.links.map((link, i) => (
+                                  <TaskLinkChip key={`${link.kind}:${link.id}:${i}`} tripId={tripId} link={link} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </li>
@@ -301,6 +316,49 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
       )}
     </div>
   );
+}
+
+/**
+ * Chip rendered for each outcome link on a plan task. Deep-links to the
+ * relevant bento grid / dedicated route so the user can see the entity the
+ * orchestrator created.
+ */
+function TaskLinkChip({ tripId, link }: { tripId: string; link: PlanTaskLink }) {
+  const { label, href } = chipTarget(tripId, link);
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--accent-line)]"
+      title={link.label ?? label}
+    >
+      <span>{label}</span>
+      {link.label && (
+        <span className="max-w-[120px] truncate normal-case tracking-normal text-[var(--text-secondary)]">
+          {link.label}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function chipTarget(
+  tripId: string,
+  link: PlanTaskLink,
+): { label: string; href: string } {
+  switch (link.kind) {
+    case "item":
+      return { label: "Item", href: `/app/trips/${tripId}/board` };
+    case "idea":
+      return { label: "Idea", href: `/app/trips/${tripId}/ideas` };
+    case "packItem":
+      return { label: "Pack", href: `/app/trips/${tripId}/pack` };
+    case "expense":
+      return { label: "Expense", href: `/app/trips/${tripId}/expenses` };
+    case "customGrid":
+      return { label: "Grid", href: `/app/trips/${tripId}?mode=bento&scroll=custom:${link.id}` };
+    case "trip":
+      return { label: "Trip", href: `/app/trips/${tripId}?mode=bento` };
+  }
 }
 
 function formatRelative(iso: string): string {

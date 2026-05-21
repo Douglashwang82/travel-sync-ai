@@ -465,11 +465,63 @@ function buildSystemPrompt(
     .map((a) => `  - ${a.type}: ${a.label} — ${a.description}`)
     .join("\n");
   const memoryObj = orch.memory ?? {};
-  const plan = (memoryObj as { plan?: { categories: Array<{ title: string; tasks: Array<{ title: string; done: boolean }> }> } }).plan;
+  type PromptTask = { id: string; title: string; done: boolean; outcomeSummary?: string };
+  type PromptPlan = {
+    categories: Array<{ id: string; title: string; summary?: string; tasks: PromptTask[] }>;
+  };
+  const plan = (
+    memoryObj as {
+      plan?: {
+        categories: Array<{
+          id: string;
+          title: string;
+          summary?: string;
+          tasks: Array<{
+            id: string;
+            title: string;
+            done: boolean;
+            outcome?: { summary: string };
+          }>;
+        }>;
+      };
+    }
+  ).plan as PromptPlan | undefined;
   const planLine = plan
     ? `${plan.categories.length} categories, ${plan.categories.reduce((n, c) => n + c.tasks.length, 0)} tasks (${plan.categories.reduce((n, c) => n + c.tasks.filter((t) => t.done).length, 0)} done)`
     : "(no plan yet)";
-  const memory = JSON.stringify(memoryObj);
+  const undoneTasks: Array<{ categoryId: string; categoryTitle: string; task: PromptTask }> = [];
+  const doneTasks: Array<{ categoryTitle: string; task: PromptTask }> = [];
+  if (plan) {
+    for (const c of plan.categories) {
+      for (const t of c.tasks) {
+        const promptTask: PromptTask = {
+          id: t.id,
+          title: t.title,
+          done: t.done,
+          outcomeSummary: (t as unknown as { outcome?: { summary: string } }).outcome?.summary,
+        };
+        if (t.done) doneTasks.push({ categoryTitle: c.title, task: promptTask });
+        else undoneTasks.push({ categoryId: c.id, categoryTitle: c.title, task: promptTask });
+      }
+    }
+  }
+  const undoneList = undoneTasks.length === 0
+    ? "  (all done — nothing to work on)"
+    : undoneTasks
+        .slice(0, 25)
+        .map((u) => `  - [${u.categoryId}/${u.task.id}] ${u.categoryTitle} · ${u.task.title}`)
+        .join("\n");
+  const doneList = doneTasks.length === 0
+    ? "  (none yet)"
+    : doneTasks
+        .slice(0, 15)
+        .map((d) => `  - ${d.categoryTitle} · ${d.task.title}${d.task.outcomeSummary ? ` — ${d.task.outcomeSummary}` : ""}`)
+        .join("\n");
+  // Strip plan from the JSON memory dump — it's already rendered above.
+  const memoryForPrompt = Object.fromEntries(
+    Object.entries(memoryObj).filter(([k]) => k !== "plan"),
+  );
+  const memory = JSON.stringify(memoryForPrompt);
   const pending = ctx.pendingProposals.length === 0
     ? "  (none)"
     : ctx.pendingProposals.map((p) => `  - [${p.id.slice(0, 8)}] ${p.tool}: ${p.summary}`).join("\n");
@@ -490,11 +542,15 @@ function buildSystemPrompt(
     `Trigger: ${trigger}${triggerReason ? ` (${triggerReason})` : ""}`,
     "",
     "Operating rules:",
-    "  - Prefer the smallest useful change. Do nothing if nothing is needed.",
+    "  - The plan's undone tasks are your primary work queue. On each run: ensure a plan exists, then iterate the undone tasks and take concrete tool actions that advance them.",
+    "  - For each task you work on: call the relevant tool(s) (items.create, ideas.add, pack.add, grids.add_agent, etc.) to do the work, then call `plan.update_task` with done=true and an outcome { summary, links: [{ kind, id }] } that references the entities you just created. The bento grids read from those same tables, so the work appears there automatically.",
+    "  - If you only made partial progress (e.g. proposed a vote but it hasn't closed), still call `plan.update_task` with done=false plus an outcome summary so the user sees progress.",
+    "  - Don't auto-mark a task done unless you actually took action for it this run. Never mark done a task that requires human input you don't have (e.g. confirming a booking, voting).",
+    "  - Prefer the smallest useful change per task. Do at most 3–4 tasks per run; quality over quantity.",
     "  - Never call destructive tools (items.delete, items.confirm) unless you are certain — these are propose-only by default.",
     "  - For each tool call, the system enforces a per-tool autonomy dial. propose_only writes a proposal a human will Confirm/Dismiss; auto_apply* takes effect immediately. Don't fight the dial — call the tool either way.",
     "  - Don't repeat work that's already in pending proposals; build on them instead.",
-    "  - Maintain the trip's structural plan via `plan.upsert`. If no plan exists, generate one now: 4–8 categories essential for THIS trip (e.g. Stay, Transport, Activities, Food, Budget, Pack, Docs) with 2–6 concrete user-completable tasks each. If a plan exists, only call `plan.upsert` when the trip's structure has materially changed; task `done` state is preserved across upserts when titles match.",
+    "  - Plan maintenance via `plan.upsert`: if no plan exists, generate one now (4–8 categories essential for THIS trip — e.g. Stay, Transport, Activities, Food, Budget, Pack, Docs — each with 2–6 concrete user-completable tasks). If a plan exists, only call `plan.upsert` when the trip's structure has materially changed; task done state and outcomes are preserved across upserts when titles match.",
     "  - When you're done, output a short final summary (≤2 sentences) of what you did and why.",
     "",
     "Tool autonomy in effect:",
@@ -522,6 +578,12 @@ function buildSystemPrompt(
     msgs,
     "",
     `Plan: ${planLine}`,
+    "Undone tasks (your work queue — format [categoryId/taskId]):",
+    undoneList,
+    "",
+    "Recently completed tasks:",
+    doneList,
+    "",
     `Long-running memory: ${memory}`,
   ].join("\n");
 }

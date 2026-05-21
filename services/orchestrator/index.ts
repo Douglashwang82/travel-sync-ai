@@ -10,7 +10,11 @@ export { runOrchestrator } from "./runner";
 export { listTools, getTool, listCustomGridAgents } from "./tools";
 export type * from "./types";
 
-const DEFAULT_SCHEDULE_MINUTES = 360;
+// Heartbeat cadence. Tightened from 6h to 1h so the task-driven loop can
+// chew through plan tasks between visits. The DB-level default (in the
+// migration) still says 360 — that only matters for rows inserted bypassing
+// `ensureOrchestrator`, which currently nothing does.
+const DEFAULT_SCHEDULE_MINUTES = 60;
 
 interface OrchestratorRowFull {
   id: string;

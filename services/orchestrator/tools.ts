@@ -22,6 +22,7 @@ import {
   type TripPlan,
   type PlanCategory,
   type PlanTask,
+  type PlanTaskOutcome,
 } from "./types";
 
 /**
@@ -541,10 +542,12 @@ const planUpsert = defineTool({
     if (readErr || !orch) throw new Error(readErr?.message ?? "orchestrator missing");
 
     const prevPlan = (orch.memory as { plan?: TripPlan } | null)?.plan ?? null;
-    const prevTaskState = new Map<string, boolean>();
+    const prevTaskState = new Map<string, { done: boolean; outcome?: PlanTaskOutcome }>();
     if (prevPlan) {
       for (const c of prevPlan.categories) {
-        for (const t of c.tasks) prevTaskState.set(`${c.title}::${t.title}`, t.done);
+        for (const t of c.tasks) {
+          prevTaskState.set(`${c.title}::${t.title}`, { done: t.done, outcome: t.outcome });
+        }
       }
     }
 
@@ -553,12 +556,13 @@ const planUpsert = defineTool({
       title: c.title,
       summary: c.summary,
       tasks: c.tasks.map((t, ti): PlanTask => {
-        const inheritedDone = prevTaskState.get(`${c.title}::${t.title}`);
+        const inherited = prevTaskState.get(`${c.title}::${t.title}`);
         return {
           id: t.id ?? `task-${ci}-${ti}-${slugify(t.title)}`,
           title: t.title,
-          done: t.done ?? inheritedDone ?? false,
+          done: t.done ?? inherited?.done ?? false,
           note: t.note,
+          outcome: inherited?.outcome,
         };
       }),
     }));
@@ -582,18 +586,34 @@ const planUpsert = defineTool({
   },
 });
 
-const planToggleTask = defineTool({
-  name: "plan.toggle_task",
+const PlanTaskLinkSchema = z.object({
+  kind: z.enum(["item", "idea", "packItem", "expense", "customGrid", "trip"]),
+  id: z.string().min(1).max(80),
+  label: z.string().max(120).optional(),
+});
+
+const planUpdateTask = defineTool({
+  name: "plan.update_task",
   description:
-    "Toggle a single plan task done/undone by category id and task id. Use sparingly — usually the user toggles tasks themselves; only call this when you have concrete evidence a task is complete (e.g. a confirmed booking).",
+    "Record progress on a plan task after you have taken concrete action on it. Set done=true once the task is complete; attach an outcome describing what you did and links to the entities you created (board items, ideas, pack items, expenses, custom grids). Use this after every batch of tool calls that advance a task — it's how the workspace shows progress to the user. Pass only the fields you want to change.",
   grid: "plan",
   defaultAutonomy: "auto_apply_with_undo",
   args: z.object({
     categoryId: z.string().min(1).max(80),
     taskId: z.string().min(1).max(80),
-    done: z.boolean(),
+    done: z.boolean().optional(),
+    note: z.string().max(500).optional(),
+    outcome: z
+      .object({
+        summary: z.string().min(1).max(280),
+        links: z.array(PlanTaskLinkSchema).max(20).optional(),
+      })
+      .optional(),
   }),
-  dryDescribe: (a) => `Mark task ${a.taskId.slice(0, 16)} ${a.done ? "done" : "open"}`,
+  dryDescribe: (a) =>
+    a.outcome
+      ? `Record outcome on ${a.taskId.slice(0, 16)}: "${a.outcome.summary.slice(0, 60)}"`
+      : `Mark task ${a.taskId.slice(0, 16)} ${a.done ? "done" : "open"}`,
   async execute(ctx, a) {
     const db = createAdminClient();
     const { data: orch } = await db
@@ -615,7 +635,17 @@ const planToggleTask = defineTool({
               tasks: c.tasks.map((t) => {
                 if (t.id !== a.taskId) return t;
                 touched = true;
-                return { ...t, done: a.done };
+                const merged: PlanTask = { ...t };
+                if (a.done !== undefined) merged.done = a.done;
+                if (a.note !== undefined) merged.note = a.note;
+                if (a.outcome) {
+                  merged.outcome = {
+                    summary: a.outcome.summary,
+                    links: a.outcome.links ?? [],
+                    completedAt: new Date().toISOString(),
+                  };
+                }
+                return merged;
               }),
             },
       ),
@@ -628,9 +658,16 @@ const planToggleTask = defineTool({
       .eq("id", ctx.orchestratorId);
     if (error) throw new Error(error.message);
     return {
-      summary: `Task ${a.done ? "marked done" : "reopened"}`,
-      data: { categoryId: a.categoryId, taskId: a.taskId, done: a.done },
-      target: { table: "trip_orchestrators", id: ctx.orchestratorId, op: "update", before: { memory: { plan: before } } },
+      summary: a.outcome
+        ? `Recorded outcome: ${a.outcome.summary.slice(0, 80)}`
+        : `Task ${a.done ? "marked done" : "reopened"}`,
+      data: { categoryId: a.categoryId, taskId: a.taskId, done: a.done, outcome: a.outcome },
+      target: {
+        table: "trip_orchestrators",
+        id: ctx.orchestratorId,
+        op: "update",
+        before: { memory: { plan: before } },
+      },
     };
   },
 });
@@ -654,7 +691,7 @@ const TOOLS: ToolDefinition[] = [
   gridsRunNow,
   tripUpdate,
   planUpsert,
-  planToggleTask,
+  planUpdateTask,
 ];
 
 const TOOL_MAP = new Map(TOOLS.map((t) => [t.name, t]));

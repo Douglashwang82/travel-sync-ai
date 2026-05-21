@@ -92,11 +92,31 @@ export type ToolGrid =
 // structure; users can toggle task completion but the categories themselves
 // are LLM-generated and overwritten on each `plan.upsert`.
 
+export interface PlanTaskLink {
+  /** Which bento grid the linked entity lives in. */
+  kind: "item" | "idea" | "packItem" | "expense" | "customGrid" | "trip";
+  /** Primary key of the linked row in the corresponding table. */
+  id: string;
+  /** Optional short label shown next to the chip. */
+  label?: string;
+}
+
+export interface PlanTaskOutcome {
+  /** One-line description of what the orchestrator did. */
+  summary: string;
+  /** References to entities the orchestrator created/affected for this task. */
+  links: PlanTaskLink[];
+  /** ISO timestamp the outcome was recorded. */
+  completedAt: string;
+}
+
 export interface PlanTask {
   id: string;
   title: string;
   done: boolean;
   note?: string;
+  /** Recorded outcome from the orchestrator when it worked on this task. */
+  outcome?: PlanTaskOutcome;
 }
 
 export interface PlanCategory {

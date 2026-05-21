@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import { TripBentoPage } from "@/components/app/trip-bento-page";
 import { TripOrchestratorMode } from "@/components/app/trip-orchestrator-mode";
 
 type WorkspaceMode = "bento" | "orchestrator";
 
 const STORAGE_PREFIX = "trip-workspace-mode:";
+const STORAGE_EVENT = "trip-workspace-mode:change";
 
 function storageKey(tripId: string) {
   return `${STORAGE_PREFIX}${tripId}`;
@@ -22,24 +24,43 @@ function readMode(tripId: string): WorkspaceMode {
   }
 }
 
+function parseUrlMode(raw: string | undefined | null): WorkspaceMode | null {
+  return raw === "bento" || raw === "orchestrator" ? raw : null;
+}
+
+function subscribeToStorage(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(STORAGE_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(STORAGE_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
 /**
  * Trip workspace shell. Renders a mode toggle between the bento grid (the
  * panoramic, every-feature view) and Orchestrator mode (single-goal +
- * structural plan). Mode persists per trip in localStorage.
+ * structural plan). Mode persists per trip in localStorage; a `?mode=` query
+ * param wins over storage so deep-links from Orchestrator-task outcome chips
+ * land in the right view.
  */
 export function TripWorkspace({ tripId }: { tripId: string }) {
-  // Always start in "bento" on first render so SSR + first client paint
-  // agree; hydrate the stored choice in an effect.
-  const [mode, setMode] = useState<WorkspaceMode>("bento");
+  const searchParams = useSearchParams();
+  const urlMode = parseUrlMode(searchParams?.get("mode"));
 
-  useEffect(() => {
-    setMode(readMode(tripId));
-  }, [tripId]);
+  // `?mode=` (if present) wins over storage so deep-links land where they
+  // should. Storage is the user's previous toggle choice; we read it through
+  // `useSyncExternalStore` so changes from the toggle propagate immediately.
+  const getSnapshot = useCallback(() => readMode(tripId), [tripId]);
+  const getServerSnapshot = useCallback<() => WorkspaceMode>(() => "bento", []);
+  const storedMode = useSyncExternalStore(subscribeToStorage, getSnapshot, getServerSnapshot);
+  const mode: WorkspaceMode = urlMode ?? storedMode;
 
   const switchMode = (next: WorkspaceMode) => {
-    setMode(next);
     try {
       window.localStorage.setItem(storageKey(tripId), next);
+      window.dispatchEvent(new Event(STORAGE_EVENT));
     } catch {
       // Non-fatal — private mode etc.
     }
