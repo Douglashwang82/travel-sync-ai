@@ -113,9 +113,9 @@ export async function runOrchestrator(
     const undoneTasksAfter = await countUndoneTasks(orchestrator.id);
     const prevMemory = (orchestrator.memory ?? {}) as Record<string, unknown>;
     const prevBudget = typeof prevMemory.autoChainsRemaining === "number" ? (prevMemory.autoChainsRemaining as number) : 0;
-    // Fresh plan → refill to 2 (so plan-gen + 2 follow-ups = 3 runs total).
+    // Fresh plan → refill to 4 (so plan-gen + 4 follow-ups = 5 runs total).
     // Otherwise drain whatever was banked.
-    const nextBudget = usedPlanUpsert && undoneTasksAfter > 0 ? 2 : Math.max(0, prevBudget - 1);
+    const nextBudget = usedPlanUpsert && undoneTasksAfter > 0 ? 4 : Math.max(0, prevBudget - 1);
     const shouldChain = nextBudget > 0 && undoneTasksAfter > 0;
     const memoryPatch: Record<string, unknown> = { ...prevMemory, autoChainsRemaining: nextBudget };
 

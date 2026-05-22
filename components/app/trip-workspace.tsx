@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { TripBentoPage } from "@/components/app/trip-bento-page";
 import { TripOrchestratorMode } from "@/components/app/trip-orchestrator-mode";
+import { TripOrchestratorPulse } from "@/components/app/trip-orchestrator-pulse";
 
 type WorkspaceMode = "bento" | "orchestrator";
 
@@ -70,21 +71,24 @@ export function TripWorkspace({ tripId }: { tripId: string }) {
     <>
       <div className="mb-4 flex items-center justify-between gap-2">
         <span className="text-caps text-[10px] text-[var(--text-muted)]">Workspace</span>
-        <div
-          role="tablist"
-          aria-label="Workspace mode"
-          className="inline-flex rounded-full border border-[var(--border-hairline)] bg-[var(--surface-base)] p-0.5 text-[10px] font-semibold uppercase tracking-wide"
-        >
-          <ModeButton
-            label="Bento"
-            active={mode === "bento"}
-            onClick={() => switchMode("bento")}
-          />
-          <ModeButton
-            label="Orchestrator"
-            active={mode === "orchestrator"}
-            onClick={() => switchMode("orchestrator")}
-          />
+        <div className="flex items-center gap-2">
+          <TripOrchestratorPulse tripId={tripId} onOpen={() => switchMode("orchestrator")} />
+          <div
+            role="tablist"
+            aria-label="Workspace mode"
+            className="inline-flex rounded-full border border-[var(--border-hairline)] bg-[var(--surface-base)] p-0.5 text-[10px] font-semibold uppercase tracking-wide"
+          >
+            <ModeButton
+              label="Bento"
+              active={mode === "bento"}
+              onClick={() => switchMode("bento")}
+            />
+            <ModeButton
+              label="Orchestrator"
+              active={mode === "orchestrator"}
+              onClick={() => switchMode("orchestrator")}
+            />
+          </div>
         </div>
       </div>
 
