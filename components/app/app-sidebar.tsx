@@ -15,6 +15,7 @@ const COPY = {
   en: {
     workspace: "Workspace",
     trips: "Trips",
+    map: "Map",
     templates: "Templates",
     profile: "Profile",
     home: "Home",
@@ -26,6 +27,7 @@ const COPY = {
   "zh-TW": {
     workspace: "工作區",
     trips: "旅程",
+    map: "地圖",
     templates: "範本",
     profile: "個人檔案",
     home: "首頁",
@@ -38,6 +40,7 @@ const COPY = {
 
 const NAV_ITEMS = [
   { key: "trips" as const, href: "/app", icon: "✈" },
+  { key: "map" as const, href: "/app/map", icon: "🗺" },
   { key: "templates" as const, href: "/app/templates", icon: "📋" },
   { key: "profile" as const, href: "/app/profile", icon: "👤", requiresUser: true },
   { key: "home" as const, href: "/", icon: "🏠" },
@@ -72,6 +75,7 @@ export function AppSidebar({
 
   function isActive(href: string) {
     if (href === "/app") return pathname === "/app" || pathname.startsWith("/app/trips");
+    if (href === "/app/map") return pathname === "/app/map";
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
