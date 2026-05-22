@@ -40,6 +40,14 @@ export interface MapCanvasProps {
   dayRoutes: DayRoute[];
   selectedPinId: string | null;
   onPinSelect: (pin: MapPin) => void;
+  /**
+   * Optional Google-encoded polyline (from Routes API) rendered as a solid
+   * overlay on top of the dashed daily routes. Used by the Main Map page to
+   * show the actual on-road route for a selected day or pair of pins.
+   */
+  encodedPolyline?: string | null;
+  /** Map type / basemap toggle. Defaults to "roadmap". */
+  mapTypeId?: "roadmap" | "satellite" | "hybrid" | "terrain";
 }
 
 // ─── Type → color/icon ────────────────────────────────────────────────────────
@@ -190,6 +198,39 @@ function DayRoutes({ routes }: { routes: DayRoute[] }) {
   return null;
 }
 
+// ─── Encoded polyline overlay (Routes API result) ─────────────────────────────
+
+function EncodedPolylineOverlay({ encoded }: { encoded: string | null | undefined }) {
+  const map = useMap();
+  const geometryLib = useMapsLibrary("geometry");
+  const mapsLib = useMapsLibrary("maps");
+  const polylineRef = useRef<google.maps.Polyline | null>(null);
+
+  useEffect(() => {
+    if (!map || !mapsLib || !geometryLib || !encoded) {
+      polylineRef.current?.setMap(null);
+      polylineRef.current = null;
+      return;
+    }
+    const path = geometryLib.encoding.decodePath(encoded);
+    const poly = new mapsLib.Polyline({
+      map,
+      path,
+      strokeColor: "#2563eb",
+      strokeOpacity: 0.85,
+      strokeWeight: 5,
+    });
+    polylineRef.current?.setMap(null);
+    polylineRef.current = poly;
+    return () => {
+      poly.setMap(null);
+      if (polylineRef.current === poly) polylineRef.current = null;
+    };
+  }, [map, mapsLib, geometryLib, encoded]);
+
+  return null;
+}
+
 // ─── Auto-fit on change ───────────────────────────────────────────────────────
 
 function FitBounds({
@@ -275,6 +316,8 @@ function CanvasInner({
   dayRoutes,
   selectedPinId,
   onPinSelect,
+  encodedPolyline,
+  mapTypeId,
   mapId,
 }: MapCanvasProps & { mapId: string | undefined }) {
   const center = useMemo<{ lat: number; lng: number }>(() => {
@@ -302,6 +345,7 @@ function CanvasInner({
       defaultZoom={11}
       gestureHandling="greedy"
       mapId={mapId}
+      mapTypeId={mapTypeId ?? "roadmap"}
       className="h-full w-full"
       style={{ minHeight: "100%" }}
     >
@@ -311,6 +355,7 @@ function CanvasInner({
         selectedPinId={selectedPinId}
       />
       <DayRoutes routes={dayRoutes} />
+      <EncodedPolylineOverlay encoded={encodedPolyline} />
 
       {destination.lat != null && destination.lng != null && (
         useAdvancedMarkers ? (
