@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccess } from "@/lib/app-server";
+import { requireAppTripAccess, requireAppOrganizer } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
 
 const TripPatchSchema = z
@@ -109,4 +109,30 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   }
 
   return NextResponse.json<{ trip: Trip }>({ trip: data as Trip });
+}
+
+/**
+ * DELETE /api/app/trips/:tripId — hard-delete a trip. Organizer only.
+ *
+ * Child rows (trip_items, votes, trip_members, trip_memories, trip_ideas,
+ * travel_documents, packing_items, trip_tickets, trip_orchestrators,
+ * custom_grids, trip_chat_threads, calendar_events, …) cascade via FK
+ * constraints. Historical expenses set `trip_id` to null so the ledger
+ * stays intact.
+ */
+export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+  const { tripId } = await ctx.params;
+  const auth = await requireAppOrganizer(req, tripId);
+  if (!auth.ok) return auth.response;
+
+  const db = createAdminClient();
+  const { error } = await db.from("trips").delete().eq("id", tripId);
+  if (error) {
+    return NextResponse.json(
+      { error: "Failed to delete trip", code: "DB_ERROR" },
+      { status: 500 }
+    );
+  }
+
+  return new NextResponse(null, { status: 204 });
 }

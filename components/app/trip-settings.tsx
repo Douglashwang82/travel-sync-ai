@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { appFetchJson } from "@/lib/app-client";
+import { appFetch, appFetchJson } from "@/lib/app-client";
 import {
   TabPageHeader,
   TabSurface,
@@ -30,6 +31,7 @@ const STATUS_OPTIONS: { value: TripStatus; label: string }[] = [
 ];
 
 export function TripSettingsClient({ tripId }: { tripId: string }) {
+  const router = useRouter();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [role, setRole] = useState<"organizer" | "member">("member");
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
   const [status, setStatus] = useState<TripStatus>("draft");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -101,6 +104,32 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
       setError(err instanceof Error ? err.message : "旅程儲存失敗");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!trip) return;
+    const label = trip.title?.trim() || trip.destination_name?.trim() || "這趟旅程";
+    if (
+      !confirm(
+        `確定要刪除「${label}」嗎？此動作無法復原，所有行程項目、投票、文件、打包清單等將一併刪除。`
+      )
+    ) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await appFetch(`/api/app/trips/${tripId}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "刪除旅程失敗");
+      }
+      router.push("/app");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "刪除旅程失敗");
+      setDeleting(false);
     }
   }
 
@@ -221,6 +250,25 @@ export function TripSettingsClient({ tripId }: { tripId: string }) {
           <Link href={`/app/trips/${tripId}/publish`}>
             <Button variant="outline" size="sm">發布</Button>
           </Link>
+        </TabSurface>
+      )}
+
+      {isOrganizer && (
+        <TabSurface className="flex items-center justify-between gap-4">
+          <TabSurfaceTitle
+            id="settings-delete-header"
+            title="刪除旅程"
+            subtitle="永久刪除這趟旅程及其行程項目、投票、文件等資料，此動作無法復原。"
+          />
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => void handleDelete()}
+            disabled={deleting}
+          >
+            {deleting ? "刪除中..." : "刪除旅程"}
+          </Button>
         </TabSurface>
       )}
 
