@@ -15,7 +15,6 @@ import { PackGrid } from "@/components/app/grids/pack-grid";
 import { MembersGrid } from "@/components/app/grids/members-grid";
 import { SharedGrid } from "@/components/app/grids/shared-grid";
 import { CustomGrid } from "@/components/app/grids/custom-grid";
-import { OrchestratorGrid } from "@/components/app/grids/orchestrator-grid";
 import { AddCustomGridDialog } from "@/components/app/grids/add-custom-grid-dialog";
 import { BentoFrame } from "@/components/app/grids/bento-frame";
 import {
@@ -41,7 +40,6 @@ interface TileDef {
 
 const TILES: TileDef[] = [
   { id: "hero", title: "Trip", icon: "✦", Component: HeroGrid, defaultSize: "xl" },
-  { id: "orchestrator", title: "Orchestrator", icon: "🧠", Component: OrchestratorGrid, defaultSize: "lg" },
   { id: "plan-master", title: "Plan master", icon: "🧭", Component: PlanMasterGrid, defaultSize: "lg" },
   { id: "itinerary", title: "Itinerary", icon: "📅", Component: ItineraryGrid, defaultSize: "lg", href: (t) => `/app/trips/${t}/itinerary` },
   { id: "calendar", title: "Calendar", icon: "📆", Component: CalendarGrid, defaultSize: "lg" },
@@ -213,26 +211,23 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
         onCreated={handleCustomCreated}
       />
 
-      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
-        <span className="text-caps">Workspace</span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--text-primary)]"
-            title="Add a custom AI-powered grid"
-          >
-            + Add grid
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
-            title="Reset to default layout"
-          >
-            Reset layout
-          </button>
-        </div>
+      <div className="mb-3 flex items-center justify-end gap-2 text-xs text-[var(--text-muted)]">
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--text-primary)]"
+          title="Add a custom AI-powered grid"
+        >
+          + Add grid
+        </button>
+        <button
+          type="button"
+          onClick={reset}
+          className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+          title="Reset to default layout"
+        >
+          Reset layout
+        </button>
       </div>
 
       <div ref={tilesRef} className="bento-grid">

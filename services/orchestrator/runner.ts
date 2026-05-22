@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { after } from "next/server";
 import { GoogleGenAI, FunctionCallingConfigMode, type FunctionCall, type Content } from "@google/genai";
 import { createAdminClient } from "@/lib/db";
 import { captureError } from "@/lib/monitoring";
@@ -100,6 +101,24 @@ export async function runOrchestrator(
     const finishedAt = new Date();
     const summary = buildSummaryLine(calls, finalText);
 
+    // Auto-chain budget. When the LLM materially restructures the plan via
+    // `plan.upsert`, we want the orchestrator to immediately follow up and
+    // start working the freshly generated tasks instead of leaving them all
+    // undone until the next heartbeat. We bank a small number of chained
+    // runs in memory; each subsequent run consumes one until the budget is
+    // exhausted or no undone tasks remain.
+    const usedPlanUpsert = calls.some(
+      (c) => c.tool === "plan.upsert" && (c.status === "applied" || c.status === "auto_applied"),
+    );
+    const undoneTasksAfter = await countUndoneTasks(orchestrator.id);
+    const prevMemory = (orchestrator.memory ?? {}) as Record<string, unknown>;
+    const prevBudget = typeof prevMemory.autoChainsRemaining === "number" ? (prevMemory.autoChainsRemaining as number) : 0;
+    // Fresh plan → refill to 4 (so plan-gen + 4 follow-ups = 5 runs total).
+    // Otherwise drain whatever was banked.
+    const nextBudget = usedPlanUpsert && undoneTasksAfter > 0 ? 4 : Math.max(0, prevBudget - 1);
+    const shouldChain = nextBudget > 0 && undoneTasksAfter > 0;
+    const memoryPatch: Record<string, unknown> = { ...prevMemory, autoChainsRemaining: nextBudget };
+
     await db
       .from("orchestrator_runs")
       .update({
@@ -114,19 +133,29 @@ export async function runOrchestrator(
       })
       .eq("id", runId);
 
+    // When we're about to chain, set `next_run_at` to "now" so the cron
+    // sweeper also picks it up if `after()` somehow fails to execute. The
+    // memory patch carries the budget into the next run.
     await db
       .from("trip_orchestrators")
       .update({
         last_run_at: finishedAt.toISOString(),
-        next_run_at: addMinutes(finishedAt, orchestrator.schedule_minutes).toISOString(),
+        next_run_at: shouldChain
+          ? new Date().toISOString()
+          : addMinutes(finishedAt, orchestrator.schedule_minutes).toISOString(),
         last_status: "success",
         last_summary: summary,
         last_error: null,
         consecutive_failures: 0,
-        pending_reason: null,
-        pending_trigger: null,
+        memory: memoryPatch,
+        pending_reason: shouldChain ? `auto-chain after ${usedPlanUpsert ? "plan generation" : "task batch"} (${undoneTasksAfter} tasks left)` : null,
+        pending_trigger: shouldChain ? "event" : null,
       })
       .eq("id", orchestrator.id);
+
+    if (shouldChain) {
+      scheduleAutoChain(orchestrator.id);
+    }
 
     return {
       runId,
@@ -391,11 +420,12 @@ interface TripContext {
   recentIdeas: Array<{ id: string; text: string }>;
   pendingProposals: Array<{ id: string; tool: string; summary: string }>;
   recentMemberMessages: Array<{ author: string; text: string; at: string }>;
+  existingPackLabels: string[];
 }
 
 async function buildTripContext(tripId: string): Promise<TripContext> {
   const db = createAdminClient();
-  const [{ data: trip }, { data: items }, { data: ideas }, { data: pending }, { data: msgs }] = await Promise.all([
+  const [{ data: trip }, { data: items }, { data: ideas }, { data: pending }, { data: msgs }, { data: packs }] = await Promise.all([
     db.from("trips").select("destination_name, start_date, end_date, status").eq("id", tripId).single(),
     db
       .from("trip_items")
@@ -422,6 +452,12 @@ async function buildTripContext(tripId: string): Promise<TripContext> {
       .eq("trip_id", tripId)
       .order("created_at", { ascending: false })
       .limit(8),
+    db
+      .from("packing_items")
+      .select("label")
+      .eq("trip_id", tripId)
+      .order("created_at", { ascending: false })
+      .limit(50),
   ]);
 
   return {
@@ -447,6 +483,7 @@ async function buildTripContext(tripId: string): Promise<TripContext> {
       text: (m.content as string) ?? "",
       at: (m.created_at as string) ?? "",
     })),
+    existingPackLabels: (packs ?? []).map((p) => p.label as string),
   };
 }
 
@@ -464,7 +501,64 @@ function buildSystemPrompt(
   const agents = listCustomGridAgents()
     .map((a) => `  - ${a.type}: ${a.label} — ${a.description}`)
     .join("\n");
-  const memory = JSON.stringify(orch.memory ?? {});
+  const memoryObj = orch.memory ?? {};
+  type PromptTask = { id: string; title: string; done: boolean; outcomeSummary?: string };
+  type PromptPlan = {
+    categories: Array<{ id: string; title: string; summary?: string; tasks: PromptTask[] }>;
+  };
+  const plan = (
+    memoryObj as {
+      plan?: {
+        categories: Array<{
+          id: string;
+          title: string;
+          summary?: string;
+          tasks: Array<{
+            id: string;
+            title: string;
+            done: boolean;
+            outcome?: { summary: string };
+          }>;
+        }>;
+      };
+    }
+  ).plan as PromptPlan | undefined;
+  const planLine = plan
+    ? `${plan.categories.length} categories, ${plan.categories.reduce((n, c) => n + c.tasks.length, 0)} tasks (${plan.categories.reduce((n, c) => n + c.tasks.filter((t) => t.done).length, 0)} done)`
+    : "(no plan yet)";
+  const undoneTasks: Array<{ categoryId: string; categoryTitle: string; task: PromptTask }> = [];
+  const doneTasks: Array<{ categoryTitle: string; task: PromptTask }> = [];
+  if (plan) {
+    for (const c of plan.categories) {
+      for (const t of c.tasks) {
+        const promptTask: PromptTask = {
+          id: t.id,
+          title: t.title,
+          done: t.done,
+          outcomeSummary: (t as unknown as { outcome?: { summary: string } }).outcome?.summary,
+        };
+        if (t.done) doneTasks.push({ categoryTitle: c.title, task: promptTask });
+        else undoneTasks.push({ categoryId: c.id, categoryTitle: c.title, task: promptTask });
+      }
+    }
+  }
+  const undoneList = undoneTasks.length === 0
+    ? "  (all done — nothing to work on)"
+    : undoneTasks
+        .slice(0, 25)
+        .map((u) => `  - [${u.categoryId}/${u.task.id}] ${u.categoryTitle} · ${u.task.title}`)
+        .join("\n");
+  const doneList = doneTasks.length === 0
+    ? "  (none yet)"
+    : doneTasks
+        .slice(0, 15)
+        .map((d) => `  - ${d.categoryTitle} · ${d.task.title}${d.task.outcomeSummary ? ` — ${d.task.outcomeSummary}` : ""}`)
+        .join("\n");
+  // Strip plan from the JSON memory dump — it's already rendered above.
+  const memoryForPrompt = Object.fromEntries(
+    Object.entries(memoryObj).filter(([k]) => k !== "plan"),
+  );
+  const memory = JSON.stringify(memoryForPrompt);
   const pending = ctx.pendingProposals.length === 0
     ? "  (none)"
     : ctx.pendingProposals.map((p) => `  - [${p.id.slice(0, 8)}] ${p.tool}: ${p.summary}`).join("\n");
@@ -477,6 +571,9 @@ function buildSystemPrompt(
   const msgs = ctx.recentMemberMessages.length === 0
     ? "  (no recent chat)"
     : ctx.recentMemberMessages.map((m) => `  - ${m.author}: ${m.text}`).join("\n");
+  const packs = ctx.existingPackLabels.length === 0
+    ? "  (none yet)"
+    : `  ${ctx.existingPackLabels.slice(0, 30).join(", ")}`;
 
   return [
     "You are the per-trip Orchestrator. You have the same surface area as a human member, exposed as tools.",
@@ -485,11 +582,29 @@ function buildSystemPrompt(
     `Trigger: ${trigger}${triggerReason ? ` (${triggerReason})` : ""}`,
     "",
     "Operating rules:",
-    "  - Prefer the smallest useful change. Do nothing if nothing is needed.",
+    "  - The plan's undone tasks are your primary work queue. On each run: ensure a plan exists, then iterate the undone tasks and take concrete tool actions that advance them.",
+    "  - Surface REAL options with links so the user can review and book. For any task involving restaurants, hotels, activities, or transport, call `places.search` first to get verified candidates. Then create a decision item (items.create with itemKind='decision') and attach 2–4 candidates via `items.add_option` — always include `googleMapsUrl`, and `bookingUrl` whenever you have one.",
+    "  - For each task: do the work, then call `plan.update_task` with done=true (or done=false for partial progress) and an outcome { summary, links }. Each link is either internal (kind: 'item'|'idea'|'packItem'|'expense'|'customGrid'|'trip' + id) or external (kind: 'external' + url) — include external links for every booking/reservation/Maps URL so the user can act in one click. The bento grids read from the same tables your tools write to, so internal links sync automatically.",
+    "  - Don't auto-mark a task done unless you actually took action for it this run. Never mark done a task that requires human input you don't have (e.g. confirming a booking, voting).",
+    "  - Prefer the smallest useful change per task. Do at most 3–4 tasks per run; quality over quantity.",
     "  - Never call destructive tools (items.delete, items.confirm) unless you are certain — these are propose-only by default.",
     "  - For each tool call, the system enforces a per-tool autonomy dial. propose_only writes a proposal a human will Confirm/Dismiss; auto_apply* takes effect immediately. Don't fight the dial — call the tool either way.",
     "  - Don't repeat work that's already in pending proposals; build on them instead.",
+    "  - Plan maintenance via `plan.upsert`: if no plan exists, generate one now (4–8 categories essential for THIS trip — e.g. Stay, Transport, Activities, Food, Budget, Pack, Docs — each with 2–6 concrete user-completable tasks). If a plan exists, only call `plan.upsert` when the trip's structure has materially changed; task done state and outcomes are preserved across upserts when titles match.",
     "  - When you're done, output a short final summary (≤2 sentences) of what you did and why.",
+    "",
+    "Task playbook — match a task to the right tool sequence:",
+    "  - 'Research / book accommodation', 'Find hotels' → places.search(kind:'hotel') → items.create(itemKind:'decision', title:'Hotel') → items.add_option × 2–4 with bookingUrl + googleMapsUrl + photo. Outcome links: the item + an external Maps chip per candidate.",
+    "  - 'Confirm check-in / check-out times', 'Confirm reservation', any 'Confirm …' that needs the user → items.create(itemKind:'task') with a clear title; do NOT mark the plan task done — record progress with done:false + outcome explaining what the user still needs to confirm.",
+    "  - 'Book flight …' → flights.search_link(origin, destination, departDate?, returnDate?). Outcome: external link to the flights search. If the trip's dates are firm, also propose grids.add_agent(type='flight_price_tracker') in the outcome summary so the group can monitor prices.",
+    "  - 'Arrange airport transfer' → places.search(kind:'transport', query:'airport transfer <destination>') for ride/shuttle services, then items.create(itemKind:'decision') + items.add_option with bookingUrl/googleMapsUrl. If candidates are thin, fall back to maps.deep_link(query:'airport transfer <destination>') and attach as an external outcome link.",
+    "  - 'Plan local transportation', 'Get around <city>' → if no itinerary exists yet, items.create(itemKind:'task', title:'Decide local transport once itinerary is set') + maps.deep_link(query:'<destination> public transport') as an external outcome link. Do not over-commit before you know where the group is going each day.",
+    "  - 'Explore <named landmark>', 'Visit <named place>' → places.search(query:'<landmark name>') to grab the official Maps entry, then ideas.add with the place name + URL embedded in the text. Outcome: external Maps link.",
+    "  - 'Visit <district / neighborhood>' (e.g. Museum District, Heights) → maps.deep_link(query:'<district> <city>') for the district shell, plus places.search(query:'top spots in <district> <city>', maxResults:5) for highlights. Add each highlight as an idea OR as options on a 'Pick a stop in <district>' decision item.",
+    "  - 'Research / book restaurant', 'Dinner reservations' → places.search(kind:'restaurant', query:'<cuisine or 'top restaurants'> in <destination>') → items.create(itemKind:'decision', title:'Dinner: <day or label>') → items.add_option × 2–4 with bookingUrl + googleMapsUrl. Outcome: vote item + per-restaurant external chips.",
+    "  - 'Brunch / Dinner at <named restaurant>', any specific-place booking task → places.search(query:'<restaurant name> <destination>', maxResults:1) to grab the exact Maps + booking URL, then ideas.add(text including the URL) OR items.create(itemKind:'task', title:'Reserve <name>') with the URL in description. Outcome: external Maps/booking link.",
+    "  - 'Set / estimate budget', 'Daily budget' → DO NOT mark the task done. Use the existing items/ideas in trip context to estimate per-day food + activity + transport (rough averages are fine — note your assumptions). Record the breakdown in the outcome summary: 'Daily ~$X (food $A, activities $B, transport $C); trip total ~$Y over N days'. If items lack price info, name what's missing in `note` so the user can fill it in.",
+    "  - 'Create / generate packing list' → call pack.add_many once with 10–25 items tailored to destination + dates + group size + planned activities (hike → sun hat, beach → swim, cold weather → layers, formal dinner → smart-casual outfit, documents always included). Outcome: link the packing grid; mark done.",
     "",
     "Tool autonomy in effect:",
     dial,
@@ -515,6 +630,16 @@ function buildSystemPrompt(
     "Recent member chat:",
     msgs,
     "",
+    "Existing pack list (skip duplicates when adding):",
+    packs,
+    "",
+    `Plan: ${planLine}`,
+    "Undone tasks (your work queue — format [categoryId/taskId]):",
+    undoneList,
+    "",
+    "Recently completed tasks:",
+    doneList,
+    "",
     `Long-running memory: ${memory}`,
   ].join("\n");
 }
@@ -531,6 +656,69 @@ function toFunctionDeclaration(tool: ToolDefinition) {
 
 function addMinutes(d: Date, m: number): Date {
   return new Date(d.getTime() + m * 60_000);
+}
+
+/**
+ * Count undone tasks left on the orchestrator's plan after the current run.
+ * Used to decide whether an auto-chain is worth scheduling.
+ */
+async function countUndoneTasks(orchestratorId: string): Promise<number> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("trip_orchestrators")
+    .select("memory")
+    .eq("id", orchestratorId)
+    .single();
+  const plan = (data?.memory as { plan?: { categories: Array<{ tasks: Array<{ done: boolean }> }> } } | null)?.plan;
+  if (!plan) return 0;
+  let n = 0;
+  for (const c of plan.categories) for (const t of c.tasks) if (!t.done) n++;
+  return n;
+}
+
+/**
+ * Schedule a follow-up orchestrator run via Next.js `after()`. Used to chain
+ * runs immediately after a plan generation so the freshly listed tasks
+ * start getting worked without waiting for the cron heartbeat. The chain
+ * budget lives on the orchestrator's `memory.autoChainsRemaining` and is
+ * decremented each chained run — when it hits zero, the runner falls back
+ * to the normal schedule.
+ */
+function scheduleAutoChain(orchestratorId: string): void {
+  try {
+    after(async () => {
+      try {
+        const db = createAdminClient();
+        const { data: fresh } = await db
+          .from("trip_orchestrators")
+          .select("id, trip_id, enabled, system_goal, tool_autonomy, schedule_minutes, memory, consecutive_failures")
+          .eq("id", orchestratorId)
+          .single();
+        if (!fresh || !fresh.enabled) return;
+        await runOrchestrator(
+          {
+            id: fresh.id as string,
+            trip_id: fresh.trip_id as string,
+            enabled: fresh.enabled as boolean,
+            system_goal: (fresh.system_goal as string | null) ?? null,
+            tool_autonomy: (fresh.tool_autonomy as ToolAutonomyMap | null) ?? null,
+            schedule_minutes: fresh.schedule_minutes as number,
+            memory: (fresh.memory as Record<string, unknown> | null) ?? null,
+            consecutive_failures: fresh.consecutive_failures as number,
+          },
+          "event",
+          "auto-chain",
+        );
+      } catch (err) {
+        captureError(err, { context: "orchestrator_auto_chain", orchestrator_id: orchestratorId });
+      }
+    });
+  } catch (err) {
+    // `after()` throws when called outside a request scope (e.g. in unit
+    // tests). The cron sweeper will still pick the run up via next_run_at,
+    // so this is non-fatal.
+    captureError(err, { context: "orchestrator_auto_chain_schedule", orchestrator_id: orchestratorId });
+  }
 }
 
 function countByStatus(calls: ToolCallRecord[]): Record<OrchestratorActionStatus, number> {

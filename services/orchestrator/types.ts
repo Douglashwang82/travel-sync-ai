@@ -84,7 +84,57 @@ export type ToolGrid =
   | "shared"
   | "trip"         // hero / metadata
   | "chat"
-  | "grids";       // custom-grid CRUD
+  | "grids"        // custom-grid CRUD
+  | "plan";        // structural trip plan (Orchestrator mode)
+
+// ─── plan (Orchestrator-mode plan tree) ──────────────────────────────────────
+// Stored on `trip_orchestrators.memory.plan`. The orchestrator owns this
+// structure; users can toggle task completion but the categories themselves
+// are LLM-generated and overwritten on each `plan.upsert`.
+
+export interface PlanTaskLink {
+  /**
+   * Which bento grid the linked entity lives in, or "external" for an
+   * outbound URL (booking page, restaurant site, Google Maps listing, etc.).
+   */
+  kind: "item" | "idea" | "packItem" | "expense" | "customGrid" | "trip" | "external";
+  /** Primary key of the linked row, when the kind refers to an internal entity. */
+  id?: string;
+  /** Outbound URL — required for `external`, optional context for other kinds (e.g. booking URL for an option). */
+  url?: string;
+  /** Optional short label shown next to the chip. */
+  label?: string;
+}
+
+export interface PlanTaskOutcome {
+  /** One-line description of what the orchestrator did. */
+  summary: string;
+  /** References to entities the orchestrator created/affected for this task. */
+  links: PlanTaskLink[];
+  /** ISO timestamp the outcome was recorded. */
+  completedAt: string;
+}
+
+export interface PlanTask {
+  id: string;
+  title: string;
+  done: boolean;
+  note?: string;
+  /** Recorded outcome from the orchestrator when it worked on this task. */
+  outcome?: PlanTaskOutcome;
+}
+
+export interface PlanCategory {
+  id: string;
+  title: string;
+  summary?: string;
+  tasks: PlanTask[];
+}
+
+export interface TripPlan {
+  generatedAt: string;
+  categories: PlanCategory[];
+}
 
 export interface ToolCallRecord {
   tool: string;

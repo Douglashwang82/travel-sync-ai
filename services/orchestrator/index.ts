@@ -3,14 +3,18 @@ import { createAdminClient } from "@/lib/db";
 import { captureError } from "@/lib/monitoring";
 import { runOrchestrator } from "./runner";
 import { getTool } from "./tools";
-import type { OrchestratorActionStatus, OrchestratorTrigger, ToolAutonomyMap } from "./types";
+import type { OrchestratorActionStatus, OrchestratorTrigger, ToolAutonomyMap, TripPlan } from "./types";
 import type { AgentAutonomy } from "@/services/agents/types";
 
 export { runOrchestrator } from "./runner";
 export { listTools, getTool, listCustomGridAgents } from "./tools";
 export type * from "./types";
 
-const DEFAULT_SCHEDULE_MINUTES = 360;
+// Heartbeat cadence. Tightened from 6h to 1h so the task-driven loop can
+// chew through plan tasks between visits. The DB-level default (in the
+// migration) still says 360 — that only matters for rows inserted bypassing
+// `ensureOrchestrator`, which currently nothing does.
+const DEFAULT_SCHEDULE_MINUTES = 60;
 
 interface OrchestratorRowFull {
   id: string;
@@ -149,6 +153,51 @@ export async function updateOrchestrator(
     .single();
   if (error || !data) throw new Error(`Failed to update orchestrator: ${error?.message}`);
   return data as unknown as OrchestratorRowFull;
+}
+
+// ─── plan: user-driven task toggle ──────────────────────────────────────────
+
+/**
+ * User-facing toggle for a plan task. Different from `plan.toggle_task` (the
+ * LLM tool) — this is the direct path used by the Orchestrator-mode UI when a
+ * member checks/unchecks a box. Does not create an orchestrator_action row.
+ */
+export async function setPlanTaskDone(
+  tripId: string,
+  categoryId: string,
+  taskId: string,
+  done: boolean,
+): Promise<{ ok: true; plan: TripPlan } | { ok: false; error: string }> {
+  const orch = await ensureOrchestrator(tripId);
+  const plan = (orch.memory as { plan?: TripPlan } | null)?.plan;
+  if (!plan) return { ok: false, error: "No plan to update" };
+
+  let touched = false;
+  const next: TripPlan = {
+    ...plan,
+    categories: plan.categories.map((c) =>
+      c.id !== categoryId
+        ? c
+        : {
+            ...c,
+            tasks: c.tasks.map((t) => {
+              if (t.id !== taskId) return t;
+              touched = true;
+              return { ...t, done };
+            }),
+          },
+    ),
+  };
+  if (!touched) return { ok: false, error: "Task not found" };
+
+  const db = createAdminClient();
+  const nextMemory = { ...(orch.memory ?? {}), plan: next };
+  const { error } = await db
+    .from("trip_orchestrators")
+    .update({ memory: nextMemory })
+    .eq("id", orch.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, plan: next };
 }
 
 // ─── action lane: confirm / dismiss / undo ──────────────────────────────────
