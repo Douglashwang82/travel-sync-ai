@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { after } from "next/server";
 import { GoogleGenAI, FunctionCallingConfigMode, type FunctionCall, type Content } from "@google/genai";
 import { createAdminClient } from "@/lib/db";
 import { captureError } from "@/lib/monitoring";
@@ -100,6 +101,24 @@ export async function runOrchestrator(
     const finishedAt = new Date();
     const summary = buildSummaryLine(calls, finalText);
 
+    // Auto-chain budget. When the LLM materially restructures the plan via
+    // `plan.upsert`, we want the orchestrator to immediately follow up and
+    // start working the freshly generated tasks instead of leaving them all
+    // undone until the next heartbeat. We bank a small number of chained
+    // runs in memory; each subsequent run consumes one until the budget is
+    // exhausted or no undone tasks remain.
+    const usedPlanUpsert = calls.some(
+      (c) => c.tool === "plan.upsert" && (c.status === "applied" || c.status === "auto_applied"),
+    );
+    const undoneTasksAfter = await countUndoneTasks(orchestrator.id);
+    const prevMemory = (orchestrator.memory ?? {}) as Record<string, unknown>;
+    const prevBudget = typeof prevMemory.autoChainsRemaining === "number" ? (prevMemory.autoChainsRemaining as number) : 0;
+    // Fresh plan → refill to 2 (so plan-gen + 2 follow-ups = 3 runs total).
+    // Otherwise drain whatever was banked.
+    const nextBudget = usedPlanUpsert && undoneTasksAfter > 0 ? 2 : Math.max(0, prevBudget - 1);
+    const shouldChain = nextBudget > 0 && undoneTasksAfter > 0;
+    const memoryPatch: Record<string, unknown> = { ...prevMemory, autoChainsRemaining: nextBudget };
+
     await db
       .from("orchestrator_runs")
       .update({
@@ -114,19 +133,29 @@ export async function runOrchestrator(
       })
       .eq("id", runId);
 
+    // When we're about to chain, set `next_run_at` to "now" so the cron
+    // sweeper also picks it up if `after()` somehow fails to execute. The
+    // memory patch carries the budget into the next run.
     await db
       .from("trip_orchestrators")
       .update({
         last_run_at: finishedAt.toISOString(),
-        next_run_at: addMinutes(finishedAt, orchestrator.schedule_minutes).toISOString(),
+        next_run_at: shouldChain
+          ? new Date().toISOString()
+          : addMinutes(finishedAt, orchestrator.schedule_minutes).toISOString(),
         last_status: "success",
         last_summary: summary,
         last_error: null,
         consecutive_failures: 0,
-        pending_reason: null,
-        pending_trigger: null,
+        memory: memoryPatch,
+        pending_reason: shouldChain ? `auto-chain after ${usedPlanUpsert ? "plan generation" : "task batch"} (${undoneTasksAfter} tasks left)` : null,
+        pending_trigger: shouldChain ? "event" : null,
       })
       .eq("id", orchestrator.id);
+
+    if (shouldChain) {
+      scheduleAutoChain(orchestrator.id);
+    }
 
     return {
       runId,
@@ -627,6 +656,69 @@ function toFunctionDeclaration(tool: ToolDefinition) {
 
 function addMinutes(d: Date, m: number): Date {
   return new Date(d.getTime() + m * 60_000);
+}
+
+/**
+ * Count undone tasks left on the orchestrator's plan after the current run.
+ * Used to decide whether an auto-chain is worth scheduling.
+ */
+async function countUndoneTasks(orchestratorId: string): Promise<number> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("trip_orchestrators")
+    .select("memory")
+    .eq("id", orchestratorId)
+    .single();
+  const plan = (data?.memory as { plan?: { categories: Array<{ tasks: Array<{ done: boolean }> }> } } | null)?.plan;
+  if (!plan) return 0;
+  let n = 0;
+  for (const c of plan.categories) for (const t of c.tasks) if (!t.done) n++;
+  return n;
+}
+
+/**
+ * Schedule a follow-up orchestrator run via Next.js `after()`. Used to chain
+ * runs immediately after a plan generation so the freshly listed tasks
+ * start getting worked without waiting for the cron heartbeat. The chain
+ * budget lives on the orchestrator's `memory.autoChainsRemaining` and is
+ * decremented each chained run — when it hits zero, the runner falls back
+ * to the normal schedule.
+ */
+function scheduleAutoChain(orchestratorId: string): void {
+  try {
+    after(async () => {
+      try {
+        const db = createAdminClient();
+        const { data: fresh } = await db
+          .from("trip_orchestrators")
+          .select("id, trip_id, enabled, system_goal, tool_autonomy, schedule_minutes, memory, consecutive_failures")
+          .eq("id", orchestratorId)
+          .single();
+        if (!fresh || !fresh.enabled) return;
+        await runOrchestrator(
+          {
+            id: fresh.id as string,
+            trip_id: fresh.trip_id as string,
+            enabled: fresh.enabled as boolean,
+            system_goal: (fresh.system_goal as string | null) ?? null,
+            tool_autonomy: (fresh.tool_autonomy as ToolAutonomyMap | null) ?? null,
+            schedule_minutes: fresh.schedule_minutes as number,
+            memory: (fresh.memory as Record<string, unknown> | null) ?? null,
+            consecutive_failures: fresh.consecutive_failures as number,
+          },
+          "event",
+          "auto-chain",
+        );
+      } catch (err) {
+        captureError(err, { context: "orchestrator_auto_chain", orchestrator_id: orchestratorId });
+      }
+    });
+  } catch (err) {
+    // `after()` throws when called outside a request scope (e.g. in unit
+    // tests). The cron sweeper will still pick the run up via next_run_at,
+    // so this is non-fatal.
+    captureError(err, { context: "orchestrator_auto_chain_schedule", orchestrator_id: orchestratorId });
+  }
 }
 
 function countByStatus(calls: ToolCallRecord[]): Record<OrchestratorActionStatus, number> {

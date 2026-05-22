@@ -16,6 +16,7 @@ interface OrchestratorState {
   lastStatus: string | null;
   lastSummary: string | null;
   lastError: string | null;
+  pendingReason: string | null;
 }
 
 interface ApiResponse {
@@ -97,7 +98,24 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
           body: JSON.stringify({ reason }),
           headers: { "Content-Type": "application/json" },
         });
+        // The runner may auto-chain follow-up runs to work freshly generated
+        // tasks. Poll briefly so those outcomes appear without a manual
+        // refresh. Stops as soon as no chain is left (pendingReason cleared)
+        // or after the cap.
         await load();
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 6_000));
+          try {
+            const res = await appFetchJson<ApiResponse>(
+              `/api/app/trips/${tripId}/orchestrator`,
+            );
+            setData(res);
+            const chaining = res.orchestrator.pendingReason?.startsWith("auto-chain") ?? false;
+            if (!chaining) break;
+          } catch {
+            // Transient — keep polling until the cap.
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Run failed");
       } finally {
@@ -298,10 +316,12 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
             {data.orchestrator.enabled ? "Active" : "Paused"}
           </span>
           <span className="truncate">
-            {data.orchestrator.lastSummary ??
-              (data.orchestrator.nextRunAt
-                ? `next run ${formatRelative(data.orchestrator.nextRunAt)}`
-                : "awaiting first run")}
+            {data.orchestrator.pendingReason?.startsWith("auto-chain")
+              ? `Working on tasks… (${data.orchestrator.pendingReason})`
+              : (data.orchestrator.lastSummary ??
+                (data.orchestrator.nextRunAt
+                  ? `next run ${formatRelative(data.orchestrator.nextRunAt)}`
+                  : "awaiting first run"))}
           </span>
         </div>
         {pendingCount > 0 && (
