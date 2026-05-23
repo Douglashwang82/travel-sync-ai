@@ -1,0 +1,36 @@
+# TravelSync AI
+
+> LINE bot that helps groups plan trips together. Free text in groups is parsed into structured trip items; slash commands handle ops; a per-trip orchestrator (Gemini tool-use loop) proposes/applies updates across the trip's bento grids.
+
+## Architecture invariants — read first
+
+- Single inbound endpoint: [app/api/line/webhook/route.ts](app/api/line/webhook/route.ts)
+- Single dispatcher: [services/event-processor.ts](services/event-processor.ts)
+- Single outbound chokepoint: [lib/line.ts](lib/line.ts) — never call `@line/bot-sdk` directly outside this file
+- Durable queue = `line_events` table; no external queue lib
+- Per-trip orchestrator: [services/orchestrator/runner.ts](services/orchestrator/runner.ts), tools in [services/orchestrator/tools.ts](services/orchestrator/tools.ts)
+
+## Docs
+
+- [CLAUDE.md](CLAUDE.md): operational guidance for AI agents working in this repo
+- [AGENTS.md](AGENTS.md): invariants summary
+- [docs/SPEC.md](docs/SPEC.md): product spec, source of truth for features
+- [docs/runbook.md](docs/runbook.md): ops procedures
+- [docs/PUBLISH_READINESS.md](docs/PUBLISH_READINESS.md): launch checklist
+- [docs/CHANGELOG.md](docs/CHANGELOG.md): chronological changes
+- [.agents/rules/](.agents/rules/): model-decision rules (Next.js 16 differences, Zod-first APIs, no-deprecated, etc.)
+
+## Conventions
+
+- Zod-first APIs: every route validates body + query with Zod at the top of the handler
+- Path alias: `@/*` → repo root
+- Tests in [__tests__/](__tests__/) (unit, integration, flows, api); evals in [__tests__/evals/](__tests__/evals/)
+- shadcn/ui + Tailwind only; no custom CSS files
+- LLM telemetry: every Gemini/Anthropic call is recorded in `llm_calls`; see [lib/llm.ts](lib/llm.ts)
+- Prompts live in [prompts/](prompts/), versioned with content hashes
+- Migrations in [supabase/migrations/](supabase/migrations/); regenerate `lib/database.types.ts` after each one
+
+## How to make changes
+
+- Slash commands for Claude Code in [.claude/commands/](.claude/commands/): `/new-tool`, `/new-agent`, `/new-migration`, `/replay-orchestrator-run`
+- Subagents in [.claude/agents/](.claude/agents/): `orchestrator-tool-writer`, `prompt-evaluator`, `migration-author`

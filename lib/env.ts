@@ -36,6 +36,10 @@ const SERVER_ENV_VARS: EnvVar[] = [
   { key: "LINE_LOGIN_CHANNEL_SECRET", required: false, description: "LINE Login (web) channel secret — required with LINE_LOGIN_CHANNEL_ID" },
   { key: "LINE_LOGIN_REDIRECT_URI", required: false, description: "Optional override for the LINE Login callback URL; defaults to {origin}/api/app/auth/line/callback" },
   { key: "CRON_SECRET", required: false, description: "Secret for Vercel cron route auth (required in production)" },
+  { key: "ANTHROPIC_API_KEY", required: false, description: "Anthropic API key — enables lib/llm.ts Anthropic routing" },
+  { key: "ANTHROPIC_MODEL", required: false, description: "Optional Anthropic model override; defaults to claude-sonnet-4-6" },
+  { key: "LLM_PROVIDER_DEFAULT", required: false, description: "'gemini' | 'anthropic' — default LLM routing for lib/llm.ts (overridable per task class via LLM_PROVIDER_<CLASS>)" },
+  { key: "MCP_SIGNING_SECRET", required: false, description: "HMAC secret for /api/mcp bearer-token auth" },
 ];
 
 let validated = false;

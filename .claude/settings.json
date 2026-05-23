@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=process.env.CLAUDE_HOOK_FILE||'';if(!/\\.(ts|tsx|js|jsx|mjs)$/.test(f))process.exit(0);const{spawnSync}=require('child_process');const r=spawnSync('npx',['eslint','--fix','--max-warnings=0',f],{stdio:'inherit',shell:true});process.exit(r.status||0);\""
+          }
+        ]
+      }
+    ],
+    "PreCommit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx vitest related --run $(git diff --cached --name-only --diff-filter=ACM | tr '\\n' ' ') 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm test)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run dev)",
+      "Bash(npx vitest *)",
+      "Bash(npx eslint *)",
+      "Bash(npx supabase *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)"
+    ]
+  }
+}

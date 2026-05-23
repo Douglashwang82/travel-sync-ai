@@ -1,5 +1,30 @@
 # Changelog
 
+## [Unreleased] — AI-Native Foundations
+
+### Added
+- `.claude/commands/{new-tool,new-agent,new-migration,replay-orchestrator-run}.md` — project slash commands for Claude Code
+- `.claude/agents/{orchestrator-tool-writer,prompt-evaluator,migration-author}.md` — project-scoped subagents
+- `.claude/settings.json` — hooks (post-edit ESLint, pre-commit related tests) + permission allowlist
+- `llms.txt` (repo root) + `public/llms.txt` — discoverability for AI agents and crawlers
+- `lib/prompts.ts` + `prompts/` directory — versioned, content-hashed prompt registry. Migrated orchestrator system prompt + new private-chat system prompt into the registry
+- `lib/llm.ts` — model-agnostic LLM client over Gemini + Anthropic, with per-task routing via `LLM_PROVIDER_<TASK_CLASS>` env vars
+- `lib/llm-telemetry.ts` + `lib/llm-pricing.ts` — every Gemini/Anthropic call is recorded in `llm_calls` with tokens, latency, estimated cost, prompt hash
+- Supabase migration `20260523000000_llm_calls.sql` — telemetry table for cost dashboards and replay
+- Supabase migration `20260523000001_trip_memory_embeddings.sql` — pgvector column on `trip_memories` + `match_trip_memories` RPC for cross-trip semantic recall
+- `services/memory/recall.ts` — embeds a free-text query and returns the top-K similar places across the user's groups
+- `services/voice/index.ts` — LINE audio fetch + Gemini transcription scaffold (event-processor wiring still TODO)
+- `app/api/mcp/route.ts` — MCP server exposing the orchestrator tool registry over JSON-RPC 2.0 with HMAC-signed bearer tokens
+- `app/api/app/chat/stream/route.ts` — SSE streaming endpoint for /app private chat (LINE stays unary)
+- `__tests__/evals/` — eval harness scaffold with structure-only + live (`RUN_LIVE_EVALS=1`) modes and LLM-as-judge
+- `scripts/replay-orchestrator-run.ts` — shadow-replay scaffold (depends on a future `shadowRunOrchestrator`)
+- `@anthropic-ai/sdk` dependency
+
+### Changed
+- `lib/gemini.ts` — `generateJson<T>(systemPrompt, userMessage, schema?)` now accepts an optional Zod schema and validates JSON at runtime; new `GeminiSchemaError` for validation failures. Backward-compatible — schema is optional
+- `services/orchestrator/runner.ts` — split system prompt into static (rules + playbook + tool registry → cacheable across runs) and dynamic (trip context → first user turn); every Gemini turn now emits an `llm_calls` row tagged with `task_class='orchestrator'`, `orchestrator_run_id`, and `cachedTokensIn` so the implicit-cache savings are measurable
+- `.gitignore` — share `.claude/{commands,agents,settings.json}` with the team; keep worktrees local
+
 ## [Unreleased] — Phase 6: Group Decision Authoring
 
 ### Added

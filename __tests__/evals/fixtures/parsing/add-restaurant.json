@@ -1,0 +1,16 @@
+{
+  "id": "parsing.add-restaurant",
+  "task_class": "parsing",
+  "input": {
+    "text": "let's eat at Tatami in Kyoto on day 2",
+    "trip_context": {
+      "destination": "Kyoto",
+      "start_date": "2026-06-10",
+      "end_date": "2026-06-15"
+    }
+  },
+  "expect": {
+    "must_include": ["Tatami"],
+    "judge_rubric": "Output should propose a restaurant board item with title containing 'Tatami', not invent a price or address."
+  }
+}

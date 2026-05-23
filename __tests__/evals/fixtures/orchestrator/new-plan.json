@@ -1,0 +1,19 @@
+{
+  "id": "orchestrator.new-plan",
+  "task_class": "orchestrator",
+  "input": {
+    "trip": {
+      "destination": "Lisbon",
+      "start_date": "2026-09-01",
+      "end_date": "2026-09-07",
+      "status": "draft"
+    },
+    "memory": {},
+    "items": [],
+    "ideas": []
+  },
+  "expect": {
+    "must_call_tool": "plan.upsert",
+    "judge_rubric": "First action on a brand-new trip with no plan must be plan.upsert with 4–8 categories and 2–6 tasks each. Categories should at minimum cover Stay, Activities, and either Transport or Food."
+  }
+}

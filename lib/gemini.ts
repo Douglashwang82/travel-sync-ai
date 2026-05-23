@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import type { ZodType } from "zod";
 
 let _client: GoogleGenAI | null = null;
 
@@ -85,14 +86,29 @@ export class GeminiUnavailableError extends Error {
 
 // ─── API wrappers ─────────────────────────────────────────────────────────────
 
+export class GeminiSchemaError extends Error {
+  constructor(message: string, public readonly raw: string) {
+    super(message);
+    this.name = "GeminiSchemaError";
+  }
+}
+
 /**
  * Call Gemini with a system prompt and user message, expecting a JSON response.
  * Returns the parsed object or throws on failure.
+ *
+ * When a Zod schema is provided as the third argument, the parsed JSON is
+ * validated at runtime and the typed result is returned. When omitted, the
+ * raw `JSON.parse` result is returned as `T` (cast only — no validation).
+ * Prefer passing a schema; the no-schema form is kept for backward compat.
+ *
  * Throws GeminiUnavailableError when the circuit breaker is open.
+ * Throws GeminiSchemaError when the response fails schema validation.
  */
 export async function generateJson<T>(
   systemPrompt: string,
-  userMessage: string
+  userMessage: string,
+  schema?: ZodType<T>
 ): Promise<T> {
   if (!isCircuitAllowing()) {
     throw new GeminiUnavailableError(
@@ -117,11 +133,20 @@ export async function generateJson<T>(
     console.log(`[gemini] raw response length: ${text?.length ?? 0}`);
     if (!text) throw new Error("Gemini returned empty response");
 
-    const parsed = JSON.parse(text) as T;
+    const raw = JSON.parse(text);
     recordSuccess();
-    return parsed;
+    if (!schema) return raw as T;
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) {
+      throw new GeminiSchemaError(
+        `Gemini JSON failed schema validation: ${parsed.error.message}`,
+        text,
+      );
+    }
+    return parsed.data;
   } catch (err) {
     if (err instanceof GeminiUnavailableError) throw err;
+    if (err instanceof GeminiSchemaError) throw err;
     recordFailure();
     console.error(`[gemini] API call failed: ${err instanceof Error ? err.message : String(err)}`);
     throw err;

@@ -1,0 +1,17 @@
+# TravelSync AI
+
+> Plan trips together over LINE. A group chat bot turns free-form messages into a shared, structured trip plan: itinerary, decisions, votes, expenses, packing — with a per-trip AI orchestrator that drafts options and proposes updates the group reviews in one tap.
+
+## Product
+
+- LINE bot for group trip planning (Mandarin + English UI)
+- Web companion at /app for richer views: itinerary, decisions, expenses, ops, readiness, profile
+
+## For LLMs and agents
+
+- This site does not expose a public API. The conversational surface is the LINE bot itself.
+- Architecture and developer docs live in the source repository, not on this site.
+
+## Contact
+
+For partnerships or integrations, reach out via the contact link on the marketing site.
