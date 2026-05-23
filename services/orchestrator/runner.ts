@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/db";
 import { captureError } from "@/lib/monitoring";
 import { GeminiUnavailableError, getModel } from "@/lib/gemini";
 import type { AgentAutonomy } from "@/services/agents/types";
-import { listTools, getTool, listCustomGridAgents } from "./tools";
+import { listTools, getTool, listCustomGridAgents, listToolNames } from "./tools";
 import type {
   OrchestratorActionStatus,
   OrchestratorRunSummary,
@@ -502,7 +502,13 @@ function buildSystemPrompt(
     .map((a) => `  - ${a.type}: ${a.label} — ${a.description}`)
     .join("\n");
   const memoryObj = orch.memory ?? {};
-  type PromptTask = { id: string; title: string; done: boolean; outcomeSummary?: string };
+  type PromptTask = {
+    id: string;
+    title: string;
+    done: boolean;
+    outcomeSummary?: string;
+    tools?: string[];
+  };
   type PromptPlan = {
     categories: Array<{ id: string; title: string; summary?: string; tasks: PromptTask[] }>;
   };
@@ -518,6 +524,7 @@ function buildSystemPrompt(
             title: string;
             done: boolean;
             outcome?: { summary: string };
+            tools?: string[];
           }>;
         }>;
       };
@@ -536,6 +543,7 @@ function buildSystemPrompt(
           title: t.title,
           done: t.done,
           outcomeSummary: (t as unknown as { outcome?: { summary: string } }).outcome?.summary,
+          tools: t.tools,
         };
         if (t.done) doneTasks.push({ categoryTitle: c.title, task: promptTask });
         else undoneTasks.push({ categoryId: c.id, categoryTitle: c.title, task: promptTask });
@@ -546,7 +554,12 @@ function buildSystemPrompt(
     ? "  (all done — nothing to work on)"
     : undoneTasks
         .slice(0, 25)
-        .map((u) => `  - [${u.categoryId}/${u.task.id}] ${u.categoryTitle} · ${u.task.title}`)
+        .map((u) => {
+          const bound = u.task.tools && u.task.tools.length > 0
+            ? ` — tools: ${u.task.tools.join(", ")}`
+            : " — tools: (unbounded — bind on next plan.upsert)";
+          return `  - [${u.categoryId}/${u.task.id}] ${u.categoryTitle} · ${u.task.title}${bound}`;
+        })
         .join("\n");
   const doneList = doneTasks.length === 0
     ? "  (none yet)"
@@ -590,7 +603,8 @@ function buildSystemPrompt(
     "  - Never call destructive tools (items.delete, items.confirm) unless you are certain — these are propose-only by default.",
     "  - For each tool call, the system enforces a per-tool autonomy dial. propose_only writes a proposal a human will Confirm/Dismiss; auto_apply* takes effect immediately. Don't fight the dial — call the tool either way.",
     "  - Don't repeat work that's already in pending proposals; build on them instead.",
-    "  - Plan maintenance via `plan.upsert`: if no plan exists, generate one now (4–8 categories essential for THIS trip — e.g. Stay, Transport, Activities, Food, Budget, Pack, Docs — each with 2–6 concrete user-completable tasks). If a plan exists, only call `plan.upsert` when the trip's structure has materially changed; task done state and outcomes are preserved across upserts when titles match.",
+    "  - Plan maintenance via `plan.upsert`: if no plan exists, generate one now (4–8 categories essential for THIS trip — e.g. Stay, Transport, Activities, Food, Budget, Pack, Docs — each with 2–6 concrete user-completable tasks). If a plan exists, only call `plan.upsert` when the trip's structure has materially changed; task done state, tool bindings, and outcomes are preserved across upserts when titles match.",
+    "  - Tool binding: every task you create via `plan.upsert` MUST include `tools: string[]` — the registry tool names you'll use to complete it (e.g. ['places.search','items.create','items.add_option']). Pick only from the registered tools listed below; unknown names are dropped. When you work an undone task this run, stay within its bound tools — those are the orchestrator's permitted surface area for that task. `plan.update_task` is always allowed in addition.",
     "  - When you're done, output a short final summary (≤2 sentences) of what you did and why.",
     "",
     "Task playbook — match a task to the right tool sequence:",
@@ -608,6 +622,9 @@ function buildSystemPrompt(
     "",
     "Tool autonomy in effect:",
     dial,
+    "",
+    "Registered tools (pick from these names when setting `tools` on a plan task):",
+    `  ${listToolNames().join(", ")}`,
     "",
     "Custom-grid agents available for grids.add_agent:",
     agents,

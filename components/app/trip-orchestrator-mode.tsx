@@ -279,6 +279,19 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
                         {t.note && (
                           <div className="mt-0.5 text-[10px] text-[var(--text-muted)]">{t.note}</div>
                         )}
+                        {t.tools && t.tools.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {t.tools.map((name) => (
+                              <span
+                                key={name}
+                                title={`Orchestrator may call ${name} to advance this task`}
+                                className="inline-flex items-center rounded-full border border-[var(--border-hairline)] bg-[var(--surface-base)] px-1.5 py-0.5 font-mono text-[9px] leading-none text-[var(--text-muted)]"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {t.outcome && (
                           <div className="mt-1 rounded-md border border-[var(--border-hairline)] bg-[var(--surface-base)] px-2 py-1">
                             <div className="text-[10px] leading-snug text-[var(--text-secondary)]">

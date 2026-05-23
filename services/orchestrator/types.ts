@@ -120,6 +120,13 @@ export interface PlanTask {
   title: string;
   done: boolean;
   note?: string;
+  /**
+   * Registry tool names the orchestrator is bounded to when working this task
+   * (e.g. ["places.search", "items.create", "items.add_option"]). Set by the
+   * LLM via `plan.upsert`; validated against the tool registry — unknown names
+   * are filtered out. Empty array = no tools available (informational task).
+   */
+  tools?: string[];
   /** Recorded outcome from the orchestrator when it worked on this task. */
   outcome?: PlanTaskOutcome;
 }

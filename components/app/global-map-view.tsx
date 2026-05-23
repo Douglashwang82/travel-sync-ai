@@ -230,7 +230,7 @@ export function GlobalMapView() {
   const counts = countsFor(data.places);
 
   return (
-    <div className="-mx-4 -mt-2 flex h-[calc(100vh-7rem)] flex-col gap-2 px-4">
+    <div className="flex h-full flex-col gap-2 p-2">
       <Header
         totalPlaces={data.places.length}
         shownPlaces={filteredPlaces.length}

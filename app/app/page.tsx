@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/db";
 import { getIntlLocale, parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
 import { Button } from "@/components/ui/button";
+import { TripCardDeleteButton } from "@/components/app/trip-card-delete-button";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ interface TripRow {
   status: string;
   itemCount: number;
   groupName: string | null;
+  role: "organizer" | "member";
 }
 
 const COPY: Record<
@@ -38,6 +40,8 @@ const COPY: Record<
     open: string;
     items: (count: number) => string;
     status: Record<string, string>;
+    deleteLabel: string;
+    deleteConfirm: (label: string) => string;
   }
 > = {
   en: {
@@ -63,6 +67,9 @@ const COPY: Record<
       completed: "completed",
       cancelled: "cancelled",
     },
+    deleteLabel: "Delete trip",
+    deleteConfirm: (label) =>
+      `Delete "${label}"? This permanently removes the trip and all its items, votes, documents, and packing lists.`,
   },
   "zh-TW": {
     heading: "你的旅程",
@@ -87,6 +94,9 @@ const COPY: Record<
       completed: "已完成",
       cancelled: "已取消",
     },
+    deleteLabel: "刪除旅程",
+    deleteConfirm: (label) =>
+      `確定要刪除「${label}」嗎？此動作無法復原，所有行程項目、投票、文件、打包清單等將一併刪除。`,
   },
 };
 
@@ -104,18 +114,31 @@ async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
   // 2) Trips reachable via LINE group_members.
   const { data: memberships } = await db
     .from("group_members")
-    .select("group_id, line_groups!inner(id, name, status)")
+    .select("group_id, role, line_groups!inner(id, name, status)")
     .eq("line_user_id", lineUserId)
     .is("left_at", null);
 
   const groups = (memberships ?? [])
     .map((m) => {
       const g = Array.isArray(m.line_groups) ? m.line_groups[0] : m.line_groups;
-      return g ? { id: g.id as string, name: (g.name as string | null) ?? null, status: g.status as string } : null;
+      return g
+        ? {
+            id: g.id as string,
+            name: (g.name as string | null) ?? null,
+            status: g.status as string,
+            role: ((m.role as string) === "organizer" ? "organizer" : "member") as
+              | "organizer"
+              | "member",
+          }
+        : null;
     })
-    .filter((g): g is { id: string; name: string | null; status: string } => g !== null && g.status !== "removed");
+    .filter(
+      (g): g is { id: string; name: string | null; status: string; role: "organizer" | "member" } =>
+        g !== null && g.status !== "removed"
+    );
 
   const groupNameById = new Map(groups.map((g) => [g.id, g.name]));
+  const groupRoleById = new Map(groups.map((g) => [g.id, g.role]));
   const tripsById = new Map<string, TripRow>();
 
   if (groups.length > 0) {
@@ -138,6 +161,7 @@ async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
         status: t.status as string,
         itemCount: 0,
         groupName: gid ? (groupNameById.get(gid) ?? null) : null,
+        role: (gid ? groupRoleById.get(gid) : null) ?? "member",
       });
     }
   }
@@ -147,7 +171,7 @@ async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
     const { data: directRows } = await db
       .from("trip_members")
       .select(
-        "trips!inner(id, group_id, destination_name, start_date, end_date, status, created_at, line_groups(id, name))"
+        "role, trips!inner(id, group_id, destination_name, start_date, end_date, status, created_at, line_groups(id, name))"
       )
       .eq("app_user_id", appUserId)
       .is("left_at", null);
@@ -156,7 +180,16 @@ async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
       const t = Array.isArray(row.trips) ? row.trips[0] : row.trips;
       if (!t) continue;
       const id = t.id as string;
-      if (tripsById.has(id)) continue;
+      const tripMemberRole: "organizer" | "member" =
+        (row.role as string) === "organizer" ? "organizer" : "member";
+      if (tripsById.has(id)) {
+        // Upgrade role to organizer if trip_members says so but group membership didn't.
+        const existing = tripsById.get(id)!;
+        if (existing.role !== "organizer" && tripMemberRole === "organizer") {
+          existing.role = "organizer";
+        }
+        continue;
+      }
       const lg = Array.isArray(t.line_groups) ? t.line_groups[0] : t.line_groups;
       tripsById.set(id, {
         id,
@@ -167,6 +200,7 @@ async function loadTripsForUser(lineUserId: string): Promise<TripRow[]> {
         status: t.status as string,
         itemCount: 0,
         groupName: (lg?.name as string | null) ?? null,
+        role: tripMemberRole,
       });
     }
   }
@@ -315,6 +349,8 @@ function TripCard({ trip, locale, dim }: { trip: TripRow; locale: AppLocale; dim
       ? `${formatDate(trip.start_date, locale)} → ${formatDate(trip.end_date, locale)}`
       : copy.datesTbd;
 
+  const tripLabel = trip.destination_name?.trim() || copy.untitledTrip;
+
   return (
     <Link
       href={`/app/trips/${trip.id}`}
@@ -329,9 +365,19 @@ function TripCard({ trip, locale, dim }: { trip: TripRow; locale: AppLocale; dim
             {trip.groupName ?? copy.lineGroup}
           </p>
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusClass}`}>
-          {copy.status[trip.status] ?? trip.status}
-        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusClass}`}>
+            {copy.status[trip.status] ?? trip.status}
+          </span>
+          {trip.role === "organizer" && (
+            <TripCardDeleteButton
+              tripId={trip.id}
+              label={copy.deleteLabel}
+              confirmMessage={copy.deleteConfirm(tripLabel)}
+              tripLabel={tripLabel}
+            />
+          )}
+        </div>
       </div>
       <p className="text-xs text-[var(--muted-foreground)]">{dateLabel}</p>
       <div className="mt-auto flex items-center justify-between text-xs text-[var(--muted-foreground)]">

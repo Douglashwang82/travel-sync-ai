@@ -697,6 +697,13 @@ const PlanTaskSchema = z.object({
   title: z.string().min(1).max(200),
   done: z.boolean().optional(),
   note: z.string().max(500).optional(),
+  tools: z
+    .array(z.string().min(1).max(80))
+    .min(1)
+    .max(8)
+    .describe(
+      "Registry tool names the orchestrator may use to complete this task (e.g. ['places.search','items.create','items.add_option']). Pick only from the registered tools listed in the system prompt; unknowns are dropped.",
+    ),
 });
 
 const PlanCategorySchema = z.object({
@@ -731,11 +738,18 @@ const planUpsert = defineTool({
     if (readErr || !orch) throw new Error(readErr?.message ?? "orchestrator missing");
 
     const prevPlan = (orch.memory as { plan?: TripPlan } | null)?.plan ?? null;
-    const prevTaskState = new Map<string, { done: boolean; outcome?: PlanTaskOutcome }>();
+    const prevTaskState = new Map<
+      string,
+      { done: boolean; outcome?: PlanTaskOutcome; tools?: string[] }
+    >();
     if (prevPlan) {
       for (const c of prevPlan.categories) {
         for (const t of c.tasks) {
-          prevTaskState.set(`${c.title}::${t.title}`, { done: t.done, outcome: t.outcome });
+          prevTaskState.set(`${c.title}::${t.title}`, {
+            done: t.done,
+            outcome: t.outcome,
+            tools: t.tools,
+          });
         }
       }
     }
@@ -746,11 +760,13 @@ const planUpsert = defineTool({
       summary: c.summary,
       tasks: c.tasks.map((t, ti): PlanTask => {
         const inherited = prevTaskState.get(`${c.title}::${t.title}`);
+        const bounded = sanitizeToolNames(t.tools);
         return {
           id: t.id ?? `task-${ci}-${ti}-${slugify(t.title)}`,
           title: t.title,
           done: t.done ?? inherited?.done ?? false,
           note: t.note,
+          tools: bounded.length > 0 ? bounded : inherited?.tools,
           outcome: inherited?.outcome,
         };
       }),
@@ -901,6 +917,29 @@ export function listTools(): ToolDefinition[] {
 
 export function getTool(name: string): ToolDefinition | null {
   return TOOL_MAP.get(name) ?? null;
+}
+
+/** Just the registered tool names — used to surface the available surface
+ *  area to the LLM when it generates per-task tool bindings. */
+export function listToolNames(): string[] {
+  return TOOLS.map((t) => t.name);
+}
+
+/** Filter an LLM-supplied tool list down to names that actually exist in the
+ *  registry. Order-preserving and de-duplicated. Returns [] when nothing is
+ *  recognized so callers can fall back to inherited bindings. */
+export function sanitizeToolNames(input: string[] | undefined): string[] {
+  if (!input || input.length === 0) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of input) {
+    const name = String(raw).trim();
+    if (!name || seen.has(name)) continue;
+    if (!TOOL_MAP.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
 }
 
 /** List the available custom-grid agents — used in the system prompt so the LLM

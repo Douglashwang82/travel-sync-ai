@@ -16,6 +16,7 @@ export function AppShell({
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const isTripWorkspace = pathname?.startsWith("/app/trips/");
+  const isFullBleed = pathname === "/app/map";
 
   return (
     <div
@@ -39,8 +40,13 @@ export function AppShell({
         <main
           id="app-main"
           className={cn(
-            "mx-auto w-full px-4 py-6 sm:px-6 sm:py-8",
-            isTripWorkspace ? "md:max-w-none lg:px-8 2xl:px-10" : "max-w-6xl"
+            "w-full",
+            isFullBleed
+              ? "h-[calc(100dvh-3rem)] max-w-none p-0 lg:h-screen"
+              : cn(
+                  "mx-auto px-4 py-6 sm:px-6 sm:py-8",
+                  isTripWorkspace ? "md:max-w-none lg:px-8 2xl:px-10" : "max-w-6xl"
+                )
           )}
         >
           {children}
