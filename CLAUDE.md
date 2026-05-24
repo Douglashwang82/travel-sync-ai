@@ -47,6 +47,7 @@ This is a LINE bot whose entire async pipeline funnels through three chokepoints
 - `lib/db.ts` — Supabase clients. Server code uses `createAdminClient()` (service role). Never import the service-role key directly.
 - `lib/gemini.ts` — sole Gemini wrapper (circuit-breaker protected); model defaults to `gemini-2.5-flash`, overridable via `GEMINI_MODEL`.
 - `supabase/migrations/` — timestamped SQL migrations; apply via `npx supabase db push`. `lib/database.types.ts` is generated from these.
+- `app/app/docs/`, `lib/docs/`, `components/app/docs-toc.tsx` — in-app project documentation surface at `/app/docs` (API reference, DB schema, user guide, SAD). See "Documentation surface" below.
 - `__tests__/{unit,integration,flows,api,setup}` — Vitest suites. `__tests__/setup/vitest.setup.ts` runs first.
 - `docs/SPEC.md`, `docs/runbook.md`, `docs/PUBLISH_READINESS.md`, `docs/CHANGELOG.md` — source-of-truth product spec, ops procedures, launch checklist, and changelog (update on feature completion).
 
@@ -61,6 +62,24 @@ These live in `.agents/rules/`; the important ones to internalize:
 - **No deprecated packages.** Prefer latest stable Supabase v2 patterns; do not introduce v1 env-var conventions.
 - **Never delete existing tests.** If a change breaks a test, update the test or revert the change.
 - **MVP discipline:** Boring tech over experimental. If a feature would take >4h, propose a manual workaround or SaaS shortcut instead.
+
+## Documentation surface
+
+The `/app/docs` page is the canonical project doc. **Every code change that touches user-visible behavior, the architecture, an HTTP route, or the database must keep it in sync.** Some of that is automatic; some requires editing `lib/docs/copy.ts`. Know which is which before assuming the docs are still correct.
+
+**Auto-generated (no manual update needed):**
+
+- **API reference** — `lib/docs/api-parser.ts` walks `app/api/**/route.ts` at request time. New routes appear automatically. To give an endpoint a description, write a `/** ... */` JSDoc immediately above the exported `GET` / `POST` / etc. handler — the parser picks up the first one.
+- **Database schema** — `lib/docs/schema-parser.ts` parses `supabase/migrations/*.sql` (`CREATE TABLE` + later `ALTER TABLE ADD COLUMN`). Tables and columns appear automatically as soon as the migration file lands.
+
+**Manual update required (edit `lib/docs/copy.ts`, both `EN` and `ZH_TW`):**
+
+- **User guide** (`copy.guide.sections`) — update whenever user-visible behavior changes: new/removed slash command, new web page or tab, changed flow, new permission, new privacy-affecting action.
+- **SAD** (`copy.sad.sections`) — update whenever architecture changes: new service module under `services/`, new chokepoint, new pipeline, removed feature surface, new cron job category, changes to the inbound/dispatcher/outbound invariants.
+- **API grouping** — if a new top-level `app/api/<bucket>/...` directory appears, add a corresponding group in `deriveGroup()` inside `lib/docs/api-parser.ts` so endpoints don't fall into "Other".
+- **Sidebar nav** — only when adding a new top-level docs surface; the existing `/app/docs` entry already covers all four sections.
+
+**Discipline:** Update `lib/docs/copy.ts` in the same commit as the code change, not in a follow-up. If a PR adds a feature, adds a route, or removes a feature, the docs edit is part of that PR. Bilingual is non-negotiable — `EN` and `ZH_TW` stay in lockstep.
 
 ## Environment
 
