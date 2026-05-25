@@ -3,6 +3,7 @@ import { replyText } from "@/lib/line";
 import { generateConversation, GeminiUnavailableError } from "@/lib/gemini";
 import type { ConversationMessage } from "@/lib/gemini";
 import { BOT_COPY, BOT_LANGUAGE_RULE } from "@/lib/bot-copy";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { detectJapanSkiDestination } from "@/lib/ski-destination";
 
 const MAX_HISTORY = 20;
@@ -96,7 +97,8 @@ export async function handleDirectMessage(
     { line_user_id: lineUserId, group_id: dbGroupId, role: "agent", content: agentReply },
   ]);
 
-  await replyText(replyToken, agentReply);
+  const tripUrl = trip?.id ? buildTripUrl(trip.id) : null;
+  await replyText(replyToken, appendTripLinkText(agentReply, tripUrl));
 }
 
 function buildSystemPrompt(

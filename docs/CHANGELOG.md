@@ -28,6 +28,8 @@
 ## [Unreleased] — AI-Native Foundations
 
 ### Added
+- `lib/trip-link.ts` — shared helpers (`buildTripUrl`, `getTripUrlForGroup`, `getTripUrlForItem`, `appendTripLinkText`, `withFlexTripLink`) for surfacing the web-app trip URL in bot responses. Replaces the inline `withLink` logic in `bot/router.ts` and is now used across event-processor postbacks, parsing acks, private chat, decisions (start/winner/booking prompt), notifications agent-ack, orchestrator `chat.notify_group` tool, daily briefing, and the stale-reminder / vote-deadline / readiness / daily-digest crons — so every trip-context bot message links back to the trip board (or the relevant subpage)
+- `__tests__/unit/trip-link.test.ts` — 13 unit tests covering URL construction, group/item resolution, text append, Flex bubble footer, carousel no-op, and null-URL handling
 - `.claude/commands/{new-tool,new-agent,new-migration,replay-orchestrator-run}.md` — project slash commands for Claude Code
 - `.claude/agents/{orchestrator-tool-writer,prompt-evaluator,migration-author}.md` — project-scoped subagents
 - `.claude/settings.json` — hooks (post-edit ESLint, pre-commit related tests) + permission allowlist

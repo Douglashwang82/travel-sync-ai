@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/db";
 import { closeVote } from "@/services/vote";
 import { announceWinner } from "@/services/decisions";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { captureError } from "@/lib/monitoring";
 import { logger } from "@/lib/logger";
 
@@ -104,7 +105,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         if (lineGroupId) {
           await pushText(
             lineGroupId,
-            `⚠️ The vote for "${item.title}" is still tied after ${MAX_TIE_EXTENSIONS} extensions.\n\nThe item has been moved back to the To-Do board. The organizer needs to make a final call.`
+            appendTripLinkText(
+              `⚠️ The vote for "${item.title}" is still tied after ${MAX_TIE_EXTENSIONS} extensions.\n\nThe item has been moved back to the To-Do board. The organizer needs to make a final call.`,
+              buildTripUrl(item.trip_id)
+            )
           );
         }
       } else {
@@ -124,7 +128,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         if (lineGroupId) {
           await pushText(
             lineGroupId,
-            `🤝 The vote for "${item.title}" is tied!\n\nVoting has been extended by ${TIE_EXTENSION_HOURS} hours (extension ${item.tie_extension_count + 1}/${MAX_TIE_EXTENSIONS}).`
+            appendTripLinkText(
+              `🤝 The vote for "${item.title}" is tied!\n\nVoting has been extended by ${TIE_EXTENSION_HOURS} hours (extension ${item.tie_extension_count + 1}/${MAX_TIE_EXTENSIONS}).`,
+              buildTripUrl(item.trip_id, "/votes")
+            )
           );
         }
       }
