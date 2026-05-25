@@ -1,0 +1,77 @@
+{
+  "region": "Hakuba",
+  "activities": [
+    {
+      "id": "mimizuku-no-yu",
+      "name": "Mimizuku no Yu",
+      "type": "onsen",
+      "village": "Happoguchi",
+      "address": "5480-1 Happoguchi, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.6953,
+      "lng": 137.8470,
+      "indicative_price_jpy": { "adult_entry": 800, "child_entry": 500 },
+      "website": "https://hakuba-happo-onsen.jp/english/dayuse/",
+      "notes": "Public bathhouse on the road from JR Hakuba Station to Happo with valley views of the Hakuba Sanzan. 10:00–21:00; tattoos generally accepted."
+    },
+    {
+      "id": "tenjin-no-yu",
+      "name": "Tenjin no Yu (Hakuba Himekawa Onsen)",
+      "type": "onsen",
+      "village": "Hakuba village",
+      "address": "21582 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301 (inside Hakuba Highland Hotel)",
+      "lat": 36.6750,
+      "lng": 137.8730,
+      "indicative_price_jpy": { "adult_entry": 500 },
+      "website": "https://hakuba-highland.net/onsen/",
+      "notes": "Day-use onsen attached to Hakuba Highland Hotel, with arguably the best Alps views from any tub in the valley. Open 09:00–22:00."
+    },
+    {
+      "id": "obinata-no-yu",
+      "name": "Hakuba Happo Onsen Obinata-no-Yu",
+      "type": "onsen",
+      "village": "Happo",
+      "address": "5701 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7000,
+      "lng": 137.8330,
+      "indicative_price_jpy": { "adult_entry": 600 },
+      "website": "https://hakuba-happo-onsen.jp/english/",
+      "notes": "Walk-in public bath in the heart of Happo Village with a small rotenburo. Convenient stop after a day on Happo-One."
+    },
+    {
+      "id": "hakuba-mountain-harbor",
+      "name": "Hakuba Mountain Harbor",
+      "type": "sightseeing",
+      "village": "Iwatake",
+      "address": "12056 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301 (top of Iwatake Gondola)",
+      "lat": 36.7287,
+      "lng": 137.8482,
+      "indicative_price_jpy": { "gondola_return_adult": 2200 },
+      "website": "https://hakuba-mountain-harbor.jp/",
+      "notes": "Cantilevered viewing deck at the top of the Iwatake Gondola with a Hokkaido-based bakery (City Bakery) on site. Open both summer and winter."
+    },
+    {
+      "id": "evergreen-snowshoe-tour",
+      "name": "Evergreen Outdoor Center — Snowshoe Tour",
+      "type": "guided_outdoor",
+      "village": "Wadano",
+      "address": "4377 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7065,
+      "lng": 137.8338,
+      "indicative_price_jpy": { "half_day_adult": 9000, "full_day_adult": 14000 },
+      "website": "https://www.evergreen-hakuba.com/",
+      "notes": "English-speaking outdoor outfitter offering snowshoe tours, backcountry guides and avalanche courses. Excellent non-ski option for mixed groups."
+    },
+    {
+      "id": "jigatake-snowman-station",
+      "name": "Hakuba Goryu Escal Plaza & Snowman Park",
+      "type": "snow_activity",
+      "village": "Goryu",
+      "address": "22184-10 Kamishiro, Hakuba-mura, Kitaazumi-gun, Nagano 399-9211",
+      "lat": 36.6529,
+      "lng": 137.8633,
+      "indicative_price_jpy": { "park_day_adult": 1800 },
+      "website": "https://www.hakubaescal.com/",
+      "notes": "Snow play park and tubing area at the Goryu base with a separate non-skier entry. Good for families with small children."
+    }
+  ]
+}

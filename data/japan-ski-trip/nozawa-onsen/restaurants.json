@@ -1,0 +1,89 @@
+{
+  "region": "Nozawa Onsen",
+  "price_band_legend": {
+    "$": "under 2,500 JPY / person",
+    "$$": "2,500 – 6,000 JPY / person",
+    "$$$": "6,000 – 15,000 JPY / person",
+    "$$$$": "15,000+ JPY / person"
+  },
+  "restaurants": [
+    {
+      "id": "stay-restaurant",
+      "name": "Stay Restaurant Nozawa",
+      "cuisine": "modern_japanese",
+      "price_band": "$$$",
+      "village": "Nozawa Onsen village",
+      "address": "8714-3 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9235,
+      "lng": 138.4412,
+      "website": "https://www.stay-nozawa.com/",
+      "reservation_required": true,
+      "notes": "Set menu of Shinshu produce — Nozawa-na pickles, mountain mushrooms, Shinshu beef — in a small dining room. Book a week ahead in peak season."
+    },
+    {
+      "id": "foodies-cafe-bar",
+      "name": "Foodies Cafe Bar",
+      "cuisine": "fusion_western",
+      "price_band": "$$",
+      "village": "Nozawa Onsen village",
+      "address": "9525 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9263,
+      "lng": 138.4390,
+      "website": null,
+      "reservation_required": false,
+      "notes": "All-day cafe and bar near the Hikage base. Western breakfasts, burgers, craft beer; busy après-ski spot."
+    },
+    {
+      "id": "soba-mantenboshi",
+      "name": "Mantenboshi Soba",
+      "cuisine": "soba",
+      "price_band": "$$",
+      "village": "Nozawa Onsen village",
+      "address": "9367 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9226,
+      "lng": 138.4428,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Hand-cut buckwheat soba in a tiny shop near Ogama. Lunch only; expect queues in peak season."
+    },
+    {
+      "id": "libushi-craft-beer",
+      "name": "Libushi",
+      "cuisine": "craft_beer_izakaya",
+      "price_band": "$$",
+      "village": "Nozawa Onsen village",
+      "address": "9347 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9228,
+      "lng": 138.4424,
+      "website": "https://libushi.com/",
+      "reservation_required": false,
+      "notes": "Nozawa's own microbrewery and taproom. Snowy IPA on tap; small bites menu. Walk-in only."
+    },
+    {
+      "id": "tora-zushi",
+      "name": "Tora Zushi",
+      "cuisine": "sushi",
+      "price_band": "$$",
+      "village": "Nozawa Onsen village",
+      "address": "9347-2 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9237,
+      "lng": 138.4418,
+      "website": null,
+      "reservation_required": true,
+      "notes": "Local sushi counter with fresh-from-Niigata neta. Reservations strongly recommended; closes early."
+    },
+    {
+      "id": "hakugin-izakaya",
+      "name": "Hakugin",
+      "cuisine": "izakaya",
+      "price_band": "$$",
+      "village": "Nozawa Onsen village",
+      "address": "9486 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9259,
+      "lng": 138.4392,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Classic Japanese izakaya with charcoal-grilled yakitori, motsu-nabe and Shinshu sake. Walk-in friendly."
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "region": "Hakuba",
+  "price_band_legend": {
+    "$": "under 2,500 JPY / person",
+    "$$": "2,500 – 6,000 JPY / person",
+    "$$$": "6,000 – 15,000 JPY / person",
+    "$$$$": "15,000+ JPY / person"
+  },
+  "restaurants": [
+    {
+      "id": "pilar-hakuba",
+      "name": "Pilar",
+      "cuisine": "modern_italian",
+      "price_band": "$$$$",
+      "village": "Top of Happo Gondola",
+      "address": "4487-12 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301 (Usagidaira Terrace, top of Adam Gondola)",
+      "lat": 36.7106,
+      "lng": 137.8014,
+      "website": "https://pilarhakuba.com/",
+      "reservation_required": true,
+      "notes": "Lunch-only fine dining at the top of the Happo-One gondola with panoramic views of the Hakuba Sanzan. Booking essential in peak season."
+    },
+    {
+      "id": "mimis-echoland",
+      "name": "Mimi's",
+      "cuisine": "fusion_japanese_western",
+      "price_band": "$$$",
+      "village": "Echoland",
+      "address": "3020-868 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.6840,
+      "lng": 137.8523,
+      "website": "https://mimishakuba.com/",
+      "reservation_required": true,
+      "notes": "Husband-and-wife run Echoland favourite. Housemade pasta, Shinshu salmon and game; bookings strongly recommended."
+    },
+    {
+      "id": "hie-izakaya",
+      "name": "Hie",
+      "cuisine": "izakaya",
+      "price_band": "$$",
+      "village": "Echoland",
+      "address": "3020-868 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.6843,
+      "lng": 137.8525,
+      "website": "https://www.hakuba.com/restaurants/izakaya/hie/",
+      "reservation_required": true,
+      "notes": "Echoland izakaya with charcoal grill, sashimi and a strong sake list. Cozy and small — book ahead."
+    },
+    {
+      "id": "marutama-ramen",
+      "name": "Marutama Ramen",
+      "cuisine": "ramen",
+      "price_band": "$",
+      "village": "Echoland",
+      "address": "3020-590 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.6845,
+      "lng": 137.8515,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Echoland ramen specialist with rich tonkotsu and shoyu broths. Walk-in only; expect a queue at peak après-ski hours."
+    },
+    {
+      "id": "sushi-sakai",
+      "name": "Sushi Sakai",
+      "cuisine": "sushi",
+      "price_band": "$$$",
+      "village": "Wadano",
+      "address": "4998 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301 (Hakuba Hospitality Group)",
+      "lat": 36.7065,
+      "lng": 137.8235,
+      "website": "https://hakubahospitalitygroup.com/winter/restaurants/sushi-sakai/",
+      "reservation_required": true,
+      "notes": "Omakase counter sushi in Wadano-no-mori serving Japan Sea seafood. Run by Hakuba Hospitality Group; reservations essential."
+    },
+    {
+      "id": "issei-happo",
+      "name": "Issei",
+      "cuisine": "tonkatsu_soba",
+      "price_band": "$$",
+      "village": "Happo",
+      "address": "5497 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7050,
+      "lng": 137.8298,
+      "website": null,
+      "reservation_required": true,
+      "notes": "Elegant restaurant in Happo specialising in tonkatsu and hand-cut soba. Quiet local favourite away from the après-ski crowd."
+    }
+  ]
+}

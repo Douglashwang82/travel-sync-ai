@@ -1,0 +1,121 @@
+{
+  "region": "Zao Onsen",
+  "gateways": [
+    {
+      "id": "yamagata-station",
+      "name": "Yamagata Station",
+      "name_ja": "山形駅",
+      "type": "train_station",
+      "lat": 38.2476,
+      "lng": 140.3358,
+      "website": "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=1390",
+      "notes": "Yamagata Shinkansen terminus and the primary gateway to Zao Onsen. Yamako Bus to Zao Onsen Bus Terminal departs from the East Exit."
+    },
+    {
+      "id": "zao-onsen-bus-terminal",
+      "name": "Zao Onsen Bus Terminal",
+      "name_ja": "蔵王温泉バスターミナル",
+      "type": "bus_terminal",
+      "lat": 38.1657,
+      "lng": 140.3982,
+      "website": null,
+      "notes": "Central arrival point in the village, ~3 min walk from Zao Ropeway Sanroku Station. Tourist information and ski locker rentals on site."
+    },
+    {
+      "id": "sendai-station",
+      "name": "Sendai Station",
+      "name_ja": "仙台駅",
+      "type": "train_station",
+      "lat": 38.2607,
+      "lng": 140.8821,
+      "website": "https://www.jr-sendai.com/",
+      "notes": "Tohoku Shinkansen gateway, useful when combining Zao with the Tohoku region. Direct Sendai-Yamagata-Zao highway buses available."
+    },
+    {
+      "id": "sendai-airport",
+      "name": "Sendai International Airport",
+      "name_ja": "仙台空港",
+      "iata": "SDJ",
+      "type": "airport",
+      "lat": 38.1397,
+      "lng": 140.9170,
+      "website": "https://www.sendai-airport.co.jp/",
+      "notes": "Closest international airport. 25 min by Sendai Airport Access Line to Sendai Station, then Senzan Line to Yamagata."
+    },
+    {
+      "id": "haneda-airport",
+      "name": "Tokyo Haneda Airport",
+      "name_ja": "羽田空港",
+      "iata": "HND",
+      "type": "airport",
+      "lat": 35.5494,
+      "lng": 139.7798,
+      "website": "https://tokyo-haneda.com/en/",
+      "notes": "Most domestic and regional international flights. ~30 min by Keikyu + JR to Tokyo Station for Yamagata Shinkansen."
+    }
+  ],
+  "routes": [
+    {
+      "id": "tokyo-to-yamagata-shinkansen",
+      "from": "tokyo-station",
+      "to": "yamagata-station",
+      "operator": "JR East",
+      "type": "shinkansen",
+      "duration_min": 165,
+      "indicative_price_jpy": { "one_way_adult_reserved": 11410 },
+      "frequency": "1–2 per hour (Tsubasa)",
+      "notes": "Yamagata Shinkansen (mini-shinkansen, runs on conventional gauge from Fukushima). Trains often coupled with the Yamabiko to Sendai."
+    },
+    {
+      "id": "yamagata-to-zao-bus",
+      "from": "yamagata-station",
+      "to": "zao-onsen-bus-terminal",
+      "operator": "Yamako Bus",
+      "type": "shuttle_bus",
+      "duration_min": 40,
+      "indicative_price_jpy": { "one_way_adult": 1000, "round_trip_adult": 1800 },
+      "frequency": "approx hourly winter daytime",
+      "notes": "Direct bus from Yamagata Station East Exit. Last bus down from Zao around 21:00 in peak season; check seasonally."
+    },
+    {
+      "id": "sendai-to-zao-highway-bus",
+      "from": "sendai-station",
+      "to": "zao-onsen-bus-terminal",
+      "operator": "JR Bus Tohoku",
+      "type": "highway_bus",
+      "duration_min": 105,
+      "indicative_price_jpy": { "one_way_adult": 1700 },
+      "frequency": "1–2 per day winter",
+      "notes": "Seasonal direct service from Sendai. Useful when arriving via Sendai Airport or the Tohoku Shinkansen."
+    },
+    {
+      "id": "sendai-airport-to-yamagata",
+      "from": "sendai-airport",
+      "to": "yamagata-station",
+      "operator": "JR East + Yamako",
+      "type": "train_plus_bus",
+      "duration_min": 110,
+      "indicative_price_jpy": { "one_way_adult": 2350 },
+      "frequency": "approx hourly",
+      "notes": "Sendai Airport Access Line → Sendai, then JR Senzan Line to Yamagata (about 1 h 20 m total). Alternative to flying via Haneda."
+    }
+  ],
+  "in_resort_transport": [
+    {
+      "id": "zao-village-walk",
+      "name": "Village walking circuit",
+      "type": "walking",
+      "operator": "n/a",
+      "frequency": "always",
+      "notes": "Zao Onsen village is compact and walkable end-to-end in ~10 minutes. The Ropeway Sanroku station, bus terminal, public baths and ryokan are all within a 500 m radius."
+    },
+    {
+      "id": "zao-ropeway-as-lift",
+      "name": "Zao Ropeway (Sanroku → Juhyo Kogen → Jizo Sancho)",
+      "type": "ski_lift",
+      "operator": "Zao Ropeway Co.",
+      "frequency": "every 15 min winter",
+      "notes": "Doubles as in-resort transport: two stages totalling 2.6 km that move skiers from the village to the upper juhyo zone."
+    }
+  ]
+}

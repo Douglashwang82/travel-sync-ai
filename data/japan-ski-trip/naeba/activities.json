@@ -1,0 +1,77 @@
+{
+  "region": "Naeba",
+  "activities": [
+    {
+      "id": "dragondola",
+      "name": "Dragondola (Naeba ↔ Kagura)",
+      "type": "gondola_ride",
+      "village": "Naeba",
+      "address": "202 Mikuni, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6212",
+      "lat": 36.7895,
+      "lng": 138.7878,
+      "indicative_price_jpy": { "lift_pass_included": 0, "summer_ride_adult": 3000 },
+      "website": "https://www.princehotels.com/en/ski/naeba/dragondola/",
+      "notes": "Japan's longest gondola (5,481 m), linking Naeba to Kagura over a 25-minute ride. Included with the Mt. Naeba lift pass in winter; runs in summer for sightseeing too."
+    },
+    {
+      "id": "ponshukan-sake",
+      "name": "Ponshukan Yuzawa Sake Museum",
+      "type": "cultural",
+      "village": "Echigo-Yuzawa",
+      "address": "2427 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101 (CoCoLo Yuzawa, 2F)",
+      "lat": 36.9356,
+      "lng": 138.8051,
+      "indicative_price_jpy": { "tasting_5_cups": 500 },
+      "website": "https://ponshukan.com/yuzawa/",
+      "notes": "Inside the Echigo-Yuzawa Station building: 500 yen buys five tokens for a self-serve tasting of 100+ Niigata sake. Also has a sake-bath and snack stalls."
+    },
+    {
+      "id": "yamano-yu-onsen",
+      "name": "Yamano-yu Onsen",
+      "type": "onsen",
+      "village": "Echigo-Yuzawa",
+      "address": "1054 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9342,
+      "lng": 138.8093,
+      "indicative_price_jpy": { "adult_entry": 500 },
+      "website": null,
+      "notes": "Classic free-flowing public bath in Yuzawa town, one of the three public soto-yu attached to Yuzawa's historic onsen. Tattoos generally accepted."
+    },
+    {
+      "id": "komakonoyu-onsen",
+      "name": "Komako-no-Yu",
+      "type": "onsen",
+      "village": "Echigo-Yuzawa",
+      "address": "419 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9341,
+      "lng": 138.8087,
+      "indicative_price_jpy": { "adult_entry": 500 },
+      "website": null,
+      "notes": "Named after the protagonist of Kawabata's 'Snow Country'. Small village-run bath with simple indoor and outdoor pools."
+    },
+    {
+      "id": "snow-country-museum",
+      "name": "Yuzawa Town Museum (Yukiguni-kan)",
+      "type": "cultural",
+      "village": "Echigo-Yuzawa",
+      "address": "354-1 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9324,
+      "lng": 138.8085,
+      "indicative_price_jpy": { "adult_entry": 500 },
+      "website": null,
+      "notes": "Small museum on Kawabata Yasunari's 'Snow Country', Echigo-Yuzawa's literary claim to fame. Reproductions of his writing room and period photos."
+    },
+    {
+      "id": "yuzawa-kogen-ropeway",
+      "name": "Yuzawa Kogen Ropeway",
+      "type": "sightseeing",
+      "village": "Echigo-Yuzawa",
+      "address": "490 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9302,
+      "lng": 138.8147,
+      "indicative_price_jpy": { "round_trip_adult": 2200 },
+      "website": "https://www.yuzawakogen.com/",
+      "notes": "Cable car from town to a small ski/sightseeing area on Mt. Takamatsu. 7-minute walk from Echigo-Yuzawa Station; popular for non-skier panoramic views."
+    }
+  ]
+}

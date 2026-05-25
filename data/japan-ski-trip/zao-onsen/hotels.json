@@ -1,0 +1,96 @@
+{
+  "region": "Zao Onsen",
+  "currency": "JPY",
+  "price_band_legend": {
+    "$": "under 25,000 / night (twin)",
+    "$$": "25,000 – 60,000 / night",
+    "$$$": "60,000 – 150,000 / night",
+    "$$$$": "150,000+ / night"
+  },
+  "hotels": [
+    {
+      "id": "takamiya-miyamaso",
+      "name": "Takamiya Ryokan Miyamaso",
+      "category": "luxury",
+      "price_band": "$$$$",
+      "base_resort": "zao-onsen",
+      "ski_in_ski_out": false,
+      "address": "905 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1641,
+      "lng": 140.3963,
+      "website": "https://miyamaso.jp/",
+      "amenities": ["onsen", "private_onsen", "kaiseki", "spa", "tea_ceremony"],
+      "notes": "Top-tier ryokan in Zao Onsen with sulphurous on-site hot springs and a kaiseki dinner program centred on Yamagata gyu. Walking distance to the Zao Ropeway."
+    },
+    {
+      "id": "lucent-takamiya",
+      "name": "Lucent Takamiya",
+      "category": "upper_upscale",
+      "price_band": "$$$",
+      "base_resort": "zao-onsen",
+      "ski_in_ski_out": false,
+      "address": "951 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1648,
+      "lng": 140.3968,
+      "website": "https://www.lucent-takamiya.jp/",
+      "amenities": ["onsen", "private_onsen", "kaiseki", "ski_storage"],
+      "notes": "Modern wing of the Takamiya group with Western beds and large in-house onsen. Five-minute walk to the Zao Ropeway base."
+    },
+    {
+      "id": "tsuruya-tsutsujiya",
+      "name": "Tsuruya Tsutsujiya",
+      "category": "ryokan",
+      "price_band": "$$",
+      "base_resort": "zao-onsen",
+      "ski_in_ski_out": false,
+      "address": "710 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1633,
+      "lng": 140.3942,
+      "website": "https://www.tsuruyatsutsujiya.com/",
+      "amenities": ["onsen", "kaiseki", "private_onsen"],
+      "notes": "Traditional ryokan near Kawarayu public bath. Multiple in-house pools sourced from Zao's strongly sulphurous water."
+    },
+    {
+      "id": "hotel-kojokan",
+      "name": "Hotel Kojokan",
+      "category": "upscale",
+      "price_band": "$$$",
+      "base_resort": "zao-onsen",
+      "ski_in_ski_out": false,
+      "address": "10 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1675,
+      "lng": 140.3925,
+      "website": "https://kojohkan.com/",
+      "amenities": ["onsen", "private_onsen", "kaiseki", "shuttle"],
+      "notes": "Hillside hotel with one of Zao's largest indoor/outdoor onsen complexes. Free shuttle from Yamagata Station for guests."
+    },
+    {
+      "id": "pension-anbar",
+      "name": "Pension Anbar",
+      "category": "pension",
+      "price_band": "$$",
+      "base_resort": "zao-onsen",
+      "ski_in_ski_out": false,
+      "address": "636 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1655,
+      "lng": 140.3947,
+      "website": null,
+      "amenities": ["onsen", "breakfast", "ski_storage"],
+      "notes": "Family-run pension on the upper village road. Western-style rooms, in-house onsen, and home-cooked dinner option."
+    },
+    {
+      "id": "zao-international-hotel",
+      "name": "Zao International Hotel",
+      "category": "midscale",
+      "price_band": "$$",
+      "base_resort": "zao-onsen",
+      "ski_in_ski_out": true,
+      "address": "933 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1652,
+      "lng": 140.3995,
+      "website": "https://www.zao-kokusaihotel.jp/",
+      "amenities": ["onsen", "restaurant", "ski_valet"],
+      "notes": "One of the few Zao hotels with ski-in/out access via the Yokokura ski course. Western-style rooms and a sizeable in-house onsen."
+    }
+  ]
+}

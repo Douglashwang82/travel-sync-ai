@@ -1,0 +1,77 @@
+{
+  "region": "Nozawa Onsen",
+  "activities": [
+    {
+      "id": "oyu-bathhouse",
+      "name": "Oyu (Ō-yu)",
+      "type": "onsen",
+      "village": "Nozawa Onsen village",
+      "address": "9329 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502 (main street)",
+      "lat": 36.9229,
+      "lng": 138.4421,
+      "indicative_price_jpy": { "donation_box": 200 },
+      "website": "https://en.nozawaski.com/the-village/activities/onsen-trail/",
+      "notes": "The largest and most iconic of Nozawa's 13 soto-yu. Edo-period samurai-style architecture; donation-funded. Tattoos accepted."
+    },
+    {
+      "id": "shinyu-bathhouse",
+      "name": "Shinyu",
+      "type": "onsen",
+      "village": "Nozawa Onsen village",
+      "address": "Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9234,
+      "lng": 138.4413,
+      "indicative_price_jpy": { "donation_box": 200 },
+      "website": "https://en.nozawaski.com/the-village/activities/onsen-trail/",
+      "notes": "Rebuilt 2006; known for its 'five-colour' water that visibly shifts hue with season and weather. Smaller, quieter than Oyu."
+    },
+    {
+      "id": "kumanote-arai-yu",
+      "name": "Kuma-no-tearai-yu",
+      "type": "onsen",
+      "village": "Nozawa Onsen village",
+      "address": "Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9243,
+      "lng": 138.4416,
+      "indicative_price_jpy": { "donation_box": 200 },
+      "website": "https://en.nozawaski.com/the-village/activities/onsen-trail/",
+      "notes": "Tiny bathhouse legendarily founded when a wounded bear was seen healing in the spring water. One of the hotter pools."
+    },
+    {
+      "id": "furusato-no-yu",
+      "name": "Furusato-no-Yu",
+      "type": "onsen",
+      "village": "Nozawa Onsen village",
+      "address": "9347 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9266,
+      "lng": 138.4408,
+      "indicative_price_jpy": { "adult_entry": 500 },
+      "website": "https://en.nozawaski.com/the-village/activities/day-use-onsen/",
+      "notes": "Modern community day-use bath with indoor and outdoor pools. The only onsen in Nozawa with showers, towels rental and a rest area."
+    },
+    {
+      "id": "ogama-hot-source",
+      "name": "Ogama Hot Spring Source",
+      "type": "cultural",
+      "village": "Nozawa Onsen village",
+      "address": "Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9220,
+      "lng": 138.4426,
+      "indicative_price_jpy": { "free": 0 },
+      "website": "https://www.nozawakanko.jp/",
+      "notes": "Nozawa's 90°C natural hot-water source where villagers still cook eggs and onsen tamago. Cultural landmark, not for bathing."
+    },
+    {
+      "id": "nozawa-fire-festival-shrine",
+      "name": "Kosuge Shrine (Fire Festival site)",
+      "type": "shrine_temple",
+      "village": "Nozawa Onsen village",
+      "address": "Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9270,
+      "lng": 138.4385,
+      "indicative_price_jpy": { "free": 0 },
+      "website": null,
+      "notes": "Site of the Dosojin Fire Festival on 15 January, one of Japan's three great fire festivals. Worth visiting year-round for the wooden torii and quiet forest setting."
+    }
+  ]
+}

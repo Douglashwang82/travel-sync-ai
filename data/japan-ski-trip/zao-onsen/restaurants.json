@@ -1,0 +1,89 @@
+{
+  "region": "Zao Onsen",
+  "price_band_legend": {
+    "$": "under 2,500 JPY / person",
+    "$$": "2,500 – 6,000 JPY / person",
+    "$$$": "6,000 – 15,000 JPY / person",
+    "$$$$": "15,000+ JPY / person"
+  },
+  "restaurants": [
+    {
+      "id": "yamagata-gyu-inase",
+      "name": "Inase Yamagata Gyu",
+      "cuisine": "yakiniku_wagyu",
+      "price_band": "$$$",
+      "village": "Zao Onsen village",
+      "address": "956-1 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1654,
+      "lng": 140.3978,
+      "website": null,
+      "reservation_required": true,
+      "notes": "Yakiniku specialist serving Yamagata gyu, one of Japan's lesser-known A5 wagyu brands. Counter and table seating; booking recommended in peak season."
+    },
+    {
+      "id": "daikokuya-imoni",
+      "name": "Daikokuya",
+      "cuisine": "kyodo_ryori",
+      "price_band": "$$",
+      "village": "Zao Onsen village",
+      "address": "894-3 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1648,
+      "lng": 140.3958,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Local Yamagata fare — imoni soup, tama-konnyaku, mountain vegetables. Cosy log-cabin interior; reasonable lunch sets."
+    },
+    {
+      "id": "robata-izakaya",
+      "name": "Robata Izakaya",
+      "cuisine": "izakaya",
+      "price_band": "$$",
+      "village": "Zao Onsen village",
+      "address": "708 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1631,
+      "lng": 140.3949,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Traditional irori-style izakaya in the lower village. Skewers of locally raised pork and shamo chicken; Yamagata sake by the carafe."
+    },
+    {
+      "id": "sanroku-restaurant",
+      "name": "Sanroku Restaurant (Zao Ropeway Base)",
+      "cuisine": "japanese_curry",
+      "price_band": "$",
+      "village": "Sanroku Station",
+      "address": "229-3 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1646,
+      "lng": 140.3987,
+      "website": "https://zaoropeway.co.jp/",
+      "reservation_required": false,
+      "notes": "Cafeteria at the Zao Ropeway base station with curry rice, ramen, katsu-don. Quick warm-up stop between ski runs and juhyo tours."
+    },
+    {
+      "id": "tama-konnyaku-stand",
+      "name": "Konnyaku Banya Tamayoshi",
+      "cuisine": "street_food",
+      "price_band": "$",
+      "village": "Zao Onsen village",
+      "address": "846 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1644,
+      "lng": 140.3955,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Streetside stall selling Yamagata's famous tama-konnyaku skewers (boiled konjac balls in soy broth, with mustard). Quintessential Zao snack for ~150 JPY."
+    },
+    {
+      "id": "mai-cafe-zao",
+      "name": "Mai Cafe",
+      "cuisine": "cafe",
+      "price_band": "$$",
+      "village": "Zao Onsen village",
+      "address": "905-1 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1640,
+      "lng": 140.3962,
+      "website": null,
+      "reservation_required": false,
+      "notes": "All-day café with espresso, French toast, and Zao cheese plates. Good non-Japanese-breakfast option in the village."
+    }
+  ]
+}
