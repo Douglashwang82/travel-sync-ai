@@ -125,7 +125,7 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
     similarity: number;
   }>;
   if (rows.length === 0) {
-    logger.info("[route-engine] no rows from RPC", { genId, destination: input.destination, pace: input.pace ?? null });
+    logger.info("[route-engine] no rows from RPC", { genId, destination: input.destination, pace: input.pace ?? undefined });
     return [];
   }
 

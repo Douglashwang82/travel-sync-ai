@@ -97,7 +97,7 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
     budget: input.answers.budget_tier,
     pace: input.answers.pace,
     vibe: (input.answers.vibe ?? []).join(",") || "(none)",
-    mustHaves: input.answers.must_haves?.slice(0, 200) ?? null,
+    mustHaves: input.answers.must_haves?.slice(0, 200) ?? undefined,
   });
 
   // 1. Route layer — curated 1-day routes (may be empty).
