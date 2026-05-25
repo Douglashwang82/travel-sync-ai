@@ -13,8 +13,9 @@ import {
   Globe2,
   Languages,
   MessageCircle,
-  Plane,
+  MountainSnow,
   Route,
+  Snowflake,
   Users,
   Vote,
 } from "lucide-react";
@@ -23,6 +24,7 @@ type Locale = "en" | "zh-TW";
 
 type Copy = {
   brand: string;
+  editionBadge: string;
   nav: {
     story: string;
     commands: string;
@@ -84,6 +86,7 @@ const MOTION_STORAGE_KEY = "travelsync-home-force-motion";
 const CONTENT = {
   en: {
     brand: "TravelSync AI",
+    editionBadge: "Japan Ski",
     nav: {
       story: "Story",
       commands: "Commands",
@@ -107,10 +110,10 @@ const CONTENT = {
       scroll: "Scroll",
     },
     scene: {
-      group: "Osaka group",
+      group: "Niseko crew",
       monitor: "AI monitor",
-      vote: "Hotel vote",
-      expense: "Dinner split",
+      vote: "Ryokan vote",
+      expense: "Lift pass split",
       confirmed: "3 confirmed",
     },
     metrics: [
@@ -165,7 +168,7 @@ const CONTENT = {
       heading: "Commands with a visible pulse",
       subheading: "Short LINE commands become durable trip objects.",
       items: [
-        { cmd: "/start Osaka Jul 15-20", desc: "Create the shared trip", state: "new trip" },
+        { cmd: "/start Niseko Jan 5-12", desc: "Create the shared trip", state: "new trip" },
         { cmd: "/vote hotel", desc: "Launch a visual vote", state: "pending" },
         { cmd: "/add book travel insurance", desc: "Capture a task", state: "todo" },
         { cmd: "/exp 3200 dinner for all", desc: "Split an expense", state: "settled" },
@@ -186,6 +189,7 @@ const CONTENT = {
   },
   "zh-TW": {
     brand: "TravelSync AI",
+    editionBadge: "日本滑雪",
     nav: {
       story: "故事",
       commands: "指令",
@@ -209,10 +213,10 @@ const CONTENT = {
       scroll: "向下",
     },
     scene: {
-      group: "大阪群組",
+      group: "二世谷揪團",
       monitor: "AI 監聽",
-      vote: "飯店投票",
-      expense: "晚餐分帳",
+      vote: "旅館投票",
+      expense: "雪票分帳",
       confirmed: "3 項已確認",
     },
     metrics: [
@@ -267,7 +271,7 @@ const CONTENT = {
       heading: "有節奏的 LINE 指令",
       subheading: "短短一行指令，就會變成可追蹤的旅行項目。",
       items: [
-        { cmd: "/start Osaka Jul 15-20", desc: "建立共享旅程", state: "新旅程" },
+        { cmd: "/start Niseko Jan 5-12", desc: "建立共享旅程", state: "新旅程" },
         { cmd: "/vote hotel", desc: "發起視覺化投票", state: "投票中" },
         { cmd: "/add book travel insurance", desc: "新增待辦事項", state: "待辦" },
         { cmd: "/exp 3200 dinner for all", desc: "分攤共同支出", state: "已結算" },
@@ -320,8 +324,8 @@ export default function HomePageClient() {
   useIntroScrollMotion(locale, forceMotion);
 
   return (
-    <div className="min-h-screen bg-[#f8f3e7] text-[#16140f] selection:bg-[#00b900] selection:text-white dark:bg-[#080907] dark:text-[#f4efe4]">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-[#f8f3e7]/76 backdrop-blur-xl dark:border-white/10 dark:bg-[#080907]/72">
+    <div className="min-h-screen bg-[#edf3f8] text-[#0e1822] selection:bg-[#00b900] selection:text-white dark:bg-[#0a121b] dark:text-[#e6eff5]">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-[#edf3f8]/76 backdrop-blur-xl dark:border-white/10 dark:bg-[#0a121b]/72">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-3" aria-label={copy.brand}>
             <Image
@@ -335,13 +339,19 @@ export default function HomePageClient() {
             <span className="truncate text-sm font-black uppercase tracking-[0.18em]">
               {copy.brand}
             </span>
+            <span
+              className="hidden shrink-0 rounded-full border border-[#00b900]/40 bg-[#00b900]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#007a00] dark:border-[#00b900]/50 dark:bg-[#00b900]/15 dark:text-[#7ee37e] sm:inline-flex"
+              aria-label={copy.editionBadge}
+            >
+              {copy.editionBadge}
+            </span>
           </Link>
 
           <nav className="flex items-center gap-2 text-sm">
-            <a href="#story" className="hidden px-3 py-2 text-[#625d4f] transition hover:text-current md:inline-flex">
+            <a href="#story" className="hidden px-3 py-2 text-[#5b6873] transition hover:text-current md:inline-flex">
               {copy.nav.story}
             </a>
-            <a href="#commands" className="hidden px-3 py-2 text-[#625d4f] transition hover:text-current md:inline-flex">
+            <a href="#commands" className="hidden px-3 py-2 text-[#5b6873] transition hover:text-current md:inline-flex">
               {copy.nav.commands}
             </a>
             <div
@@ -349,15 +359,15 @@ export default function HomePageClient() {
               role="group"
               aria-label={copy.nav.languageLabel}
             >
-              <Languages className="ml-1 hidden h-4 w-4 text-[#625d4f] sm:block" aria-hidden />
+              <Languages className="ml-1 hidden h-4 w-4 text-[#5b6873] sm:block" aria-hidden />
               <button
                 type="button"
                 onClick={() => setLocale("en")}
                 aria-pressed={locale === "en"}
                 className={`h-7 rounded-[6px] px-2.5 text-xs font-bold transition ${
                   locale === "en"
-                    ? "bg-[#16140f] text-white dark:bg-[#f4efe4] dark:text-[#080907]"
-                    : "text-[#625d4f] hover:text-current"
+                    ? "bg-[#0e1822] text-white dark:bg-[#e6eff5] dark:text-[#0a121b]"
+                    : "text-[#5b6873] hover:text-current"
                 }`}
               >
                 {copy.nav.english}
@@ -368,8 +378,8 @@ export default function HomePageClient() {
                 aria-pressed={locale === "zh-TW"}
                 className={`h-7 rounded-[6px] px-2.5 text-xs font-bold transition ${
                   locale === "zh-TW"
-                    ? "bg-[#16140f] text-white dark:bg-[#f4efe4] dark:text-[#080907]"
-                    : "text-[#625d4f] hover:text-current"
+                    ? "bg-[#0e1822] text-white dark:bg-[#e6eff5] dark:text-[#0a121b]"
+                    : "text-[#5b6873] hover:text-current"
                 }`}
               >
                 {copy.nav.traditionalChinese}
@@ -383,7 +393,7 @@ export default function HomePageClient() {
               className={`inline-flex h-9 items-center gap-2 rounded-[8px] border px-3 text-sm font-black transition ${
                 forceMotion
                   ? "border-[#00b900]/40 bg-[#00b900] text-white shadow-[0_12px_28px_-16px_rgba(0,185,0,0.7)]"
-                  : "border-black/10 bg-white/45 text-[#625d4f] hover:bg-white/70 hover:text-current dark:border-white/10 dark:bg-white/5 dark:text-[#bdb5a5] dark:hover:bg-white/10"
+                  : "border-black/10 bg-white/45 text-[#5b6873] hover:bg-white/70 hover:text-current dark:border-white/10 dark:bg-white/5 dark:text-[#9caab9] dark:hover:bg-white/10"
               }`}
             >
               <Route className="h-4 w-4" aria-hidden />
@@ -409,15 +419,17 @@ export default function HomePageClient() {
       <main>
         <section className="relative min-h-screen overflow-hidden pt-16">
           <IntroCanvas forceMotion={forceMotion} />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(248,243,231,0.2)_0%,rgba(248,243,231,0.82)_76%,#f8f3e7_100%)] dark:bg-[linear-gradient(180deg,rgba(8,9,7,0.08)_0%,rgba(8,9,7,0.72)_72%,#080907_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,243,248,0.2)_0%,rgba(237,243,248,0.82)_76%,#edf3f8_100%)] dark:bg-[linear-gradient(180deg,rgba(10,18,27,0.08)_0%,rgba(10,18,27,0.72)_72%,#0a121b_100%)]" />
+          <MountainSilhouette />
+          <SnowflakeField />
 
           <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.02fr_0.98fr]">
             <div className="max-w-3xl">
               <p
-                className="mb-5 inline-flex items-center gap-2 rounded-[8px] border border-black/10 bg-white/56 px-3 py-2 text-xs font-black uppercase tracking-[0.22em] text-[#625d4f] backdrop-blur dark:border-white/10 dark:bg-white/8 dark:text-[#bdb5a5]"
+                className="mb-5 inline-flex items-center gap-2 rounded-[8px] border border-black/10 bg-white/56 px-3 py-2 text-xs font-black uppercase tracking-[0.22em] text-[#5b6873] backdrop-blur dark:border-white/10 dark:bg-white/8 dark:text-[#9caab9]"
                 data-scroll-reveal="up"
               >
-                <Plane className="h-4 w-4 text-[#00b900]" aria-hidden />
+                <Snowflake className="h-4 w-4 text-[#4dadd6]" aria-hidden />
                 {copy.hero.kicker}
               </p>
               <h1
@@ -429,7 +441,7 @@ export default function HomePageClient() {
                 <span className="block text-[#00b900]">{copy.hero.titleAccent}</span>
               </h1>
               <p
-                className="mt-8 max-w-2xl text-lg leading-8 text-[#514c40] dark:text-[#c9c1b0]"
+                className="mt-8 max-w-2xl text-lg leading-8 text-[#3f4a55] dark:text-[#b3c2cf]"
                 data-scroll-reveal="up"
                 style={{ "--reveal-delay": "160ms" } as CSSProperties}
               >
@@ -480,7 +492,7 @@ export default function HomePageClient() {
                   style={{ "--reveal-delay": `${index * 80}ms` } as CSSProperties}
                 >
                   <p className="text-xl font-black">{metric.value}</p>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-[#625d4f] dark:text-[#bdb5a5]">
+                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-[#5b6873] dark:text-[#9caab9]">
                     {metric.label}
                   </p>
                 </div>
@@ -488,7 +500,7 @@ export default function HomePageClient() {
             </div>
             <a
               href="#story"
-              className="inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.24em] text-[#625d4f] dark:text-[#bdb5a5]"
+              className="inline-flex items-center gap-3 text-xs font-black uppercase tracking-[0.24em] text-[#5b6873] dark:text-[#9caab9]"
             >
               {copy.hero.scroll}
               <span className="grid h-10 w-10 place-items-center rounded-full border border-current/30">
@@ -498,7 +510,7 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <section id="story" className="relative border-y border-black/10 bg-[#11140f] text-[#f4efe4] dark:border-white/10">
+        <section id="story" className="relative border-y border-black/10 bg-[#0c1422] text-[#e6eff5] dark:border-white/10">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:py-28">
             <div data-scroll-reveal="left">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-[#81d978]">
@@ -538,7 +550,7 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <section className="bg-[#f8f3e7] px-4 py-20 dark:bg-[#080907] sm:px-6 lg:py-28">
+        <section className="bg-[#edf3f8] px-4 py-20 dark:bg-[#0a121b] sm:px-6 lg:py-28">
           <div className="mx-auto max-w-7xl">
             <h2 className="max-w-3xl text-4xl font-black leading-none tracking-normal sm:text-6xl" data-scroll-reveal="up">
               {copy.flow.heading}
@@ -547,26 +559,26 @@ export default function HomePageClient() {
               {copy.flow.items.map((item, index) => (
                 <article
                   key={item.label}
-                  className="bg-[#f8f3e7] p-6 dark:bg-[#080907]"
+                  className="bg-[#edf3f8] p-6 dark:bg-[#0a121b]"
                   data-scroll-reveal="up"
                   style={{ "--reveal-delay": `${index * 120}ms` } as CSSProperties}
                 >
                   <p className="font-mono text-xs text-[#00b900]">{item.label}</p>
                   <h3 className="mt-8 text-3xl font-black">{item.title}</h3>
-                  <p className="mt-4 leading-7 text-[#625d4f] dark:text-[#bdb5a5]">{item.text}</p>
+                  <p className="mt-4 leading-7 text-[#5b6873] dark:text-[#9caab9]">{item.text}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="commands" className="bg-[#f1e9d8] px-4 py-20 dark:bg-[#10110d] sm:px-6 lg:py-28">
+        <section id="commands" className="bg-[#d8e6f0] px-4 py-20 dark:bg-[#0c1422] sm:px-6 lg:py-28">
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.86fr_1.14fr]">
             <div data-scroll-reveal="left">
               <h2 className="text-4xl font-black leading-none tracking-normal sm:text-6xl">
                 {copy.commands.heading}
               </h2>
-              <p className="mt-5 max-w-md leading-8 text-[#625d4f] dark:text-[#bdb5a5]">
+              <p className="mt-5 max-w-md leading-8 text-[#5b6873] dark:text-[#9caab9]">
                 {copy.commands.subheading}
               </p>
             </div>
@@ -601,8 +613,8 @@ export default function HomePageClient() {
         </section>
       </main>
 
-      <footer className="border-t border-black/10 bg-[#f8f3e7] px-4 py-8 dark:border-white/10 dark:bg-[#080907] sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[#625d4f] dark:text-[#bdb5a5] sm:flex-row sm:items-center sm:justify-between">
+      <footer className="border-t border-black/10 bg-[#edf3f8] px-4 py-8 dark:border-white/10 dark:bg-[#0a121b] sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[#5b6873] dark:text-[#9caab9] sm:flex-row sm:items-center sm:justify-between">
           <p className="font-bold">{copy.footer.madeFor}</p>
           <nav className="flex items-center gap-4">
             <Link href="/app" className="font-bold transition hover:text-current">
@@ -871,8 +883,8 @@ function useIntroScrollMotion(locale: Locale, forceMotion: boolean) {
 function HeroScene({ copy }: { copy: Copy["scene"] }) {
   return (
     <div className="relative mx-auto aspect-[0.82] w-full max-w-[500px] min-w-0 [perspective:1200px]">
-      <div className="absolute inset-[7%] rotate-[-5deg] rounded-[8px] border border-black/10 bg-[#16140f] shadow-[0_50px_90px_-42px_rgba(22,20,15,0.75)] [transform-style:preserve-3d] dark:border-white/10">
-        <div className="absolute inset-0 rounded-[8px] bg-[linear-gradient(135deg,#1a1d16_0%,#252116_42%,#092a12_100%)]" />
+      <div className="absolute inset-[7%] rotate-[-5deg] rounded-[8px] border border-black/10 bg-[#0e1822] shadow-[0_50px_90px_-42px_rgba(14,24,34,0.75)] [transform-style:preserve-3d] dark:border-white/10">
+        <div className="absolute inset-0 rounded-[8px] bg-[linear-gradient(135deg,#0d1822_0%,#1a2630_42%,#0a3142_100%)]" />
         <div className="absolute inset-4 rounded-[8px] border border-white/10 bg-black/18" />
 
         <SceneChip className="left-[8%] top-[8%]" icon={<Users className="h-4 w-4" />} label={copy.group} />
@@ -884,14 +896,14 @@ function HeroScene({ copy }: { copy: Copy["scene"] }) {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-[#81d978]">Trip Board</p>
-              <p className="mt-1 text-2xl font-black">Osaka</p>
+              <p className="mt-1 text-2xl font-black">Niseko</p>
             </div>
             <div className="grid h-10 w-10 place-items-center rounded-[8px] bg-[#00b900]">
-              <Route className="h-5 w-5" aria-hidden />
+              <MountainSnow className="h-5 w-5" aria-hidden />
             </div>
           </div>
           <div className="space-y-2">
-            <SceneRow icon={<CalendarCheck className="h-4 w-4" />} label="Jul 15-20" done />
+            <SceneRow icon={<CalendarCheck className="h-4 w-4" />} label="Jan 5-12" done />
             <SceneRow icon={<Vote className="h-4 w-4" />} label={copy.vote} />
             <SceneRow icon={<CircleDollarSign className="h-4 w-4" />} label={copy.expense} done />
           </div>
@@ -940,20 +952,79 @@ function SceneRow({ icon, label, done = false }: { icon: ReactNode; label: strin
 function CommandRow({ command, index }: { command: Copy["commands"]["items"][number]; index: number }) {
   return (
     <article
-      className="grid gap-4 rounded-[8px] border border-black/10 bg-[#f8f3e7] p-4 shadow-[0_14px_32px_-28px_rgba(22,20,15,0.55)] transition hover:-translate-y-1 hover:bg-white/70 dark:border-white/10 dark:bg-[#080907] dark:hover:bg-white/[0.06] sm:grid-cols-[1fr_auto] sm:items-center"
+      className="grid gap-4 rounded-[8px] border border-black/10 bg-[#edf3f8] p-4 shadow-[0_14px_32px_-28px_rgba(14,24,34,0.55)] transition hover:-translate-y-1 hover:bg-white/70 dark:border-white/10 dark:bg-[#0a121b] dark:hover:bg-white/[0.06] sm:grid-cols-[1fr_auto] sm:items-center"
       data-scroll-reveal="up"
       style={{ "--reveal-delay": `${index * 70}ms` } as CSSProperties}
     >
       <div className="min-w-0">
-        <code className="block truncate font-mono text-sm font-black text-[#16140f] dark:text-[#f4efe4]">
+        <code className="block truncate font-mono text-sm font-black text-[#0e1822] dark:text-[#e6eff5]">
           {command.cmd}
         </code>
-        <p className="mt-1 text-sm text-[#625d4f] dark:text-[#bdb5a5]">{command.desc}</p>
+        <p className="mt-1 text-sm text-[#5b6873] dark:text-[#9caab9]">{command.desc}</p>
       </div>
       <span className="inline-flex w-fit items-center gap-2 rounded-[8px] border border-[#00b900]/30 bg-[#00b900]/10 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-[#087a08] dark:text-[#81d978]">
         <span className="h-2 w-2 rounded-full bg-[#00b900]" />
         {command.state}
       </span>
     </article>
+  );
+}
+
+// Decorative mountain silhouette anchored to the bottom of the hero. Purely
+// visual — sits behind the gradient overlay and above IntroCanvas at low
+// opacity so it doesn't fight the foreground text.
+function MountainSilhouette() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] w-full text-[#cbd9e6] opacity-70 dark:text-[#101e2d] dark:opacity-90"
+      viewBox="0 0 1440 480"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M0 360 L160 240 L260 300 L380 160 L520 280 L640 200 L760 320 L880 180 L1020 260 L1160 140 L1280 280 L1440 220 L1440 480 L0 480 Z"
+        fill="url(#ridge)"
+      />
+      <path
+        d="M0 420 L120 340 L240 400 L360 320 L480 380 L600 340 L720 400 L840 320 L960 380 L1080 340 L1200 400 L1320 340 L1440 380 L1440 480 L0 480 Z"
+        fill="currentColor"
+        opacity="0.55"
+      />
+      {/* Snow caps on the highest peaks */}
+      <path d="M360 160 L390 190 L380 195 L370 188 L355 197 L348 188 Z" fill="#ffffff" opacity="0.85" />
+      <path d="M880 180 L908 208 L898 213 L886 205 L874 215 L866 205 Z" fill="#ffffff" opacity="0.85" />
+      <path d="M1160 140 L1192 174 L1182 178 L1170 168 L1156 178 L1148 168 Z" fill="#ffffff" opacity="0.85" />
+    </svg>
+  );
+}
+
+// Sparse, fixed-position snowflakes. Deliberately small in count to read as
+// atmospheric rather than busy; no animation to keep the page light.
+function SnowflakeField() {
+  const positions = [
+    { top: "12%", left: "8%",  size: 14, op: 0.55 },
+    { top: "22%", left: "78%", size: 10, op: 0.45 },
+    { top: "34%", left: "18%", size: 8,  op: 0.40 },
+    { top: "44%", left: "62%", size: 12, op: 0.50 },
+    { top: "58%", left: "30%", size: 9,  op: 0.40 },
+    { top: "16%", left: "44%", size: 7,  op: 0.35 },
+    { top: "70%", left: "85%", size: 11, op: 0.45 },
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden>
+      {positions.map((p, i) => (
+        <Snowflake
+          key={i}
+          className="absolute text-[#7eb6d3] dark:text-[#5e8aa6]"
+          style={{ top: p.top, left: p.left, width: p.size, height: p.size, opacity: p.op }}
+        />
+      ))}
+    </div>
   );
 }

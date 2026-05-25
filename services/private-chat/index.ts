@@ -4,6 +4,7 @@ import { generateConversation, GeminiUnavailableError } from "@/lib/gemini";
 import type { ConversationMessage } from "@/lib/gemini";
 import { BOT_COPY, BOT_LANGUAGE_RULE } from "@/lib/bot-copy";
 import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
+import { detectJapanSkiDestination } from "@/lib/ski-destination";
 
 const MAX_HISTORY = 20;
 const ONBOARDING_MESSAGE =
@@ -120,6 +121,14 @@ function buildSystemPrompt(
       ? `${trip.start_date} 到 ${trip.end_date}`
       : "尚未設定日期";
 
+  const skiMatch = detectJapanSkiDestination(trip.destination_name);
+  const skiBlock = skiMatch.match
+    ? `\n\n這是日本滑雪行程（${skiMatch.region.region}，${skiMatch.region.prefecture}）。` +
+      `當被問到建議時，優先推薦：${skiMatch.region.region} 周邊的滑雪場、雪票/纜車券、` +
+      `溫泉、ski-in/ski-out 飯店、上山午餐、après-ski 餐酒。提到雪況、最佳粉雪週、` +
+      `初級/中級/高級雪道時，請以日本滑雪場的常識回答。`
+    : "";
+
   return (
     `You are TravelBot, the AI assistant for ${groupLabel}.\n` +
     `${BOT_LANGUAGE_RULE}\n` +
@@ -127,6 +136,6 @@ function buildSystemPrompt(
     `目前旅程：${trip.destination_name ?? "尚未設定目的地"}\n` +
     `日期：${dateRange}\n` +
     `狀態：${trip.status}\n\n` +
-    `回覆保持精簡，適合 LINE 聊天。如果被問到資料中沒有的內容，請清楚說明目前看不到。`
+    `回覆保持精簡，適合 LINE 聊天。如果被問到資料中沒有的內容，請清楚說明目前看不到。${skiBlock}`
   );
 }

@@ -38,6 +38,7 @@ import {
   type RouteComposition,
 } from "./route-engine";
 import { solveItinerary, type RoutedDay, type InfeasibilityIssue } from "./solver";
+import { detectJapanSkiDestination } from "@/lib/ski-destination";
 import type { GenerateInput, GenerateOutput } from "./generator";
 
 // ─── Errors ─────────────────────────────────────────────────────────────────
@@ -323,11 +324,19 @@ async function llmPickAssignment(
     ? `本次僅需安排以下天數(其他天已由策展路線覆蓋):${onlyDays.join("、")}`
     : `共 ${input.answers.duration_days} 天`;
 
+  const skiMatch = detectJapanSkiDestination(input.answers.destination);
+  const skiHint = skiMatch.match
+    ? `這是 ${skiMatch.region.region}(${skiMatch.region.prefecture}) 的日本滑雪行程。每天節奏建議:` +
+      `上午雪場 → 山上/山腰午餐 → 下午雪場或溫泉 → 晚餐(餐廳)。` +
+      `行程 4 天以上請至少安排一天以溫泉為主。優先挑選 tags 含 ski_resort / onsen / ski_in_ski_out 的地點。`
+    : null;
+
   const system = [
     `你正在從候選清單中,為 ${input.answers.destination} 的 ${input.answers.duration_days} 天行程挑選並分配每天的景點。`,
     `團體類型:${input.answers.party}(${input.answers.party_size} 人)。預算:${input.answers.budget_tier}。節奏:${input.answers.pace}。氛圍:${(input.answers.vibe ?? []).join("、") || "均衡"}。`,
     input.answers.must_haves ? `額外需求:${input.answers.must_haves}` : null,
     daysClause,
+    skiHint,
     "規則:",
     "1) 你只能使用候選清單中的 place_id;不可虛構或新增。",
     `2) 每日選 3–6 個地點(依照節奏:chill ≤3 / balanced 3–5 / packed 5–6)。`,

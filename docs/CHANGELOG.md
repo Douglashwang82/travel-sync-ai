@@ -1,5 +1,30 @@
 # Changelog
 
+## [Unreleased] — Japan Ski Refocus (v1)
+
+### Added
+- `lib/ski-ingest.ts` — pure-function shape adapters that turn the per-region JSON bundles under `data/japan-ski-trip/{niseko,hakuba,naeba,nozawa-onsen,shiga-kogen,zao-onsen}/*.json` into `poi_embeddings`-shaped rows (resorts, hotels, restaurants, on/off-mountain activities, transport gateways)
+- `scripts/ingest-ski-regions.ts` — walks the six deep-detail region directories, generates Gemini embeddings, upserts on `place_id`; supports `--regions` filter and `--dry-run`; ingests 157 rows on the current dataset
+- `lib/ski-destination.ts` — `detectJapanSkiDestination()` resolves a free-text destination to one of the six v1 regions using strong aliases only (bare prefecture / country names intentionally do not match)
+- `services/trip-generation/ski-prefs.ts` — `skiPrefsToVibe()` maps the new ski-prefs survey shape (level, terrain, onsen_priority, family_friendly, non_ski_days) onto the existing `vibe` vocabulary so the orchestrator's retrieval contract is unchanged
+- `__tests__/unit/ski-{ingest,destination,prefs}.test.ts` — 38 unit tests covering ingest row shape, region detection, ski-prefs translation, and the conditional survey state machine
+- Edition badge on the marketing site nav: "Japan Ski" / "日本滑雪"
+
+### Changed
+- `services/parsing/extractor.ts` — system prompt is augmented with ski-specific entity guidance (resort names, lift passes, rentals, onsen, ski level, ski-in/ski-out) only when the trip destination resolves to a Japan ski region
+- `services/private-chat/index.ts` — TravelBot persona augmented with ski-region context (resort suggestions, onsens, après-ski dining) when applicable
+- `services/trip-generation/orchestrator.ts` — LLM day-picker prompt biases toward `ski_resort` / `onsen` / `ski_in_ski_out` tagged POIs and a ski → lunch → onsen → dinner day shape for ski destinations
+- `services/trip-generation/index.ts` — `SurveyQuestionKey` and `SurveyAnswers` extend with `ski_prefs`; `SURVEY_STEP_ORDER` documents the conditional branch
+- `services/trip-generation/survey.ts` — `nextStepAfter()` is now answer-aware: ski destinations skip the `vibe` step and ask `ski_prefs` instead; the answer is mirrored back into `answers.vibe` via `skiPrefsToVibe()` so downstream code keeps its contract
+- `services/trip-generation/flex.ts` — new `ski_prefs` LINE flex bubble offering five preset combos (beginner family, intermediate +onsen, intermediate, advanced powder, expert backcountry)
+- `app/home-page-client.tsx` + `app/app/page.tsx` + `README.md` — marketing copy, dashboard empty-state, and README subtitle swap the Osaka examples for Niseko Jan 5–12 and clarify the Japan-ski focus while noting that generic destinations still work
+- `components/app/trip-map-canvas.tsx` — when no destination/pins are set, defaults to the Japan ski belt midpoint (38.5°N, 138.5°E) at country-level zoom (5) so all six v1 regions stay visible
+
+### Notes
+- Generic (non-Japan-ski) trips are explicitly unaffected by all three prompt augmentations and the survey branch — a Tokyo or Bangkok trip walks the original code paths.
+- `scripts/ingest-ski-dataset.ts` (the nationwide shallow index, 33 resorts under `data/japan-ski-trip/national/`) is unchanged; the new region ingester is complementary.
+- Web wizard at `/app/trips/new` still asks the legacy `vibe` question; aligning that with the LINE survey branching is left to a follow-up PR to keep this change focused.
+
 ## [Unreleased] — AI-Native Foundations
 
 ### Added

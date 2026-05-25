@@ -12,11 +12,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createAdminClient } from "@/lib/db";
+import { detectJapanSkiDestination } from "@/lib/ski-destination";
 import {
   SURVEY_STEP_ORDER,
+  type SkiPrefs,
   type SurveyAnswers,
   type SurveyQuestionKey,
 } from "./index";
+import { skiPrefsToVibe } from "./ski-prefs";
 
 export interface SurveySession {
   id: string;
@@ -136,7 +139,13 @@ export async function recordAnswer(
 
   const validated = coerceAnswer(questionKey, value);
   const nextAnswers: SurveyAnswers = { ...session.answers, [questionKey]: validated } as SurveyAnswers;
-  const nextStep = nextStepAfter(questionKey);
+  // ski_prefs is the v1 ski-destination replacement for vibe; mirror it into
+  // `vibe` so downstream consumers (poi-engine, route-engine, orchestrator,
+  // web wizard summary) keep their existing contract.
+  if (questionKey === "ski_prefs" && validated) {
+    nextAnswers.vibe = skiPrefsToVibe(validated as SkiPrefs);
+  }
+  const nextStep = nextStepAfter(questionKey, nextAnswers);
 
   const { data, error } = await db
     .from("trip_survey_sessions")
@@ -230,6 +239,36 @@ function coerceAnswer(key: SurveyQuestionKey, raw: unknown): unknown {
       return clean;
     }
 
+    case "ski_prefs": {
+      // Accept either an object (web form) or a comma-separated postback string
+      // of "level|terrain|onsen_priority|family_friendly|non_ski_days".
+      const obj = typeof raw === "string" ? parseSkiPrefsPostback(raw) : raw;
+      if (!obj || typeof obj !== "object") throw new Error("ski_prefs must be an object");
+      const p = obj as Partial<SkiPrefs>;
+      if (!["beginner", "intermediate", "advanced", "expert"].includes(String(p.level))) {
+        throw new Error("ski_prefs.level must be beginner|intermediate|advanced|expert");
+      }
+      if (!["groomers", "all_mountain", "powder", "park", "backcountry"].includes(String(p.terrain))) {
+        throw new Error("ski_prefs.terrain must be groomers|all_mountain|powder|park|backcountry");
+      }
+      if (!["must_have", "nice_to_have", "skip"].includes(String(p.onsen_priority))) {
+        throw new Error("ski_prefs.onsen_priority must be must_have|nice_to_have|skip");
+      }
+      const familyFriendly = p.family_friendly === true || String(p.family_friendly) === "true";
+      const nonSki = typeof p.non_ski_days === "number" ? p.non_ski_days : parseInt(String(p.non_ski_days ?? 0), 10);
+      if (!Number.isInteger(nonSki) || nonSki < 0 || nonSki > 14) {
+        throw new Error("ski_prefs.non_ski_days must be 0–14");
+      }
+      const clean: SkiPrefs = {
+        level: p.level as SkiPrefs["level"],
+        terrain: p.terrain as SkiPrefs["terrain"],
+        onsen_priority: p.onsen_priority as SkiPrefs["onsen_priority"],
+        family_friendly: familyFriendly,
+        non_ski_days: nonSki,
+      };
+      return clean;
+    }
+
     case "pace":
       if (!["chill", "balanced", "packed"].includes(String(raw))) {
         throw new Error("pace must be chill|balanced|packed");
@@ -242,7 +281,47 @@ function coerceAnswer(key: SurveyQuestionKey, raw: unknown): unknown {
   }
 }
 
-function nextStepAfter(key: SurveyQuestionKey): SurveyQuestionKey | "done" {
+/**
+ * Compact postback encoding for the LINE flex bubble (postback `data` strings
+ * are length-limited).  Format: `level|terrain|onsen|family|non_ski`, e.g.
+ * `intermediate|all_mountain|must_have|true|1`.
+ */
+function parseSkiPrefsPostback(raw: string): Partial<SkiPrefs> | null {
+  const parts = raw.split("|");
+  if (parts.length !== 5) return null;
+  const [level, terrain, onsen_priority, family_friendly, non_ski_days] = parts;
+  return {
+    level: level as SkiPrefs["level"],
+    terrain: terrain as SkiPrefs["terrain"],
+    onsen_priority: onsen_priority as SkiPrefs["onsen_priority"],
+    family_friendly: family_friendly === "true",
+    non_ski_days: Number(non_ski_days),
+  };
+}
+
+/**
+ * Branching state machine. The default order is linear; the only branch is
+ * around the vibe step: a Japan ski destination skips `vibe` and asks
+ * `ski_prefs` instead, and `ski_prefs` then advances to `pace`. A non-ski
+ * destination asks `vibe` and skips `ski_prefs`.
+ */
+export function nextStepAfter(
+  key: SurveyQuestionKey,
+  answers: SurveyAnswers,
+): SurveyQuestionKey | "done" {
+  const isSki = detectJapanSkiDestination(answers.destination ?? null).match;
+
+  if (key === "budget_tier") {
+    return isSki ? "ski_prefs" : "vibe";
+  }
+  if (key === "vibe") {
+    // Non-ski path: skip ski_prefs and go to pace.
+    return "pace";
+  }
+  if (key === "ski_prefs") {
+    return "pace";
+  }
+
   const i = SURVEY_STEP_ORDER.indexOf(key);
   if (i < 0 || i === SURVEY_STEP_ORDER.length - 1) return "done";
   return SURVEY_STEP_ORDER[i + 1];
