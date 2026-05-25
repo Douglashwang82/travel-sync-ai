@@ -1,0 +1,114 @@
+{
+  "region": "Shiga Kogen",
+  "gateways": [
+    {
+      "id": "nagano-station",
+      "name": "Nagano Station",
+      "name_ja": "長野駅",
+      "type": "train_station",
+      "lat": 36.6433,
+      "lng": 138.1881,
+      "website": "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=1039",
+      "notes": "Hokuriku Shinkansen terminus and the primary gateway. Nagano Dentetsu (Nagaden) line to Yudanaka departs from the underground station; Nagano Express Bus departs from East Exit."
+    },
+    {
+      "id": "yudanaka-station",
+      "name": "Yudanaka Station",
+      "name_ja": "湯田中駅",
+      "type": "train_station",
+      "lat": 36.7497,
+      "lng": 138.4218,
+      "website": "https://www.nagaden-net.co.jp/",
+      "notes": "Terminus of the Nagano Dentetsu Yamanouchi Line. ~45 min from Nagano Station; buses to Shiga Kogen and the Snow Monkey Park depart from the station forecourt."
+    },
+    {
+      "id": "haneda-airport",
+      "name": "Tokyo Haneda Airport",
+      "name_ja": "羽田空港",
+      "iata": "HND",
+      "type": "airport",
+      "lat": 35.5494,
+      "lng": 139.7798,
+      "website": "https://tokyo-haneda.com/en/",
+      "notes": "Most domestic and regional international flights. ~30 min by Keikyu + JR to Tokyo Station for the Hokuriku Shinkansen onward."
+    },
+    {
+      "id": "narita-airport",
+      "name": "Narita International Airport",
+      "name_ja": "成田空港",
+      "iata": "NRT",
+      "type": "airport",
+      "lat": 35.7720,
+      "lng": 140.3929,
+      "website": "https://www.narita-airport.jp/en",
+      "notes": "Most long-haul carriers. Allow 1 h Narita Express → Tokyo Station, then 100 min Hokuriku Shinkansen to Nagano."
+    }
+  ],
+  "routes": [
+    {
+      "id": "tokyo-to-nagano-shinkansen",
+      "from": "tokyo-station",
+      "to": "nagano-station",
+      "operator": "JR East",
+      "type": "shinkansen",
+      "duration_min": 95,
+      "indicative_price_jpy": { "one_way_adult_reserved": 8340 },
+      "frequency": "1–2 per hour",
+      "notes": "Hokuriku Shinkansen. Kagayaki is fastest (~85 min); Hakutaka stops at Karuizawa and Ueda."
+    },
+    {
+      "id": "nagano-to-yudanaka-nagaden",
+      "from": "nagano-station",
+      "to": "yudanaka-station",
+      "operator": "Nagano Dentetsu",
+      "type": "local_train",
+      "duration_min": 45,
+      "indicative_price_jpy": { "one_way_adult": 1290, "limited_express": 1390 },
+      "frequency": "approx 1–2 per hour",
+      "notes": "Yamanouchi Line. The limited express 'Snow Monkey' costs a small surcharge and is much faster than the local."
+    },
+    {
+      "id": "nagano-shiga-kogen-express",
+      "from": "nagano-station",
+      "to": "shiga-kogen-ichinose",
+      "operator": "Nagaden Bus",
+      "type": "highway_bus",
+      "duration_min": 90,
+      "indicative_price_jpy": { "one_way_adult": 2000 },
+      "frequency": "approx 4 per day winter",
+      "notes": "Shiga Kogen Express direct from Nagano Station East Exit to multiple Shiga sub-resorts (Hasuike, Ichinose, Yakebitaiyama). Reservation recommended."
+    },
+    {
+      "id": "yudanaka-to-shiga-kogen-bus",
+      "from": "yudanaka-station",
+      "to": "shiga-kogen-ichinose",
+      "operator": "Nagaden Bus",
+      "type": "shuttle_bus",
+      "duration_min": 45,
+      "indicative_price_jpy": { "one_way_adult": 1280 },
+      "frequency": "approx hourly",
+      "notes": "Local bus winding up to the Shiga Kogen plateau. Combine with the Snow Monkey Park visit en route."
+    },
+    {
+      "id": "yudanaka-to-monkey-park-bus",
+      "from": "yudanaka-station",
+      "to": "kanbayashi-onsen",
+      "operator": "Nagaden Bus",
+      "type": "shuttle_bus",
+      "duration_min": 15,
+      "indicative_price_jpy": { "one_way_adult": 310 },
+      "frequency": "approx 1–2 per hour",
+      "notes": "Drops at Kanbayashi Onsen; then a 30-minute walk to the Snow Monkey Park gate."
+    }
+  ],
+  "in_resort_transport": [
+    {
+      "id": "shiga-kogen-shuttle",
+      "name": "Shiga Kogen Sub-Resort Shuttle",
+      "type": "shuttle_bus",
+      "operator": "Shiga Kogen Lift Co",
+      "frequency": "every 30–60 min winter daytime",
+      "notes": "Free shuttle linking the major Shiga Kogen sub-resorts (Hasuike, Ichinose, Sun Valley, Yakebitaiyama, Okushiga) with a valid Shiga Kogen all-mountain pass."
+    }
+  ]
+}

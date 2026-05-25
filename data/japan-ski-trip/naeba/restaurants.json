@@ -1,0 +1,89 @@
+{
+  "region": "Naeba",
+  "price_band_legend": {
+    "$": "under 2,500 JPY / person",
+    "$$": "2,500 – 6,000 JPY / person",
+    "$$$": "6,000 – 15,000 JPY / person",
+    "$$$$": "15,000+ JPY / person"
+  },
+  "restaurants": [
+    {
+      "id": "nakanoya-hegi-soba",
+      "name": "Nakano-ya (Hegi-soba)",
+      "cuisine": "soba",
+      "price_band": "$$",
+      "village": "Echigo-Yuzawa",
+      "address": "923 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9367,
+      "lng": 138.8056,
+      "website": "https://hegisoba-nakanoya.com/",
+      "reservation_required": false,
+      "notes": "Long-standing specialist in Niigata's signature hegi-soba (buckwheat noodles bound with funori seaweed). Walking distance from Echigo-Yuzawa Station."
+    },
+    {
+      "id": "uosanu-niigata-cuisine",
+      "name": "Uosanu",
+      "cuisine": "kaiseki_niigata",
+      "price_band": "$$$",
+      "village": "Echigo-Yuzawa",
+      "address": "311 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9345,
+      "lng": 138.8068,
+      "website": null,
+      "reservation_required": true,
+      "notes": "Traditional Niigata restaurant featuring Japan Sea seafood, mountain vegetables and Koshihikari rice. Counter and tatami seating."
+    },
+    {
+      "id": "yatsuko-sushi",
+      "name": "Yatsuko Sushi",
+      "cuisine": "sushi",
+      "price_band": "$$$",
+      "village": "Echigo-Yuzawa",
+      "address": "419-2 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9355,
+      "lng": 138.8049,
+      "website": null,
+      "reservation_required": true,
+      "notes": "Counter sushi with daily-changing neta sourced from the Japan Sea. Reservations strongly recommended."
+    },
+    {
+      "id": "yuzawa-ramen-tomokichi",
+      "name": "Ramen Tomokichi",
+      "cuisine": "ramen",
+      "price_band": "$",
+      "village": "Echigo-Yuzawa",
+      "address": "2427 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9376,
+      "lng": 138.8068,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Local shoyu and miso ramen shop popular with day-trippers and skiers. Walk-in only."
+    },
+    {
+      "id": "naeba-tavern",
+      "name": "Naeba Tavern",
+      "cuisine": "pub_western",
+      "price_band": "$$",
+      "village": "Naeba",
+      "address": "202 Mikuni, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6212 (Naeba Prince complex)",
+      "lat": 36.7871,
+      "lng": 138.7905,
+      "website": "https://www.princehotels.com/en/naeba/",
+      "reservation_required": false,
+      "notes": "Western pub at the Naeba Prince base. Burgers, pizza, draught beer; busy après-ski with live music in peak weeks."
+    },
+    {
+      "id": "echigo-tsuruya-cafe",
+      "name": "Cafe Tsuruya",
+      "cuisine": "cafe",
+      "price_band": "$",
+      "village": "Echigo-Yuzawa",
+      "address": "2455 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101 (CoCoLo Yuzawa)",
+      "lat": 36.9356,
+      "lng": 138.8051,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Café inside the CoCoLo Yuzawa station building. Local pastries, coffee and Niigata rice bowls — quick stop pre-/post-shinkansen."
+    }
+  ]
+}

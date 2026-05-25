@@ -1,0 +1,96 @@
+{
+  "region": "Naeba",
+  "currency": "JPY",
+  "price_band_legend": {
+    "$": "under 25,000 / night (twin)",
+    "$$": "25,000 – 60,000 / night",
+    "$$$": "60,000 – 150,000 / night",
+    "$$$$": "150,000+ / night"
+  },
+  "hotels": [
+    {
+      "id": "naeba-prince-hotel",
+      "name": "Naeba Prince Hotel",
+      "category": "upper_upscale",
+      "price_band": "$$$",
+      "base_resort": "naeba",
+      "ski_in_ski_out": true,
+      "address": "202 Mikuni, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6212",
+      "lat": 36.7869,
+      "lng": 138.7903,
+      "website": "https://www.princehotels.com/en/naeba/",
+      "amenities": ["onsen", "multiple_restaurants", "ski_valet", "kids_program", "shopping_arcade", "shuttle"],
+      "notes": "The base resort itself — four wings totalling ~3,000 rooms with direct lift access. Dragondola terminal is in front of the hotel; free shuttle to Echigo-Yuzawa Station."
+    },
+    {
+      "id": "naspa-new-otani",
+      "name": "NASPA New Otani",
+      "category": "upper_upscale",
+      "price_band": "$$$",
+      "base_resort": "naspa-ski-garden",
+      "ski_in_ski_out": true,
+      "address": "2117-9 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9282,
+      "lng": 138.8112,
+      "website": "https://www.naspa.co.jp/",
+      "amenities": ["onsen", "spa", "restaurant", "ski_valet", "tennis"],
+      "notes": "Resort hotel attached to NASPA Ski Garden, ~10 min by shuttle from Echigo-Yuzawa Station. Good for travellers who want ski + town access without committing to the Naeba complex."
+    },
+    {
+      "id": "hotel-ten-yuzawa",
+      "name": "Hotel TEN to SEN",
+      "category": "upscale",
+      "price_band": "$$",
+      "base_resort": "echigo-yuzawa",
+      "ski_in_ski_out": false,
+      "address": "1899-9 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9370,
+      "lng": 138.8062,
+      "website": "https://hotelten.jp/",
+      "amenities": ["onsen", "restaurant", "ski_storage"],
+      "notes": "Modern hotel a 2-minute walk from Echigo-Yuzawa Station. Convenient for travellers using multiple resorts on the Mt. Naeba ticket (Naeba, Kagura, NASPA)."
+    },
+    {
+      "id": "ryokan-yukiguni-no-yado",
+      "name": "Ryokan Yukiguni no Yado Takahan",
+      "category": "ryokan",
+      "price_band": "$$$",
+      "base_resort": "echigo-yuzawa",
+      "ski_in_ski_out": false,
+      "address": "923 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9320,
+      "lng": 138.8089,
+      "website": "https://www.takahan.co.jp/",
+      "amenities": ["onsen", "kaiseki", "private_onsen"],
+      "notes": "Historic ryokan where Kawabata Yasunari wrote 'Snow Country'. Hilltop location overlooking Echigo-Yuzawa; multiple onsen and a kaiseki dining program."
+    },
+    {
+      "id": "kagura-mitsumata-lodge",
+      "name": "Kagura Mitsumata Lodge",
+      "category": "pension",
+      "price_band": "$$",
+      "base_resort": "kagura",
+      "ski_in_ski_out": true,
+      "address": "742-3 Mitsumata, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6211",
+      "lat": 36.8108,
+      "lng": 138.7553,
+      "website": null,
+      "amenities": ["onsen", "breakfast", "ski_storage"],
+      "notes": "Small pension at the Mitsumata base of Kagura, the deep-powder side of the Mt. Naeba pass. Good base for early-lift backcountry-adjacent skiers."
+    },
+    {
+      "id": "echigo-yuzawa-onsen-hostel",
+      "name": "Yuzawa Mannen-ya",
+      "category": "budget",
+      "price_band": "$",
+      "base_resort": "echigo-yuzawa",
+      "ski_in_ski_out": false,
+      "address": "419 Yuzawa, Yuzawa-machi, Minamiuonuma-gun, Niigata 949-6101",
+      "lat": 36.9332,
+      "lng": 138.8071,
+      "website": null,
+      "amenities": ["onsen", "kitchen", "laundry"],
+      "notes": "Family-run guesthouse a short walk from Echigo-Yuzawa Station. Tatami rooms and a small in-house onsen at a budget price."
+    }
+  ]
+}

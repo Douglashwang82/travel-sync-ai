@@ -1,0 +1,77 @@
+{
+  "region": "Shiga Kogen",
+  "activities": [
+    {
+      "id": "jigokudani-monkey-park",
+      "name": "Jigokudani Yaen-Kōen (Snow Monkey Park)",
+      "type": "wildlife",
+      "village": "Yamanouchi",
+      "address": "6845 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7327,
+      "lng": 138.4624,
+      "indicative_price_jpy": { "adult_entry": 800, "child_entry": 400 },
+      "website": "https://en.jigokudani-yaenkoen.co.jp/",
+      "notes": "Wild Japanese macaques bathing in a natural hot spring — the iconic 'snow monkey' image. Open year-round; ~30 min walk in from the Kanbayashi Onsen carpark."
+    },
+    {
+      "id": "shibu-onsen-9-baths",
+      "name": "Shibu Onsen Nine Public Baths",
+      "type": "onsen",
+      "village": "Shibu Onsen",
+      "address": "Shibu Onsen, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7440,
+      "lng": 138.4250,
+      "indicative_price_jpy": { "ryokan_guest_access": 0 },
+      "website": "https://www.shibuonsen.net/english/",
+      "notes": "Nine free traditional bathhouses scattered through cobblestone alleys, accessible with a key issued by Shibu Onsen ryokan. Each bath is said to cure a different ailment."
+    },
+    {
+      "id": "kanbayashi-onsen-rotenburo",
+      "name": "Kanbayashi Korakukan (day-use onsen)",
+      "type": "onsen",
+      "village": "Kanbayashi Onsen",
+      "address": "6437 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7372,
+      "lng": 138.4438,
+      "indicative_price_jpy": { "day_use_adult": 1200 },
+      "website": "https://www.korakukan-jigokudani.co.jp/",
+      "notes": "Historic ryokan near the Snow Monkey Park entrance offering day-use baths. Outdoor rotenburo overlooks the same Yokoyu River valley as the macaques."
+    },
+    {
+      "id": "zenkoji-temple",
+      "name": "Zenkō-ji Temple",
+      "type": "shrine_temple",
+      "village": "Nagano City",
+      "address": "491 Motoyoshicho, Nagano-shi, Nagano 380-0851",
+      "lat": 36.6620,
+      "lng": 138.1869,
+      "indicative_price_jpy": { "inner_sanctuary_adult": 600 },
+      "website": "https://www.zenkoji.jp/en/",
+      "notes": "One of Japan's most important Buddhist temples, ~1,400 years old. Easy day-trip stop on the way in or out of Shiga Kogen from Nagano Station."
+    },
+    {
+      "id": "shiga-kogen-snowshoe",
+      "name": "Shiga Kogen Snowshoe Tour",
+      "type": "guided_outdoor",
+      "village": "Hasuike",
+      "address": "Hasuike, Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7212,
+      "lng": 138.4985,
+      "indicative_price_jpy": { "half_day_adult": 6000 },
+      "website": "https://www.shigakogen-ski.or.jp/english/",
+      "notes": "Half-day guided snowshoe tours through the Shiga Kogen plateau, a UNESCO Biosphere Reserve. Booked through the Shiga Kogen Tourist Association."
+    },
+    {
+      "id": "obuse-machi-day-trip",
+      "name": "Obuse Town (Hokusai-kan Museum)",
+      "type": "sightseeing",
+      "village": "Obuse",
+      "address": "485 Obuse, Obuse-machi, Kamitakai-gun, Nagano 381-0201",
+      "lat": 36.6975,
+      "lng": 138.3115,
+      "indicative_price_jpy": { "museum_adult": 1000 },
+      "website": "https://hokusai-kan.com/",
+      "notes": "Edo-era chestnut and sake town with the Hokusai-kan ukiyo-e museum. 25 min by Nagano Dentetsu from Yudanaka; pairs well with a Snow Monkey morning."
+    }
+  ]
+}

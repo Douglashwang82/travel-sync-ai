@@ -1,0 +1,142 @@
+{
+  "region": "Hakuba",
+  "gateways": [
+    {
+      "id": "nagano-station",
+      "name": "Nagano Station",
+      "name_ja": "長野駅",
+      "type": "train_station",
+      "lat": 36.6433,
+      "lng": 138.1881,
+      "website": "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=1039",
+      "notes": "Hokuriku Shinkansen terminus and the primary gateway to Hakuba. Alpico Express buses depart from East Exit bus stop #6 (~1h to Hakuba)."
+    },
+    {
+      "id": "matsumoto-station",
+      "name": "Matsumoto Station",
+      "name_ja": "松本駅",
+      "type": "train_station",
+      "lat": 36.2336,
+      "lng": 137.9692,
+      "website": "https://www.jr-shinetsu.co.jp/0102_stationsearch/timetable.php?cd=104",
+      "notes": "Alternative southern gateway via the JR Oito Line direct to Hakuba Station (~90 min). Useful when combining with the Japan Alps or Kamikochi."
+    },
+    {
+      "id": "hakuba-station",
+      "name": "Hakuba Station",
+      "name_ja": "白馬駅",
+      "type": "train_station",
+      "lat": 36.6953,
+      "lng": 137.8625,
+      "website": null,
+      "notes": "JR Oito Line station serving Hakuba village. Walking distance to Happo Bus Terminal; taxi rank outside. Limited service in winter."
+    },
+    {
+      "id": "happo-bus-terminal",
+      "name": "Happo Bus Terminal",
+      "name_ja": "白馬八方バスターミナル",
+      "type": "bus_terminal",
+      "lat": 36.7019,
+      "lng": 137.8336,
+      "website": null,
+      "notes": "Hakuba Valley's transport hub. Alpico Express, Hakuba Valley Shuttle, and resort shuttles all converge here."
+    },
+    {
+      "id": "haneda-airport",
+      "name": "Tokyo Haneda Airport",
+      "name_ja": "羽田空港",
+      "iata": "HND",
+      "type": "airport",
+      "lat": 35.5494,
+      "lng": 139.7798,
+      "website": "https://tokyo-haneda.com/en/",
+      "notes": "Closest international airport to Tokyo Station for the Hokuriku Shinkansen transfer. Allow ~30 min Haneda → Tokyo Station via Keikyu + JR."
+    },
+    {
+      "id": "narita-airport",
+      "name": "Narita International Airport",
+      "name_ja": "成田空港",
+      "iata": "NRT",
+      "type": "airport",
+      "lat": 35.7720,
+      "lng": 140.3929,
+      "website": "https://www.narita-airport.jp/en",
+      "notes": "Most long-haul carriers. ~1 h to Tokyo Station via Narita Express, then 100 min Hokuriku Shinkansen to Nagano."
+    }
+  ],
+  "routes": [
+    {
+      "id": "tokyo-to-nagano-shinkansen",
+      "from": "tokyo-station",
+      "to": "nagano-station",
+      "operator": "JR East",
+      "type": "shinkansen",
+      "duration_min": 95,
+      "indicative_price_jpy": { "one_way_adult_reserved": 8340 },
+      "frequency": "1–2 per hour (Kagayaki / Hakutaka)",
+      "notes": "Hokuriku Shinkansen. Kagayaki is fastest (no Karuizawa stop)."
+    },
+    {
+      "id": "nagano-to-hakuba-alpico-express",
+      "from": "nagano-station",
+      "to": "happo-bus-terminal",
+      "operator": "Alpico Group",
+      "type": "shuttle_bus",
+      "duration_min": 70,
+      "indicative_price_jpy": { "one_way_adult": 2900, "one_way_child": 1450 },
+      "frequency": "~16 per day winter",
+      "notes": "Departs Nagano Station East Exit, stop #6. A few daily services are reservation-only in winter; book at visit-nagano.alpico.co.jp."
+    },
+    {
+      "id": "shinjuku-to-hakuba-night-bus",
+      "from": "shinjuku-station",
+      "to": "happo-bus-terminal",
+      "operator": "Alpico / Keio Highway Bus",
+      "type": "highway_bus",
+      "duration_min": 290,
+      "indicative_price_jpy": { "one_way_adult": 8500 },
+      "frequency": "1–2 daytime + 1 overnight in winter",
+      "notes": "Direct highway-bus alternative to the shinkansen route. The overnight service arrives in time for first lifts; cheapest option from Tokyo."
+    },
+    {
+      "id": "matsumoto-to-hakuba-oito",
+      "from": "matsumoto-station",
+      "to": "hakuba-station",
+      "operator": "JR East (Oito Line)",
+      "type": "local_train",
+      "duration_min": 90,
+      "indicative_price_jpy": { "one_way_adult": 1170 },
+      "frequency": "approx 1 per hour",
+      "notes": "Scenic single-track line through the Northern Alps. Slower than the shinkansen + bus route but works well when arriving via Chubu Centrair (NGO)."
+    },
+    {
+      "id": "narita-to-hakuba-direct-bus",
+      "from": "narita-airport",
+      "to": "happo-bus-terminal",
+      "operator": "Nagano Snow Shuttle",
+      "type": "highway_bus",
+      "duration_min": 360,
+      "indicative_price_jpy": { "one_way_adult": 16500 },
+      "frequency": "winter only, ~2 per day",
+      "notes": "Seasonal direct Narita → Hakuba coach. Convenient with ski bags; book ahead via naganosnowshuttle.com."
+    }
+  ],
+  "in_resort_transport": [
+    {
+      "id": "hakuba-valley-shuttle",
+      "name": "Hakuba Valley Shuttle",
+      "type": "shuttle_bus",
+      "operator": "Hakuba Valley",
+      "frequency": "30–60 min winter daytime",
+      "notes": "Free inter-resort shuttle linking Happo-One, Iwatake, Goryu, Hakuba 47, Tsugaike, Cortina and Norikura with a valid Hakuba Valley lift ticket."
+    },
+    {
+      "id": "happo-village-loop",
+      "name": "Happo Village Loop Shuttle",
+      "type": "shuttle_bus",
+      "operator": "Hakuba-mura",
+      "frequency": "every 20–30 min winter daytime",
+      "notes": "Free village loop connecting Happo Bus Terminal to Wadano, Sakka, Nakiyama and Echoland lift bases. Runs during winter season only."
+    }
+  ]
+}
