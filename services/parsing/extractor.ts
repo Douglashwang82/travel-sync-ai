@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { generateJson } from "@/lib/gemini";
+import { detectJapanSkiDestination } from "@/lib/ski-destination";
 import type { TripContext } from "./context";
 
 // ─── Response schema ──────────────────────────────────────────────────────────
@@ -83,6 +84,23 @@ function buildSystemPrompt(ctx: TripContext): string {
     contextLines.push(`Remembered places and options: ${ctx.memoryHints.join(", ")}`);
   }
 
+  const skiMatch = detectJapanSkiDestination(ctx.destination);
+  const skiBlock = skiMatch.match
+    ? `
+
+Japan ski trip context (destination resolves to ${skiMatch.region.region}, ${skiMatch.region.prefecture}):
+- Also recognise ski-specific entities in addition to the standard set:
+  - ski_resort names (e.g. Niseko Grand Hirafu, Happo-One, Naeba) → entity type "location"
+  - lift / pass mentions (e.g. "Niseko United pass", "全山券") → entity type "preference"
+  - rentals (skis, snowboard, boots, helmet, jacket) → entity type "preference"
+  - onsen names or onsen preference → entity type "location" for named onsens, "preference" otherwise
+  - ski level (beginner / intermediate / advanced / expert / "powder hunter") → entity type "preference"
+  - ski-in/ski-out lodging preference → entity type "preference"
+- For add_option / create_todo_item, prefer item_type "activity" for ski resorts, onsens, and snow play;
+  "hotel" for lodging; "restaurant" for dining; "transport" for shuttles / airport transfers.
+- Snow/season constraints (e.g. "預算內 best powder week", "想看樹冰") are valid preferences/constraints.`
+    : "";
+
   return `You are a travel entity extractor for a LINE group trip planning bot.
 The primary language is Traditional Chinese (zh-TW). Messages may also contain English or mixed Chinese-English.
 
@@ -145,7 +163,7 @@ Return ONLY valid JSON matching this schema:
   "entities": [{ "type", "canonicalValue", "displayValue", "confidence", "attributes"? }],
   "suggestedActions": [{ "action", "field"?, "itemTitle"?, "itemType"?, "optionName"?, "deadline"? }],
   "conflicts": [{ "field", "existingValue", "newValue", "description" }]
-}`;
+}${skiBlock}`;
 }
 
 // ─── Extractor ────────────────────────────────────────────────────────────────
