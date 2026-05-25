@@ -17,6 +17,7 @@
 
 import { createAdminClient } from "@/lib/db";
 import { generateEmbedding, GeminiUnavailableError } from "@/lib/gemini";
+import { logger } from "@/lib/logger";
 import {
   getPlaceDetailsBatch,
   searchPlaces,
@@ -53,6 +54,8 @@ export interface VibeSearchInput {
   budget: SurveyAnswers["budget_tier"];
   itemTypes?: Array<PoiCandidate["itemType"]>;
   k?: number;
+  /** Optional trace correlation id for logging. */
+  genId?: string;
 }
 
 /**
@@ -68,6 +71,7 @@ function buildVibeQuery(input: VibeSearchInput): string {
 
 export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandidate[]> {
   const k = input.k ?? 30;
+  const genId = input.genId;
   const db = createAdminClient();
 
   let queryEmbedding: number[];
@@ -75,7 +79,8 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     queryEmbedding = await generateEmbedding(buildVibeQuery(input));
   } catch (err) {
     if (err instanceof GeminiUnavailableError) {
-      return liveTextSearchFallback(input, k);
+      logger.warn("[poi-engine] embedding unavailable, falling back to live text search", { genId });
+      return liveTextSearchFallback(input, k, genId);
     }
     throw err;
   }
@@ -87,8 +92,8 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     p_limit: k,
   });
   if (error) {
-    console.error("[poi-engine] vector RPC failed", error);
-    return liveTextSearchFallback(input, k);
+    logger.error("[poi-engine] vector RPC failed", { genId, error: String(error.message ?? error) });
+    return liveTextSearchFallback(input, k, genId);
   }
 
   const rows = (data ?? []) as Array<{
@@ -102,7 +107,20 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     similarity: number;
   }>;
 
-  if (rows.length === 0) return liveTextSearchFallback(input, k);
+  if (rows.length === 0) {
+    logger.warn("[poi-engine] vector search returned 0 rows, falling back", {
+      genId,
+      destination: input.destination,
+    });
+    return liveTextSearchFallback(input, k, genId);
+  }
+
+  logger.info("[poi-engine] vector search", {
+    genId,
+    rows: rows.length,
+    topSim: rows[0].similarity.toFixed(3),
+    bottomSim: rows[rows.length - 1].similarity.toFixed(3),
+  });
 
   return rows.map((r) => ({
     placeId: r.place_id,
@@ -121,7 +139,11 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
  * directly per item-type bucket. Returns lower-similarity candidates (0.5
  * sentinel) so the orchestrator can detect the fallback if it cares.
  */
-async function liveTextSearchFallback(input: VibeSearchInput, k: number): Promise<PoiCandidate[]> {
+async function liveTextSearchFallback(
+  input: VibeSearchInput,
+  k: number,
+  genId?: string
+): Promise<PoiCandidate[]> {
   const buckets: Array<PoiCandidate["itemType"]> =
     input.itemTypes ?? ["activity", "restaurant", "hotel"];
   const perBucket = Math.max(3, Math.ceil(k / buckets.length));
@@ -142,7 +164,14 @@ async function liveTextSearchFallback(input: VibeSearchInput, k: number): Promis
       });
     }
   }
-  return results.slice(0, k);
+  const out = results.slice(0, k);
+  logger.info("[poi-engine] live text fallback", {
+    genId,
+    destination: input.destination,
+    buckets: buckets.join(","),
+    returned: out.length,
+  });
+  return out;
 }
 
 /**
@@ -153,7 +182,7 @@ async function liveTextSearchFallback(input: VibeSearchInput, k: number): Promis
  * `similarity` is set to 1.0 — routes are pre-curated, they don't need to
  * compete with vibe-search scores.
  */
-export async function loadPoisByIds(placeIds: string[]): Promise<PoiCandidate[]> {
+export async function loadPoisByIds(placeIds: string[], genId?: string): Promise<PoiCandidate[]> {
   const unique = Array.from(new Set(placeIds.filter((id) => id && id.length > 0)));
   if (unique.length === 0) return [];
 
@@ -163,8 +192,15 @@ export async function loadPoisByIds(placeIds: string[]): Promise<PoiCandidate[]>
     .select("place_id, name, item_type, tags, description, lat, lng, live_data")
     .in("place_id", unique);
   if (error) {
-    console.error("[poi-engine] loadPoisByIds failed", error);
+    logger.error("[poi-engine] loadPoisByIds failed", { genId, error: String(error.message ?? error) });
     return [];
+  }
+  if ((data ?? []).length !== unique.length) {
+    logger.warn("[poi-engine] loadPoisByIds: some place_ids not found", {
+      genId,
+      requested: unique.length,
+      found: (data ?? []).length,
+    });
   }
 
   const rows = (data ?? []) as Array<{
