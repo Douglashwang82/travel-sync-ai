@@ -21,6 +21,7 @@
 
 import { createAdminClient } from "@/lib/db";
 import { generateEmbedding, GeminiUnavailableError } from "@/lib/gemini";
+import { logger } from "@/lib/logger";
 import type { SurveyAnswers } from "./index";
 
 export interface RouteCandidate {
@@ -43,6 +44,8 @@ export interface RouteSearchInput {
   pace: SurveyAnswers["pace"];
   budget: SurveyAnswers["budget_tier"];
   k?: number;
+  /** Optional trace correlation id for logging. */
+  genId?: string;
 }
 
 export interface RouteComposition {
@@ -81,6 +84,7 @@ function buildRouteQuery(input: RouteSearchInput): string {
 
 export async function searchRoutesByVibe(input: RouteSearchInput): Promise<RouteCandidate[]> {
   const k = input.k ?? 10;
+  const genId = input.genId;
 
   let queryEmbedding: number[];
   try {
@@ -89,7 +93,10 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
     // Routes are a "shortcut" tier — we return empty on Gemini failure rather
     // than throwing. The orchestrator will degrade to the POI flow, which has
     // its own Gemini-unavailable handling.
-    if (err instanceof GeminiUnavailableError) return [];
+    if (err instanceof GeminiUnavailableError) {
+      logger.warn("[route-engine] embedding unavailable, returning empty", { genId });
+      return [];
+    }
     throw err;
   }
 
@@ -101,7 +108,7 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
     p_limit: k,
   });
   if (error) {
-    console.error("[route-engine] vector RPC failed", error);
+    logger.error("[route-engine] vector RPC failed", { genId, error: String(error.message ?? error) });
     return [];
   }
 
@@ -117,7 +124,10 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
     pinned_vibes: string[] | null;
     similarity: number;
   }>;
-  if (rows.length === 0) return [];
+  if (rows.length === 0) {
+    logger.info("[route-engine] no rows from RPC", { genId, destination: input.destination, pace: input.pace ?? null });
+    return [];
+  }
 
   const requestVibes = new Set(input.vibe ?? []);
   const scored = rows.map<RouteCandidate>((r) => {
@@ -147,10 +157,29 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
   });
 
   const gated = scored.filter((c) => c.finalScore >= ROUTE_TUNABLES.GATE);
+  logger.info("[route-engine] scored & gated", {
+    genId,
+    rows: rows.length,
+    passingGate: gated.length,
+    gate: ROUTE_TUNABLES.GATE,
+    topScores: scored
+      .slice()
+      .sort((a, b) => b.finalScore - a.finalScore)
+      .slice(0, 5)
+      .map((c) => `${c.title}=${c.finalScore.toFixed(3)}`)
+      .join(" | "),
+  });
   if (gated.length === 0) return [];
 
-  const healthy = await filterHealthy(gated);
+  const healthy = await filterHealthy(gated, genId);
   healthy.sort((a, b) => b.finalScore - a.finalScore);
+  if (healthy.length !== gated.length) {
+    logger.info("[route-engine] health filter dropped routes", {
+      genId,
+      before: gated.length,
+      after: healthy.length,
+    });
+  }
   return healthy;
 }
 
@@ -193,7 +222,7 @@ export function composeFromRoutes(
 // mark their last_health_fail_at. Healthy routes get last_health_ok_at bumped
 // so a quality cron can prune ones that haven't been touched in months.
 
-async function filterHealthy(candidates: RouteCandidate[]): Promise<RouteCandidate[]> {
+async function filterHealthy(candidates: RouteCandidate[], genId?: string): Promise<RouteCandidate[]> {
   if (candidates.length === 0) return [];
   const db = createAdminClient();
 
@@ -204,7 +233,7 @@ async function filterHealthy(candidates: RouteCandidate[]): Promise<RouteCandida
     .in("place_id", allIds);
   if (error) {
     // On lookup failure, return the candidates unchanged — health is opportunistic.
-    console.error("[route-engine] health lookup failed", error);
+    logger.error("[route-engine] health lookup failed", { genId, error: String(error.message ?? error) });
     return candidates;
   }
 
