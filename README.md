@@ -1,6 +1,6 @@
-# TravelSync AI
+# TravelSync AI · Japan Ski edition
 
-A collaborative group-trip planning bot for LINE. It reads your group chat, turns scattered conversations into an organised trip board, runs consensus voting, splits expenses, and keeps everyone in sync — all without leaving LINE.
+A collaborative group-trip planning bot for LINE, currently focused on Japan ski trips (Niseko, Hakuba, Naeba, Nozawa Onsen, Shiga Kogen, Zao Onsen). It reads your group chat, turns scattered conversations into an organised trip board, runs consensus voting, splits expenses, and keeps everyone in sync — all without leaving LINE. Non-ski destinations continue to work; ski destinations get a curated catalog of resorts, hotels, onsens, restaurants, and transport gateways plus ski-aware prompts.
 
 **Live in LINE** → group chat plus a companion web app at `/app`.
 

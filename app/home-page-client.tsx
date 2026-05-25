@@ -23,6 +23,7 @@ type Locale = "en" | "zh-TW";
 
 type Copy = {
   brand: string;
+  editionBadge: string;
   nav: {
     story: string;
     commands: string;
@@ -84,6 +85,7 @@ const MOTION_STORAGE_KEY = "travelsync-home-force-motion";
 const CONTENT = {
   en: {
     brand: "TravelSync AI",
+    editionBadge: "Japan Ski",
     nav: {
       story: "Story",
       commands: "Commands",
@@ -107,7 +109,7 @@ const CONTENT = {
       scroll: "Scroll",
     },
     scene: {
-      group: "Osaka group",
+      group: "Niseko crew",
       monitor: "AI monitor",
       vote: "Hotel vote",
       expense: "Dinner split",
@@ -165,7 +167,7 @@ const CONTENT = {
       heading: "Commands with a visible pulse",
       subheading: "Short LINE commands become durable trip objects.",
       items: [
-        { cmd: "/start Osaka Jul 15-20", desc: "Create the shared trip", state: "new trip" },
+        { cmd: "/start Niseko Jan 5-12", desc: "Create the shared trip", state: "new trip" },
         { cmd: "/vote hotel", desc: "Launch a visual vote", state: "pending" },
         { cmd: "/add book travel insurance", desc: "Capture a task", state: "todo" },
         { cmd: "/exp 3200 dinner for all", desc: "Split an expense", state: "settled" },
@@ -186,6 +188,7 @@ const CONTENT = {
   },
   "zh-TW": {
     brand: "TravelSync AI",
+    editionBadge: "日本滑雪",
     nav: {
       story: "故事",
       commands: "指令",
@@ -209,7 +212,7 @@ const CONTENT = {
       scroll: "向下",
     },
     scene: {
-      group: "大阪群組",
+      group: "二世谷揪團",
       monitor: "AI 監聽",
       vote: "飯店投票",
       expense: "晚餐分帳",
@@ -267,7 +270,7 @@ const CONTENT = {
       heading: "有節奏的 LINE 指令",
       subheading: "短短一行指令，就會變成可追蹤的旅行項目。",
       items: [
-        { cmd: "/start Osaka Jul 15-20", desc: "建立共享旅程", state: "新旅程" },
+        { cmd: "/start Niseko Jan 5-12", desc: "建立共享旅程", state: "新旅程" },
         { cmd: "/vote hotel", desc: "發起視覺化投票", state: "投票中" },
         { cmd: "/add book travel insurance", desc: "新增待辦事項", state: "待辦" },
         { cmd: "/exp 3200 dinner for all", desc: "分攤共同支出", state: "已結算" },
@@ -334,6 +337,12 @@ export default function HomePageClient() {
             />
             <span className="truncate text-sm font-black uppercase tracking-[0.18em]">
               {copy.brand}
+            </span>
+            <span
+              className="hidden shrink-0 rounded-full border border-[#00b900]/40 bg-[#00b900]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#007a00] dark:border-[#00b900]/50 dark:bg-[#00b900]/15 dark:text-[#7ee37e] sm:inline-flex"
+              aria-label={copy.editionBadge}
+            >
+              {copy.editionBadge}
             </span>
           </Link>
 
@@ -884,7 +893,7 @@ function HeroScene({ copy }: { copy: Copy["scene"] }) {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-[#81d978]">Trip Board</p>
-              <p className="mt-1 text-2xl font-black">Osaka</p>
+              <p className="mt-1 text-2xl font-black">Niseko</p>
             </div>
             <div className="grid h-10 w-10 place-items-center rounded-[8px] bg-[#00b900]">
               <Route className="h-5 w-5" aria-hidden />

@@ -52,7 +52,7 @@ const COPY: Record<
     pastSection: "Past trips",
     emptyTitle: "No trips yet",
     emptyBody:
-      "Add the TravelSync bot to a LINE group and type /start Osaka Jul 15-20 to create your first trip. It will show up here automatically.",
+      "Add the TravelSync bot to a LINE group and type /start Niseko Jan 5-12 to create your first trip. It will show up here automatically.",
     startWizard: "Plan new trip",
     howItWorks: "How it works",
     datesTbd: "Dates to be decided",
@@ -79,7 +79,7 @@ const COPY: Record<
     pastSection: "過往旅程",
     emptyTitle: "還沒有旅程",
     emptyBody:
-      "把 TravelSync 機器人加入 LINE 群組，並輸入 /start Osaka Jul 15-20 建立第一個旅程。建立後會自動顯示在這裡。",
+      "把 TravelSync 機器人加入 LINE 群組，並輸入 /start Niseko Jan 5-12 建立第一個旅程。建立後會自動顯示在這裡。",
     startWizard: "建立新旅程",
     howItWorks: "查看介紹",
     datesTbd: "日期尚未決定",
@@ -285,11 +285,11 @@ function EmptyTrips({ locale }: { locale: AppLocale }) {
     <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--background)] px-6 py-12 text-center">
       <p className="text-sm font-semibold">{copy.emptyTitle}</p>
       <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[var(--muted-foreground)]">
-        {copy.emptyBody.split("/start Osaka Jul 15-20")[0]}
+        {copy.emptyBody.split("/start Niseko Jan 5-12")[0]}
         <code className="rounded bg-[var(--secondary)] px-1 py-0.5 font-mono text-[11px]">
-          /start Osaka Jul 15-20
+          /start Niseko Jan 5-12
         </code>{" "}
-        {copy.emptyBody.split("/start Osaka Jul 15-20")[1]}
+        {copy.emptyBody.split("/start Niseko Jan 5-12")[1]}
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         <Button asChild className="rounded-full">
