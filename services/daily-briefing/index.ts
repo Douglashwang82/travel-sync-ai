@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { TripItemMetadataSchema } from "@/lib/trip-item-metadata";
 import type { TripItemMetadata } from "@/lib/trip-item-metadata";
 
@@ -71,7 +72,7 @@ export async function sendDailyBriefings(): Promise<DailyBriefingResult[]> {
     );
 
     try {
-      await pushText(lineGroupId, message);
+      await pushText(lineGroupId, appendTripLinkText(message, buildTripUrl(trip.id)));
       results.push({
         tripId: trip.id,
         groupLineId: lineGroupId,

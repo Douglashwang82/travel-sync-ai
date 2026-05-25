@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { track } from "@/lib/analytics";
 import { checkRelevance } from "./relevance";
 import { assembleTripContext } from "./context";
@@ -90,7 +91,8 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
     if (lineGroupId) {
       const ack = buildExtractionAck(parseResult.entities, parseResult.suggestedActions);
       if (ack) {
-        await pushText(lineGroupId, ack).catch(() => {});
+        const url = buildTripUrl(ctx.tripId);
+        await pushText(lineGroupId, appendTripLinkText(ack, url)).catch(() => {});
       }
     }
   } catch (err) {
@@ -110,10 +112,14 @@ export async function parseMessage(input: ParseMessageInput): Promise<void> {
 
       // Notify the group about each conflict
       if (lineGroupId) {
+        const url = buildTripUrl(ctx.tripId, "/votes");
         for (const conflict of parseResult.conflicts) {
           await pushText(
             lineGroupId,
-            `我發現可能的衝突：${conflict.description}。已加入待投票清單，等群組決定。`
+            appendTripLinkText(
+              `我發現可能的衝突：${conflict.description}。已加入待投票清單，等群組決定。`,
+              url
+            )
           ).catch(() => {});
         }
       }

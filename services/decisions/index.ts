@@ -8,6 +8,7 @@ import type { ItemType } from "@/lib/types";
 import { inferItemType } from "@/bot/commands/add";
 import { searchPlaces } from "./places";
 import { getKnowledgeEntries } from "@/services/memory";
+import { appendTripLinkText, buildTripUrl, getTripUrlForItem } from "@/lib/trip-link";
 
 const VOTE_DURATION_HOURS = 24;
 
@@ -30,6 +31,8 @@ export interface StartDecisionInput {
 export async function startDecision(input: StartDecisionInput): Promise<void> {
   const { itemId, tripId, groupId, lineGroupId } = input;
   const db = createAdminClient();
+  const boardUrl = buildTripUrl(tripId);
+  const votesUrl = buildTripUrl(tripId, "/votes");
 
   const { data: item } = await db
     .from("trip_items")
@@ -39,7 +42,10 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
 
   if (!item) {
     console.warn(`[decisions] Item ${itemId} not found`);
-    await pushText(lineGroupId, `找不到這個項目。使用 /status 查看看板。`);
+    await pushText(
+      lineGroupId,
+      appendTripLinkText("找不到這個項目。使用 /status 查看看板。", boardUrl)
+    );
     return;
   }
 
@@ -53,7 +59,10 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   if (item.item_kind !== "decision") {
     await pushText(
       lineGroupId,
-      `「${item.title}」是知識或規劃內容，不是決定項目。\n請先建立決定項目，再開始投票。`
+      appendTripLinkText(
+        `「${item.title}」是知識或規劃內容，不是決定項目。\n請先建立決定項目，再開始投票。`,
+        boardUrl
+      )
     );
     return;
   }
@@ -61,7 +70,10 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   if (item.stage !== "todo") {
     await pushText(
       lineGroupId,
-      `「${item.title}」已經是「${item.stage}」階段。使用 /status 查看看板。`
+      appendTripLinkText(
+        `「${item.title}」已經是「${item.stage}」階段。使用 /status 查看看板。`,
+        boardUrl
+      )
     );
     return;
   }
@@ -139,14 +151,20 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
       if (placesResult.errorKind === "no_results") {
         await pushText(
           lineGroupId,
-          `${input.destination}目前找不到「${item.title}」的地點。\n\n` +
-            `請大家分享想法，或用 /share [網址] 分享連結，再試一次 /vote。`
+          appendTripLinkText(
+            `${input.destination}目前找不到「${item.title}」的地點。\n\n` +
+              `請大家分享想法，或用 /share [網址] 分享連結，再試一次 /vote。`,
+            boardUrl
+          )
         );
       } else {
         await pushText(
           lineGroupId,
-          `目前無法為「${item.title}」搜尋地點。\n\n` +
-            `請大家分享想法，或用 /share [網址] 分享連結，再試一次 /vote。`
+          appendTripLinkText(
+            `目前無法為「${item.title}」搜尋地點。\n\n` +
+              `請大家分享想法，或用 /share [網址] 分享連結，再試一次 /vote。`,
+            boardUrl
+          )
         );
       }
       return;
@@ -158,7 +176,10 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
   const deadline = new Date(Date.now() + VOTE_DURATION_HOURS * 60 * 60 * 1000).toISOString();
   const transition = await startVote(itemId, deadline);
   if (!transition.ok) {
-    await pushText(lineGroupId, `無法開始投票：${transition.error}`);
+    await pushText(
+      lineGroupId,
+      appendTripLinkText(`無法開始投票：${transition.error}`, votesUrl)
+    );
     return;
   }
 
@@ -189,7 +210,10 @@ export async function startDecision(input: StartDecisionInput): Promise<void> {
 
   await pushText(
     lineGroupId,
-    `「${item.title}」已開始投票！\n滑動比較選項，再按下「投票」。將於 ${VOTE_DURATION_HOURS} 小時後截止。`
+    appendTripLinkText(
+      `「${item.title}」已開始投票！\n滑動比較選項，再按下「投票」。將於 ${VOTE_DURATION_HOURS} 小時後截止。`,
+      votesUrl
+    )
   );
   await pushFlex(lineGroupId, `投票：${item.title}`, carousel);
   console.log(`[decisions] Decision flow completed successfully for ${itemId}`);
@@ -252,7 +276,7 @@ export async function announceWinner(
 ): Promise<void> {
   const db = createAdminClient();
 
-  const [{ data: option }, { data: item }] = await Promise.all([
+  const [{ data: option }, { data: item }, tripUrl] = await Promise.all([
     db
       .from("trip_item_options")
       .select("name, booking_url")
@@ -263,15 +287,19 @@ export async function announceWinner(
       .select("title, booking_status")
       .eq("id", itemId)
       .single(),
+    getTripUrlForItem(itemId),
   ]);
 
   await pushText(
     lineGroupId,
-    buildWinnerMessage(
-      item?.title ?? "項目",
-      option?.name ?? "選定的選項",
-      winnerVotes,
-      totalVotes
+    appendTripLinkText(
+      buildWinnerMessage(
+        item?.title ?? "項目",
+        option?.name ?? "選定的選項",
+        winnerVotes,
+        totalVotes
+      ),
+      tripUrl
     )
   );
 
@@ -282,7 +310,10 @@ export async function announceWinner(
       : "";
     await pushText(
       lineGroupId,
-      `📋 下一步：完成「${item.title}」的預訂。${bookingLine}\n\n預訂完成後，請輸入：\n/booked ${item.title} [訂位代碼]`
+      appendTripLinkText(
+        `📋 下一步：完成「${item.title}」的預訂。${bookingLine}\n\n預訂完成後，請輸入：\n/booked ${item.title} [訂位代碼]`,
+        tripUrl
+      )
     );
 
     await track("booking_prompt_sent", {

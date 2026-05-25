@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { track } from "@/lib/analytics";
 import { captureError } from "@/lib/monitoring";
 import { logger } from "@/lib/logger";
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   let notified = 0;
 
-  for (const [, { groupId, titles }] of byTrip) {
+  for (const [tripId, { groupId, titles }] of byTrip) {
     // Check cooldown
     const { data: recentReminder } = await db
       .from("analytics_events")
@@ -78,7 +79,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     await pushText(
       group.line_group_id,
-      `📋 A few trip items haven't been discussed in a while:\n\n${itemList}${more}\n\nType /status to see the full board, or /vote [item] to start a decision.`
+      appendTripLinkText(
+        `📋 A few trip items haven't been discussed in a while:\n\n${itemList}${more}\n\nType /status to see the full board, or /vote [item] to start a decision.`,
+        buildTripUrl(tripId)
+      )
     );
 
     await track("nudge_sent", {

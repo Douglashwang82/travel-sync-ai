@@ -3,6 +3,12 @@ import { createAdminClient } from "@/lib/db";
 import { pushText, pushFlex } from "@/lib/line";
 import { track } from "@/lib/analytics";
 import { logger } from "@/lib/logger";
+import {
+  appendTripLinkText,
+  buildTripUrl,
+  getTripUrlForGroup,
+  getTripUrlForItem,
+} from "@/lib/trip-link";
 import { routeCommand } from "@/bot/router";
 import { parseMessage } from "@/services/parsing";
 import { handleDirectMessage } from "@/services/private-chat";
@@ -245,7 +251,11 @@ async function handlePostback(
     });
 
     if (!result.accepted) {
-      await pushText(ctx.lineGroupId, result.error ?? "無法記錄你的投票。");
+      const url = await getTripUrlForItem(itemId, "/votes");
+      await pushText(
+        ctx.lineGroupId,
+        appendTripLinkText(result.error ?? "無法記錄你的投票。", url)
+      );
       return;
     }
 
@@ -299,7 +309,11 @@ async function tryConsumeAsSurveyAnswer(input: SurveyAnswerIntake): Promise<bool
     return true;
   } catch (err) {
     logger.warn("survey free-text answer rejected", { groupId: input.groupId, error: String(err) });
-    await pushText(input.lineGroupId, `輸入無法接受：${err instanceof Error ? err.message : "請再試一次"}`);
+    const url = await getTripUrlForGroup(input.groupId);
+    await pushText(
+      input.lineGroupId,
+      appendTripLinkText(`輸入無法接受：${err instanceof Error ? err.message : "請再試一次"}`, url)
+    );
     return true; // Still consumed — don't bleed into the parser.
   }
 }
@@ -312,7 +326,8 @@ async function handleSurveyPostback(data: string, ctx: EventContext): Promise<vo
 
   if (action === "cancel") {
     await abandonSurvey(sessionId);
-    await pushText(ctx.lineGroupId, "已取消這次旅程草稿。");
+    const url = await getTripUrlForGroup(ctx.dbGroupId);
+    await pushText(ctx.lineGroupId, appendTripLinkText("已取消這次旅程草稿。", url));
     return;
   }
 
@@ -327,7 +342,11 @@ async function handleSurveyPostback(data: string, ctx: EventContext): Promise<vo
     await advanceSurveyOrFinish(session, ctx.lineGroupId, ctx.userId, ctx.dbGroupId);
   } catch (err) {
     logger.warn("survey postback rejected", { groupId: ctx.dbGroupId, error: String(err) });
-    await pushText(ctx.lineGroupId, `這個答案無法接受：${err instanceof Error ? err.message : "請再試一次"}`);
+    const url = await getTripUrlForGroup(ctx.dbGroupId);
+    await pushText(
+      ctx.lineGroupId,
+      appendTripLinkText(`這個答案無法接受：${err instanceof Error ? err.message : "請再試一次"}`, url)
+    );
   }
 }
 
@@ -521,8 +540,11 @@ async function handleSurveyFork(sessionId: string, ctx: EventContext): Promise<v
   }
 
   await markForked(sessionId);
-  const tripUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/app/trips/${result.data.tripId}`;
-  await pushText(ctx.lineGroupId, `已建立旅程！打開看板開始規劃：\n${tripUrl}`);
+  const tripUrl = buildTripUrl(result.data.tripId);
+  await pushText(
+    ctx.lineGroupId,
+    appendTripLinkText("已建立旅程！打開看板開始規劃。", tripUrl)
+  );
 }
 
 function generationFailureMessage(reason: GenerationFailedError["reason"]): string {

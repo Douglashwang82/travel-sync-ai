@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { buildCommandPageUrl, isLinkableCommand } from "@/lib/command-pages";
 import { createAdminClient } from "@/lib/db";
 import { BOT_COPY } from "@/lib/bot-copy";
+import { appendTripLinkText, withFlexTripLink } from "@/lib/trip-link";
 import { COMMAND_ROUTE_MAP, RATE_LIMIT_EXEMPT_COMMANDS } from "./command-registry";
 
 export interface CommandContext {
@@ -56,36 +57,8 @@ export async function routeCommand(
   const withLink = async (message: ReplyPayload): Promise<ReplyPayload> => {
     const url = await resolvePageUrl();
     if (!url) return message;
-
-    if (typeof message === "string") {
-      return `${message}\n\n${BOT_COPY.viewLink(url)}`;
-    }
-
-    const container = message.contents;
-    if (container.type !== "bubble" || container.body?.type !== "box") {
-      return message;
-    }
-    return {
-      ...message,
-      contents: {
-        ...container,
-        body: {
-          ...container.body,
-          contents: [
-            ...container.body.contents,
-            { type: "separator", margin: "md" },
-            {
-              type: "text",
-              text: BOT_COPY.viewLink(url),
-              size: "xs",
-              color: "#3B82F6",
-              wrap: true,
-              action: { type: "uri", label: BOT_COPY.viewLabel, uri: url },
-            },
-          ],
-        },
-      },
-    };
+    if (typeof message === "string") return appendTripLinkText(message, url);
+    return { ...message, contents: withFlexTripLink(message.contents, url) };
   };
 
   // Helper that tries reply token first (single-use), then falls back to push.

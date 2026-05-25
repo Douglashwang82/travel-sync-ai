@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 
 /**
  * Push a short ack to the trip's LINE group when an agent has done something
@@ -13,7 +14,7 @@ export async function pushAgentAck(tripId: string, text: string): Promise<void> 
   if (!lineGroupId) return;
 
   try {
-    await pushText(lineGroupId, text, lineGroupId);
+    await pushText(lineGroupId, appendTripLinkText(text, buildTripUrl(tripId)), lineGroupId);
   } catch (err) {
     console.warn(
       `[agent-ack] push failed for trip ${tripId}:`,
