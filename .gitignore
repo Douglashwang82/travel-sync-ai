@@ -52,3 +52,6 @@ next-env.d.ts
 
 # supabase cli temp state (auto-generated)
 supabase/.temp/
+
+# jupyter notebook checkpoints
+.ipynb_checkpoints/
