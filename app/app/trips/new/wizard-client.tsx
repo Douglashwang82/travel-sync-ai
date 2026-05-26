@@ -176,7 +176,7 @@ export function NewTripWizard({ groups }: { groups: GroupOption[] }): React.Reac
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = (await res.json()) as SubmitResponse;
+      const json = await readSubmitResponse(res);
       if (!res.ok || !json.tripId) {
         setSubmitError(humanizeError(json));
         setSubmitting(false);
@@ -819,6 +819,33 @@ function humanVibe(v: string): string {
 function humanPace(p: WizardState["pace"]): string {
   if (!p) return "—";
   return { chill: "悠閒", balanced: "均衡", packed: "緊湊" }[p];
+}
+
+async function readSubmitResponse(res: Response): Promise<SubmitResponse> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      return (await res.json()) as SubmitResponse;
+    } catch {
+      return {
+        error: "invalid_json_response",
+        message: `Server returned invalid JSON (${res.status}).`,
+      };
+    }
+  }
+
+  const text = await res.text().catch(() => "");
+  console.error("[trips/generate] expected JSON response", {
+    status: res.status,
+    statusText: res.statusText,
+    contentType,
+    bodyPreview: text.slice(0, 240),
+  });
+
+  return {
+    error: "non_json_response",
+    message: `Server returned a non-JSON response (${res.status}). Check the dev terminal for the real error.`,
+  };
 }
 
 function humanizeError(json: SubmitResponse): string {

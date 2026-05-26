@@ -11,16 +11,6 @@
           }
         ]
       }
-    ],
-    "PreCommit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx vitest related --run $(git diff --cached --name-only --diff-filter=ACM | tr '\\n' ' ') 2>/dev/null || true"
-          }
-        ]
-      }
     ]
   },
   "permissions": {

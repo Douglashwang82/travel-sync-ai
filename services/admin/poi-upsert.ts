@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/db";
-import { generateEmbedding } from "@/lib/gemini";
+import { generateEmbeddingWithRetry } from "@/services/admin/embedding-retry";
 
 export const POI_ITEM_TYPES = ["hotel", "restaurant", "activity", "transport", "other"] as const;
 export type PoiItemType = (typeof POI_ITEM_TYPES)[number];
@@ -94,7 +94,7 @@ function buildDescription(input: PoiInput): string {
 export async function upsertPoi(input: PoiInput): Promise<PoiUpsertResult> {
   try {
     const description = buildDescription(input);
-    const embedding = await generateEmbedding(description);
+    const embedding = await generateEmbeddingWithRetry(description, { label: input.place_id });
     const db = createAdminClient();
     const now = new Date().toISOString();
 
