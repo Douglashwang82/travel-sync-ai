@@ -79,3 +79,14 @@ etc. with types intact.
   falls back to Google Places text search; if you also have no
   `GOOGLE_PLACES_API_KEY` you'll get `[]`. Seed the destination first or
   pick a destination with existing `poi_embeddings`.
+
+## The example trip
+
+Out of the box the notebook plans a **2-day couple's ski + onsen trip to
+Niseko**, seeded from the curated `data/japan-ski-trip/niseko/` dataset
+(resorts, restaurants, activities). The pre-flight cell upserts two
+multi-stop routes — _Hirafu 滑雪一日_ and _Niseko Village 寬鬆滑雪日_ —
+each composed as ski → lunch → onsen → dinner. With both days
+route-covered Phase 3 (LLM) is skipped and the solver lays out a full
+4-stop day per route. Change the destination/duration in Phase 0 if you
+want to exercise the LLM path or a cold-start destination.
