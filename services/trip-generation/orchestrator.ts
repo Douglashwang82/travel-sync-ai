@@ -497,6 +497,20 @@ function trySolve(
 // so future callers (web wizard preview) can reuse the same brief.
 export type { PickPromptInput };
 
+// Exposed for the notebooks/itinerary-pipeline.ipynb walkthrough so each
+// phase can be invoked in isolation. Not part of the supported public API —
+// callers should still go through generateTemplateFromSurvey().
+export const __notebook = {
+  llmPickAssignment,
+  trySolve,
+  unionByPlaceId,
+  deriveStartWeekday,
+  synthesizePickFromRoutes,
+  persistTemplate,
+  validateAnswers,
+};
+export type { PickResult, SolveTry };
+
 async function persistTemplate(
   input: GenerateInput,
   pick: PickResult,
