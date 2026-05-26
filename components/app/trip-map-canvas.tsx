@@ -23,6 +23,8 @@ export interface MapPin {
   itemId: string | null;
   optionId: string | null;
   dayKey: string | null;
+  /** ISO timestamp of the stop's scheduled time-of-day, when available. */
+  deadlineAt?: string | null;
   votedByMe?: boolean;
   bookingUrl?: string | null;
 }
@@ -413,6 +415,21 @@ function CanvasInner({
             {selectedPin.subtitle && (
               <div style={{ color: "#6b7280", fontSize: 12 }}>
                 {selectedPin.subtitle}
+              </div>
+            )}
+            {selectedPin.deadlineAt && (
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#111827",
+                }}
+              >
+                🕒 {new Date(selectedPin.deadlineAt).toLocaleTimeString("zh-TW", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </div>
             )}
             <div
