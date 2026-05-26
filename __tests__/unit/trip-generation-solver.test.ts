@@ -206,6 +206,100 @@ describe("solver — preordered days", () => {
   });
 });
 
+describe("solver — meal anchor preferred over min travel", () => {
+  it("picks a meal-anchored ordering even when a lower-travel one exists", () => {
+    // Setup: three stops on a Tuesday (weekday=2).
+    //   - A (activity), opens all day
+    //   - B (activity), opens all day
+    //   - R (restaurant), opens only 12:00–13:30 on Tuesday
+    //
+    // With day start at 09:00, the only ordering that satisfies the
+    // restaurant's window is [A, B, R] (lands ~12:20). [A, R, B] arrives at
+    // R at 10:40 — outside the lunch window. The previous solver picked
+    // whichever permutation minimised travel and then asked about meal
+    // anchors after; with this fix, meal-anchored orderings are preferred.
+    const a = poi({ placeId: "a", lat: 35.0, lng: 139.0 });
+    const b = poi({ placeId: "b", lat: 35.0005, lng: 139.0005 });
+    const r = poi({
+      placeId: "r",
+      lat: 35.001,
+      lng: 139.001,
+      itemType: "restaurant",
+      live: {
+        placeId: "r",
+        name: null,
+        address: null,
+        rating: null,
+        priceLevel: null,
+        lat: 35.001,
+        lng: 139.001,
+        openingPeriods: [{ openDay: 2, openMinutes: 12 * 60, closeDay: 2, closeMinutes: 13 * 60 + 30 }],
+      },
+    });
+    const res = solveItinerary({
+      daysAssignment: [[a, b, r]],
+      pace: "balanced",
+      startWeekday: 2,
+      dayStartMinutes: 9 * 60,
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      const arrival = res.days[0].stops.find((s) => s.poi.placeId === "r")!.arriveMinutes;
+      expect(arrival).toBeGreaterThanOrEqual(12 * 60);
+      expect(arrival).toBeLessThan(14 * 60);
+    }
+  });
+});
+
+describe("solver — unknown vs. known-closed hours", () => {
+  it("treats POIs whose hours have no match for this weekday as closed", () => {
+    // POI is open Monday–Friday but the trip starts on Sunday (weekday 0).
+    // Old behaviour: empty match list → treated as 24/7. New behaviour: known
+    // hours for OTHER days means we know it's closed here.
+    const mondayToFriday = Array.from({ length: 5 }, (_, i) => ({
+      openDay: i + 1,
+      openMinutes: 9 * 60,
+      closeDay: i + 1,
+      closeMinutes: 18 * 60,
+    }));
+    const a = poi({
+      placeId: "a",
+      lat: 35.0,
+      lng: 139.0,
+      live: {
+        placeId: "a",
+        name: null,
+        address: null,
+        rating: null,
+        priceLevel: null,
+        lat: 35.0,
+        lng: 139.0,
+        openingPeriods: mondayToFriday,
+      },
+    });
+    const res = solveItinerary({
+      daysAssignment: [[a]],
+      pace: "balanced",
+      startWeekday: 0, // Sunday
+      dayStartMinutes: 9 * 60,
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.issues[0].reason).toBe("no_valid_permutation");
+  });
+
+  it("still treats fully-empty hours as unknown/unconstrained", () => {
+    // No periods at all → we don't know, so don't block.
+    const a = poi({ placeId: "a", lat: 35.0, lng: 139.0 });
+    const res = solveItinerary({
+      daysAssignment: [[a]],
+      pace: "balanced",
+      startWeekday: 0,
+      dayStartMinutes: 9 * 60,
+    });
+    expect(res.ok).toBe(true);
+  });
+});
+
 describe("solver — pure helpers", () => {
   it("haversineKm yields ~0 for identical points", () => {
     expect(__testing.haversineKm(35, 139, 35, 139)).toBeCloseTo(0, 5);
