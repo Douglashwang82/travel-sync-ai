@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "setup:rich-menu": "tsx --env-file=.env.local scripts/setup-rich-menu.ts",
-    "delete:rich-menu": "tsx --env-file=.env.local scripts/delete-rich-menu.ts"
+    "delete:rich-menu": "tsx --env-file=.env.local scripts/delete-rich-menu.ts",
+    "synth:routes": "tsx --env-file=.env.local scripts/synthesize-routes.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
