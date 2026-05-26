@@ -37,7 +37,7 @@ import {
   type RouteCandidate,
   type RouteComposition,
 } from "./route-engine";
-import { solveItinerary, type RoutedDay, type InfeasibilityIssue } from "./solver";
+import { solveItinerary, PACE_CAPS, type RoutedDay, type InfeasibilityIssue } from "./solver";
 import { detectJapanSkiDestination } from "@/lib/ski-destination";
 import type { GenerateInput, GenerateOutput } from "./generator";
 
@@ -163,11 +163,22 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
   });
 
   // 4. LLM pick → 5. solve → 6. repair loop (now also demotes failed routes).
-  const startWeekday = deriveStartWeekday();
+  const startWeekday = deriveStartWeekday(input.startDate);
+  logger.info("[gen] phase 3: start weekday", {
+    genId,
+    startDate: input.startDate ?? "(default +14d)",
+    startWeekday,
+  });
   let pick: PickResult | null = null;
   let routed: SolveTry | null = null;
+  // Route demotion is "free" — when the only failure was on a route-covered
+  // day, the LLM never got a chance to swap anything that attempt. Extend
+  // the loop by one to give the LLM a real shot after demotion (capped at
+  // +1 so a recurring route can't loop forever).
+  let extraAttemptsForDemotion = 0;
+  const MAX_DEMOTION_EXTENSIONS = 1;
 
-  for (let attempt = 0; attempt <= MAX_REPAIR_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt <= MAX_REPAIR_ATTEMPTS + extraAttemptsForDemotion; attempt++) {
     logger.info("[gen] phase 3: attempt start", {
       genId,
       attempt,
@@ -221,7 +232,7 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
     // Demote any preordered-day failures so the next attempt's LLM call
     // covers those days. Place_ids freed by the dropped route become
     // eligible again for the LLM shortlist.
-    if (attempt < MAX_REPAIR_ATTEMPTS) {
+    if (attempt < MAX_REPAIR_ATTEMPTS + extraAttemptsForDemotion) {
       const demoted = demoteFailedRoutes(routed.issues, compose);
       if (demoted.length > 0) {
         logger.info("[gen] phase 4: demoted failed routes", {
@@ -229,6 +240,18 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
           attempt,
           demotedDays: demoted.join(","),
         });
+        const llmIssues = issuesForLlmDays(routed.issues, compose);
+        // Route-only failure: the LLM didn't actually exercise any of its
+        // swaps this round. Lend it one extra cycle so demotion isn't a
+        // silent retry-burn.
+        if (llmIssues.length === 0 && extraAttemptsForDemotion < MAX_DEMOTION_EXTENSIONS) {
+          extraAttemptsForDemotion++;
+          logger.info("[gen] phase 4: extending repair budget after route demotion", {
+            genId,
+            attempt,
+            extraAttemptsForDemotion,
+          });
+        }
       }
     }
   }
@@ -237,7 +260,7 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
     const issues = routed?.kind === "infeasible" ? routed.issues : [];
     logger.error("[gen] pipeline failed: irreparable", {
       genId,
-      attempts: MAX_REPAIR_ATTEMPTS + 1,
+      attempts: MAX_REPAIR_ATTEMPTS + 1 + extraAttemptsForDemotion,
       issues: issues.map((i) => `D${i.dayNumber}/${i.reason}: ${i.detail}`).join(" | ") || "(none)",
       offendingPlaceIds: issues
         .flatMap((i) => i.offendingPlaceIds)
@@ -339,8 +362,8 @@ async function llmPickAssignment(
     skiHint,
     "規則:",
     "1) 你只能使用候選清單中的 place_id;不可虛構或新增。",
-    `2) 每日選 3–6 個地點(依照節奏:chill ≤3 / balanced 3–5 / packed 5–6)。`,
-    "3) 每天請至少安排一家餐廳。",
+    `2) 本次節奏為 ${input.answers.pace ?? "balanced"},每日最多 ${PACE_CAPS[input.answers.pace ?? "balanced"]} 個地點。超過會被截斷,請不要超出。`,
+    "3) 每天請至少安排一家餐廳(會被排到午餐 12-14 或晚餐 18-20 時段)。",
     "4) 不要重複使用同一個 place_id。",
     "5) title、summary、tags 用繁體中文。",
     'JSON 結構:{ title, summary, tags[], days: [{ day_number, place_ids: ["..."] }] }',
@@ -389,22 +412,27 @@ async function llmPickAssignment(
   }
 
   // Defense in depth: drop hallucinated/excluded place_ids, dedupe across days,
+  // enforce the pace cap (so the solver never wastes a retry on too_many_stops),
   // and (when constrained) drop any day_number outside onlyDays.
   const valid = new Set(filteredShortlist.map((p) => p.placeId));
   const allowedDays = onlyDays && onlyDays.length > 0 ? new Set(onlyDays) : null;
+  const cap = PACE_CAPS[input.answers.pace ?? "balanced"];
   const seen = new Set<string>();
   const rawDayCount = parsed.data.days.length;
   const rawIdCount = parsed.data.days.reduce((a, d) => a + d.place_ids.length, 0);
   parsed.data.days = parsed.data.days
     .filter((d) => (allowedDays ? allowedDays.has(d.day_number) : true))
-    .map((d) => ({
-      ...d,
-      place_ids: d.place_ids.filter((id) => {
+    .map((d) => {
+      const deduped = d.place_ids.filter((id) => {
         if (!valid.has(id) || seen.has(id)) return false;
         seen.add(id);
         return true;
-      }),
-    }));
+      });
+      // Silently truncate to the pace cap. Releasing the over-cap place_ids
+      // back into `seen` would let a later day reuse them, which violates the
+      // "no repeat" rule, so we just drop them.
+      return { ...d, place_ids: deduped.slice(0, cap) };
+    });
   const keptIdCount = parsed.data.days.reduce((a, d) => a + d.place_ids.length, 0);
   if (rawIdCount !== keptIdCount || rawDayCount !== parsed.data.days.length) {
     logger.warn("[gen] phase 3: llm output filtered", {
@@ -414,6 +442,7 @@ async function llmPickAssignment(
       keptDayCount: parsed.data.days.length,
       rawIdCount,
       keptIdCount,
+      paceCap: cap,
     });
   }
 
@@ -645,8 +674,16 @@ function synthesizePickFromRoutes(compose: RouteComposition, destination: string
   return { title, summary, tags, days: [] };
 }
 
-function deriveStartWeekday(): number {
-  return new Date().getDay();
+function deriveStartWeekday(startDate?: string): number {
+  // YYYY-MM-DD → local weekday (0=Sun..6=Sat). When the caller doesn't know
+  // the start date yet (LINE /plan flow), default to the same "today + 14d"
+  // that fork picks; the plan is at least consistent with where the fork
+  // will land.
+  const iso = startDate ?? new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return new Date().getDay();
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d)).getDay();
 }
 
 function formatArrival(minutes: number): string {

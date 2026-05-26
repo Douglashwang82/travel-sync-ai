@@ -12,6 +12,14 @@ import { runGenerationPipeline, GenerationFailedError } from "./orchestrator";
 export interface GenerateInput {
   answers: SurveyAnswers;
   authorLineUserId: string;
+  /**
+   * Trip start date, YYYY-MM-DD. Used to derive the start weekday so the
+   * solver matches the right opening-hours schedule. When omitted, the
+   * pipeline falls back to "today + 14 days" (the same default applied at
+   * fork time for /plan), so the generated plan is at least consistent with
+   * the fork date.
+   */
+  startDate?: string;
 }
 
 export interface GenerateOutput {

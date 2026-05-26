@@ -70,6 +70,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const out = await generateTemplateFromSurvey({
       answers: body.answers as SurveyAnswers,
       authorLineUserId: auth.lineUserId,
+      startDate: body.startDate,
     });
     templateId = out.templateId;
   } catch (err) {

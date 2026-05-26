@@ -65,7 +65,7 @@ export type SolverResult =
 
 // ─── Tunables ────────────────────────────────────────────────────────────────
 
-const PACE_CAPS: Record<NonNullable<SurveyAnswers["pace"]>, number> = {
+export const PACE_CAPS: Record<NonNullable<SurveyAnswers["pace"]>, number> = {
   chill: 3,
   balanced: 5,
   packed: 6,
@@ -85,9 +85,11 @@ const DAY_END_MINUTES = 22 * 60;          // 22:00
 const LUNCH_WINDOW: [number, number] = [12 * 60, 14 * 60];
 const DINNER_WINDOW: [number, number] = [18 * 60, 20 * 60];
 
-// Travel speed: rough city-average door-to-door (walking + transit).
-// 4 km/h is conservative on purpose — better to leave slack than fail late.
-const TRAVEL_KMH = 4;
+// Travel speed: rough city-average door-to-door (transit + short walks).
+// 15 km/h matches metro-heavy cities like Tokyo/Osaka/Seoul once a few stops
+// at the platform are counted. 4 km/h (pure walking) made anything ≥6 km
+// apart fail the day, so the solver rejected feasible plans.
+const TRAVEL_KMH = 15;
 const MIN_TRAVEL_MINUTES = 10;
 const MAX_PERMUTATION_STOPS = 7; // 7! = 5040; above this, fall back to nearest-neighbor.
 
@@ -173,17 +175,35 @@ function solveDay(input: SolveDayInput): DaySolveResult {
       ? enumeratePermutations(stops)
       : [nearestNeighborOrder(stops)];
 
-  let best: { route: RoutedStop[]; totalTravel: number } | null = null;
+  const requiresMealAnchor = stops.some((s) => s.itemType === "restaurant");
+
+  // Two-tier ranking: prefer permutations whose restaurant lands in a meal
+  // window, then break ties by total travel. The previous version picked the
+  // lowest-travel ordering first and only then asked "is the restaurant at
+  // lunchtime?" — discarding feasible meal-anchored orderings that happened
+  // to walk a little further.
+  let bestMealOk: { route: RoutedStop[]; totalTravel: number } | null = null;
+  let bestAnyFeasible: { route: RoutedStop[]; totalTravel: number } | null = null;
 
   for (const order of permutations) {
     const sim = simulateOrder(order, input.weekday, input.dayStart);
     if (!sim.feasible) continue;
-    if (!best || sim.totalTravel < best.totalTravel) {
-      best = { route: sim.route, totalTravel: sim.totalTravel };
+    if (!bestAnyFeasible || sim.totalTravel < bestAnyFeasible.totalTravel) {
+      bestAnyFeasible = { route: sim.route, totalTravel: sim.totalTravel };
+    }
+    if (requiresMealAnchor) {
+      const ok = sim.route.some(
+        (s) =>
+          s.poi.itemType === "restaurant" &&
+          (inWindow(s.arriveMinutes, LUNCH_WINDOW) || inWindow(s.arriveMinutes, DINNER_WINDOW))
+      );
+      if (ok && (!bestMealOk || sim.totalTravel < bestMealOk.totalTravel)) {
+        bestMealOk = { route: sim.route, totalTravel: sim.totalTravel };
+      }
     }
   }
 
-  if (!best) {
+  if (!bestAnyFeasible) {
     return {
       ok: false,
       issue: {
@@ -194,27 +214,19 @@ function solveDay(input: SolveDayInput): DaySolveResult {
     };
   }
 
-  // Meal anchors: if the day has any restaurants, at least one must land in a
-  // meal window. (Days with zero restaurants are valid — coffee morning,
-  // hiking, etc. — so we don't impose this unconditionally.)
-  const restaurants = best.route.filter((r) => r.poi.itemType === "restaurant");
-  if (restaurants.length > 0) {
-    const hasMealAnchor = restaurants.some(
-      (r) => inWindow(r.arriveMinutes, LUNCH_WINDOW) || inWindow(r.arriveMinutes, DINNER_WINDOW)
-    );
-    if (!hasMealAnchor) {
-      return {
-        ok: false,
-        issue: {
-          reason: "missing_meal_anchor",
-          detail: "No restaurant lands inside the lunch (12–14) or dinner (18–20) window",
-          offendingPlaceIds: restaurants.map((r) => r.poi.placeId),
-        },
-      };
-    }
+  if (requiresMealAnchor && !bestMealOk) {
+    const restaurants = bestAnyFeasible.route.filter((r) => r.poi.itemType === "restaurant");
+    return {
+      ok: false,
+      issue: {
+        reason: "missing_meal_anchor",
+        detail: "No restaurant lands inside the lunch (12–14) or dinner (18–20) window",
+        offendingPlaceIds: restaurants.map((r) => r.poi.placeId),
+      },
+    };
   }
 
-  return { ok: true, stops: best.route };
+  return { ok: true, stops: (bestMealOk ?? bestAnyFeasible).route };
 }
 
 // ─── Simulation ──────────────────────────────────────────────────────────────
@@ -237,7 +249,14 @@ function simulateOrder(
     }
 
     const openWindows = openingWindowsFor(poi, weekday);
-    if (openWindows.length > 0) {
+    // null      = no hours data at all → treat as unconstrained (legacy behaviour)
+    // []        = hours known for other days but POI is closed this weekday
+    // non-empty = enforce these windows
+    if (openWindows !== null) {
+      if (openWindows.length === 0) {
+        // Known closed on this weekday — no permutation can rescue this stop.
+        return { feasible: false, route: [], totalTravel: 0 };
+      }
       const window = openWindows.find((w) => w[1] > cursor) ?? null;
       if (!window) return { feasible: false, route: [], totalTravel: 0 };
       cursor = Math.max(cursor, window[0]);
@@ -248,7 +267,7 @@ function simulateOrder(
     const depart = cursor + stay;
 
     if (depart > DAY_END_MINUTES) return { feasible: false, route: [], totalTravel: 0 };
-    if (openWindows.length > 0) {
+    if (openWindows !== null && openWindows.length > 0) {
       const within = openWindows.some((w) => arrive >= w[0] && depart <= w[1]);
       if (!within) return { feasible: false, route: [], totalTravel: 0 };
     }
@@ -263,9 +282,20 @@ function simulateOrder(
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function openingWindowsFor(poi: EnrichedPoi, weekday: number): Array<[number, number]> {
+/**
+ * Returns the opening windows that apply to `weekday`.
+ *   null      → no opening-hours data at all (treat as unconstrained / 24/7)
+ *   []        → POI has hours for other days but is closed on this weekday
+ *   non-empty → enforce these [open, close] windows
+ *
+ * The null-vs-[] distinction matters: a place with Mon–Fri hours but no
+ * Sunday entry used to be treated as "open all Sunday." That silently put
+ * closed-on-Sunday venues into the plan and surfaced later as a downstream
+ * infeasibility on a different stop.
+ */
+function openingWindowsFor(poi: EnrichedPoi, weekday: number): Array<[number, number]> | null {
   const periods = poi.live?.openingPeriods ?? [];
-  if (periods.length === 0) return [];
+  if (periods.length === 0) return null;
   const windows: Array<[number, number]> = [];
   for (const p of periods) {
     if (p.openDay !== weekday) continue;
