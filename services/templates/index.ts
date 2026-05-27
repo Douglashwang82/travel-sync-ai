@@ -421,18 +421,74 @@ export async function forkTemplate(
   }
 
   if (items.length > 0) {
-    const tripItems = items.map((item) => ({
-      trip_id: newTrip.id as string,
-      item_type: item.item_type,
-      item_kind: "task",
-      title: item.title,
-      description: item.notes,
-      stage: "todo",
-      source: "manual",
-    }));
-    const { error: itemsErr } = await db.from("trip_items").insert(tripItems);
-    if (itemsErr) {
+    const tripItems = items.map((item) => {
+      const hasPlace = !!(item.place_name || item.address || item.lat != null);
+      return {
+        trip_id: newTrip.id as string,
+        item_type: item.item_type,
+        item_kind: "task",
+        title: item.title,
+        description: item.notes,
+        stage: hasPlace ? "confirmed" : "todo",
+        source: "ai",
+        deadline_at: computeItemDeadline(input.startDate, item.day_number, item.notes),
+        source_inputs: {
+          day_number: item.day_number,
+          order_index: item.order_index,
+          duration_minutes: item.duration_minutes,
+        },
+      };
+    });
+    const { data: inserted, error: itemsErr } = await db
+      .from("trip_items")
+      .insert(tripItems)
+      .select("id");
+    if (itemsErr || !inserted) {
       console.error("Failed to insert forked trip items:", itemsErr);
+    } else {
+      // For items with place data, materialize a confirmed_option so the
+      // itinerary grid and map show the planned location. Order matches the
+      // input order — Supabase preserves insert order in the returned rows.
+      const optionsToInsert: Array<{
+        trip_item_id: string;
+        provider: string;
+        name: string;
+        address: string | null;
+        lat: number | null;
+        lng: number | null;
+        booking_url: string | null;
+      }> = [];
+      inserted.forEach((row, idx) => {
+        const src = items[idx];
+        if (!src.place_name && !src.address && src.lat == null) return;
+        optionsToInsert.push({
+          trip_item_id: row.id as string,
+          provider: "manual",
+          name: src.place_name ?? src.title,
+          address: src.address,
+          lat: src.lat,
+          lng: src.lng,
+          booking_url: src.external_url,
+        });
+      });
+      if (optionsToInsert.length > 0) {
+        const { data: optRows, error: optErr } = await db
+          .from("trip_item_options")
+          .insert(optionsToInsert)
+          .select("id, trip_item_id");
+        if (optErr) {
+          console.error("Failed to insert forked trip item options:", optErr);
+        } else if (optRows) {
+          await Promise.all(
+            optRows.map((opt) =>
+              db
+                .from("trip_items")
+                .update({ confirmed_option_id: opt.id as string })
+                .eq("id", opt.trip_item_id as string)
+            )
+          );
+        }
+      }
     }
   }
 
@@ -489,6 +545,34 @@ function generateSlug(title: string): string {
     .slice(0, 40);
   const suffix = randomBytes(4).toString("hex");
   return base ? `${base}-${suffix}` : suffix;
+}
+
+// Parses the orchestrator's "預計抵達 HH:MM" notes back into wall-clock
+// minutes. Returns null when the note is absent or in another format —
+// callers fall back to noon so the item still lands on the right day.
+function parseArrivalMinutes(notes: string | null): number | null {
+  if (!notes) return null;
+  const m = /(\d{1,2}):(\d{2})/.exec(notes);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function computeItemDeadline(
+  startDate: string,
+  dayNumber: number,
+  notes: string | null
+): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return null;
+  const base = new Date(startDate + "T00:00:00");
+  if (Number.isNaN(base.getTime())) return null;
+  base.setDate(base.getDate() + (dayNumber - 1));
+  const arriveMin = parseArrivalMinutes(notes) ?? 12 * 60;
+  base.setHours(Math.floor(arriveMin / 60), arriveMin % 60, 0, 0);
+  return base.toISOString();
 }
 
 function computeContentHash(
