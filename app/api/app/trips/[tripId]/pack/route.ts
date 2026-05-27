@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccess } from "@/lib/app-server";
+import { requireAppTripWithGroup } from "@/lib/app-server";
 import {
   APP_PACK_CATEGORIES,
   type AppGroupPackItem,
@@ -20,7 +20,7 @@ const CreateSchema = z.object({
 
 export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripAccess(req, tripId);
+  const auth = await requireAppTripWithGroup(req, tripId);
   if (!auth.ok) return auth.response;
 
   const db = createAdminClient();
@@ -139,7 +139,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripAccess(req, tripId);
+  const auth = await requireAppTripWithGroup(req, tripId);
   if (!auth.ok) return auth.response;
 
   let body: unknown;

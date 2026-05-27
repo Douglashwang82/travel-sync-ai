@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccessAllowGroupless } from "@/lib/app-server";
+import { requireAppTripAccess } from "@/lib/app-server";
 
 type RouteContext = { params: Promise<{ tripId: string }> };
 
@@ -47,7 +47,7 @@ function rowToThread(row: Record<string, unknown>): ChatThread {
  */
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripAccessAllowGroupless(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   let body: unknown;

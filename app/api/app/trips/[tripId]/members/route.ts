@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import {
-  requireAppTripAccessAllowGroupless,
+  requireAppTripAccess,
   requireAppUser,
 } from "@/lib/app-server";
 import { findAppUserByEmail } from "@/lib/app-users";
@@ -32,7 +32,7 @@ export async function GET(
   ctx: RouteContext
 ): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripAccessAllowGroupless(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   const db = createAdminClient();
@@ -137,8 +137,6 @@ export async function POST(
 ): Promise<NextResponse> {
   const { tripId } = await ctx.params;
 
-  // We use `requireAppUser` + a manual access check below so this works for
-  // group-less trips too (where `requireAppTripAccess` would refuse).
   const auth = await requireAppUser(req);
   if (!auth.ok) return auth.response;
 

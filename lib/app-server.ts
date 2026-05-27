@@ -109,6 +109,16 @@ export type AppTripAuthResult =
       ok: true;
       lineUserId: string;
       appUserId: string;
+      groupId: string | null;
+      role: "organizer" | "member";
+    }
+  | { ok: false; response: NextResponse };
+
+export type AppTripAuthResultWithGroup =
+  | {
+      ok: true;
+      lineUserId: string;
+      appUserId: string;
       groupId: string;
       role: "organizer" | "member";
     }
@@ -118,58 +128,15 @@ export type AppTripAuthResult =
  * Authorize a user for a specific trip.
  *
  * Access is granted if the user belongs to the trip's LINE group via
- * `group_members`, or if they were added directly via `trip_members`. The
- * trip's `group_id` is required to be non-null here so existing feature
- * routes (votes, expenses, day-notes, …) that key on `auth.groupId` keep
- * their invariant. For routes that need to handle group-less trips, use
- * `requireAppTripAccessAllowGroupless`.
+ * `group_members`, or if they were added directly via `trip_members`.
+ * `groupId` is `null` for personal (group-less) trips created via the
+ * itinerary wizard — endpoints that need to push to LINE or write to
+ * group-scoped tables should use `requireAppTripWithGroup` instead.
  */
 export async function requireAppTripAccess(
   req: NextRequest,
   tripId: string
 ): Promise<AppTripAuthResult> {
-  const auth = await requireAppTripAccessAllowGroupless(req, tripId);
-  if (!auth.ok) return auth;
-  if (!auth.groupId) {
-    return {
-      ok: false,
-      response: NextResponse.json<Json>(
-        {
-          error:
-            "This trip is not linked to a LINE group, so this feature is unavailable.",
-          code: "GROUP_REQUIRED",
-        },
-        { status: 400 }
-      ),
-    };
-  }
-  return {
-    ok: true,
-    lineUserId: auth.lineUserId,
-    appUserId: auth.appUserId,
-    groupId: auth.groupId,
-    role: auth.role,
-  };
-}
-
-export type AppTripAuthResultAny =
-  | {
-      ok: true;
-      lineUserId: string;
-      appUserId: string;
-      groupId: string | null;
-      role: "organizer" | "member";
-    }
-  | { ok: false; response: NextResponse };
-
-/**
- * Like `requireAppTripAccess` but tolerates trips that have no LINE group.
- * Use for endpoints that manage trip-level membership independent of LINE.
- */
-export async function requireAppTripAccessAllowGroupless(
-  req: NextRequest,
-  tripId: string
-): Promise<AppTripAuthResultAny> {
   const auth = await requireAppUser(req);
   if (!auth.ok) return auth;
 
@@ -225,11 +192,62 @@ export async function requireAppTripAccessAllowGroupless(
   return { ok: false, response: forbidden() };
 }
 
+/**
+ * Like `requireAppTripAccess` but rejects trips with no LINE group.
+ * Use for endpoints that push to LINE or write to group-scoped tables
+ * (votes, expenses, day-notes, plan-master, …).
+ */
+export async function requireAppTripWithGroup(
+  req: NextRequest,
+  tripId: string
+): Promise<AppTripAuthResultWithGroup> {
+  const auth = await requireAppTripAccess(req, tripId);
+  if (!auth.ok) return auth;
+  if (!auth.groupId) {
+    return {
+      ok: false,
+      response: NextResponse.json<Json>(
+        {
+          error:
+            "This trip is not linked to a LINE group, so this feature is unavailable.",
+          code: "GROUP_REQUIRED",
+        },
+        { status: 400 }
+      ),
+    };
+  }
+  return {
+    ok: true,
+    lineUserId: auth.lineUserId,
+    appUserId: auth.appUserId,
+    groupId: auth.groupId,
+    role: auth.role,
+  };
+}
+
 export async function requireAppOrganizer(
   req: NextRequest,
   tripId: string
 ): Promise<AppTripAuthResult> {
   const auth = await requireAppTripAccess(req, tripId);
+  if (!auth.ok) return auth;
+  if (auth.role !== "organizer") {
+    return {
+      ok: false,
+      response: NextResponse.json<Json>(
+        { error: "Organizer access required", code: "FORBIDDEN" },
+        { status: 403 }
+      ),
+    };
+  }
+  return auth;
+}
+
+export async function requireAppOrganizerWithGroup(
+  req: NextRequest,
+  tripId: string
+): Promise<AppTripAuthResultWithGroup> {
+  const auth = await requireAppTripWithGroup(req, tripId);
   if (!auth.ok) return auth;
   if (auth.role !== "organizer") {
     return {
