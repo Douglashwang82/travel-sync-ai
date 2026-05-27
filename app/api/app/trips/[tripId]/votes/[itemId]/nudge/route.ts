@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccess } from "@/lib/app-server";
+import { requireAppTripWithGroup } from "@/lib/app-server";
 import { pushText } from "@/lib/line";
 import { track } from "@/lib/analytics";
 
@@ -43,7 +43,7 @@ export async function POST(
   ctx: RouteContext
 ): Promise<NextResponse> {
   const { tripId, itemId } = await ctx.params;
-  const auth = await requireAppTripAccess(req, tripId);
+  const auth = await requireAppTripWithGroup(req, tripId);
   if (!auth.ok) return auth.response;
 
   let body: unknown = {};
