@@ -151,6 +151,38 @@ describe("orchestrator — happy path", () => {
     expect(out.versionId).toBe("ver_1");
     expect(generateJson).toHaveBeenCalledTimes(1);
   });
+
+  it("filters extra LLM tags instead of failing schema validation", async () => {
+    const shortlist = [poi("a", "activity"), poi("b", "activity"), poi("c", "restaurant")];
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(
+      shortlist.map((p) => ({ ...p }))
+    );
+    (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
+
+    (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      title: "tag-heavy pick",
+      summary: "LLM returned too many tags, but the itinerary itself is valid.",
+      tags: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+      days: [{ day_number: 1, place_ids: ["a", "b", "c"] }],
+    });
+
+    mockDbHappyPath();
+
+    await expect(
+      runGenerationPipeline({
+        authorLineUserId: "U_tags",
+        answers: {
+          destination: "Kyoto",
+          duration_days: 1,
+          party: "couple",
+          party_size: 2,
+          budget_tier: "mid",
+          vibe: ["relaxed"],
+          pace: "balanced",
+        },
+      })
+    ).resolves.toMatchObject({ templateId: "tmpl_1", versionId: "ver_1" });
+  });
 });
 
 describe("orchestrator — guards", () => {

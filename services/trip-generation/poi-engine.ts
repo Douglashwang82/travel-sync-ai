@@ -104,6 +104,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     description: string | null;
     lat: number | null;
     lng: number | null;
+    live_data?: PlaceLiveData | null;
     similarity: number;
   }>;
 
@@ -131,6 +132,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     lat: r.lat,
     lng: r.lng,
     similarity: r.similarity,
+    liveData: r.live_data ?? null,
   }));
 }
 
@@ -229,12 +231,14 @@ export async function loadPoisByIds(placeIds: string[], genId?: string): Promise
 export async function enrichWithLiveData(candidates: PoiCandidate[]): Promise<EnrichedPoi[]> {
   // Split: curated rows already carry liveData; only fetch live details for
   // the rest (typically Google-sourced place_ids).
-  const needsFetch = candidates.filter((c) => c.liveData == null).map((c) => c.placeId);
+  const needsFetch = candidates
+    .filter((c) => c.liveData == null && shouldFetchLiveDetails(c.placeId))
+    .map((c) => c.placeId);
   const fetched = needsFetch.length > 0 ? await getPlaceDetailsBatch(needsFetch) : [];
   const byId = new Map(fetched.map((l) => [l.placeId, l]));
 
   return candidates.map((c) => {
-    const l = c.liveData ?? byId.get(c.placeId) ?? null;
+    const l = c.liveData ?? byId.get(c.placeId) ?? fallbackLiveData(c);
     // Promote the live lat/lng onto the candidate so downstream code never has to
     // remember which field to read.
     if (l && (c.lat == null || c.lng == null)) {
@@ -243,6 +247,24 @@ export async function enrichWithLiveData(candidates: PoiCandidate[]): Promise<En
     }
     return { ...c, live: l };
   });
+}
+
+function shouldFetchLiveDetails(placeId: string): boolean {
+  return !placeId.startsWith("local:");
+}
+
+function fallbackLiveData(candidate: PoiCandidate): PlaceLiveData | null {
+  if (shouldFetchLiveDetails(candidate.placeId)) return null;
+  return {
+    placeId: candidate.placeId,
+    name: candidate.name,
+    address: null,
+    rating: null,
+    priceLevel: null,
+    lat: candidate.lat,
+    lng: candidate.lng,
+    openingPeriods: [],
+  };
 }
 
 function coerceItemType(raw: string): PoiCandidate["itemType"] {

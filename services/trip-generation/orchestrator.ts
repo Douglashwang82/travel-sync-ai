@@ -66,12 +66,12 @@ export class GenerationFailedError extends Error {
 const PickSchema = z.object({
   title: z.string().min(2).max(120),
   summary: z.string().min(10).max(800),
-  tags: z.array(z.string()).max(8).default([]),
+  tags: z.array(z.string()).default([]),
   days: z
     .array(
       z.object({
         day_number: z.number().int().min(1).max(30),
-        place_ids: z.array(z.string()).max(8),
+        place_ids: z.array(z.string()),
       })
     )
     .min(1)
@@ -418,6 +418,8 @@ async function llmPickAssignment(
   const allowedDays = onlyDays && onlyDays.length > 0 ? new Set(onlyDays) : null;
   const cap = PACE_CAPS[input.answers.pace ?? "balanced"];
   const seen = new Set<string>();
+  const rawTagCount = parsed.data.tags.length;
+  parsed.data.tags = Array.from(new Set(parsed.data.tags.map((tag) => tag.trim()).filter(Boolean))).slice(0, 8);
   const rawDayCount = parsed.data.days.length;
   const rawIdCount = parsed.data.days.reduce((a, d) => a + d.place_ids.length, 0);
   parsed.data.days = parsed.data.days
@@ -434,10 +436,12 @@ async function llmPickAssignment(
       return { ...d, place_ids: deduped.slice(0, cap) };
     });
   const keptIdCount = parsed.data.days.reduce((a, d) => a + d.place_ids.length, 0);
-  if (rawIdCount !== keptIdCount || rawDayCount !== parsed.data.days.length) {
+  if (rawTagCount !== parsed.data.tags.length || rawIdCount !== keptIdCount || rawDayCount !== parsed.data.days.length) {
     logger.warn("[gen] phase 3: llm output filtered", {
       genId,
       attempt,
+      rawTagCount,
+      keptTagCount: parsed.data.tags.length,
       rawDayCount,
       keptDayCount: parsed.data.days.length,
       rawIdCount,
