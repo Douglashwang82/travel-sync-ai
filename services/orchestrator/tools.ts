@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import {
   createItem,
   updateItem,
@@ -448,7 +449,11 @@ const chatNotify = defineTool({
         ? lineGroupId[0]?.line_group_id
         : lineGroupId?.line_group_id;
     if (!target) throw new Error("Trip has no LINE group to notify");
-    await pushText(target, a.text, (trip?.group_id as string) ?? undefined);
+    await pushText(
+      target,
+      appendTripLinkText(a.text, buildTripUrl(ctx.tripId)),
+      (trip?.group_id as string) ?? undefined
+    );
     return {
       summary: `Posted to group: "${a.text.slice(0, 60)}"`,
       data: { text: a.text },

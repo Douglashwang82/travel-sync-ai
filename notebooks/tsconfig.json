@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "jsx": "react",
+    "noEmit": false,
+    "isolatedModules": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": ["**/*.ts", "../services/**/*.ts", "../lib/**/*.ts"],
+  "exclude": ["node_modules"]
+}

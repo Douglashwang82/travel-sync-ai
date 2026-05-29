@@ -1,0 +1,77 @@
+{
+  "region": "Zao Onsen",
+  "activities": [
+    {
+      "id": "zao-ropeway-juhyo",
+      "name": "Zao Ropeway — Juhyo (Snow Monster) Tour",
+      "type": "juhyo_tour",
+      "village": "Sanroku Station",
+      "address": "229-3 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1646,
+      "lng": 140.3987,
+      "indicative_price_jpy": { "round_trip_adult": 3500, "round_trip_child": 1750, "night_tour_adult": 4000 },
+      "website": "https://zaoropeway.co.jp/",
+      "notes": "Two-stage ropeway to the Jizo Sancho station at 1,661 m, with the iconic juhyo (ice-encrusted firs) at the upper section. Famous evening light-up tours Jan-mid-Mar."
+    },
+    {
+      "id": "zao-jizo-statue",
+      "name": "Zao Jizo Bosatsu",
+      "type": "shrine_temple",
+      "village": "Jizo Sancho",
+      "address": "Jizo Sancho Station area, Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1444,
+      "lng": 140.4072,
+      "indicative_price_jpy": { "free": 0 },
+      "website": null,
+      "notes": "2.34 m stone Jizo statue at the top of Zao Ropeway, said to protect travellers and skiers. In winter only its head is visible above the juhyo — Zao's most photographed sight."
+    },
+    {
+      "id": "shimoyu-public-bath",
+      "name": "Shimoyu Public Bathhouse",
+      "type": "onsen",
+      "village": "Zao Onsen village",
+      "address": "43-3 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1663,
+      "lng": 140.3933,
+      "indicative_price_jpy": { "adult_entry": 200 },
+      "website": null,
+      "notes": "One of three free-flowing public soto-yu in Zao Onsen. Strongly acidic sulphur water (~pH 1.6); small wooden bath, no shower, donation 200 yen."
+    },
+    {
+      "id": "kawarayu-public-bath",
+      "name": "Kawarayu Public Bathhouse",
+      "type": "onsen",
+      "village": "Zao Onsen village",
+      "address": "710 Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1635,
+      "lng": 140.3945,
+      "indicative_price_jpy": { "adult_entry": 200 },
+      "website": null,
+      "notes": "Streamside public bath in the lower village. The most photogenic of Zao's three free soto-yu; wooden architecture and cloudy white water."
+    },
+    {
+      "id": "zao-dai-rotenburo",
+      "name": "Zao Onsen Dai-Rotenburo",
+      "type": "onsen",
+      "village": "Zao Onsen village",
+      "address": "Zao Onsen, Yamagata-shi, Yamagata 990-2301",
+      "lat": 38.1614,
+      "lng": 140.3995,
+      "indicative_price_jpy": { "adult_entry": 700 },
+      "website": "https://www.jupeer-zao.com/roten/",
+      "notes": "Huge open-air bath set in the forest above the village. Seasonal — typically open mid-April through mid-November (closed in deep winter)."
+    },
+    {
+      "id": "yamadera-day-trip",
+      "name": "Yamadera (Risshaku-ji) Temple",
+      "type": "shrine_temple",
+      "village": "Yamadera",
+      "address": "4456-1 Yamadera, Yamagata-shi, Yamagata 999-3301",
+      "lat": 38.3144,
+      "lng": 140.4378,
+      "indicative_price_jpy": { "adult_entry": 300 },
+      "website": "https://www.yamaderakankou.com/",
+      "notes": "1,000-step mountain temple immortalised in a Bashō haiku. 20 minutes by JR Senzan Line from Yamagata Station; classic day-trip out of Zao."
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { track } from "@/lib/analytics";
 import { captureError } from "@/lib/monitoring";
 import { logger } from "@/lib/logger";
@@ -156,7 +157,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       sections.push(`\n✅ New Checklist Items\n${deadlineLines.join("\n")}`);
     }
 
-    await pushText(lineGroup.line_group_id, sections.join("\n"));
+    await pushText(
+      lineGroup.line_group_id,
+      appendTripLinkText(sections.join("\n"), buildTripUrl(tripId))
+    );
 
     await track("daily_digest_sent", {
       groupId,

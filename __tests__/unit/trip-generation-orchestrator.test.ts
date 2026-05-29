@@ -151,6 +151,38 @@ describe("orchestrator — happy path", () => {
     expect(out.versionId).toBe("ver_1");
     expect(generateJson).toHaveBeenCalledTimes(1);
   });
+
+  it("filters extra LLM tags instead of failing schema validation", async () => {
+    const shortlist = [poi("a", "activity"), poi("b", "activity"), poi("c", "restaurant")];
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(
+      shortlist.map((p) => ({ ...p }))
+    );
+    (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
+
+    (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      title: "tag-heavy pick",
+      summary: "LLM returned too many tags, but the itinerary itself is valid.",
+      tags: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+      days: [{ day_number: 1, place_ids: ["a", "b", "c"] }],
+    });
+
+    mockDbHappyPath();
+
+    await expect(
+      runGenerationPipeline({
+        authorLineUserId: "U_tags",
+        answers: {
+          destination: "Kyoto",
+          duration_days: 1,
+          party: "couple",
+          party_size: 2,
+          budget_tier: "mid",
+          vibe: ["relaxed"],
+          pace: "balanced",
+        },
+      })
+    ).resolves.toMatchObject({ templateId: "tmpl_1", versionId: "ver_1" });
+  });
 });
 
 describe("orchestrator — guards", () => {
@@ -222,10 +254,10 @@ describe("orchestrator — route layer", () => {
     (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([]);
     (enrichWithLiveData as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(enriched);
 
-    // Force the meal-anchor by setting day start so the restaurant lands at lunch.
-    // Coords are tight, restaurant is 3rd stop: 09:00 + 90 + 10 + 90 + 10 = 11:40 — needs
-    // a bit later. Adjust by giving the restaurant a wider window via opening hours.
-    enriched[2].live!.openingPeriods = [{ openDay: 0, openMinutes: 12 * 60, closeDay: 6, closeMinutes: 14 * 60 }];
+    // Restaurant naturally lands at ~12:20 in [activity, activity, restaurant]
+    // order from a 09:00 start (90 + 10 + 90 + 10 = 200 min) — inside the
+    // lunch window. No opening-hours override needed; the empty periods array
+    // means "unknown, treat as unconstrained."
 
     const { rpc } = mockDbHappyPath();
 
@@ -267,10 +299,9 @@ describe("orchestrator — route layer", () => {
     const allEnriched = [...routePois, ...poiPool];
     (enrichWithLiveData as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(allEnriched);
 
-    // Restaurant z lands in lunch window on day 1 (route-day).
-    routePois[2].live!.openingPeriods = [{ openDay: 0, openMinutes: 12 * 60, closeDay: 6, closeMinutes: 14 * 60 }];
-    // Restaurant c lands in lunch window on day 2 (LLM-day).
-    poiPool[2].live!.openingPeriods = [{ openDay: 0, openMinutes: 12 * 60, closeDay: 6, closeMinutes: 14 * 60 }];
+    // Restaurants z (day 1) and c (day 2) naturally land at ~12:20 in lunch
+    // window for [activity, activity, restaurant] sequences. Leaving the
+    // openingPeriods empty exercises the "unknown hours = unconstrained" path.
 
     (generateJson as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({
       title: "Two-day Kyoto",
@@ -310,16 +341,185 @@ describe("orchestrator — route layer", () => {
   });
 });
 
-describe("orchestrator — repair loop", () => {
-  it("retries when solver reports infeasibility, then gives up", async () => {
-    // 5 stops with chill cap (3) → always too_many_stops on day 1.
+describe("orchestrator — pace cap enforcement", () => {
+  it("silently truncates an over-cap LLM pick to the pace cap", async () => {
+    // Chill cap = 3. LLM returns 5; the orchestrator must slice to 3 so the
+    // solver never sees too_many_stops.
     const shortlist = Array.from({ length: 5 }, (_, i) => poi(`p${i}`, "activity"));
     (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
     (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
 
-    // Always over-pack day 1 to force repair-then-irreparable.
     (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
       title: "over-packed",
+      summary: "the LLM didn't read the cap",
+      tags: [],
+      days: [{ day_number: 1, place_ids: shortlist.map((p) => p.placeId) }],
+    });
+
+    const fromBuilder: Record<string, unknown> = {};
+    const insertedItems: Array<{ day_number: number; order_index: number }> = [];
+    fromBuilder.trip_template_items = {
+      insert: vi.fn((rows: Array<{ day_number: number; order_index: number }>) => {
+        insertedItems.push(...rows);
+        return Promise.resolve({ error: null });
+      }),
+    };
+    const tmplSingle = vi.fn();
+    tmplSingle.mockResolvedValueOnce({ data: { id: "tmpl_1" }, error: null });
+    const verSingle = vi.fn();
+    verSingle.mockResolvedValueOnce({ data: { id: "ver_1" }, error: null });
+    const tmplInsert = vi.fn(() => ({ select: vi.fn(() => ({ single: tmplSingle })) }));
+    const verInsert = vi.fn(() => ({ select: vi.fn(() => ({ single: verSingle })) }));
+    fromBuilder.trip_templates = { insert: tmplInsert, update: vi.fn(() => ({ eq: vi.fn() })) };
+    fromBuilder.trip_template_versions = { insert: verInsert };
+    const from = vi.fn((table: string) => fromBuilder[table] ?? {});
+    const rpc = vi.fn(() => Promise.resolve({ error: null }));
+    (createAdminClient as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({ from, rpc });
+
+    await runGenerationPipeline({
+      authorLineUserId: "U_cap",
+      answers: {
+        destination: "Kyoto",
+        duration_days: 1,
+        party: "solo",
+        party_size: 1,
+        budget_tier: "mid",
+        pace: "chill",
+      },
+    });
+
+    expect(insertedItems.length).toBe(3); // capped to chill = 3
+  });
+});
+
+describe("orchestrator — start-date weekday threading", () => {
+  it("derives the start weekday from the provided startDate", async () => {
+    // 2026-06-13 is a Saturday → weekday 6. POI is closed Saturday but open
+    // Monday–Friday: solver should fail on weekday 6.
+    const a = poi("a", "activity");
+    a.live!.openingPeriods = Array.from({ length: 5 }, (_, i) => ({
+      openDay: i + 1,
+      openMinutes: 9 * 60,
+      closeDay: i + 1,
+      closeMinutes: 18 * 60,
+    }));
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue([a]);
+    (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue([a]);
+
+    (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      title: "saturday plan",
+      summary: "should fail because a is closed saturdays",
+      tags: [],
+      days: [{ day_number: 1, place_ids: ["a"] }],
+    });
+
+    await expect(
+      runGenerationPipeline({
+        authorLineUserId: "U_sat",
+        startDate: "2026-06-13",
+        answers: {
+          destination: "Kyoto",
+          duration_days: 1,
+          party: "solo",
+          party_size: 1,
+          budget_tier: "mid",
+          pace: "chill",
+        },
+      })
+    ).rejects.toMatchObject({ reason: "irreparable" });
+  });
+});
+
+describe("orchestrator — demotion bonus", () => {
+  it("does not burn a retry when only a route-covered day fails", async () => {
+    // Route covers day 1 with a POI that's closed today. Solver fails on
+    // day 1; demote moves it to uncovered. Without the bonus this would
+    // consume one of the two retries before the LLM ever picks for day 1.
+    const closedToday: EnrichedPoi = {
+      ...poi("x", "activity"),
+      live: {
+        placeId: "x",
+        name: null,
+        address: null,
+        rating: null,
+        priceLevel: null,
+        lat: 35.0,
+        lng: 139.0,
+        openingPeriods: Array.from({ length: 5 }, (_, i) => ({
+          openDay: i + 1, // Mon–Fri only
+          openMinutes: 9 * 60,
+          closeDay: i + 1,
+          closeMinutes: 18 * 60,
+        })),
+      },
+    };
+    const route = makeRoute({
+      routeId: "r1",
+      placeIds: ["x"],
+    });
+    const pool = [poi("a", "activity")];
+
+    (searchRoutesByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([route]);
+    (composeFromRoutes as unknown as { mockReturnValueOnce: (v: unknown) => void }).mockReturnValueOnce({
+      coveredDays: new Map([[1, route]]),
+      uncoveredDays: [],
+      usedPlaceIds: new Set(["x"]),
+    });
+    (loadPoisByIds as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([closedToday]);
+    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(pool);
+    (enrichWithLiveData as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([
+      closedToday,
+      ...pool,
+    ]);
+
+    (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      title: "after demote",
+      summary: "LLM rescues day 1",
+      tags: [],
+      days: [{ day_number: 1, place_ids: ["a"] }],
+    });
+
+    mockDbHappyPath();
+
+    // Trip on a Saturday (weekday 6) so the route POI is closed.
+    const out = await runGenerationPipeline({
+      authorLineUserId: "U_demote",
+      startDate: "2026-06-13",
+      answers: {
+        destination: "Kyoto",
+        duration_days: 1,
+        party: "solo",
+        party_size: 1,
+        budget_tier: "mid",
+        pace: "chill",
+      },
+    });
+    expect(out.templateId).toBe("tmpl_1");
+    // Attempt 0 = route preordered (fails → demote). Attempt 1 = LLM picks
+    // for day 1 (succeeds). That's one LLM call.
+    expect(generateJson).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("orchestrator — repair loop", () => {
+  it("retries when solver reports infeasibility, then gives up", async () => {
+    // Every candidate is missing coords — solver will always return no_coords
+    // for whatever the LLM picks, exercising the full repair budget.
+    const shortlist = Array.from({ length: 3 }, (_, i) => {
+      const p = poi(`p${i}`, "activity");
+      (p as { lat: number | null }).lat = null;
+      (p as { lng: number | null }).lng = null;
+      if (p.live) {
+        p.live.lat = null;
+        p.live.lng = null;
+      }
+      return p;
+    });
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
+    (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
+
+    (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
+      title: "no-coord stress",
       summary: "stress test for the repair loop",
       tags: [],
       days: [{ day_number: 1, place_ids: shortlist.map((p) => p.placeId) }],
@@ -339,7 +539,8 @@ describe("orchestrator — repair loop", () => {
       })
     ).rejects.toMatchObject({ reason: "irreparable" });
 
-    // Initial attempt + 2 repairs = 3 LLM calls.
+    // Initial attempt + 2 repairs = 3 LLM calls. No route demotion happens
+    // (no routes in the test), so the demotion bonus doesn't kick in.
     expect(generateJson).toHaveBeenCalledTimes(3);
   });
 });

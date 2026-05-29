@@ -1,0 +1,96 @@
+{
+  "region": "Nozawa Onsen",
+  "currency": "JPY",
+  "price_band_legend": {
+    "$": "under 25,000 / night (twin)",
+    "$$": "25,000 – 60,000 / night",
+    "$$$": "60,000 – 150,000 / night",
+    "$$$$": "150,000+ / night"
+  },
+  "hotels": [
+    {
+      "id": "kawamotoya",
+      "name": "Kawamotoya",
+      "category": "luxury",
+      "price_band": "$$$$",
+      "base_resort": "nozawa-onsen",
+      "ski_in_ski_out": false,
+      "address": "8714 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502 (Tera-yu)",
+      "lat": 36.9220,
+      "lng": 138.4400,
+      "website": "https://www.kawamotoya.jp/",
+      "amenities": ["onsen", "private_onsen", "kaiseki", "bar", "concierge"],
+      "notes": "Centuries-old Tera-yu ryokan, fully renovated in 2022 into a modern luxury property. 200 m to the Shinyu Pair Lift; 0 m to restaurants and bars."
+    },
+    {
+      "id": "ryokan-sakaya",
+      "name": "Ryokan Sakaya",
+      "category": "ryokan",
+      "price_band": "$$$",
+      "base_resort": "nozawa-onsen",
+      "ski_in_ski_out": false,
+      "address": "9329 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9229,
+      "lng": 138.4420,
+      "website": "https://www.sakayaryokan.com/",
+      "amenities": ["onsen", "kaiseki", "private_onsen", "tea_ceremony"],
+      "notes": "18-generation traditional ryokan directly above Oyu on the main street. Multiple in-house onsen sourced from the Asagama spring."
+    },
+    {
+      "id": "address-nozawa",
+      "name": "Address Nozawa",
+      "category": "upper_upscale",
+      "price_band": "$$$",
+      "base_resort": "nozawa-onsen",
+      "ski_in_ski_out": false,
+      "address": "8714-2 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9255,
+      "lng": 138.4395,
+      "website": "https://address-nozawa.jp/",
+      "amenities": ["restaurant", "bar", "ski_storage", "concierge"],
+      "notes": "Boutique modern hotel near the Hikage gondola base. Western beds, on-site Italian restaurant, popular with non-Japanese guests."
+    },
+    {
+      "id": "ryokan-tokiwaya",
+      "name": "Ryokan Tokiwaya",
+      "category": "ryokan",
+      "price_band": "$$",
+      "base_resort": "nozawa-onsen",
+      "ski_in_ski_out": false,
+      "address": "8714-3 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9232,
+      "lng": 138.4415,
+      "website": "https://tokiwaya.com/",
+      "amenities": ["onsen", "kaiseki"],
+      "notes": "Mid-range traditional ryokan in the village core. Walking distance to all 13 soto-yu and the mountain shuttle stop."
+    },
+    {
+      "id": "haus-st-anton",
+      "name": "Hotel Haus St. Anton",
+      "category": "pension",
+      "price_band": "$$",
+      "base_resort": "nozawa-onsen",
+      "ski_in_ski_out": false,
+      "address": "9418 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9265,
+      "lng": 138.4385,
+      "website": "https://stanton.jp/",
+      "amenities": ["restaurant", "bar", "ski_storage"],
+      "notes": "Family-run European-style pension steps from the Hikage gondola. Schnitzel-and-sake menu; popular with returning international guests."
+    },
+    {
+      "id": "lodge-nagano-nozawa",
+      "name": "Lodge Nagano Nozawa",
+      "category": "budget",
+      "price_band": "$",
+      "base_resort": "nozawa-onsen",
+      "ski_in_ski_out": false,
+      "address": "8967-3 Toyosato, Nozawaonsen-mura, Shimotakai-gun, Nagano 389-2502",
+      "lat": 36.9244,
+      "lng": 138.4408,
+      "website": "https://lodgenagano.com/",
+      "amenities": ["kitchen", "laundry", "ski_storage"],
+      "notes": "English-run backpacker lodge in the village. Dorms and private rooms; communal kitchen and lounge."
+    }
+  ]
+}

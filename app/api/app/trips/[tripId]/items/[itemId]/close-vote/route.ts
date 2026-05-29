@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppOrganizer } from "@/lib/app-server";
+import { requireAppOrganizerWithGroup } from "@/lib/app-server";
 import { closeVote } from "@/services/vote";
 import type { TripItem } from "@/lib/types";
 
@@ -20,7 +20,7 @@ const BodySchema = z.object({
  */
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId, itemId } = await ctx.params;
-  const auth = await requireAppOrganizer(req, tripId);
+  const auth = await requireAppOrganizerWithGroup(req, tripId);
   if (!auth.ok) return auth.response;
 
   let body: unknown;

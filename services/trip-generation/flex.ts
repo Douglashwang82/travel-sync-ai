@@ -132,6 +132,26 @@ const QUESTION_BUILDERS: Record<SurveyQuestionKey, (sessionId: string) => FlexBu
       ]
     ),
 
+  // ski_prefs replaces the vibe step for Japan ski destinations. The 5
+  // composite fields (level|terrain|onsen|family|non_ski_days) are too many
+  // for a single LINE flex bubble, so we surface a handful of preset combos
+  // that cover the common patterns; advanced users will still configure
+  // generation details later in the web app.
+  ski_prefs: (id) =>
+    questionBubble(
+      id,
+      "問題 6／8：滑雪偏好？",
+      "選一組最接近的組合（之後可在 App 微調）。",
+      "ski_prefs",
+      [
+        { label: "🎿 初級・家庭路線", value: "beginner|groomers|nice_to_have|true|1" },
+        { label: "🎿 中階・滑雪 + 溫泉", value: "intermediate|all_mountain|must_have|false|1" },
+        { label: "🎿 中階・滑得爽", value: "intermediate|all_mountain|nice_to_have|false|0" },
+        { label: "🏂 高階・追粉雪", value: "advanced|powder|nice_to_have|false|0" },
+        { label: "🏔️ 專家・野雪挑戰", value: "expert|backcountry|skip|false|0" },
+      ]
+    ),
+
   pace: (id) =>
     questionBubble(id, "問題 7／8：行程節奏？", "每日要排幾個點。", "pace", [
       { label: "悠閒（每日 ≤3 站）", value: "chill" },

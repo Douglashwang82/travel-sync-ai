@@ -1,0 +1,289 @@
+{
+  "destination": "Niseko, Japan",
+  "destination_aliases": [],
+  "_generated_by": "scripts/synthesize-routes.ts",
+  "routes": [
+    {
+      "title": "Annupuri Slopes & Soba",
+      "summary": "Start your day with exhilarating activities on the Niseko Annupuri slopes. Conclude with a warm, authentic soba lunch at Rakuichi, offering a taste of local craft.",
+      "vibe_tags": [
+        "ski",
+        "soba",
+        "foodie"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/resorts/niseko-annupuri",
+        "local:japan-ski-trip/niseko/restaurants/rakuichi-soba"
+      ],
+      "pinned_vibes": []
+    },
+    {
+      "title": "Annupuri: Ski & Curry Escape",
+      "summary": "Enjoy a relaxed morning on the Niseko Annupuri slopes. Pause mid-mountain for a hearty Japanese curry or ramen lunch at Boyo-so Lodge, taking in the serene mountain atmosphere.",
+      "vibe_tags": [
+        "ski",
+        "japanese food",
+        "mountain",
+        "chill"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/resorts/niseko-annupuri",
+        "local:japan-ski-trip/niseko/restaurants/boyoso-onsen-resturant"
+      ],
+      "pinned_vibes": []
+    },
+    {
+      "title": "Annupuri Slopes & Soba Refuel",
+      "summary": "Begin the day with activity on Niseko Annupuri's slopes. Enjoy a renowned soba lunch, then conclude with a casual Japanese curry or ramen at a mid-mountain lodge.",
+      "vibe_tags": [
+        "ski",
+        "soba",
+        "japanese_food",
+        "mountain",
+        "activity"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/resorts/niseko-annupuri",
+        "local:japan-ski-trip/niseko/restaurants/rakuichi-soba",
+        "local:japan-ski-trip/niseko/restaurants/boyoso-onsen-resturant"
+      ],
+      "pinned_vibes": [
+        "restaurant"
+      ]
+    },
+    {
+      "title": "Hirafu Onsen to Backcountry Powder",
+      "summary": "Enjoy a morning soak in Hirafu's hot springs. A light lunch at a cozy cafe precedes an exhilarating afternoon exploring Niseko's untouched backcountry terrain with a guide.",
+      "vibe_tags": [
+        "onsen",
+        "backcountry",
+        "cafe",
+        "ski"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/yukoro-onsen",
+        "local:japan-ski-trip/niseko/restaurants/graubunden",
+        "local:japan-ski-trip/niseko/activities/niseko-backcountry-guide"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Niseko Powder to Hirafu Izakaya",
+      "summary": "Start with guided backcountry skiing, then warm up with a hearty izakaya lunch in Hirafu. Spend the afternoon exploring the groomed slopes and powder stashes of Niseko Grand Hirafu.",
+      "vibe_tags": [
+        "backcountry",
+        "ski",
+        "powder",
+        "izakaya",
+        "hirafu"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-backcountry-guide",
+        "local:japan-ski-trip/niseko/restaurants/abucha-2",
+        "local:japan-ski-trip/niseko/resorts/niseko-grand-hirafu"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Niseko Powder & Onsen Day",
+      "summary": "Begin with a rejuvenating onsen soak in Hirafu before a casual cafe lunch. Spend the afternoon exploring Niseko's backcountry powder with a guide, then refuel with izakaya fare. Cap off the day with resort skiing at Grand Hirafu.",
+      "vibe_tags": [
+        "onsen",
+        "ski",
+        "backcountry",
+        "foodie",
+        "hirafu"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/yukoro-onsen",
+        "local:japan-ski-trip/niseko/restaurants/graubunden",
+        "local:japan-ski-trip/niseko/activities/niseko-backcountry-guide",
+        "local:japan-ski-trip/niseko/restaurants/abucha-2",
+        "local:japan-ski-trip/niseko/resorts/niseko-grand-hirafu"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Hirafu Powder & Culinary Heights",
+      "summary": "Start with guided backcountry thrills, refuel at a lively izakaya, then hit Grand Hirafu's slopes. Cap the day with exquisite modern French-Japanese dining, followed by a late-night ski school session in Hirafu.",
+      "vibe_tags": [
+        "skiing",
+        "backcountry",
+        "foodie",
+        "hirafu",
+        "luxury"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-backcountry-guide",
+        "local:japan-ski-trip/niseko/restaurants/abucha-2",
+        "local:japan-ski-trip/niseko/resorts/niseko-grand-hirafu",
+        "local:japan-ski-trip/niseko/restaurants/kamimura",
+        "local:japan-ski-trip/niseko/activities/niseko-niss"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Niseko: Powder, Onsen & Hirafu Eats",
+      "summary": "Begin your packed Niseko day with an onsen soak, then chase deep powder on a guided backcountry tour. Refuel with lunch before hitting Grand Hirafu's slopes, ending with a lively izakaya dinner and exploring ski school options in Hirafu.",
+      "vibe_tags": [
+        "ski",
+        "backcountry",
+        "onsen",
+        "hirafu",
+        "foodie"
+      ],
+      "pace": "packed",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/yukoro-onsen",
+        "local:japan-ski-trip/niseko/activities/niseko-backcountry-guide",
+        "local:japan-ski-trip/niseko/restaurants/graubunden",
+        "local:japan-ski-trip/niseko/resorts/niseko-grand-hirafu",
+        "local:japan-ski-trip/niseko/restaurants/abucha-2",
+        "local:japan-ski-trip/niseko/activities/niseko-niss"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Hirafu: Powder, French & Onsen Dip",
+      "summary": "Start with a thrilling morning of guided backcountry and resort skiing, followed by casual izakaya for lunch. The evening brings upscale French-Japanese dining before unwinding in a soothing onsen.",
+      "vibe_tags": [
+        "backcountry",
+        "skiing",
+        "foodie",
+        "onsen"
+      ],
+      "pace": "packed",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-backcountry-guide",
+        "local:japan-ski-trip/niseko/resorts/niseko-grand-hirafu",
+        "local:japan-ski-trip/niseko/restaurants/abucha-2",
+        "local:japan-ski-trip/niseko/activities/niseko-niss",
+        "local:japan-ski-trip/niseko/restaurants/kamimura",
+        "local:japan-ski-trip/niseko/activities/yukoro-onsen"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Hanazono Snow & Kaiseki Night",
+      "summary": "Experience an evening of Niseko snow thrills starting with tubing at Hanazono. Indulge in a luxurious kaiseki steak dinner before an exhilarating snowmobile tour caps off the night.",
+      "vibe_tags": [
+        "snow_activity",
+        "thrills",
+        "kaiseki",
+        "fine_dining",
+        "hanazono"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-night-tubing",
+        "local:japan-ski-trip/niseko/restaurants/an-dining",
+        "local:japan-ski-trip/niseko/activities/niseko-snowmobile"
+      ],
+      "pinned_vibes": [
+        "hanazono"
+      ]
+    },
+    {
+      "title": "Hanazono Snow Thrills and Kaiseki Delights",
+      "summary": "Begin your day with exhilarating snowmobiling in Hanazono, followed by a luxurious kaiseki or steak lunch at An Dining. Conclude with ski or snowboard lessons to hone your skills on the slopes.",
+      "vibe_tags": [
+        "snow",
+        "hanazono",
+        "activity",
+        "kaiseki",
+        "luxury"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-snowmobile",
+        "local:japan-ski-trip/niseko/restaurants/an-dining",
+        "local:japan-ski-trip/niseko/activities/ski-school-gosnow"
+      ],
+      "pinned_vibes": [
+        "hanazono"
+      ]
+    },
+    {
+      "title": "Hanazono Winter Thrills & Culinary Delight",
+      "summary": "Begin with the exhilaration of Hanazono night tubing, then savor a luxurious kaiseki and steak dinner. The day continues with a thrilling snowmobile tour, concluding with ski or snowboard instruction.",
+      "vibe_tags": [
+        "hanazono",
+        "snow_activity",
+        "kaiseki",
+        "steak",
+        "ski"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-night-tubing",
+        "local:japan-ski-trip/niseko/restaurants/an-dining",
+        "local:japan-ski-trip/niseko/activities/niseko-snowmobile",
+        "local:japan-ski-trip/niseko/activities/ski-school-gosnow"
+      ],
+      "pinned_vibes": [
+        "hanazono"
+      ]
+    },
+    {
+      "title": "Niseko Hanazono Winter Adventure",
+      "summary": "Begin the day with an exhilarating snowmobile tour through Hanazono's snowy landscapes. Recharge with a luxurious kaiseki and steak lunch at An Dining, then hit the slopes for ski or snowboard lessons at the renowned Hanazono Resort.",
+      "vibe_tags": [
+        "snowmobile",
+        "ski",
+        "hanazono",
+        "kaiseki",
+        "luxury"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-snowmobile",
+        "local:japan-ski-trip/niseko/restaurants/an-dining",
+        "local:japan-ski-trip/niseko/activities/ski-school-gosnow",
+        "local:japan-ski-trip/niseko/resorts/niseko-hanazono"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    },
+    {
+      "title": "Hanazono Winter Thrills",
+      "summary": "Start with evening snow thrills like tubing and snowmobiling. Enjoy a kaiseki or steak dinner, then hit the slopes for ski lessons at Hanazono Resort.",
+      "vibe_tags": [
+        "snow_thrills",
+        "ski",
+        "hanazono",
+        "fine_dining"
+      ],
+      "pace": "packed",
+      "place_ids": [
+        "local:japan-ski-trip/niseko/activities/niseko-night-tubing",
+        "local:japan-ski-trip/niseko/activities/niseko-snowmobile",
+        "local:japan-ski-trip/niseko/restaurants/an-dining",
+        "local:japan-ski-trip/niseko/activities/ski-school-gosnow",
+        "local:japan-ski-trip/niseko/resorts/niseko-hanazono"
+      ],
+      "pinned_vibes": [
+        "activity"
+      ]
+    }
+  ]
+}

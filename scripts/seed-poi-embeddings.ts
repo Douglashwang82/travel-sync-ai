@@ -18,7 +18,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { createAdminClient } from "@/lib/db";
-import { generateEmbedding } from "@/lib/gemini";
+import { generateEmbeddingWithRetry } from "@/services/admin/embedding-retry";
 import { searchPlaces, getPlaceDetails } from "@/services/decisions/places";
 import type { ItemType } from "@/lib/types";
 
@@ -91,7 +91,7 @@ async function seedDestination(destination: string): Promise<void> {
     for (const c of res.candidates) {
       const details = await getPlaceDetails(c.placeId);
       const description = [c.name, details?.address, bucket.type].filter(Boolean).join(" — ");
-      const embedding = await generateEmbedding(description);
+      const embedding = await generateEmbeddingWithRetry(description, { label: c.placeId });
 
       const { error } = await db.from("poi_embeddings").upsert(
         {
@@ -127,14 +127,22 @@ async function seedFromData(dataRoot = "data", destinationOverride?: string): Pr
   }
 
   const db = createAdminClient();
+  const existingPlaceIds = await loadExistingLocalDataPlaceIds(db);
   let total = 0;
+  let skipped = 0;
   for (const filePath of files) {
     const pois = await readLocalPois(filePath, root, destinationOverride);
     if (pois.length === 0) continue;
 
     console.log(`[seed:data] ${path.relative(root, filePath)} (${pois.length})`);
     for (const poi of pois) {
-      const embedding = await generateEmbedding(poi.description);
+      if (existingPlaceIds.has(poi.placeId)) {
+        skipped += 1;
+        console.log(`[seed:data]   = exists: ${poi.name}`);
+        continue;
+      }
+
+      const embedding = await generateEmbeddingWithRetry(poi.description, { label: poi.placeId });
       const { error } = await db.from("poi_embeddings").upsert(
         {
           place_id: poi.placeId,
@@ -172,11 +180,32 @@ async function seedFromData(dataRoot = "data", destinationOverride?: string): Pr
           { onConflict: "place_id" }
         );
         total += 1;
+        existingPlaceIds.add(poi.placeId);
         console.log(`[seed:data]   + ${poi.itemType}: ${poi.name}`);
       }
     }
   }
-  console.log(`[seed:data] upserted ${total} POIs`);
+  console.log(`[seed:data] upserted ${total} POIs, skipped ${skipped} existing POIs`);
+}
+
+async function loadExistingLocalDataPlaceIds(db: ReturnType<typeof createAdminClient>): Promise<Set<string>> {
+  const existing = new Set<string>();
+  const pageSize = 1_000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await db
+      .from("poi_embeddings")
+      .select("place_id")
+      .eq("source", "local_data")
+      .range(from, from + pageSize - 1);
+
+    if (error) throw new Error(`poi_embeddings lookup failed: ${error.message}`);
+    for (const row of data ?? []) {
+      if (typeof row.place_id === "string") existing.add(row.place_id);
+    }
+    if (!data || data.length < pageSize) break;
+  }
+  console.log(`[seed:data] found ${existing.size} existing local_data POIs`);
+  return existing;
 }
 
 async function listJsonFiles(dir: string): Promise<string[]> {

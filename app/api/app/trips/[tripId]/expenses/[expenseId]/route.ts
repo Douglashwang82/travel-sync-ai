@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccess } from "@/lib/app-server";
+import { requireAppTripWithGroup } from "@/lib/app-server";
 
 type RouteContext = { params: Promise<{ tripId: string; expenseId: string }> };
 
@@ -12,7 +12,7 @@ type RouteContext = { params: Promise<{ tripId: string; expenseId: string }> };
  */
 export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId, expenseId } = await ctx.params;
-  const auth = await requireAppTripAccess(req, tripId);
+  const auth = await requireAppTripWithGroup(req, tripId);
   if (!auth.ok) return auth.response;
 
   const db = createAdminClient();

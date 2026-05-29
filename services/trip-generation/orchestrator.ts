@@ -23,6 +23,7 @@ import { randomBytes, createHash } from "node:crypto";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { generateJson, GeminiUnavailableError } from "@/lib/gemini";
+import { logger } from "@/lib/logger";
 import {
   searchPoisByVibe,
   enrichWithLiveData,
@@ -36,7 +37,8 @@ import {
   type RouteCandidate,
   type RouteComposition,
 } from "./route-engine";
-import { solveItinerary, type RoutedDay, type InfeasibilityIssue } from "./solver";
+import { solveItinerary, PACE_CAPS, type RoutedDay, type InfeasibilityIssue } from "./solver";
+import { detectJapanSkiDestination } from "@/lib/ski-destination";
 import type { GenerateInput, GenerateOutput } from "./generator";
 
 // ─── Errors ─────────────────────────────────────────────────────────────────
@@ -64,12 +66,12 @@ export class GenerationFailedError extends Error {
 const PickSchema = z.object({
   title: z.string().min(2).max(120),
   summary: z.string().min(10).max(800),
-  tags: z.array(z.string()).max(8).default([]),
+  tags: z.array(z.string()).default([]),
   days: z
     .array(
       z.object({
         day_number: z.number().int().min(1).max(30),
-        place_ids: z.array(z.string()).max(8),
+        place_ids: z.array(z.string()),
       })
     )
     .min(1)
@@ -85,6 +87,19 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
   validateAnswers(input);
   const destination = input.answers.destination!;
   const durationDays = input.answers.duration_days!;
+  const genId = randomBytes(4).toString("hex");
+
+  logger.info("[gen] pipeline start", {
+    genId,
+    destination,
+    durationDays,
+    party: input.answers.party,
+    partySize: input.answers.party_size,
+    budget: input.answers.budget_tier,
+    pace: input.answers.pace,
+    vibe: (input.answers.vibe ?? []).join(",") || "(none)",
+    mustHaves: input.answers.must_haves?.slice(0, 200) ?? undefined,
+  });
 
   // 1. Route layer — curated 1-day routes (may be empty).
   const routes = await searchRoutesByVibe({
@@ -93,8 +108,23 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
     pace: input.answers.pace,
     budget: input.answers.budget_tier,
     k: 10,
+    genId,
+  });
+  logger.info("[gen] phase 1: routes", {
+    genId,
+    count: routes.length,
+    topTitles: routes.slice(0, 5).map((r) => r.title).join(" | ") || "(none)",
+    topScores: routes.slice(0, 5).map((r) => r.finalScore.toFixed(3)).join(",") || "(none)",
   });
   const compose: RouteComposition = composeFromRoutes(routes, durationDays);
+  logger.info("[gen] phase 1: route composition", {
+    genId,
+    coveredDays: Array.from(compose.coveredDays.entries())
+      .map(([d, r]) => `D${d}=${r.title}`)
+      .join(" | ") || "(none)",
+    uncoveredDays: compose.uncoveredDays.join(",") || "(none)",
+    usedPlaceCount: compose.usedPlaceIds.size,
+  });
 
   // 2. POI layer — always retrieved. Routes can fail at solve time and demote
   //    days to the LLM flow on repair, so the LLM needs a candidate pool ready.
@@ -104,43 +134,139 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
     pace: input.answers.pace,
     budget: input.answers.budget_tier,
     k: 30,
+    genId,
+  });
+  logger.info("[gen] phase 2: poi candidates", {
+    genId,
+    count: poiCandidates.length,
+    byType: summarizeByType(poiCandidates),
+    similarityRange: poiCandidates.length
+      ? `${poiCandidates[poiCandidates.length - 1].similarity.toFixed(3)}..${poiCandidates[0].similarity.toFixed(3)}`
+      : "(empty)",
+    topNames: poiCandidates.slice(0, 8).map((p) => p.name).join(" | "),
   });
 
   // 3. Materialize route place_ids as PoiCandidates and union with POI search.
-  const routePois = await loadPoisByIds(Array.from(compose.usedPlaceIds));
+  const routePois = await loadPoisByIds(Array.from(compose.usedPlaceIds), genId);
   const allCandidates = unionByPlaceId(routePois, poiCandidates);
   if (allCandidates.length === 0) {
+    logger.error("[gen] phase 2: no candidates available", { genId, destination });
     throw new GenerationFailedError("no_candidates", "no routes or POIs available");
   }
   const enriched = await enrichWithLiveData(allCandidates);
+  logger.info("[gen] phase 2: enrichment", {
+    genId,
+    total: enriched.length,
+    withCoords: enriched.filter((e) => e.lat != null && e.lng != null).length,
+    withOpeningHours: enriched.filter((e) => (e.live?.openingPeriods?.length ?? 0) > 0).length,
+    withLiveData: enriched.filter((e) => e.live != null).length,
+  });
 
   // 4. LLM pick → 5. solve → 6. repair loop (now also demotes failed routes).
-  const startWeekday = deriveStartWeekday();
+  const startWeekday = deriveStartWeekday(input.startDate);
+  logger.info("[gen] phase 3: start weekday", {
+    genId,
+    startDate: input.startDate ?? "(default +14d)",
+    startWeekday,
+  });
   let pick: PickResult | null = null;
   let routed: SolveTry | null = null;
+  // Route demotion is "free" — when the only failure was on a route-covered
+  // day, the LLM never got a chance to swap anything that attempt. Extend
+  // the loop by one to give the LLM a real shot after demotion (capped at
+  // +1 so a recurring route can't loop forever).
+  let extraAttemptsForDemotion = 0;
+  const MAX_DEMOTION_EXTENSIONS = 1;
 
-  for (let attempt = 0; attempt <= MAX_REPAIR_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt <= MAX_REPAIR_ATTEMPTS + extraAttemptsForDemotion; attempt++) {
+    logger.info("[gen] phase 3: attempt start", {
+      genId,
+      attempt,
+      uncoveredDays: compose.uncoveredDays.join(",") || "(all routes-covered)",
+      coveredDays: Array.from(compose.coveredDays.keys()).join(",") || "(none)",
+    });
+
     if (compose.uncoveredDays.length > 0) {
       const llmIssues = routed?.kind === "infeasible" ? issuesForLlmDays(routed.issues, compose) : [];
       pick = await llmPickAssignment(input, enriched, llmIssues, pick ?? undefined, {
         onlyDays: compose.uncoveredDays,
         excludePlaceIds: compose.usedPlaceIds,
+        genId,
+        attempt,
       });
+      const byId = new Map(enriched.map((p) => [p.placeId, p]));
+      logger.info("[gen] phase 3: llm pick", {
+        genId,
+        attempt,
+        title: pick.title,
+        tags: pick.tags.join(",") || "(none)",
+        days: pick.days
+          .map((d) => `D${d.day_number}=[${d.place_ids.map((id) => byId.get(id)?.name ?? id.slice(0, 8)).join(" | ")}]`)
+          .join("  ") || "(empty)",
+      });
+    } else {
+      logger.info("[gen] phase 3: llm skipped — all days route-covered", { genId, attempt });
     }
 
     routed = trySolve(pick, enriched, input, startWeekday, compose);
-    if (routed.kind === "feasible") break;
+    if (routed.kind === "feasible") {
+      logger.info("[gen] phase 4: solver feasible", {
+        genId,
+        attempt,
+        days: routed.days
+          .map((d) => `D${d.dayNumber}=${d.stops.length}stops(${d.stops.map((s) => s.poi.name).join("→")})`)
+          .join(" | "),
+      });
+      break;
+    }
+
+    logger.warn("[gen] phase 4: solver infeasible", {
+      genId,
+      attempt,
+      issues: routed.issues
+        .map((i) => `D${i.dayNumber}/${i.reason}: ${i.detail}`)
+        .join(" | "),
+    });
+    diagnoseSolverIssues(genId, attempt, routed.issues, enriched, startWeekday);
 
     // Demote any preordered-day failures so the next attempt's LLM call
     // covers those days. Place_ids freed by the dropped route become
     // eligible again for the LLM shortlist.
-    if (attempt < MAX_REPAIR_ATTEMPTS) {
-      demoteFailedRoutes(routed.issues, compose);
+    if (attempt < MAX_REPAIR_ATTEMPTS + extraAttemptsForDemotion) {
+      const demoted = demoteFailedRoutes(routed.issues, compose);
+      if (demoted.length > 0) {
+        logger.info("[gen] phase 4: demoted failed routes", {
+          genId,
+          attempt,
+          demotedDays: demoted.join(","),
+        });
+        const llmIssues = issuesForLlmDays(routed.issues, compose);
+        // Route-only failure: the LLM didn't actually exercise any of its
+        // swaps this round. Lend it one extra cycle so demotion isn't a
+        // silent retry-burn.
+        if (llmIssues.length === 0 && extraAttemptsForDemotion < MAX_DEMOTION_EXTENSIONS) {
+          extraAttemptsForDemotion++;
+          logger.info("[gen] phase 4: extending repair budget after route demotion", {
+            genId,
+            attempt,
+            extraAttemptsForDemotion,
+          });
+        }
+      }
     }
   }
 
   if (!routed || routed.kind === "infeasible") {
     const issues = routed?.kind === "infeasible" ? routed.issues : [];
+    logger.error("[gen] pipeline failed: irreparable", {
+      genId,
+      attempts: MAX_REPAIR_ATTEMPTS + 1 + extraAttemptsForDemotion,
+      issues: issues.map((i) => `D${i.dayNumber}/${i.reason}: ${i.detail}`).join(" | ") || "(none)",
+      offendingPlaceIds: issues
+        .flatMap((i) => i.offendingPlaceIds)
+        .slice(0, 20)
+        .join(","),
+    });
     throw new GenerationFailedError(
       "irreparable",
       `Solver still infeasible after ${MAX_REPAIR_ATTEMPTS} repair attempts: ` +
@@ -152,7 +278,14 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
   //    were route-covered first try), synthesize the title/summary/tags
   //    from the routes themselves.
   const finalPick = pick ?? synthesizePickFromRoutes(compose, destination);
-  return persistTemplate(input, finalPick, routed.days, enriched, compose);
+  const out = await persistTemplate(input, finalPick, routed.days, enriched, compose);
+  logger.info("[gen] pipeline succeeded", {
+    genId,
+    templateId: out.templateId,
+    versionId: out.versionId,
+    totalStops: routed.days.reduce((acc, d) => acc + d.stops.length, 0),
+  });
+  return out;
 }
 
 // ─── Steps ──────────────────────────────────────────────────────────────────
@@ -183,6 +316,10 @@ interface PickConstraints {
   onlyDays?: number[];
   /** When set, these place_ids are filtered out of the shortlist (route-reserved). */
   excludePlaceIds?: Set<string>;
+  /** Trace correlation id propagated from runGenerationPipeline. */
+  genId?: string;
+  /** Repair-loop attempt index (0 = first pass). */
+  attempt?: number;
 }
 
 async function llmPickAssignment(
@@ -195,19 +332,38 @@ async function llmPickAssignment(
   const onlyDays = constraints?.onlyDays;
   const excludeIds = constraints?.excludePlaceIds ?? new Set<string>();
   const filteredShortlist = shortlist.filter((p) => !excludeIds.has(p.placeId));
+  const genId = constraints?.genId;
+  const attempt = constraints?.attempt ?? 0;
+  logger.info("[gen] phase 3: llm input", {
+    genId,
+    attempt,
+    onlyDays: (onlyDays ?? []).join(",") || "(all)",
+    shortlistSize: filteredShortlist.length,
+    shortlistByType: summarizeByType(filteredShortlist),
+    repairIssues: issues.map((i) => `D${i.dayNumber}/${i.reason}`).join(",") || "(none)",
+    hadPrior: prior != null,
+  });
   const daysClause = onlyDays && onlyDays.length > 0
     ? `本次僅需安排以下天數(其他天已由策展路線覆蓋):${onlyDays.join("、")}`
     : `共 ${input.answers.duration_days} 天`;
+
+  const skiMatch = detectJapanSkiDestination(input.answers.destination);
+  const skiHint = skiMatch.match
+    ? `這是 ${skiMatch.region.region}(${skiMatch.region.prefecture}) 的日本滑雪行程。每天節奏建議:` +
+      `上午雪場 → 山上/山腰午餐 → 下午雪場或溫泉 → 晚餐(餐廳)。` +
+      `行程 4 天以上請至少安排一天以溫泉為主。優先挑選 tags 含 ski_resort / onsen / ski_in_ski_out 的地點。`
+    : null;
 
   const system = [
     `你正在從候選清單中,為 ${input.answers.destination} 的 ${input.answers.duration_days} 天行程挑選並分配每天的景點。`,
     `團體類型:${input.answers.party}(${input.answers.party_size} 人)。預算:${input.answers.budget_tier}。節奏:${input.answers.pace}。氛圍:${(input.answers.vibe ?? []).join("、") || "均衡"}。`,
     input.answers.must_haves ? `額外需求:${input.answers.must_haves}` : null,
     daysClause,
+    skiHint,
     "規則:",
     "1) 你只能使用候選清單中的 place_id;不可虛構或新增。",
-    `2) 每日選 3–6 個地點(依照節奏:chill ≤3 / balanced 3–5 / packed 5–6)。`,
-    "3) 每天請至少安排一家餐廳。",
+    `2) 本次節奏為 ${input.answers.pace ?? "balanced"},每日最多 ${PACE_CAPS[input.answers.pace ?? "balanced"]} 個地點。超過會被截斷,請不要超出。`,
+    "3) 每天請至少安排一家餐廳(會被排到午餐 12-14 或晚餐 18-20 時段)。",
     "4) 不要重複使用同一個 place_id。",
     "5) title、summary、tags 用繁體中文。",
     'JSON 結構:{ title, summary, tags[], days: [{ day_number, place_ids: ["..."] }] }',
@@ -240,28 +396,59 @@ async function llmPickAssignment(
     raw = await generateJson<unknown>(system, JSON.stringify(userPayload));
   } catch (err) {
     if (err instanceof GeminiUnavailableError) {
+      logger.error("[gen] phase 3: gemini unavailable", { genId, attempt });
       throw new GenerationFailedError("gemini_unavailable");
     }
     throw err;
   }
   const parsed = PickSchema.safeParse(raw);
-  if (!parsed.success) throw new GenerationFailedError("schema_invalid", parsed.error.message);
+  if (!parsed.success) {
+    logger.error("[gen] phase 3: llm schema invalid", {
+      genId,
+      attempt,
+      error: parsed.error.message.slice(0, 400),
+    });
+    throw new GenerationFailedError("schema_invalid", parsed.error.message);
+  }
 
   // Defense in depth: drop hallucinated/excluded place_ids, dedupe across days,
+  // enforce the pace cap (so the solver never wastes a retry on too_many_stops),
   // and (when constrained) drop any day_number outside onlyDays.
   const valid = new Set(filteredShortlist.map((p) => p.placeId));
   const allowedDays = onlyDays && onlyDays.length > 0 ? new Set(onlyDays) : null;
+  const cap = PACE_CAPS[input.answers.pace ?? "balanced"];
   const seen = new Set<string>();
+  const rawTagCount = parsed.data.tags.length;
+  parsed.data.tags = Array.from(new Set(parsed.data.tags.map((tag) => tag.trim()).filter(Boolean))).slice(0, 8);
+  const rawDayCount = parsed.data.days.length;
+  const rawIdCount = parsed.data.days.reduce((a, d) => a + d.place_ids.length, 0);
   parsed.data.days = parsed.data.days
     .filter((d) => (allowedDays ? allowedDays.has(d.day_number) : true))
-    .map((d) => ({
-      ...d,
-      place_ids: d.place_ids.filter((id) => {
+    .map((d) => {
+      const deduped = d.place_ids.filter((id) => {
         if (!valid.has(id) || seen.has(id)) return false;
         seen.add(id);
         return true;
-      }),
-    }));
+      });
+      // Silently truncate to the pace cap. Releasing the over-cap place_ids
+      // back into `seen` would let a later day reuse them, which violates the
+      // "no repeat" rule, so we just drop them.
+      return { ...d, place_ids: deduped.slice(0, cap) };
+    });
+  const keptIdCount = parsed.data.days.reduce((a, d) => a + d.place_ids.length, 0);
+  if (rawTagCount !== parsed.data.tags.length || rawIdCount !== keptIdCount || rawDayCount !== parsed.data.days.length) {
+    logger.warn("[gen] phase 3: llm output filtered", {
+      genId,
+      attempt,
+      rawTagCount,
+      keptTagCount: parsed.data.tags.length,
+      rawDayCount,
+      keptDayCount: parsed.data.days.length,
+      rawIdCount,
+      keptIdCount,
+      paceCap: cap,
+    });
+  }
 
   return parsed.data;
 }
@@ -313,6 +500,20 @@ function trySolve(
 // _ marker silences the prompt-only PickPromptInput type; keep it exported-shape
 // so future callers (web wizard preview) can reuse the same brief.
 export type { PickPromptInput };
+
+// Exposed for the notebooks/itinerary-pipeline.ipynb walkthrough so each
+// phase can be invoked in isolation. Not part of the supported public API —
+// callers should still go through generateTemplateFromSurvey().
+export const __notebook = {
+  llmPickAssignment,
+  trySolve,
+  unionByPlaceId,
+  deriveStartWeekday,
+  synthesizePickFromRoutes,
+  persistTemplate,
+  validateAnswers,
+};
+export type { PickResult, SolveTry };
 
 async function persistTemplate(
   input: GenerateInput,
@@ -388,7 +589,7 @@ async function persistTemplate(
   if (usedRouteIds.length > 0) {
     db.rpc("bump_route_quality", { p_route_ids: usedRouteIds, p_delta: 1 })
       .then(({ error }) => {
-        if (error) console.error("[orchestrator] bump_route_quality failed", error);
+        if (error) logger.error("[gen] bump_route_quality failed", { error: String(error.message ?? error) });
       });
   }
 
@@ -415,15 +616,67 @@ function issuesForLlmDays(issues: InfeasibilityIssue[], compose: RouteCompositio
   return issues.filter((i) => !compose.coveredDays.has(i.dayNumber));
 }
 
-function demoteFailedRoutes(issues: InfeasibilityIssue[], compose: RouteComposition): void {
+function demoteFailedRoutes(issues: InfeasibilityIssue[], compose: RouteComposition): number[] {
+  const demoted: number[] = [];
   for (const issue of issues) {
     const route = compose.coveredDays.get(issue.dayNumber);
     if (!route) continue;
     compose.coveredDays.delete(issue.dayNumber);
     compose.uncoveredDays.push(issue.dayNumber);
     for (const id of route.placeIds) compose.usedPlaceIds.delete(id);
+    demoted.push(issue.dayNumber);
   }
   compose.uncoveredDays.sort((a, b) => a - b);
+  return demoted;
+}
+
+function summarizeByType(pois: Array<{ itemType: string }>): string {
+  const counts: Record<string, number> = {};
+  for (const p of pois) counts[p.itemType] = (counts[p.itemType] ?? 0) + 1;
+  return Object.entries(counts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([t, n]) => `${t}=${n}`)
+    .join(",");
+}
+
+function formatMinutes(m: number): string {
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
+function diagnoseSolverIssues(
+  genId: string,
+  attempt: number,
+  issues: InfeasibilityIssue[],
+  enriched: EnrichedPoi[],
+  startWeekday: number
+): void {
+  const byId = new Map(enriched.map((p) => [p.placeId, p]));
+  for (const issue of issues) {
+    const weekday = (startWeekday + issue.dayNumber - 1) % 7;
+    const offending = issue.offendingPlaceIds.map((id) => {
+      const p = byId.get(id);
+      if (!p) return `${id.slice(0, 8)}(missing)`;
+      const windows =
+        (p.live?.openingPeriods ?? [])
+          .filter((period) => period.openDay === weekday)
+          .map((period) => `${formatMinutes(period.openMinutes)}-${formatMinutes(period.closeMinutes)}`)
+          .join("/") || "no-hours";
+      const coords =
+        p.lat != null && p.lng != null
+          ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`
+          : "no-coords";
+      return `${p.name}[${p.itemType}|${coords}|${windows}]`;
+    });
+    logger.warn("[gen] phase 4: diagnosis", {
+      genId,
+      attempt,
+      day: issue.dayNumber,
+      weekday,
+      reason: issue.reason,
+      detail: issue.detail,
+      offending: offending.join(" ; ") || "(none)",
+    });
+  }
 }
 
 function synthesizePickFromRoutes(compose: RouteComposition, destination: string): PickResult {
@@ -439,8 +692,16 @@ function synthesizePickFromRoutes(compose: RouteComposition, destination: string
   return { title, summary, tags, days: [] };
 }
 
-function deriveStartWeekday(): number {
-  return new Date().getDay();
+function deriveStartWeekday(startDate?: string): number {
+  // YYYY-MM-DD → local weekday (0=Sun..6=Sat). When the caller doesn't know
+  // the start date yet (LINE /plan flow), default to the same "today + 14d"
+  // that fork picks; the plan is at least consistent with where the fork
+  // will land.
+  const iso = startDate ?? new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return new Date().getDay();
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d)).getDay();
 }
 
 function formatArrival(minutes: number): string {

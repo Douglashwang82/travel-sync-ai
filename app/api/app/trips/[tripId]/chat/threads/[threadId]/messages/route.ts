@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccessAllowGroupless } from "@/lib/app-server";
+import { requireAppTripAccess } from "@/lib/app-server";
 import { getAgent } from "@/services/agents/registry";
 import {
   generateConversation,
@@ -52,7 +52,7 @@ async function authorizeThread(
   | { ok: true; thread: Record<string, unknown>; appUserId: string }
   | { ok: false; response: NextResponse }
 > {
-  const auth = await requireAppTripAccessAllowGroupless(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return { ok: false, response: auth.response };
 
   const db = createAdminClient();

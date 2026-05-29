@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/db";
 import { pushText } from "@/lib/line";
+import { appendTripLinkText, buildTripUrl } from "@/lib/trip-link";
 import { track } from "@/lib/analytics";
 import { captureError } from "@/lib/monitoring";
 import { logger } from "@/lib/logger";
@@ -71,9 +72,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     await pushText(
       lineGroup.line_group_id,
-      `📋 Booking reminder — ${trip.destination_name ?? "your trip"} is ${daysUntilDeparture} day${daysUntilDeparture === 1 ? "" : "s"} away.\n\n` +
-        `The following items are confirmed but not yet booked:\n${itemList}\n\n` +
-        `Once a booking is done, reply with:\n/booked [item name] [confirmation ref]`
+      appendTripLinkText(
+        `📋 Booking reminder — ${trip.destination_name ?? "your trip"} is ${daysUntilDeparture} day${daysUntilDeparture === 1 ? "" : "s"} away.\n\n` +
+          `The following items are confirmed but not yet booked:\n${itemList}\n\n` +
+          `Once a booking is done, reply with:\n/booked [item name] [confirmation ref]`,
+        buildTripUrl(trip.id)
+      )
     );
 
     await track("booking_reminder_sent", {

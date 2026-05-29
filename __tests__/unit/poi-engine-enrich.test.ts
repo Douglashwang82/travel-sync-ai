@@ -96,4 +96,23 @@ describe("enrichWithLiveData — liveData short-circuit", () => {
     expect(getPlaceDetailsBatchMock).toHaveBeenCalledWith(["ChIJ_xyz"]);
     expect(result[0].live?.rating).toBe(4.5);
   });
+
+  it("does not call Google for local dataset IDs without liveData", async () => {
+    const local = candidate("local:japan-ski-trip%2Fniseko%2Ftransport%2Froutes%2Fcts-rental-car", {
+      lat: 42.8,
+      lng: 140.7,
+    });
+    getPlaceDetailsBatchMock.mockResolvedValue([]);
+
+    const result = await enrichWithLiveData([local]);
+
+    expect(getPlaceDetailsBatchMock).not.toHaveBeenCalled();
+    expect(result[0].live).toMatchObject({
+      placeId: local.placeId,
+      name: local.name,
+      lat: 42.8,
+      lng: 140.7,
+      openingPeriods: [],
+    });
+  });
 });

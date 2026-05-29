@@ -23,6 +23,8 @@ export interface MapPin {
   itemId: string | null;
   optionId: string | null;
   dayKey: string | null;
+  /** ISO timestamp of the stop's scheduled time-of-day, when available. */
+  deadlineAt?: string | null;
   votedByMe?: boolean;
   bookingUrl?: string | null;
 }
@@ -320,12 +322,18 @@ function CanvasInner({
   mapTypeId,
   mapId,
 }: MapCanvasProps & { mapId: string | undefined }) {
+  const hasExplicitCenter = destination.lat != null && destination.lng != null;
   const center = useMemo<{ lat: number; lng: number }>(() => {
-    if (destination.lat != null && destination.lng != null)
-      return { lat: destination.lat, lng: destination.lng };
+    if (hasExplicitCenter) return { lat: destination.lat!, lng: destination.lng! };
     if (pins.length > 0) return { lat: pins[0].lat, lng: pins[0].lng };
-    return { lat: 35.0116, lng: 135.7681 }; // Kyoto fallback
-  }, [destination.lat, destination.lng, pins]);
+    // v1 ski-region midpoint (Honshu/Hokkaido ski belt). Centres the global
+    // map over the six covered regions (Niseko in the north down to Naeba /
+    // Shiga Kogen / Hakuba in central Honshu) instead of an arbitrary city.
+    return { lat: 38.5, lng: 138.5 };
+  }, [hasExplicitCenter, destination.lat, destination.lng, pins]);
+  // Country-level zoom when there's nothing to anchor on, so all six v1
+  // regions stay visible.
+  const defaultZoom = hasExplicitCenter || pins.length > 0 ? 11 : 5;
 
   const selectedPin = useMemo(
     () => pins.find((p) => p.id === selectedPinId) ?? null,
@@ -342,7 +350,7 @@ function CanvasInner({
   return (
     <Map
       defaultCenter={center}
-      defaultZoom={11}
+      defaultZoom={defaultZoom}
       gestureHandling="greedy"
       mapId={mapId}
       mapTypeId={mapTypeId ?? "roadmap"}
@@ -407,6 +415,21 @@ function CanvasInner({
             {selectedPin.subtitle && (
               <div style={{ color: "#6b7280", fontSize: 12 }}>
                 {selectedPin.subtitle}
+              </div>
+            )}
+            {selectedPin.deadlineAt && (
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#111827",
+                }}
+              >
+                🕒 {new Date(selectedPin.deadlineAt).toLocaleTimeString("zh-TW", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </div>
             )}
             <div

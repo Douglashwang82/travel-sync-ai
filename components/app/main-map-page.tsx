@@ -106,6 +106,14 @@ function dayLabel(iso: string): string {
   });
 }
 
+function formatTimeOfDay(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleTimeString("zh-TW", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function formatMeters(meters: number | null | undefined): string {
   if (meters == null) return "—";
   if (meters < 1000) return `${Math.round(meters)} m`;
@@ -146,6 +154,7 @@ function buildPins(
       itemId: item.id,
       optionId: opt.id,
       dayKey: dateKey(item.deadline_at),
+      deadlineAt: item.deadline_at,
       bookingUrl: opt.booking_url,
     });
   }
@@ -158,6 +167,8 @@ function buildPins(
       itemById.get(vote.item.id)?.deadline_at != null
         ? dateKey(itemById.get(vote.item.id)!.deadline_at)
         : dateKey(vote.item.deadlineAt);
+    const voteDeadline =
+      itemById.get(vote.item.id)?.deadline_at ?? vote.item.deadlineAt ?? null;
     for (const opt of vote.options) {
       if (opt.lat == null || opt.lng == null) continue;
       pins.push({
@@ -172,6 +183,7 @@ function buildPins(
         itemId: vote.item.id,
         optionId: opt.id,
         dayKey: dayK,
+        deadlineAt: voteDeadline,
         votedByMe: opt.votedByMe,
         bookingUrl: opt.bookingUrl,
       });
@@ -969,6 +981,11 @@ function PinListTile({
                       {STAGE_LABEL[pin.stage] ?? pin.stage}
                     </Badge>
                   </div>
+                  {formatTimeOfDay(pin.deadlineAt) && (
+                    <p className="text-mono text-[10px] font-semibold tabular-nums text-[var(--text-primary)]">
+                      🕒 {formatTimeOfDay(pin.deadlineAt)}
+                    </p>
+                  )}
                   {pin.subtitle && (
                     <p className="truncate text-[11px] text-[var(--text-muted)]">
                       📍 {pin.subtitle}
@@ -1060,6 +1077,40 @@ function DayPlanPanel({
               c.originIndex === i && c.destinationIndex === i && c.status === "OK"
           );
           const hasNext = i < selectedDayPins.length - 1;
+          const scheduled = formatTimeOfDay(pin.deadlineAt);
+          // ETA = anchor (first stop's scheduled time) + cumulative hop seconds.
+          // Falls back to null when we have no anchor, no matrix, or any
+          // intermediate hop is missing.
+          const anchorIso = selectedDayPins[0]?.deadlineAt ?? null;
+          let etaIso: string | null = null;
+          if (anchorIso && i > 0 && matrix) {
+            const anchorMs = new Date(anchorIso).getTime();
+            let cumulative = 0;
+            let ok = true;
+            for (let j = 0; j < i; j++) {
+              const seg = matrix.cells.find(
+                (c) =>
+                  c.originIndex === j &&
+                  c.destinationIndex === j &&
+                  c.status === "OK"
+              );
+              if (!seg || seg.durationSeconds == null) {
+                ok = false;
+                break;
+              }
+              cumulative += seg.durationSeconds;
+            }
+            if (ok) etaIso = new Date(anchorMs + cumulative * 1000).toISOString();
+          }
+          const eta = formatTimeOfDay(etaIso);
+          // Delay vs scheduled, only if we have both — flags tight transitions.
+          let delayMin: number | null = null;
+          if (etaIso && pin.deadlineAt && i > 0) {
+            delayMin = Math.round(
+              (new Date(etaIso).getTime() - new Date(pin.deadlineAt).getTime()) /
+                60000
+            );
+          }
           return (
             <li key={pin.id} className="space-y-1">
               <button
@@ -1071,12 +1122,39 @@ function DayPlanPanel({
                   {i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-medium">
-                    {TYPE_GLYPH[pin.itemType] ?? "📌"} {pin.title}
+                  <span className="flex items-baseline gap-1.5">
+                    {scheduled ? (
+                      <span className="text-mono shrink-0 text-[11px] font-semibold tabular-nums text-[var(--text-primary)]">
+                        {scheduled}
+                      </span>
+                    ) : (
+                      <span className="text-mono shrink-0 text-[10px] text-[var(--text-faint)]">
+                        --:--
+                      </span>
+                    )}
+                    <span className="truncate text-xs font-medium">
+                      {TYPE_GLYPH[pin.itemType] ?? "📌"} {pin.title}
+                    </span>
                   </span>
                   {pin.subtitle && (
-                    <span className="block truncate text-[10px] text-[var(--text-muted)]">
+                    <span className="block truncate pl-9 text-[10px] text-[var(--text-muted)]">
                       {pin.subtitle}
+                    </span>
+                  )}
+                  {eta && i > 0 && (
+                    <span className="block pl-9 text-[10px] text-[var(--text-muted)]">
+                      預計抵達 {eta}
+                      {delayMin != null && Math.abs(delayMin) >= 5 && (
+                        <span
+                          className={cn(
+                            "ml-1 font-medium",
+                            delayMin > 0 ? "text-red-500" : "text-emerald-600"
+                          )}
+                        >
+                          ({delayMin > 0 ? "+" : ""}
+                          {delayMin} 分)
+                        </span>
+                      )}
                     </span>
                   )}
                 </span>
@@ -1137,6 +1215,13 @@ function PinDetailPanel({
       {pin.subtitle && (
         <p className="text-xs leading-relaxed text-[var(--text-muted)]">
           📍 {pin.subtitle}
+        </p>
+      )}
+
+      {formatTimeOfDay(pin.deadlineAt) && (
+        <p className="text-mono text-xs font-semibold tabular-nums text-[var(--text-primary)]">
+          🕒 {pin.dayKey ? `${dayLabel(pin.dayKey)} · ` : ""}
+          {formatTimeOfDay(pin.deadlineAt)}
         </p>
       )}
 

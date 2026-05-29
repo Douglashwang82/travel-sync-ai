@@ -1,0 +1,96 @@
+{
+  "region": "Hakuba",
+  "currency": "JPY",
+  "price_band_legend": {
+    "$": "under 25,000 / night (twin)",
+    "$$": "25,000 – 60,000 / night",
+    "$$$": "60,000 – 150,000 / night",
+    "$$$$": "150,000+ / night"
+  },
+  "hotels": [
+    {
+      "id": "roka-apartments-hakuba",
+      "name": "Roka Apartments Hakuba",
+      "category": "luxury",
+      "price_band": "$$$$",
+      "base_resort": "happo-one",
+      "ski_in_ski_out": true,
+      "address": "5099 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301 (Wadano-no-mori)",
+      "lat": 36.7048,
+      "lng": 137.8205,
+      "website": "https://rokahakuba.com/",
+      "amenities": ["onsen", "ski_valet", "concierge", "kitchen", "fireplace"],
+      "notes": "Luxury self-contained residences at the foot of Happo-One's Sakka ski area. True ski-in/ski-out and one of Hakuba's newest premium properties."
+    },
+    {
+      "id": "hotel-marillen",
+      "name": "Hotel Marillen",
+      "category": "upscale",
+      "price_band": "$$$",
+      "base_resort": "happo-one",
+      "ski_in_ski_out": true,
+      "address": "4998 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7080,
+      "lng": 137.8208,
+      "website": "https://hotelmarillen.com/",
+      "amenities": ["onsen", "ski_valet", "restaurant", "bar"],
+      "notes": "One of Hakuba's few genuine ski-in / ski-out hotels, sitting directly above the Happo-One Sakka lifts. Compact European-style hotel with a popular bar."
+    },
+    {
+      "id": "hakuba-hifumi-hotel",
+      "name": "Hakuba Hifumi Hotel",
+      "category": "ryokan",
+      "price_band": "$$$",
+      "base_resort": "happo-one",
+      "ski_in_ski_out": false,
+      "address": "5230 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7000,
+      "lng": 137.8327,
+      "website": "https://hakuba-hifumi.jp/",
+      "amenities": ["onsen", "private_onsen", "kaiseki", "shuttle"],
+      "notes": "Ryokan-style hotel in Happo Village with in-house onsen and a number of rooms featuring private outdoor baths. Walking distance to the Happo Bus Terminal."
+    },
+    {
+      "id": "hotel-villa-hakuba",
+      "name": "Hotel Villa Hakuba",
+      "category": "upscale",
+      "price_band": "$$",
+      "base_resort": "happo-one",
+      "ski_in_ski_out": true,
+      "address": "4998-14 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7068,
+      "lng": 137.8218,
+      "website": "https://hotelvillahakuba.com/",
+      "amenities": ["onsen", "kitchen", "laundry"],
+      "notes": "Apartment-style hotel about 50 m from the Sakka lift in Wadano. Units from studios to 4-bedroom apartments; popular with families and groups."
+    },
+    {
+      "id": "wadano-onsen-hotel",
+      "name": "Wadano Onsen Hotel",
+      "category": "midscale",
+      "price_band": "$$",
+      "base_resort": "happo-one",
+      "ski_in_ski_out": true,
+      "address": "5054 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301 (Upper Wadano)",
+      "lat": 36.7095,
+      "lng": 137.8195,
+      "website": "https://wadanoonsen-hotel.com/",
+      "amenities": ["onsen", "restaurant"],
+      "notes": "Decent-value Japanese/Western hybrid hotel in Upper Wadano. One-minute walk to the Sakka slopes of Happo-One."
+    },
+    {
+      "id": "kokoro-hotel-hakuba",
+      "name": "Kokoro Hotel Hakuba",
+      "category": "pension",
+      "price_band": "$",
+      "base_resort": "happo-one",
+      "ski_in_ski_out": false,
+      "address": "5197 Hokujo, Hakuba-mura, Kitaazumi-gun, Nagano 399-9301",
+      "lat": 36.7000,
+      "lng": 137.8310,
+      "website": "https://kokorohakuba.com/",
+      "amenities": ["onsen", "breakfast", "laundry"],
+      "notes": "Recently renovated pension-style hotel near the Happo Bus Terminal. Indoor onsen and quick access to both lifts and village amenities."
+    }
+  ]
+}

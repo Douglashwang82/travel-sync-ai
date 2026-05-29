@@ -1,0 +1,121 @@
+{
+  "region": "Nozawa Onsen",
+  "gateways": [
+    {
+      "id": "iiyama-station",
+      "name": "Iiyama Station",
+      "name_ja": "飯山駅",
+      "type": "train_station",
+      "lat": 36.8531,
+      "lng": 138.3683,
+      "website": "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=1457",
+      "notes": "Hokuriku Shinkansen station and the local rail head for Nozawa Onsen. The Nozawa Onsen Liner departs from bus stop #4 about 10 minutes after each bullet train arrival."
+    },
+    {
+      "id": "nozawa-onsen-bus-terminal",
+      "name": "Nozawa Onsen Bus Terminal",
+      "name_ja": "野沢温泉バスターミナル",
+      "type": "bus_terminal",
+      "lat": 36.9263,
+      "lng": 138.4378,
+      "website": null,
+      "notes": "Village's main bus stop, a few minutes' walk from the Hikage gondola base and from Oyu. All buses (Liner, Iiyama, highway) terminate here."
+    },
+    {
+      "id": "nagano-station",
+      "name": "Nagano Station",
+      "name_ja": "長野駅",
+      "type": "train_station",
+      "lat": 36.6433,
+      "lng": 138.1881,
+      "website": "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=1039",
+      "notes": "Hokuriku Shinkansen interchange. Useful when combining Nozawa with Hakuba or the Snow Monkey Park (Yudanaka)."
+    },
+    {
+      "id": "haneda-airport",
+      "name": "Tokyo Haneda Airport",
+      "name_ja": "羽田空港",
+      "iata": "HND",
+      "type": "airport",
+      "lat": 35.5494,
+      "lng": 139.7798,
+      "website": "https://tokyo-haneda.com/en/",
+      "notes": "Most domestic and regional international flights. ~30 min by Keikyu + JR to Tokyo Station for the Hokuriku Shinkansen onward."
+    },
+    {
+      "id": "narita-airport",
+      "name": "Narita International Airport",
+      "name_ja": "成田空港",
+      "iata": "NRT",
+      "type": "airport",
+      "lat": 35.7720,
+      "lng": 140.3929,
+      "website": "https://www.narita-airport.jp/en",
+      "notes": "Most long-haul carriers. Allow 1 h for the Narita Express to Tokyo Station, then 100 min Hokuriku Shinkansen to Iiyama."
+    }
+  ],
+  "routes": [
+    {
+      "id": "tokyo-to-iiyama-shinkansen",
+      "from": "tokyo-station",
+      "to": "iiyama-station",
+      "operator": "JR East",
+      "type": "shinkansen",
+      "duration_min": 110,
+      "indicative_price_jpy": { "one_way_adult_reserved": 8750 },
+      "frequency": "approx 1 per hour (Hakutaka)",
+      "notes": "Hokuriku Shinkansen. Hakutaka stops at Iiyama; Kagayaki services skip it, so check before booking."
+    },
+    {
+      "id": "nozawa-onsen-liner",
+      "from": "iiyama-station",
+      "to": "nozawa-onsen-bus-terminal",
+      "operator": "Nozawa Onsen Kotsu",
+      "type": "shuttle_bus",
+      "duration_min": 25,
+      "indicative_price_jpy": { "one_way_adult": 600 },
+      "frequency": "every 1–2 h, timed to shinkansen arrivals",
+      "notes": "Direct express bus from Iiyama Station bus stop #4 to the village. Last bus departs around 19:00; after that take a taxi (~6,000 JPY)."
+    },
+    {
+      "id": "nagano-to-nozawa-bus",
+      "from": "nagano-station",
+      "to": "nozawa-onsen-bus-terminal",
+      "operator": "Nagaden Bus",
+      "type": "highway_bus",
+      "duration_min": 90,
+      "indicative_price_jpy": { "one_way_adult": 1800 },
+      "frequency": "approx 4 per day winter",
+      "notes": "Useful alternative when continuing from Yudanaka / Snow Monkey Park, or when Hakutaka shinkansen schedules don't line up."
+    },
+    {
+      "id": "narita-to-nozawa-snow-shuttle",
+      "from": "narita-airport",
+      "to": "nozawa-onsen-bus-terminal",
+      "operator": "Nagano Snow Shuttle",
+      "type": "highway_bus",
+      "duration_min": 360,
+      "indicative_price_jpy": { "one_way_adult": 16500 },
+      "frequency": "winter only, ~1 per day",
+      "notes": "Seasonal direct coach. Convenient with ski bags but slower than shinkansen + Liner. Book ahead at naganosnowshuttle.com."
+    }
+  ],
+  "in_resort_transport": [
+    {
+      "id": "village-mountain-shuttle",
+      "name": "Mountain Shuttle (Village ↔ Hikage)",
+      "type": "shuttle_bus",
+      "operator": "Nozawa Onsen Resort",
+      "frequency": "every 20–30 min winter daytime",
+      "notes": "Free shuttle linking the village center, Furusato-no-Yu and the Hikage gondola base. The village itself is otherwise walkable (and steep) — the shuttle is mostly for the lift run."
+    },
+    {
+      "id": "shinyu-pair-lift",
+      "name": "Shinyu Pair Lift",
+      "type": "ski_lift",
+      "operator": "Nozawa Onsen Resort",
+      "frequency": "winter daytime",
+      "notes": "Beginner-friendly pair lift at the lower edge of the village; effectively a transport link between the upper village and the Hikage base."
+    }
+  ]
+}

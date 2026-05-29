@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripAccess } from "@/lib/app-server";
+import { requireAppTripWithGroup } from "@/lib/app-server";
 import { generateJson, GeminiUnavailableError } from "@/lib/gemini";
 import type { Trip, ItemStage, ItemType } from "@/lib/types";
 
@@ -124,7 +124,7 @@ function buildContext(
  */
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripAccess(req, tripId);
+  const auth = await requireAppTripWithGroup(req, tripId);
   if (!auth.ok) return auth.response;
 
   const db = createAdminClient();

@@ -1,0 +1,96 @@
+{
+  "region": "Shiga Kogen",
+  "currency": "JPY",
+  "price_band_legend": {
+    "$": "under 25,000 / night (twin)",
+    "$$": "25,000 – 60,000 / night",
+    "$$$": "60,000 – 150,000 / night",
+    "$$$$": "150,000+ / night"
+  },
+  "hotels": [
+    {
+      "id": "shiga-kogen-prince-hotel",
+      "name": "Shiga Kogen Prince Hotel",
+      "category": "upper_upscale",
+      "price_band": "$$$",
+      "base_resort": "yakebitaiyama",
+      "ski_in_ski_out": true,
+      "address": "7148 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7180,
+      "lng": 138.5260,
+      "website": "https://www.princehotels.com/en/shigakogen/",
+      "amenities": ["onsen", "multiple_restaurants", "ski_valet", "kids_program", "shuttle"],
+      "notes": "Three-wing Prince complex (South, East, West) at Yakebitaiyama. Direct lift access to the Higashitateyama / Yakebitaiyama sub-resorts and Shiga's largest ski-in/out property."
+    },
+    {
+      "id": "hotel-ichinose",
+      "name": "Hotel Ichinose",
+      "category": "upscale",
+      "price_band": "$$",
+      "base_resort": "ichinose",
+      "ski_in_ski_out": true,
+      "address": "7148 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7163,
+      "lng": 138.5078,
+      "website": "https://www.hotel-ichinose.jp/",
+      "amenities": ["onsen", "restaurant", "ski_storage"],
+      "notes": "Mid-mountain hotel at the Ichinose Family base. Onsen sourced from the Shiga Kogen hot spring; convenient for the central sub-resorts."
+    },
+    {
+      "id": "shiga-palace-hotel",
+      "name": "Shiga Palace Hotel",
+      "category": "midscale",
+      "price_band": "$$",
+      "base_resort": "sun-valley",
+      "ski_in_ski_out": true,
+      "address": "7149 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7090,
+      "lng": 138.5060,
+      "website": "https://www.shiga-palace.com/",
+      "amenities": ["onsen", "restaurant", "shuttle"],
+      "notes": "Western-style hotel at the Sun Valley base. Compact rooms but full ski-in/out access and a small in-house onsen."
+    },
+    {
+      "id": "biei-no-yado-shiga",
+      "name": "Hotel Goryukan",
+      "category": "ryokan",
+      "price_band": "$$",
+      "base_resort": "shibu-onsen",
+      "ski_in_ski_out": false,
+      "address": "2196 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401 (Shibu Onsen)",
+      "lat": 36.7445,
+      "lng": 138.4252,
+      "website": "https://www.goryukan.jp/",
+      "amenities": ["onsen", "private_onsen", "kaiseki"],
+      "notes": "Traditional ryokan in Shibu Onsen town, the historic onsen district at the foot of Shiga Kogen. Access to the nine free Shibu soto-yu. Closer to the Snow Monkey Park than Shiga Kogen itself."
+    },
+    {
+      "id": "ryokan-biyu-no-yado",
+      "name": "Yudanaka Biyu-no-Yado",
+      "category": "ryokan",
+      "price_band": "$$$",
+      "base_resort": "yudanaka",
+      "ski_in_ski_out": false,
+      "address": "2880 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7493,
+      "lng": 138.4225,
+      "website": "https://www.biyu.co.jp/",
+      "amenities": ["onsen", "private_onsen", "kaiseki", "shuttle"],
+      "notes": "Modern ryokan adjacent to Yudanaka Station — the rail head for both Shiga Kogen and the Snow Monkey Park. Multiple onsen pools and a kaiseki dining program."
+    },
+    {
+      "id": "pension-shiga-kogen",
+      "name": "Pension Stage 21",
+      "category": "pension",
+      "price_band": "$",
+      "base_resort": "hasuike",
+      "ski_in_ski_out": false,
+      "address": "7148-2 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7202,
+      "lng": 138.4983,
+      "website": "https://stage21.jp/",
+      "amenities": ["onsen", "breakfast", "ski_storage"],
+      "notes": "Family-run pension near the Hasuike interchange. Budget-friendly with home-cooked dinners and free shuttle to nearby lifts."
+    }
+  ]
+}

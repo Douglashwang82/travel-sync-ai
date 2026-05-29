@@ -1,0 +1,111 @@
+{
+  "region": "Naeba",
+  "gateways": [
+    {
+      "id": "echigo-yuzawa-station",
+      "name": "Echigo-Yuzawa Station",
+      "name_ja": "越後湯沢駅",
+      "type": "train_station",
+      "lat": 36.9356,
+      "lng": 138.8051,
+      "website": "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=1444",
+      "notes": "Joetsu Shinkansen station and the main gateway to Naeba, Kagura, GALA Yuzawa and 16 other Yuzawa ski areas. Naeba Prince free shuttle departs from the West Exit."
+    },
+    {
+      "id": "tokyo-station",
+      "name": "Tokyo Station",
+      "name_ja": "東京駅",
+      "type": "train_station",
+      "lat": 35.6812,
+      "lng": 139.7671,
+      "website": "https://www.tokyostationcity.com/en/",
+      "notes": "Joetsu Shinkansen origin. ~75 minutes to Echigo-Yuzawa makes Naeba the closest major powder area to Tokyo."
+    },
+    {
+      "id": "haneda-airport",
+      "name": "Tokyo Haneda Airport",
+      "name_ja": "羽田空港",
+      "iata": "HND",
+      "type": "airport",
+      "lat": 35.5494,
+      "lng": 139.7798,
+      "website": "https://tokyo-haneda.com/en/",
+      "notes": "Most domestic and regional international flights. ~30 min by Keikyu + JR to Tokyo Station."
+    },
+    {
+      "id": "narita-airport",
+      "name": "Narita International Airport",
+      "name_ja": "成田空港",
+      "iata": "NRT",
+      "type": "airport",
+      "lat": 35.7720,
+      "lng": 140.3929,
+      "website": "https://www.narita-airport.jp/en",
+      "notes": "Most long-haul carriers. Allow 1 h Narita Express → Tokyo Station, then 75 min Joetsu Shinkansen to Echigo-Yuzawa."
+    }
+  ],
+  "routes": [
+    {
+      "id": "tokyo-to-echigo-yuzawa-shinkansen",
+      "from": "tokyo-station",
+      "to": "echigo-yuzawa-station",
+      "operator": "JR East",
+      "type": "shinkansen",
+      "duration_min": 75,
+      "indicative_price_jpy": { "one_way_adult_reserved": 6790 },
+      "frequency": "1–2 per hour (Toki / Tanigawa)",
+      "notes": "Joetsu Shinkansen. Tanigawa terminates at Echigo-Yuzawa or GALA; Toki continues to Niigata."
+    },
+    {
+      "id": "naeba-prince-shuttle",
+      "from": "echigo-yuzawa-station",
+      "to": "naeba-prince-hotel",
+      "operator": "Naeba Prince",
+      "type": "shuttle_bus",
+      "duration_min": 40,
+      "indicative_price_jpy": { "one_way_adult": 0 },
+      "frequency": "every 20–40 min winter daytime",
+      "notes": "Free shuttle from Echigo-Yuzawa Station West Exit to the Naeba Prince base. Open to non-guests too; show your Mt. Naeba pass or hotel booking."
+    },
+    {
+      "id": "yuzawa-onsen-loop-bus",
+      "from": "echigo-yuzawa-station",
+      "to": "yuzawa-town",
+      "operator": "Minamiuonuma City",
+      "type": "shuttle_bus",
+      "duration_min": 10,
+      "indicative_price_jpy": { "one_way_adult": 200 },
+      "frequency": "approx hourly",
+      "notes": "Local loop around Yuzawa town, useful for reaching the public onsen and town ryokan from the station."
+    },
+    {
+      "id": "narita-to-naeba-shuttle",
+      "from": "narita-airport",
+      "to": "naeba-prince-hotel",
+      "operator": "Chartered seasonal coach",
+      "type": "highway_bus",
+      "duration_min": 270,
+      "indicative_price_jpy": { "one_way_adult": 12000 },
+      "frequency": "winter only, on demand",
+      "notes": "Occasional direct seasonal coach service; otherwise the shinkansen + Prince shuttle route is the standard path."
+    }
+  ],
+  "in_resort_transport": [
+    {
+      "id": "mt-naeba-pass-shuttle",
+      "name": "Mt. Naeba Inter-Resort Shuttle",
+      "type": "shuttle_bus",
+      "operator": "Prince Hotels",
+      "frequency": "every 30–60 min winter daytime",
+      "notes": "Free shuttle linking Naeba and Kagura bases for skiers using the Mt. Naeba lift pass (complements the Dragondola)."
+    },
+    {
+      "id": "naeba-prince-internal-shuttle",
+      "name": "Naeba Prince Internal Shuttle",
+      "type": "shuttle_bus",
+      "operator": "Naeba Prince",
+      "frequency": "on-demand",
+      "notes": "Internal cart shuttle moving guests between the Naeba Prince's four wings and the lift base."
+    }
+  ]
+}

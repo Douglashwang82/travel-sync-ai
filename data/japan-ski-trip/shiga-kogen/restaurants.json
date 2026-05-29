@@ -1,0 +1,89 @@
+{
+  "region": "Shiga Kogen",
+  "price_band_legend": {
+    "$": "under 2,500 JPY / person",
+    "$$": "2,500 – 6,000 JPY / person",
+    "$$$": "6,000 – 15,000 JPY / person",
+    "$$$$": "15,000+ JPY / person"
+  },
+  "restaurants": [
+    {
+      "id": "shiga-kogen-beer-restaurant",
+      "name": "Tamamura Honten / Shiga Kogen Beer",
+      "cuisine": "craft_beer_pub",
+      "price_band": "$$",
+      "village": "Yamanouchi",
+      "address": "1163 Oaza Yokokurra, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7400,
+      "lng": 138.3970,
+      "website": "https://shigakogenbeer.jp/",
+      "reservation_required": false,
+      "notes": "Founding brewery of Shiga Kogen Beer, an established Japanese craft brand. Taproom with shichimi-spiced bar food, en route between Yudanaka and Shiga Kogen."
+    },
+    {
+      "id": "uchimura-soba",
+      "name": "Uchimura Soba",
+      "cuisine": "soba",
+      "price_band": "$$",
+      "village": "Yudanaka",
+      "address": "2178 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7488,
+      "lng": 138.4242,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Hand-cut Shinshu soba at a small shop near Yudanaka Station. Lunch only; popular pre-Snow-Monkey stop."
+    },
+    {
+      "id": "enza-cafe",
+      "name": "Enza Cafe",
+      "cuisine": "cafe_western",
+      "price_band": "$$",
+      "village": "Ichinose",
+      "address": "7148 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401 (Ichinose Family base)",
+      "lat": 36.7155,
+      "lng": 138.5085,
+      "website": "https://enzacafe.com/",
+      "reservation_required": false,
+      "notes": "On-mountain café and bar at the Ichinose base. Burgers, pizza, craft beer; après-ski hub for the English-speaking crowd."
+    },
+    {
+      "id": "shibu-onsen-uoichi",
+      "name": "Uoichi Sushi",
+      "cuisine": "sushi",
+      "price_band": "$$",
+      "village": "Shibu Onsen",
+      "address": "2178-1 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7448,
+      "lng": 138.4258,
+      "website": null,
+      "reservation_required": true,
+      "notes": "Counter sushi in the heart of Shibu Onsen with Japan-Sea seafood. Reservations recommended; closes early."
+    },
+    {
+      "id": "yakiniku-shibu",
+      "name": "Yakiniku Anrakutei Shibu",
+      "cuisine": "yakiniku",
+      "price_band": "$$",
+      "village": "Shibu Onsen",
+      "address": "Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7452,
+      "lng": 138.4262,
+      "website": null,
+      "reservation_required": false,
+      "notes": "Local Japanese BBQ joint serving Shinshu beef and pork. Family-friendly with set menus."
+    },
+    {
+      "id": "shiga-mountain-lodge",
+      "name": "Hasuike Mountain Lodge Restaurant",
+      "cuisine": "japanese_curry",
+      "price_band": "$",
+      "village": "Hasuike",
+      "address": "7148 Hirao, Yamanouchi-machi, Shimotakai-gun, Nagano 381-0401",
+      "lat": 36.7210,
+      "lng": 138.4990,
+      "website": null,
+      "reservation_required": false,
+      "notes": "On-mountain canteen at the Hasuike base with Japanese curry, ramen and katsu-don. Budget lunch stop between lift transfers."
+    }
+  ]
+}
