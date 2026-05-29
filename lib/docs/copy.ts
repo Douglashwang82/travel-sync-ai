@@ -281,6 +281,16 @@ const EN: DocsCopy = {
           "Cron is the recovery and time-driven sweeper layer, not the primary delivery path. The list of active jobs is auto-generated above in the API reference section.",
         ],
       },
+      {
+        id: "sad-design-system",
+        title: "Design system & motion",
+        body: [
+          "Design tokens live in app/globals.css as CSS variables (surfaces, text, borders, status, radius, shadows) mapped into Tailwind v4 via @theme inline. The web app uses a 'vibrant/expressive' language: a LINE-green brand anchor plus a secondary coral/cool/violet axis, gradient tokens (--gradient-brand/-warm/-cool/-aurora), glow shadows, and an animated ambient mesh behind the app shell.",
+          "Fonts are loaded with next/font in app/layout.tsx: Space Grotesk (display), Inter (body), JetBrains Mono (numerics), exposed as CSS variables that --font-display/-text/-mono point at.",
+          "Motion is centralized in components/motion/. MotionProvider wraps the /app shell with MotionConfig reducedMotion=\"user\"; variants.ts holds the shared fadeUp / stagger / springPop / pageTransition vocabulary; index.tsx exports reusable Reveal, Stagger/StaggerItem, PageTransition and AnimatedNumber helpers built on the 'motion' package (Framer Motion). CSS keyframes in globals.css cover the rest (skeleton shimmer, aurora pan, tile glow, bento cascade).",
+          "Accessibility: every animation degrades under prefers-reduced-motion — the global CSS block collapses transitions to ~0ms and MotionConfig neutralizes transform/layout animations.",
+        ],
+      },
     ],
   },
 };
@@ -510,6 +520,16 @@ const ZH_TW: DocsCopy = {
         body: [
           "排程在 vercel.json 中宣告。每個 cron route 位於 app/api/cron/ 底下，透過 CRON_SECRET header 驗證（lib/cron-auth.ts）。",
           "Cron 是回收與時間驅動的 sweeper 層，不是主要遞送路徑。目前啟用中的 cron 列表會自動出現在上方 API 參考章節。",
+        ],
+      },
+      {
+        id: "sad-design-system",
+        title: "設計系統與動效",
+        body: [
+          "設計 token 以 CSS 變數定義於 app/globals.css（表面、文字、邊框、狀態、圓角、陰影），並透過 Tailwind v4 的 @theme inline 對應為工具類別。Web app 採用「鮮明／表現力」風格：以 LINE 綠為品牌主軸，輔以珊瑚／冷色／紫色次要色軸、漸層 token（--gradient-brand/-warm/-cool/-aurora）、光暈陰影，以及 app shell 背後的動態 ambient mesh。",
+          "字型透過 app/layout.tsx 的 next/font 載入：Space Grotesk（標題）、Inter（內文）、JetBrains Mono（數字），以 CSS 變數提供，並由 --font-display/-text/-mono 指向。",
+          "動效集中於 components/motion/。MotionProvider 以 MotionConfig reducedMotion=\"user\" 包覆 /app shell；variants.ts 收斂共用的 fadeUp / stagger / springPop / pageTransition 詞彙；index.tsx 匯出可重用的 Reveal、Stagger/StaggerItem、PageTransition 與 AnimatedNumber，皆建構於 'motion' 套件（Framer Motion）。其餘動效由 globals.css 的 CSS keyframes 提供（skeleton 微光、aurora 漸層流動、tile glow、bento 串接進場）。",
+          "無障礙：所有動畫在 prefers-reduced-motion 下都會退化——全域 CSS 區塊將過場壓縮為約 0ms，MotionConfig 也會停用 transform/layout 動畫。",
         ],
       },
     ],

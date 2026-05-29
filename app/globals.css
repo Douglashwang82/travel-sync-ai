@@ -47,18 +47,35 @@
   --border-hairline: #e8e4d8;
   --border-strong: #cfcabb;
 
-  /* ─ Accent (single LINE-green axis) */
+  /* ─ Accent (LINE-green anchor + vibrant secondary axis) */
   --accent-line: #00b900;
   --accent-line-soft: #00b9001a;
   --accent-line-glow: 0 0 28px -4px rgb(0 185 0 / 0.35);
 
-  /* ─ Status — desaturated to coexist with the green accent */
-  --status-needs-decision: #c08a26;
-  --status-needs-decision-soft: #f4ead0;
-  --status-blocked: #c2452f;
-  --status-blocked-soft: #f5dfd9;
-  --status-settled: #2f7a52;
-  --status-settled-soft: #d9ecdf;
+  /* Secondary expressive accent — warm coral, the counterweight to green. */
+  --accent-warm: #ff5d5d;
+  --accent-warm-soft: #ff5d5d1f;
+  --accent-cool: #1fb6c9;
+  --accent-violet: #7c5cff;
+
+  /* Vibrant gradients — color is now expressive, not just punctuation. */
+  --gradient-brand: linear-gradient(120deg, #00b900 0%, #1fb6c9 100%);
+  --gradient-warm: linear-gradient(120deg, #ff8a3d 0%, #ff5d5d 55%, #ff3d8b 100%);
+  --gradient-cool: linear-gradient(120deg, #1fb6c9 0%, #7c5cff 100%);
+  --gradient-aurora: linear-gradient(120deg, #00b900 0%, #1fb6c9 40%, #7c5cff 75%, #ff5d8b 100%);
+  --gradient-mesh-1: radial-gradient(60% 60% at 18% 18%, color-mix(in oklab, var(--accent-line) 38%, transparent), transparent 70%);
+  --gradient-mesh-2: radial-gradient(55% 55% at 85% 30%, color-mix(in oklab, var(--accent-cool) 34%, transparent), transparent 72%);
+  --gradient-mesh-3: radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--accent-violet) 28%, transparent), transparent 78%);
+  --glow-brand: 0 0 32px -6px rgb(0 185 0 / 0.5);
+  --glow-warm: 0 0 32px -6px rgb(255 93 93 / 0.5);
+
+  /* ─ Status — re-saturated so badges read as vivid punctuation */
+  --status-needs-decision: #e08c00;
+  --status-needs-decision-soft: #ffefcf;
+  --status-blocked: #e23b2e;
+  --status-blocked-soft: #ffe0db;
+  --status-settled: #12a05a;
+  --status-settled-soft: #d2f5e0;
 
   /* ─ Radius */
   --radius-sm: 0.5rem;     /* 8 */
@@ -76,10 +93,10 @@
   --shadow-tactile: 0 1px 0 rgb(255 255 255 / 0.45) inset, 0 -2px 0 rgb(20 19 15 / 0.08) inset, 0 2px 6px rgb(20 19 15 / 0.06), 0 12px 24px -12px rgb(0 185 0 / 0.18);
   --shadow-tactile-press: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 -1px 0 rgb(20 19 15 / 0.10) inset, 0 1px 2px rgb(20 19 15 / 0.10);
 
-  /* ─ Type */
-  --font-display: ui-serif, "Iowan Old Style", "Apple Garamond", "Source Serif Pro", "Noto Serif TC", Georgia, serif;
-  --font-text: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* ─ Type — display = Space Grotesk (next/font), body = Inter, mono = JetBrains. */
+  --font-display: var(--font-display-next), "Space Grotesk", ui-sans-serif, "Noto Sans TC", system-ui, sans-serif;
+  --font-text: var(--font-text-next), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+  --font-mono: var(--font-mono-next), "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   /* ─ Motion */
   --spring-snappy: linear(0, 0.36 8%, 0.78 18%, 1.04 28%, 1.07 38%, 1.0 50%, 0.99 65%, 1);
@@ -130,12 +147,27 @@
   --accent-line-soft: #2bd24a1f;
   --accent-line-glow: 0 0 32px -2px rgb(43 210 74 / 0.42);
 
-  --status-needs-decision: #d8a04a;
-  --status-needs-decision-soft: #2a2113;
-  --status-blocked: #d96a52;
-  --status-blocked-soft: #2a1714;
-  --status-settled: #6cc193;
-  --status-settled-soft: #102218;
+  --accent-warm: #ff7a7a;
+  --accent-warm-soft: #ff7a7a26;
+  --accent-cool: #3fd0e3;
+  --accent-violet: #9b81ff;
+
+  --gradient-brand: linear-gradient(120deg, #2bd24a 0%, #3fd0e3 100%);
+  --gradient-warm: linear-gradient(120deg, #ffa05a 0%, #ff7a7a 55%, #ff6aa8 100%);
+  --gradient-cool: linear-gradient(120deg, #3fd0e3 0%, #9b81ff 100%);
+  --gradient-aurora: linear-gradient(120deg, #2bd24a 0%, #3fd0e3 40%, #9b81ff 75%, #ff6aa8 100%);
+  --gradient-mesh-1: radial-gradient(60% 60% at 18% 18%, color-mix(in oklab, var(--accent-line) 30%, transparent), transparent 70%);
+  --gradient-mesh-2: radial-gradient(55% 55% at 85% 30%, color-mix(in oklab, var(--accent-cool) 26%, transparent), transparent 72%);
+  --gradient-mesh-3: radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--accent-violet) 24%, transparent), transparent 78%);
+  --glow-brand: 0 0 36px -6px rgb(43 210 74 / 0.55);
+  --glow-warm: 0 0 36px -6px rgb(255 122 122 / 0.5);
+
+  --status-needs-decision: #f0ad3c;
+  --status-needs-decision-soft: #2e2410;
+  --status-blocked: #ff6a55;
+  --status-blocked-soft: #2e1714;
+  --status-settled: #36d98a;
+  --status-settled-soft: #0d2519;
 
   --shadow-flat: 0 0 0 1px rgb(0 0 0 / 0.4);
   --shadow-raise: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 40px -18px rgb(0 0 0 / 0.6);
@@ -181,6 +213,9 @@
   --color-text-muted: var(--text-muted);
   --color-text-faint: var(--text-faint);
   --color-accent-line: var(--accent-line);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-cool: var(--accent-cool);
+  --color-accent-violet: var(--accent-violet);
   --color-status-decision: var(--status-needs-decision);
   --color-status-blocked: var(--status-blocked);
   --color-status-settled: var(--status-settled);
@@ -301,6 +336,115 @@ body {
 .btn-tactile:focus-visible {
   outline: 2px solid var(--accent-line);
   outline-offset: 3px;
+}
+
+/* ─── Vibrant / expressive surfaces ──────────────────────────────────────── */
+/*
+ * The vibrant layer relaxes the old "green-as-punctuation" rule: color is now
+ * expressive. Gradients, glow, and an animated aurora carry energy, while the
+ * motion tokens keep everything calm and reduced-motion still wins.
+ */
+
+/* Gradient primary button — brand aurora fill, animated sheen on hover.
+ * Shape/size/padding come from the Button cva; this only paints. */
+.btn-gradient {
+  position: relative;
+  color: #fff;
+  background: var(--gradient-brand);
+  background-size: 160% 160%;
+  box-shadow: var(--shadow-raise), var(--glow-brand);
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform var(--duration-confirm) var(--ease-confirm),
+              box-shadow var(--duration-confirm) var(--ease-confirm),
+              background-position var(--duration-morph) var(--ease-confirm);
+}
+.btn-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform var(--duration-morph) var(--ease-confirm);
+}
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  background-position: 100% 50%;
+  box-shadow: var(--shadow-raise), var(--glow-brand);
+}
+.btn-gradient:hover::after { transform: translateX(120%); }
+.btn-gradient:active { transform: translateY(1px) scale(0.99); }
+.btn-gradient:focus-visible { outline: 2px solid var(--accent-cool); outline-offset: 3px; }
+
+/* Gradient text — for hero numerals and display accents. */
+.text-gradient {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-aurora {
+  background: var(--gradient-aurora);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aurora-pan 8s ease-in-out infinite;
+}
+@keyframes aurora-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* Gradient-border glow tile — interactive cards light up on hover. */
+.tile-glow {
+  position: relative;
+  transition: transform var(--duration-confirm) var(--ease-confirm),
+              box-shadow var(--duration-confirm) var(--ease-confirm);
+}
+.tile-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gradient-aurora);
+  background-size: 200% 200%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--duration-confirm) var(--ease-confirm);
+  pointer-events: none;
+}
+.tile-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raise);
+}
+.tile-glow:hover::before { opacity: 1; animation: aurora-pan 6s ease-in-out infinite; }
+
+/* Ambient mesh background — layered behind the whole app shell. */
+.ambient-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--gradient-mesh-1), var(--gradient-mesh-2), var(--gradient-mesh-3);
+  background-size: 200% 200%, 200% 200%, 200% 200%;
+  filter: saturate(120%) blur(40px);
+  opacity: 0.5;
+  animation: ambient-drift 28s ease-in-out infinite;
+}
+@keyframes ambient-drift {
+  0%, 100% { background-position: 0% 0%, 100% 0%, 50% 100%; }
+  50%      { background-position: 30% 40%, 70% 30%, 40% 70%; }
+}
+
+/* Soft pill chip with gradient tint — status / category chips. */
+.chip-gradient {
+  background: linear-gradient(120deg, var(--accent-line-soft), var(--accent-warm-soft));
+  border: 1px solid color-mix(in oklab, var(--accent-line) 22%, transparent);
 }
 
 /* Hairline divider with optional accent caret. */

@@ -4,7 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plane,
+  Map as MapIcon,
+  MapPin,
+  LayoutTemplate,
+  BookOpen,
+  User,
+  Home,
+  Mail,
+  type LucideIcon,
+} from "lucide-react";
+import { motion } from "motion/react";
 import { useAppLocale } from "@/components/app/app-locale-provider";
 import { AppLanguageToggle } from "@/components/app/app-language-toggle";
 import { AppHeaderUser } from "@/components/app/app-header-user";
@@ -42,15 +55,20 @@ const COPY = {
   },
 } as const;
 
-const NAV_ITEMS = [
-  { key: "trips" as const, href: "/app", icon: "✈" },
-  { key: "map" as const, href: "/app/map", icon: "🗺" },
-  { key: "pois" as const, href: "/app/pois", icon: "📍", requiresUser: true },
-  { key: "templates" as const, href: "/app/templates", icon: "📋" },
-  { key: "docs" as const, href: "/app/docs", icon: "📖" },
-  { key: "profile" as const, href: "/app/profile", icon: "👤", requiresUser: true },
-  { key: "home" as const, href: "/", icon: "🏠" },
-] as const;
+const NAV_ITEMS: {
+  key: keyof (typeof COPY)["en"];
+  href: string;
+  icon: LucideIcon;
+  requiresUser?: boolean;
+}[] = [
+  { key: "trips", href: "/app", icon: Plane },
+  { key: "map", href: "/app/map", icon: MapIcon },
+  { key: "pois", href: "/app/pois", icon: MapPin, requiresUser: true },
+  { key: "templates", href: "/app/templates", icon: LayoutTemplate },
+  { key: "docs", href: "/app/docs", icon: BookOpen },
+  { key: "profile", href: "/app/profile", icon: User, requiresUser: true },
+  { key: "home", href: "/", icon: Home },
+];
 
 export function AppSidebar({
   user,
@@ -147,29 +165,43 @@ export function AppSidebar({
 
       {/* Primary nav */}
       <nav id="sidebar-nav" className="flex-1 overflow-y-auto py-4" style={{ padding: collapsed ? "1rem 0" : undefined }}>
-        <ul id="sidebar-nav-list" className={cn("space-y-0.5", collapsed ? "px-1" : "px-3")}>
-          {navItems.map(({ key, href, icon }) => (
-            <li key={href}>
-              <Link
-                id={`sidebar-nav-${key}`}
-                href={href}
-                onClick={() => setOpen(false)}
-                title={collapsed ? copy[key] : undefined}
-                className={cn(
-                  "flex items-center rounded-xl py-2.5 text-sm transition-colors",
-                  collapsed ? "justify-center px-0" : "gap-3 px-3",
-                  isActive(href)
-                    ? "bg-[var(--primary)]/10 font-semibold text-[var(--primary)]"
-                    : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
-                )}
-              >
-                <span aria-hidden className="w-5 text-center text-base leading-none">
-                  {icon}
-                </span>
-                {!collapsed && copy[key]}
-              </Link>
-            </li>
-          ))}
+        <ul id="sidebar-nav-list" className={cn("space-y-1", collapsed ? "px-1" : "px-3")}>
+          {navItems.map(({ key, href, icon: Icon }) => {
+            const active = isActive(href);
+            return (
+              <li key={href}>
+                <Link
+                  id={`sidebar-nav-${key}`}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  title={collapsed ? copy[key] : undefined}
+                  className={cn(
+                    "group relative flex items-center rounded-xl py-2.5 text-sm transition-colors duration-200",
+                    collapsed ? "justify-center px-0" : "gap-3 px-3",
+                    active
+                      ? "font-semibold text-[var(--accent-line)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  )}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="sidebar-active-pill"
+                      aria-hidden
+                      className="absolute inset-0 -z-10 rounded-xl bg-[var(--accent-line-soft)] ring-1 ring-[color-mix(in_oklab,var(--accent-line)_30%,transparent)]"
+                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    />
+                  )}
+                  <Icon
+                    aria-hidden
+                    size={18}
+                    strokeWidth={active ? 2.4 : 2}
+                    className="shrink-0 transition-transform duration-200 group-hover:scale-110"
+                  />
+                  {!collapsed && copy[key]}
+                </Link>
+              </li>
+            );
+          })}
 
           {user && (
             <li id="sidebar-nav-inbox">
@@ -177,14 +209,27 @@ export function AppSidebar({
                 onClick={() => setOpen(false)}
                 title={collapsed ? "Inbox" : undefined}
                 className={cn(
-                  "flex items-center rounded-xl py-2.5 text-sm transition-colors",
+                  "group relative flex items-center rounded-xl py-2.5 text-sm transition-colors duration-200",
                   collapsed ? "justify-center px-0" : "gap-3 px-3",
                   pathname === "/app/inbox"
-                    ? "bg-[var(--primary)]/10 font-semibold text-[var(--primary)]"
-                    : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                    ? "font-semibold text-[var(--accent-line)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 )}
               >
-                <span aria-hidden className="w-5 text-center text-base leading-none">✉</span>
+                {pathname === "/app/inbox" && (
+                  <motion.span
+                    layoutId="sidebar-active-pill"
+                    aria-hidden
+                    className="absolute inset-0 -z-10 rounded-xl bg-[var(--accent-line-soft)] ring-1 ring-[color-mix(in_oklab,var(--accent-line)_30%,transparent)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <Mail
+                  aria-hidden
+                  size={18}
+                  strokeWidth={pathname === "/app/inbox" ? 2.4 : 2}
+                  className="shrink-0 transition-transform duration-200 group-hover:scale-110"
+                />
                 {!collapsed && <InboxNavLink />}
               </div>
             </li>
@@ -208,7 +253,7 @@ export function AppSidebar({
       <aside
         id="app-sidebar"
         className={cn(
-          "hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex-col border-r border-[var(--border)] bg-[var(--background)] transition-[width] duration-300 ease-in-out",
+          "hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex-col border-r border-[var(--border-hairline)] bg-[var(--surface-glass)] backdrop-blur-xl backdrop-saturate-150 transition-[width] duration-300 ease-in-out",
           collapsed ? "lg:w-14" : "lg:w-56"
         )}
       >
@@ -218,7 +263,7 @@ export function AppSidebar({
       {/* ── Mobile top bar ────────────────────────────────────────── */}
       <div
         id="app-topbar"
-        className="lg:hidden sticky top-0 z-40 flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--background)]/80 px-4 backdrop-blur"
+        className="lg:hidden sticky top-0 z-40 flex h-12 items-center justify-between border-b border-[var(--border-hairline)] bg-[var(--surface-glass)] px-4 backdrop-blur-xl backdrop-saturate-150"
       >
         <Link
           id="app-topbar-logo"
@@ -293,7 +338,7 @@ export function AppSidebar({
         id="app-sidebar-drawer"
         aria-label={copy.openMenu}
         className={cn(
-          "lg:hidden fixed inset-y-0 left-0 z-50 w-64 flex-col border-r border-[var(--border)] bg-[var(--background)] transition-transform duration-300 ease-in-out flex",
+          "lg:hidden fixed inset-y-0 left-0 z-50 w-64 flex-col border-r border-[var(--border-hairline)] bg-[var(--surface-glass)] backdrop-blur-xl backdrop-saturate-150 transition-transform duration-300 ease-in-out flex",
           open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >

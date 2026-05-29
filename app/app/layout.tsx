@@ -5,6 +5,7 @@ import { APP_SESSION_COOKIE } from "@/lib/app-server";
 import { parseAppLocale } from "@/lib/app-locale";
 import { AppLocaleProvider } from "@/components/app/app-locale-provider";
 import { AppShell } from "@/components/app/app-shell";
+import { MotionProvider } from "@/components/motion";
 
 export const metadata = {
   title: "TravelSync — Trip workspace",
@@ -41,7 +42,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <AppLocaleProvider initialLocale={locale}>
-      <AppShell user={user}>{children}</AppShell>
+      <MotionProvider>
+        <AppShell user={user}>{children}</AppShell>
+      </MotionProvider>
     </AppLocaleProvider>
   );
 }

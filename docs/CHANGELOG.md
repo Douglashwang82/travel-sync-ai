@@ -3,6 +3,15 @@
 ## [Unreleased] — Japan Ski Refocus (v1)
 
 ### Added
+- **Vibrant web app reface** — a visual redesign of the `/app` workspace toward a more modern, expressive look with micro-animations, structure unchanged:
+  - `motion` (Framer Motion) added; `components/motion/` centralizes the motion vocabulary — `MotionProvider` (MotionConfig `reducedMotion="user"`), `variants.ts` (fadeUp / stagger / springPop / pageTransition), and reusable `Reveal`, `Stagger`/`StaggerItem`, `PageTransition`, `AnimatedNumber` helpers
+  - `app/globals.css` gains a vibrant token layer: secondary accent axis (`--accent-warm`/`-cool`/`-violet`), gradient tokens (`--gradient-brand`/`-warm`/`-cool`/`-aurora`/mesh), glow shadows, re-saturated status colors, and utilities (`.btn-gradient`, `.text-gradient`, `.text-gradient-aurora`, `.tile-glow`, `.ambient-mesh`, `.chip-gradient`)
+  - Fonts now load via `next/font` in `app/layout.tsx`: Space Grotesk (display), Inter (body), JetBrains Mono (numerics)
+  - Chrome: `app-sidebar` uses `lucide-react` icons (replacing emoji) with a spring `layoutId` active pill and glass surfaces; `app-shell` renders an animated ambient mesh and per-route page transitions; the trip workspace tab underline glides via `layoutId`
+  - Primitives restyled: `Button` (gradient variant + tactile feel), `Card` (rounded-3xl + optional `interactive` glow), `Badge` (gradient + status variants), `Input`/`Textarea` (animated focus glow), `Dialog` (blurred overlay, rounded surface)
+  - Dashboard (`app/app/page.tsx`) and the shared `tab-shell` feature-page primitives now stagger in, use gradient display headings, and glow tiles
+  - All motion honors `prefers-reduced-motion`
+
 - **My Places (saved POIs)** — a private, per-user bookmark list of points of interest, independent of any trip:
   - `supabase/migrations/20260529000000_user_saved_pois.sql` — `user_saved_pois` table (owned by `line_user_id`, RLS denies anon, partial unique index on `(line_user_id, place_id)` for idempotent saves), plus `lib/app-pois.ts` shared types
   - `app/api/app/pois/route.ts` (`GET` list / `POST` save, idempotent on placeId) and `app/api/app/pois/[id]/route.ts` (`PATCH` notes/type/name, `DELETE`) — all ownership-scoped via the admin client

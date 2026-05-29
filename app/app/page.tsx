@@ -7,6 +7,7 @@ import { getIntlLocale, parseAppLocale, type AppLocale } from "@/lib/app-locale"
 import { readAppSessionCookie } from "@/lib/app-server";
 import { Button } from "@/components/ui/button";
 import { TripCardDeleteButton } from "@/components/app/trip-card-delete-button";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 
 export const dynamic = "force-dynamic";
 
@@ -233,23 +234,26 @@ export default async function AppTripsPage() {
 
   return (
     <div className="space-y-8">
-      <section id="trips-header" className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <Reveal
+        as="section"
+        className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">{copy.heading}</h1>
-          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          <h1 className="text-display text-3xl text-gradient sm:text-4xl">{copy.heading}</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             {copy.subheading}
           </p>
         </div>
         <div className="flex flex-col items-start gap-3 sm:items-end">
-          <Button asChild className="rounded-full">
+          <Button asChild variant="gradient" size="lg">
             <Link href="/app/trips/new">
               <Plus className="size-4" aria-hidden="true" />
               {copy.startWizard}
             </Link>
           </Button>
-          <div className="text-xs text-[var(--muted-foreground)]">{copy.totalTrips(trips.length)}</div>
+          <div className="text-xs text-[var(--text-muted)]">{copy.totalTrips(trips.length)}</div>
         </div>
-      </section>
+      </Reveal>
 
       {trips.length === 0 && <EmptyTrips locale={locale} />}
 
@@ -282,36 +286,37 @@ function EmptyTrips({ locale }: { locale: AppLocale }) {
   const copy = COPY[locale];
 
   return (
-    <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--background)] px-6 py-12 text-center">
-      <p className="text-sm font-semibold">{copy.emptyTitle}</p>
-      <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[var(--muted-foreground)]">
-        {copy.emptyBody.split("/start Niseko Jan 5-12")[0]}
-        <code className="rounded bg-[var(--secondary)] px-1 py-0.5 font-mono text-[11px]">
-          /start Niseko Jan 5-12
-        </code>{" "}
-        {copy.emptyBody.split("/start Niseko Jan 5-12")[1]}
-      </p>
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <Button asChild className="rounded-full">
-          <Link href="/app/trips/new">
-            <Plus className="size-4" aria-hidden="true" />
-            {copy.startWizard}
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="rounded-full">
-          <Link href="/">{copy.howItWorks}</Link>
-        </Button>
+    <Reveal className="relative overflow-hidden rounded-3xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-raised)] px-6 py-14 text-center">
+      <div aria-hidden className="hero-mesh" />
+      <div className="relative">
+        <p className="text-display text-lg text-[var(--text-primary)]">{copy.emptyTitle}</p>
+        <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-[var(--text-muted)]">
+          {copy.emptyBody.split("/start Niseko Jan 5-12")[0]}
+          <code className="text-mono rounded-md bg-[var(--surface-sunken)] px-1.5 py-0.5 text-[11px]">
+            /start Niseko Jan 5-12
+          </code>{" "}
+          {copy.emptyBody.split("/start Niseko Jan 5-12")[1]}
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Button asChild variant="gradient" size="lg">
+            <Link href="/app/trips/new">
+              <Plus className="size-4" aria-hidden="true" />
+              {copy.startWizard}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/">{copy.howItWorks}</Link>
+          </Button>
+        </div>
       </div>
-    </div>
+    </Reveal>
   );
 }
 
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id}>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-        {title}
-      </h2>
+      <h2 className="text-caps mb-3">{title}</h2>
       {children}
     </section>
   );
@@ -327,11 +332,13 @@ function TripGrid({
   dim?: boolean;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {trips.map((t) => (
-        <TripCard key={t.id} trip={t} locale={locale} dim={dim} />
+        <StaggerItem key={t.id}>
+          <TripCard trip={t} locale={locale} dim={dim} />
+        </StaggerItem>
       ))}
-    </div>
+    </Stagger>
   );
 }
 
@@ -339,10 +346,10 @@ function TripCard({ trip, locale, dim }: { trip: TripRow; locale: AppLocale; dim
   const copy = COPY[locale];
   const statusClass =
     trip.status === "active"
-      ? "bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]"
+      ? "bg-[var(--status-settled-soft)] text-[var(--status-settled)]"
       : trip.status === "draft"
-        ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
-        : "bg-[var(--secondary)] text-[var(--muted-foreground)]";
+        ? "bg-[var(--status-needs-decision-soft)] text-[var(--status-needs-decision)]"
+        : "bg-[var(--surface-sunken)] text-[var(--text-muted)]";
 
   const dateLabel =
     trip.start_date && trip.end_date
@@ -354,14 +361,14 @@ function TripCard({ trip, locale, dim }: { trip: TripRow; locale: AppLocale; dim
   return (
     <Link
       href={`/app/trips/${trip.id}`}
-      className={`group flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 transition-colors hover:border-[var(--primary)] hover:shadow-sm ${dim ? "opacity-70" : ""}`}
+      className={`tile-glow group flex h-full flex-col gap-3 rounded-3xl border border-[var(--border-hairline)] bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-raise)] ${dim ? "opacity-70" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-base font-semibold text-[var(--foreground)]">
+          <p className="truncate text-base font-semibold text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-line)]">
             {trip.destination_name ?? copy.untitledTrip}
           </p>
-          <p className="mt-0.5 truncate text-xs text-[var(--muted-foreground)]">
+          <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
             {trip.groupName ?? copy.lineGroup}
           </p>
         </div>
@@ -379,10 +386,10 @@ function TripCard({ trip, locale, dim }: { trip: TripRow; locale: AppLocale; dim
           )}
         </div>
       </div>
-      <p className="text-xs text-[var(--muted-foreground)]">{dateLabel}</p>
-      <div className="mt-auto flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+      <p className="text-xs text-[var(--text-muted)]">{dateLabel}</p>
+      <div className="mt-auto flex items-center justify-between text-xs text-[var(--text-muted)]">
         <span>{copy.items(trip.itemCount)}</span>
-        <span className="font-medium text-[var(--primary)] transition-colors group-hover:underline">
+        <span className="font-semibold text-[var(--accent-line)] transition-transform duration-200 group-hover:translate-x-0.5">
           {copy.open}
         </span>
       </div>

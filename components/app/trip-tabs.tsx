@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { useAppLocale } from "@/components/app/app-locale-provider";
 import { cn } from "@/lib/utils";
 
@@ -166,10 +167,12 @@ export function TripTabs({ tripId }: { tripId: string }) {
           >
             {copy[s.labelKey]}
             {active && (
-              <span
+              <motion.span
+                layoutId="trip-tab-underline"
                 aria-hidden
                 className="absolute -bottom-2 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-[var(--accent-line)]"
                 style={{ boxShadow: "var(--accent-line-glow)" }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
               />
             )}
           </a>
