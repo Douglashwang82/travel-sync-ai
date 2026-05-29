@@ -709,16 +709,46 @@ html.dark .hero-countdown-panel {
 .bento-mounted .bento-cell { animation: none; }
 
 .bento-frame {
+  /* Frosted glass: translucent surface over the shell's ambient mesh, with a
+   * top highlight + saturated backdrop blur. Falls back to a solid surface
+   * where backdrop-filter or reduced-transparency rule it out (below). */
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--surface-raised) 80%, transparent),
+      color-mix(in oklab, var(--surface-raised) 56%, transparent)
+    );
+  border-color: var(--surface-glass-edge);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: var(--shadow-raise), inset 0 1px 0 rgb(255 255 255 / 0.45);
   transition:
     transform var(--duration-confirm) var(--ease-confirm),
     box-shadow var(--duration-confirm) var(--ease-confirm),
     border-color var(--duration-confirm) var(--ease-confirm),
-    background-color var(--duration-confirm) var(--ease-confirm);
+    background var(--duration-confirm) var(--ease-confirm);
+}
+.dark .bento-frame,
+html.dark .bento-frame {
+  box-shadow: var(--shadow-raise), inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 .bento-frame:hover {
   transform: translateY(-1px);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-raise);
+  border-color: color-mix(in oklab, var(--accent-line) 30%, var(--surface-glass-edge));
+  box-shadow: var(--shadow-raise), var(--accent-line-glow), inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+/* No backdrop-filter support, or the user asked for less transparency:
+ * fall back to the opaque raised surface so text stays legible. */
+@supports not (backdrop-filter: blur(1px)) {
+  .bento-frame { background: var(--surface-raised); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bento-frame {
+    background: var(--surface-raised);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 .bento-frame:focus-within {
   border-color: var(--border-strong);

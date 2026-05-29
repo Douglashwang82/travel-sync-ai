@@ -10,6 +10,7 @@
   - Chrome: `app-sidebar` uses `lucide-react` icons (replacing emoji) with a spring `layoutId` active pill and glass surfaces; `app-shell` renders an animated ambient mesh and per-route page transitions; the trip workspace tab underline glides via `layoutId`
   - Primitives restyled: `Button` (gradient variant + tactile feel), `Card` (rounded-3xl + optional `interactive` glow), `Badge` (gradient + status variants), `Input`/`Textarea` (animated focus glow), `Dialog` (blurred overlay, rounded surface)
   - Dashboard (`app/app/page.tsx`) and the shared `tab-shell` feature-page primitives now stagger in, use gradient display headings, and glow tiles
+  - Bento grid tiles (`bento-frame`) are now frosted glass — translucent, backdrop-blurred surfaces over the shell's ambient mesh with a top highlight and accent-glow hover; falls back to an opaque surface under `prefers-reduced-transparency` or when `backdrop-filter` is unsupported
   - All motion honors `prefers-reduced-motion`
 
 - **My Places (saved POIs)** — a private, per-user bookmark list of points of interest, independent of any trip:
