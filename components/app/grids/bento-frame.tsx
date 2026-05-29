@@ -76,14 +76,13 @@ export function BentoFrame({
         }
       }}
       className={cn(
-        "bento-frame group/frame relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[var(--radius-tile)]",
-        "border border-[var(--border-hairline)] bg-[var(--surface-raised)] shadow-[var(--shadow-flat)]",
+        "bento-frame group/frame relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[var(--radius-tile)] border",
         "scroll-mt-24",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-line)] focus-visible:ring-offset-2",
         className
       )}
     >
-      <header className="flex items-center justify-between gap-2 border-b border-[var(--border-hairline)] bg-[var(--surface-base)]/40 px-4 py-2 backdrop-blur-sm">
+      <header className="flex items-center justify-between gap-2 border-b border-[var(--surface-glass-edge)] bg-[var(--surface-base)]/25 px-4 py-2">
         <div className="flex min-w-0 items-center gap-2">
           {/* Drag handle — the only element on which `draggable` is set. */}
           <button

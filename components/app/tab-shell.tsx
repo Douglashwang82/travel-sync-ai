@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { fadeUp, springPop } from "@/components/motion/variants";
 
 /**
  * Shared "tab page" primitives so every Trip workspace tab (Itinerary,
@@ -25,16 +27,22 @@ export function TabPageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header id={id} className="flex flex-wrap items-end justify-between gap-3">
+    <motion.header
+      id={id}
+      className="flex flex-wrap items-end justify-between gap-3"
+      variants={fadeUp}
+      initial="hidden"
+      animate="show"
+    >
       <div className="min-w-0">
         {eyebrow && <p className="text-caps mb-1">{eyebrow}</p>}
-        <h2 className="text-display text-2xl text-[var(--text-primary)]">{title}</h2>
+        <h2 className="text-display text-2xl text-gradient">{title}</h2>
         {subtitle && (
           <p className="mt-1 text-xs text-[var(--text-muted)]">{subtitle}</p>
         )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-    </header>
+    </motion.header>
   );
 }
 
@@ -130,17 +138,25 @@ export function TabEmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-tile)] border border-dashed border-[var(--border-hairline)] bg-[var(--surface-sunken)]/40 px-6 py-10 text-center">
+    <motion.div
+      className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-tile)] border border-dashed border-[var(--border-hairline)] bg-[var(--surface-sunken)]/40 px-6 py-10 text-center"
+      variants={fadeUp}
+      initial="hidden"
+      animate="show"
+    >
       {icon && (
-        <span
+        <motion.span
           aria-hidden
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent-line-soft)] text-[var(--accent-line)]"
+          variants={springPop}
+          initial="hidden"
+          animate="show"
+          className="chip-gradient inline-flex h-10 w-10 items-center justify-center rounded-full text-[var(--accent-line)]"
         >
           {icon}
-        </span>
+        </motion.span>
       )}
       <p className="text-sm text-[var(--text-muted)]">{message}</p>
       {hint && <p className="text-xs text-[var(--text-faint)]">{hint}</p>}
-    </div>
+    </motion.div>
   );
 }

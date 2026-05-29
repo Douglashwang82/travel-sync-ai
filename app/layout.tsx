@@ -1,5 +1,25 @@
 import type { Metadata } from "next";
+import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+const fontDisplay = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display-next",
+  display: "swap",
+});
+
+const fontText = Inter({
+  subsets: ["latin"],
+  variable: "--font-text-next",
+  display: "swap",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono-next",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "TravelSync AI - Group travel from chat to action",
@@ -13,7 +33,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-TW" className="h-full antialiased">
+    <html
+      lang="zh-TW"
+      className={`h-full antialiased ${fontDisplay.variable} ${fontText.variable} ${fontMono.variable}`}
+    >
       <body id="root-body" className="flex min-h-full flex-col">
         {children}
       </body>
