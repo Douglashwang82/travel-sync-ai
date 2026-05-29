@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripWithGroup } from "@/lib/app-server";
+import { requireAppTripAccess } from "@/lib/app-server";
 import {
   APP_PACK_CATEGORIES,
   type AppGroupPackItem,
@@ -20,7 +20,7 @@ const CreateSchema = z.object({
 
 export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripWithGroup(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   const db = createAdminClient();
@@ -56,11 +56,13 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     groupIds.length > 0
       ? db.from("packing_checks").select("item_id, line_user_id").in("item_id", groupIds)
       : Promise.resolve({ data: [], error: null }),
-    db
-      .from("group_members")
-      .select("line_user_id, display_name")
-      .eq("group_id", auth.groupId)
-      .is("left_at", null),
+    auth.groupId
+      ? db
+          .from("group_members")
+          .select("line_user_id, display_name")
+          .eq("group_id", auth.groupId)
+          .is("left_at", null)
+      : Promise.resolve({ data: [], error: null }),
     db
       .from("personal_packing_items")
       .select("id, label, category, is_packed, packed_at, position, created_at")
@@ -139,7 +141,9 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripWithGroup(req, tripId);
+  // Personal ("mine") items live on the trip alone, so the looser check is
+  // enough; shared ("group") items need a LINE group and are gated below.
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   let body: unknown;
@@ -162,6 +166,16 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   const db = createAdminClient();
   if (parsed.data.scope === "group") {
+    if (!auth.groupId) {
+      return NextResponse.json(
+        {
+          error:
+            "This trip is not linked to a LINE group, so shared packing items are unavailable.",
+          code: "GROUP_REQUIRED",
+        },
+        { status: 400 }
+      );
+    }
     const { error } = await db.from("packing_items").insert({
       trip_id: tripId,
       group_id: auth.groupId,

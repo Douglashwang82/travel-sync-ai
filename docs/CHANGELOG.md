@@ -20,6 +20,11 @@
 - `app/home-page-client.tsx` + `app/app/page.tsx` + `README.md` — marketing copy, dashboard empty-state, and README subtitle swap the Osaka examples for Niseko Jan 5–12 and clarify the Japan-ski focus while noting that generic destinations still work
 - `components/app/trip-map-canvas.tsx` — when no destination/pins are set, defaults to the Japan ski belt midpoint (38.5°N, 138.5°E) at country-level zoom (5) so all six v1 regions stay visible
 
+### Fixed
+- Workspace bento grids now render for group-less (personal) trips. The votes, expenses, and pack **GET** endpoints (`app/api/app/trips/[tripId]/{votes,expenses,pack}/route.ts`) dropped `requireAppTripWithGroup` for the looser `requireAppTripAccess`, so the Votes, Budget, Map, and Pack tiles no longer get back `GROUP_REQUIRED` on a trip with no LINE group. Group-scoped sub-queries (`group_members`) are skipped when `groupId` is null, and `loadTripExpensesForGroup()` returns a budget-only/empty ledger for group-less trips.
+- Personal ("mine") packing items can now be added on group-less trips; only the shared ("group") scope of the pack **POST** still requires a LINE group.
+- `lib/types.ts` — `Trip.group_id` is now typed `string | null`, matching the nullable DB column (`group_id` lost its `NOT NULL` constraint in the app-users/trip-members migration).
+
 ### Notes
 - Generic (non-Japan-ski) trips are explicitly unaffected by all three prompt augmentations and the survey branch — a Tokyo or Bangkok trip walks the original code paths.
 - `scripts/ingest-ski-dataset.ts` (the nationwide shallow index, 33 resorts under `data/japan-ski-trip/national/`) is unchanged; the new region ingester is complementary.

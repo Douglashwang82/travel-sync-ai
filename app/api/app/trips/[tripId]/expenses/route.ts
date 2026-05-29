@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripWithGroup } from "@/lib/app-server";
+import { requireAppTripAccess, requireAppTripWithGroup } from "@/lib/app-server";
 import {
   loadTripExpensesForGroup,
   type AppExpensesResponse,
@@ -15,7 +15,7 @@ type RouteContext = { params: Promise<{ tripId: string }> };
 
 export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripWithGroup(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   try {

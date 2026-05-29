@@ -86,7 +86,8 @@ export function tripDisplayName(trip: { destination_name: string | null }): stri
 
 export interface Trip {
   id: string;
-  group_id: string;
+  /** Null for personal (group-less) trips created via the itinerary wizard. */
+  group_id: string | null;
   title: string | null;
   destination_name: string | null;
   destination_place_id: string | null;

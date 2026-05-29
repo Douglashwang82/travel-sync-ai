@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
-import { requireAppTripWithGroup } from "@/lib/app-server";
+import { requireAppTripAccess, requireAppTripWithGroup } from "@/lib/app-server";
 import { castVote, closeVote } from "@/services/vote";
 import { announceWinner, refreshVoteCarousel } from "@/services/decisions";
 
@@ -55,7 +55,7 @@ export interface WebVotesResponse {
  */
 export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
-  const auth = await requireAppTripWithGroup(req, tripId);
+  const auth = await requireAppTripAccess(req, tripId);
   if (!auth.ok) return auth.response;
 
   const db = createAdminClient();
@@ -76,11 +76,13 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     );
   }
 
-  const { count: memberCount } = await db
-    .from("group_members")
-    .select("*", { count: "exact", head: true })
-    .eq("group_id", auth.groupId)
-    .is("left_at", null);
+  const { count: memberCount } = auth.groupId
+    ? await db
+        .from("group_members")
+        .select("*", { count: "exact", head: true })
+        .eq("group_id", auth.groupId)
+        .is("left_at", null)
+    : { count: 0 };
 
   if (!items?.length) {
     return NextResponse.json<WebVotesResponse>({
@@ -102,11 +104,13 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
       .from("votes")
       .select("trip_item_id, option_id, line_user_id")
       .in("trip_item_id", itemIds),
-    db
-      .from("group_members")
-      .select("line_user_id, display_name")
-      .eq("group_id", auth.groupId)
-      .is("left_at", null),
+    auth.groupId
+      ? db
+          .from("group_members")
+          .select("line_user_id, display_name")
+          .eq("group_id", auth.groupId)
+          .is("left_at", null)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (optionsRes.error || votesRes.error || membersRes.error) {

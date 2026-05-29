@@ -46,7 +46,7 @@ export async function loadTripExpensesForUser(
 
 export async function loadTripExpensesForGroup(
   tripId: string,
-  groupId: string
+  groupId: string | null
 ): Promise<AppExpensesResponse> {
   const db = createAdminClient();
 
@@ -67,6 +67,20 @@ export async function loadTripExpensesForGroup(
   } else if (tripRow) {
     budgetAmount = tripRow.budget_amount != null ? Number(tripRow.budget_amount) : null;
     budgetCurrency = (tripRow.budget_currency as string) || "TWD";
+  }
+
+  // Group-less (personal) trips have no shared-expense ledger: expenses are
+  // recorded against a LINE group. Return the trip budget with an empty ledger
+  // so the budget grid still renders the goal/spend bar.
+  if (!groupId) {
+    return {
+      totalAmount: 0,
+      budgetAmount,
+      budgetCurrency,
+      expenses: [],
+      balances: [],
+      settlements: [],
+    };
   }
 
   const { data: rows, error } = await db
