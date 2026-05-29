@@ -27,6 +27,10 @@ import type {
   NearbyPlace,
   NearbyResponse,
 } from "@/app/api/app/places/nearby/route";
+import type {
+  SavedPoisResponse,
+  SavePoiResult,
+} from "@/app/api/app/pois/route";
 
 // Google Maps JS depends on `window` — load only on the client.
 const TripMapCanvas = dynamic(
@@ -132,6 +136,10 @@ export function GlobalMapView() {
   const [routesLoading, setRoutesLoading] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
+  // ── Saved POIs ("My Places") ──────────────────────────────────────────────
+  const [savedPlaceIds, setSavedPlaceIds] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     try {
       const res = await appFetchJson<GlobalMapResponse>(
@@ -155,6 +163,51 @@ export function GlobalMapView() {
       await load();
     })();
   }, [load]);
+
+  // Load the user's already-saved place ids so the explorer can mark them.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await appFetchJson<SavedPoisResponse>("/api/app/pois");
+        setSavedPlaceIds(
+          new Set(
+            res.pois
+              .map((p) => p.placeId)
+              .filter((x): x is string => Boolean(x))
+          )
+        );
+      } catch {
+        // Non-fatal — save buttons just won't show a pre-saved state.
+      }
+    })();
+  }, []);
+
+  const handleSavePin = useCallback(
+    async (pin: MapPin) => {
+      const payload = deriveSavePayload(pin, destination);
+      setSavingId(pin.id);
+      try {
+        const res = await appFetchJson<SavePoiResult>("/api/app/pois", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        if (res.poi.placeId) {
+          setSavedPlaceIds((prev) => {
+            const next = new Set(prev);
+            next.add(res.poi.placeId as string);
+            return next;
+          });
+        }
+      } catch (err) {
+        setError(
+          err instanceof AppApiFetchError ? err.message : "儲存地點失敗"
+        );
+      } finally {
+        setSavingId(null);
+      }
+    },
+    [destination]
+  );
 
   // Destinations are derived from the user's trips — they double as the corpus
   // keys for curated POI / route lookups.
@@ -582,7 +635,16 @@ export function GlobalMapView() {
             />
           )}
           {layer !== "mine" && selectedPin && (
-            <PinFloater pin={selectedPin} onClose={() => setSelectedPinId(null)} />
+            <PinFloater
+              pin={selectedPin}
+              onClose={() => setSelectedPinId(null)}
+              onSave={() => void handleSavePin(selectedPin)}
+              saved={(() => {
+                const pid = placeIdOf(selectedPin);
+                return pid ? savedPlaceIds.has(pid) : false;
+              })()}
+              saving={savingId === selectedPin.id}
+            />
           )}
 
           {activePins.length === 0 && (
@@ -1272,7 +1334,19 @@ function DetailFloater({
 
 // ─── Pin floater: explore / routes (over the map) ──────────────────────────────
 
-function PinFloater({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
+function PinFloater({
+  pin,
+  onClose,
+  onSave,
+  saved,
+  saving,
+}: {
+  pin: MapPin;
+  onClose: () => void;
+  onSave: () => void;
+  saved: boolean;
+  saving: boolean;
+}) {
   const gMapsUrl =
     pin.bookingUrl ??
     `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
@@ -1306,6 +1380,16 @@ function PinFloater({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
         {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
       </div>
       <div className="mt-2 flex flex-wrap gap-1">
+        <Button
+          type="button"
+          size="sm"
+          variant={saved ? "secondary" : "default"}
+          className="h-7 px-2 text-[11px]"
+          disabled={saved || saving}
+          onClick={onSave}
+        >
+          {saved ? "★ 已儲存" : saving ? "儲存中…" : "☆ 儲存"}
+        </Button>
         <a
           href={gMapsUrl}
           target="_blank"
@@ -1320,6 +1404,34 @@ function PinFloater({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// Explorer pin ids encode their source: `poi:<id>` (curated), `gplace:<id>`
+// (Google), `rp:<routeId>:<placeId>:<idx>` (route stop). Pull the underlying
+// place id back out so we can dedupe saves and mark already-saved pins.
+function placeIdOf(pin: MapPin): string | null {
+  if (pin.id.startsWith("poi:")) return pin.id.slice(4);
+  if (pin.id.startsWith("gplace:")) return pin.id.slice(7);
+  if (pin.id.startsWith("rp:")) return pin.id.split(":")[2] ?? null;
+  return null;
+}
+
+function deriveSavePayload(pin: MapPin, destinationName: string | null) {
+  let source: "curated" | "google" | "explorer" = "explorer";
+  if (pin.id.startsWith("poi:") || pin.id.startsWith("rp:")) source = "curated";
+  else if (pin.id.startsWith("gplace:")) source = "google";
+  return {
+    placeId: placeIdOf(pin),
+    // Route stops carry an ordinal prefix ("1. Name") — strip it for saving.
+    name: pin.title.replace(/^\d+\.\s*/, ""),
+    itemType: pin.itemType,
+    address: pin.subtitle ?? null,
+    lat: pin.lat,
+    lng: pin.lng,
+    googleMapsUrl: pin.bookingUrl ?? null,
+    source,
+    destinationName,
+  };
+}
 
 function inferItemTypeFromGoogleType(
   primary: string | null | undefined

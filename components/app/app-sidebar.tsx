@@ -16,6 +16,7 @@ const COPY = {
     workspace: "Workspace",
     trips: "Trips",
     map: "Map",
+    pois: "My Places",
     templates: "Templates",
     profile: "Profile",
     home: "Home",
@@ -28,6 +29,7 @@ const COPY = {
     workspace: "工作區",
     trips: "旅程",
     map: "地圖",
+    pois: "我的地點",
     templates: "範本",
     profile: "個人檔案",
     home: "首頁",
@@ -41,6 +43,7 @@ const COPY = {
 const NAV_ITEMS = [
   { key: "trips" as const, href: "/app", icon: "✈" },
   { key: "map" as const, href: "/app/map", icon: "🗺" },
+  { key: "pois" as const, href: "/app/pois", icon: "📍", requiresUser: true },
   { key: "templates" as const, href: "/app/templates", icon: "📋" },
   { key: "profile" as const, href: "/app/profile", icon: "👤", requiresUser: true },
   { key: "home" as const, href: "/", icon: "🏠" },
