@@ -17,6 +17,7 @@ const COPY = {
     trips: "Trips",
     map: "Map",
     templates: "Templates",
+    docs: "Docs",
     profile: "Profile",
     home: "Home",
     openMenu: "Open menu",
@@ -29,6 +30,7 @@ const COPY = {
     trips: "旅程",
     map: "地圖",
     templates: "範本",
+    docs: "技術文件",
     profile: "個人檔案",
     home: "首頁",
     openMenu: "開啟選單",
@@ -42,6 +44,7 @@ const NAV_ITEMS = [
   { key: "trips" as const, href: "/app", icon: "✈" },
   { key: "map" as const, href: "/app/map", icon: "🗺" },
   { key: "templates" as const, href: "/app/templates", icon: "📋" },
+  { key: "docs" as const, href: "/app/docs", icon: "📖" },
   { key: "profile" as const, href: "/app/profile", icon: "👤", requiresUser: true },
   { key: "home" as const, href: "/", icon: "🏠" },
 ] as const;
