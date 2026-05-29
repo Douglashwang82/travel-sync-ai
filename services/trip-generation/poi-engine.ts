@@ -136,6 +136,80 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
   }));
 }
 
+export interface PoiTextSearchInput {
+  destination: string;
+  /** Free-text query typed in the map explorer; blank → "top experiences". */
+  query?: string;
+  itemTypes?: Array<PoiCandidate["itemType"]>;
+  k?: number;
+}
+
+/**
+ * Explorer-facing POI search. Same corpus + RPC as searchPoisByVibe, but keyed
+ * on a free-text query the user typed in the map explorer rather than
+ * survey-derived vibe signals. A blank query falls back to a generic
+ * "top experiences in <destination>" embedding so the explorer has something to
+ * show the moment a destination is selected.
+ *
+ * Unlike the generator path this does NOT fall back to live Google text search
+ * on a cold corpus — the explorer surfaces Google results through its own live
+ * search lane, so an empty curated result here is a meaningful "no curated POIs
+ * for this place yet", not a failure to paper over.
+ */
+export async function searchPoisByText(input: PoiTextSearchInput): Promise<PoiCandidate[]> {
+  const k = input.k ?? 24;
+  const db = createAdminClient();
+  const queryText =
+    input.query?.trim() ||
+    `Top travel experiences and places to visit in ${input.destination}.`;
+
+  let queryEmbedding: number[];
+  try {
+    queryEmbedding = await generateEmbedding(queryText);
+  } catch (err) {
+    if (err instanceof GeminiUnavailableError) {
+      logger.warn("[poi-engine] explorer embedding unavailable, returning empty");
+      return [];
+    }
+    throw err;
+  }
+
+  const { data, error } = await db.rpc("search_pois_by_vibe", {
+    p_destination: input.destination,
+    p_query_embedding: queryEmbedding,
+    p_item_types: input.itemTypes ?? null,
+    p_limit: k,
+  });
+  if (error) {
+    logger.error("[poi-engine] explorer RPC failed", { error: String(error.message ?? error) });
+    return [];
+  }
+
+  const rows = (data ?? []) as Array<{
+    place_id: string;
+    name: string;
+    item_type: string;
+    tags: string[] | null;
+    description: string | null;
+    lat: number | null;
+    lng: number | null;
+    live_data?: PlaceLiveData | null;
+    similarity: number;
+  }>;
+
+  return rows.map((r) => ({
+    placeId: r.place_id,
+    name: r.name,
+    itemType: coerceItemType(r.item_type),
+    tags: r.tags ?? [],
+    description: r.description ?? "",
+    lat: r.lat,
+    lng: r.lng,
+    similarity: r.similarity,
+    liveData: r.live_data ?? null,
+  }));
+}
+
 /**
  * Cold-start path. Bypasses the corpus; queries Google Places text search
  * directly per item-type bucket. Returns lower-similarity candidates (0.5

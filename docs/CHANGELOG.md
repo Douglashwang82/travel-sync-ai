@@ -3,6 +3,13 @@
 ## [Unreleased] — Japan Ski Refocus (v1)
 
 ### Added
+- **Map explorer** — the top-level `/app/map` view (`components/app/global-map-view.tsx`) is refactored from a read-only "all my places" map into a three-layer explorer with a destination selector:
+  - **我的地點 (My places)** — the previous behaviour (trip pins, legend, type/stage filters, per-trip routes)
+  - **探索 POI (Explore)** — curated `poi_embeddings` POIs for the selected destination (semantic free-text search) blended with live Google Places search
+  - **路線 (Routes)** — curated `route_templates` rendered as an ordered pin sequence + polyline you can preview on the map
+- `app/api/app/explore/pois/route.ts` — `GET` curated POI search by destination/query/types, surfacing the corpus that previously only fed trip generation
+- `app/api/app/explore/routes/route.ts` — `GET` curated routes for a destination with `place_ids` resolved to coordinates for map rendering
+- `searchPoisByText()` in `services/trip-generation/poi-engine.ts` and `listRoutesForDestination()` in `services/trip-generation/route-engine.ts` — explorer-facing wrappers (free-text vibe search; ungated route listing)
 - `lib/ski-ingest.ts` — pure-function shape adapters that turn the per-region JSON bundles under `data/japan-ski-trip/{niseko,hakuba,naeba,nozawa-onsen,shiga-kogen,zao-onsen}/*.json` into `poi_embeddings`-shaped rows (resorts, hotels, restaurants, on/off-mountain activities, transport gateways)
 - `scripts/ingest-ski-regions.ts` — walks the six deep-detail region directories, generates Gemini embeddings, upserts on `place_id`; supports `--regions` filter and `--dry-run`; ingests 157 rows on the current dataset
 - `lib/ski-destination.ts` — `detectJapanSkiDestination()` resolves a free-text destination to one of the six v1 regions using strong aliases only (bare prefecture / country names intentionally do not match)

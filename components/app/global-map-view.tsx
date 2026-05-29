@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { appFetchJson, AppApiFetchError } from "@/lib/app-client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { TabError, TabSkeleton } from "@/components/app/tab-shell";
@@ -14,6 +15,18 @@ import type {
   GlobalMapResponse,
   GlobalMapTripSummary,
 } from "@/app/api/app/places/global-map/route";
+import type {
+  ExplorePoi,
+  ExplorePoisResponse,
+} from "@/app/api/app/explore/pois/route";
+import type {
+  ExploreRoute,
+  ExploreRoutesResponse,
+} from "@/app/api/app/explore/routes/route";
+import type {
+  NearbyPlace,
+  NearbyResponse,
+} from "@/app/api/app/places/nearby/route";
 
 // Google Maps JS depends on `window` — load only on the client.
 const TripMapCanvas = dynamic(
@@ -53,9 +66,18 @@ const STAGE_LABEL: Record<string, string> = {
   pending: "投票中",
   todo: "待辦",
   shared: "分享記錄",
+  explore: "探索",
 };
 
-// Distinct color per trip so users can read the map at a glance.
+const PACE_LABEL: Record<string, string> = {
+  chill: "悠閒",
+  balanced: "均衡",
+  packed: "緊湊",
+};
+
+const ROUTE_COLOR = "#2563eb";
+
+// Distinct color per trip so users can read the "my places" layer at a glance.
 const TRIP_PALETTE = [
   "#3b82f6",
   "#10b981",
@@ -71,20 +93,44 @@ const TRIP_PALETTE = [
   "#84cc16",
 ];
 
+type Layer = "mine" | "explore" | "routes";
 type TripFilter = "all" | string;
 type TypeFilter = "all" | "hotel" | "restaurant" | "activity" | "transport";
 type StageFilter = "all" | "confirmed" | "pending" | "shared";
 type Basemap = "roadmap" | "satellite" | "hybrid";
 
+interface Destination {
+  name: string;
+  lat: number | null;
+  lng: number | null;
+}
+
 export function GlobalMapView() {
   const [data, setData] = useState<GlobalMapResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [layer, setLayer] = useState<Layer>("mine");
+  const [destination, setDestination] = useState<string | null>(null);
+  const [basemap, setBasemap] = useState<Basemap>("roadmap");
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+
+  // ── "My places" layer state ───────────────────────────────────────────────
   const [tripFilter, setTripFilter] = useState<TripFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
-  const [basemap, setBasemap] = useState<Basemap>("roadmap");
-  const [query, setQuery] = useState("");
-  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [mineQuery, setMineQuery] = useState("");
+
+  // ── "Explore" layer state ─────────────────────────────────────────────────
+  const [exploreQuery, setExploreQuery] = useState("");
+  const [exploreType, setExploreType] = useState<TypeFilter>("all");
+  const [curatedPois, setCuratedPois] = useState<ExplorePoi[]>([]);
+  const [googlePlaces, setGooglePlaces] = useState<NearbyPlace[]>([]);
+  const [exploreLoading, setExploreLoading] = useState(false);
+
+  // ── "Routes" layer state ──────────────────────────────────────────────────
+  const [routes, setRoutes] = useState<ExploreRoute[]>([]);
+  const [routesLoading, setRoutesLoading] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -110,6 +156,122 @@ export function GlobalMapView() {
     })();
   }, [load]);
 
+  // Destinations are derived from the user's trips — they double as the corpus
+  // keys for curated POI / route lookups.
+  const destinations = useMemo<Destination[]>(() => {
+    if (!data) return [];
+    const m = new Map<string, Destination>();
+    for (const t of data.trips) {
+      if (!t.name) continue;
+      const existing = m.get(t.name);
+      if (!existing) {
+        m.set(t.name, {
+          name: t.name,
+          lat: t.destinationLat,
+          lng: t.destinationLng,
+        });
+      } else if (existing.lat == null && t.destinationLat != null) {
+        existing.lat = t.destinationLat;
+        existing.lng = t.destinationLng;
+      }
+    }
+    return Array.from(m.values());
+  }, [data]);
+
+  const destObj = useMemo(
+    () => destinations.find((d) => d.name === destination) ?? null,
+    [destinations, destination]
+  );
+
+  useEffect(() => {
+    if (!destination && destinations.length > 0) {
+      setDestination(destinations[0].name);
+    }
+  }, [destinations, destination]);
+
+  // Clear any cross-layer pin selection when switching layers.
+  useEffect(() => {
+    setSelectedPinId(null);
+  }, [layer]);
+
+  // ── Curated POI loader (explore layer) ────────────────────────────────────
+  const loadCuratedPois = useCallback(
+    async (q: string) => {
+      if (!destination) return;
+      setExploreLoading(true);
+      try {
+        const params = new URLSearchParams({ destination });
+        if (q.trim()) params.set("q", q.trim());
+        if (exploreType !== "all") params.set("types", exploreType);
+        const res = await appFetchJson<ExplorePoisResponse>(
+          `/api/app/explore/pois?${params.toString()}`
+        );
+        setCuratedPois(res.pois);
+      } catch {
+        setCuratedPois([]);
+      } finally {
+        setExploreLoading(false);
+      }
+    },
+    [destination, exploreType]
+  );
+
+  // Live Google Places search around the destination (explore layer).
+  const runGoogleSearch = useCallback(async () => {
+    if (!destObj || destObj.lat == null || destObj.lng == null) return;
+    try {
+      const res = await appFetchJson<NearbyResponse>("/api/app/places/nearby", {
+        method: "POST",
+        body: JSON.stringify({
+          q: exploreQuery.trim() || undefined,
+          lat: destObj.lat,
+          lng: destObj.lng,
+          radius: 8000,
+          category: exploreType === "all" ? "any" : exploreType,
+          limit: 16,
+        }),
+      });
+      setGooglePlaces(res.places);
+    } catch {
+      setGooglePlaces([]);
+    }
+  }, [destObj, exploreQuery, exploreType]);
+
+  const runExploreSearch = useCallback(() => {
+    void loadCuratedPois(exploreQuery);
+    void runGoogleSearch();
+  }, [loadCuratedPois, runGoogleSearch, exploreQuery]);
+
+  // Refresh curated POIs when the explore layer opens or its destination/type
+  // changes. Google results stay sticky until the user explicitly searches, to
+  // conserve Places quota.
+  useEffect(() => {
+    if (layer !== "explore" || !destination) return;
+    setGooglePlaces([]);
+    void loadCuratedPois(exploreQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layer, destination, exploreType]);
+
+  // Load curated routes when the routes layer opens or destination changes.
+  useEffect(() => {
+    if (layer !== "routes" || !destination) return;
+    setRoutesLoading(true);
+    setSelectedRouteId(null);
+    void (async () => {
+      try {
+        const res = await appFetchJson<ExploreRoutesResponse>(
+          `/api/app/explore/routes?destination=${encodeURIComponent(destination)}`
+        );
+        setRoutes(res.routes);
+        if (res.routes.length > 0) setSelectedRouteId(res.routes[0].routeId);
+      } catch {
+        setRoutes([]);
+      } finally {
+        setRoutesLoading(false);
+      }
+    })();
+  }, [layer, destination]);
+
   const tripColorById = useMemo<Map<string, string>>(() => {
     const m = new Map<string, string>();
     (data?.trips ?? []).forEach((t, i) => {
@@ -118,28 +280,32 @@ export function GlobalMapView() {
     return m;
   }, [data]);
 
+  // ── "My places" derived data ──────────────────────────────────────────────
   const filteredPlaces = useMemo<GlobalMapPlace[]>(() => {
     if (!data) return [];
-    const q = query.trim().toLowerCase();
+    const q = mineQuery.trim().toLowerCase();
     return data.places.filter((p) => {
       if (tripFilter !== "all" && p.tripId !== tripFilter) return false;
       if (typeFilter !== "all" && p.itemType !== typeFilter) return false;
       if (stageFilter !== "all" && p.stage !== stageFilter) return false;
       if (q) {
-        const hay = `${p.title} ${p.subtitle ?? ""} ${p.tripName ?? ""}`.toLowerCase();
+        const hay =
+          `${p.title} ${p.subtitle ?? ""} ${p.tripName ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [data, tripFilter, typeFilter, stageFilter, query]);
+  }, [data, tripFilter, typeFilter, stageFilter, mineQuery]);
 
-  const pins = useMemo<MapPin[]>(() => {
+  const minePins = useMemo<MapPin[]>(() => {
     return filteredPlaces.map((p) => ({
       id: p.id,
       lat: p.lat,
       lng: p.lng,
       title: p.title,
-      subtitle: p.tripName ? `${p.tripName} · ${p.subtitle ?? ""}`.trim() : p.subtitle,
+      subtitle: p.tripName
+        ? `${p.tripName} · ${p.subtitle ?? ""}`.trim()
+        : p.subtitle,
       itemType: p.itemType,
       stage: p.stage,
       kind: p.kind,
@@ -150,12 +316,7 @@ export function GlobalMapView() {
     }));
   }, [filteredPlaces]);
 
-  // One per-trip dashed "scope" outline using the trip color helps
-  // distinguish overlapping trips on the same city. We render polylines
-  // between confirmed items of each trip in itinerary order via dayKey
-  // grouping; the canvas treats DayRoute the same way it does for the
-  // per-trip view.
-  const dayRoutes = useMemo<DayRoute[]>(() => {
+  const mineDayRoutes = useMemo<DayRoute[]>(() => {
     if (!data) return [];
     const buckets = new Map<string, MapPin[]>();
     for (const place of filteredPlaces) {
@@ -179,24 +340,24 @@ export function GlobalMapView() {
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(pin);
     }
-    const routes: DayRoute[] = [];
+    const out: DayRoute[] = [];
     for (const [key, daysPins] of buckets) {
       const [tripId, dayKey] = key.split("|");
-      const ordered = daysPins.slice();
-      routes.push({
+      out.push({
         dayKey: key,
         label: dayKey,
-        points: ordered.map((p) => ({ lat: p.lat, lng: p.lng, title: p.title })),
+        points: daysPins.map((p) => ({ lat: p.lat, lng: p.lng, title: p.title })),
         color: tripColorById.get(tripId) ?? "#3b82f6",
       });
     }
-    return routes;
+    return out;
   }, [data, filteredPlaces, tripColorById]);
 
-  // Center the map roughly on the user's data when there's no destination
-  // to fall back to. We pass the first place as a faux "destination" so the
-  // canvas auto-fit logic still works across all pins.
-  const fauxDestination = useMemo(() => {
+  const mineDestination = useMemo<{
+    name: string | null;
+    lat: number | null;
+    lng: number | null;
+  }>(() => {
     if (!data) return { name: null, lat: null, lng: null };
     const firstTrip = data.trips.find(
       (t) => t.destinationLat != null && t.destinationLng != null
@@ -208,16 +369,117 @@ export function GlobalMapView() {
         lng: firstTrip.destinationLng,
       };
     }
-    const firstPin = pins[0];
-    if (firstPin) {
-      return { name: null, lat: firstPin.lat, lng: firstPin.lng };
-    }
+    const firstPin = minePins[0];
+    if (firstPin) return { name: null, lat: firstPin.lat, lng: firstPin.lng };
     return { name: null, lat: null, lng: null };
-  }, [data, pins]);
+  }, [data, minePins]);
 
-  const selectedPlace = useMemo(
-    () => filteredPlaces.find((p) => p.id === selectedPinId) ?? null,
-    [filteredPlaces, selectedPinId]
+  // ── "Explore" derived data ────────────────────────────────────────────────
+  const explorePins = useMemo<MapPin[]>(() => {
+    const out: MapPin[] = [];
+    const seen = new Set<string>();
+    for (const p of curatedPois) {
+      if (exploreType !== "all" && p.itemType !== exploreType) continue;
+      const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
+      seen.add(key);
+      out.push({
+        id: `poi:${p.placeId}`,
+        lat: p.lat,
+        lng: p.lng,
+        title: p.name,
+        subtitle: p.description || null,
+        itemType: p.itemType,
+        stage: "explore",
+        kind: "poi",
+        itemId: null,
+        optionId: null,
+        dayKey: null,
+        bookingUrl: p.googleMapsUrl,
+      });
+    }
+    for (const g of googlePlaces) {
+      const t = inferItemTypeFromGoogleType(g.primaryType);
+      if (exploreType !== "all" && t !== exploreType) continue;
+      const key = `${g.lat.toFixed(5)},${g.lng.toFixed(5)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        id: `gplace:${g.placeId}`,
+        lat: g.lat,
+        lng: g.lng,
+        title: g.name,
+        subtitle: g.address,
+        itemType: t,
+        stage: "explore",
+        kind: "poi",
+        itemId: null,
+        optionId: null,
+        dayKey: null,
+        bookingUrl: g.googleMapsUri,
+      });
+    }
+    return out;
+  }, [curatedPois, googlePlaces, exploreType]);
+
+  // ── "Routes" derived data ─────────────────────────────────────────────────
+  const selectedRoute = useMemo(
+    () => routes.find((r) => r.routeId === selectedRouteId) ?? null,
+    [routes, selectedRouteId]
+  );
+
+  const routePins = useMemo<MapPin[]>(() => {
+    if (!selectedRoute) return [];
+    return selectedRoute.places.map((pl, i) => ({
+      id: `rp:${selectedRoute.routeId}:${pl.placeId}:${i}`,
+      lat: pl.lat,
+      lng: pl.lng,
+      title: `${i + 1}. ${pl.name}`,
+      subtitle: null,
+      itemType: pl.itemType,
+      stage: "explore",
+      kind: "poi",
+      itemId: null,
+      optionId: null,
+      dayKey: null,
+    }));
+  }, [selectedRoute]);
+
+  const routeDayRoutes = useMemo<DayRoute[]>(() => {
+    if (!selectedRoute || selectedRoute.places.length < 2) return [];
+    return [
+      {
+        dayKey: selectedRoute.routeId,
+        label: selectedRoute.title,
+        points: selectedRoute.places.map((p) => ({
+          lat: p.lat,
+          lng: p.lng,
+          title: p.name,
+        })),
+        color: ROUTE_COLOR,
+      },
+    ];
+  }, [selectedRoute]);
+
+  // ── Active canvas inputs (per layer) ──────────────────────────────────────
+  const activePins =
+    layer === "mine" ? minePins : layer === "explore" ? explorePins : routePins;
+  const activeRoutes =
+    layer === "mine" ? mineDayRoutes : layer === "routes" ? routeDayRoutes : [];
+  const activeDestination =
+    layer === "mine"
+      ? mineDestination
+      : { name: destObj?.name ?? null, lat: destObj?.lat ?? null, lng: destObj?.lng ?? null };
+
+  const selectedMinePlace = useMemo(
+    () =>
+      layer === "mine"
+        ? (filteredPlaces.find((p) => p.id === selectedPinId) ?? null)
+        : null,
+    [layer, filteredPlaces, selectedPinId]
+  );
+  const selectedPin = useMemo(
+    () => activePins.find((p) => p.id === selectedPinId) ?? null,
+    [activePins, selectedPinId]
   );
 
   if (error && !data) {
@@ -232,58 +494,101 @@ export function GlobalMapView() {
   return (
     <div className="flex h-full flex-col gap-2 p-2">
       <Header
-        totalPlaces={data.places.length}
-        shownPlaces={filteredPlaces.length}
-        totalTrips={data.trips.length}
+        layer={layer}
+        setLayer={setLayer}
+        destinations={destinations}
+        destination={destination}
+        setDestination={setDestination}
         basemap={basemap}
         setBasemap={setBasemap}
-        query={query}
-        setQuery={setQuery}
+        totalTrips={data.trips.length}
+        shownCount={activePins.length}
       />
 
       <div className="grid min-h-0 flex-1 gap-2 lg:grid-cols-12">
         <aside className="flex min-h-0 flex-col gap-2 lg:col-span-3">
-          <TripLegend
-            trips={data.trips}
-            tripColorById={tripColorById}
-            tripFilter={tripFilter}
-            setTripFilter={setTripFilter}
-          />
-          <FilterTile
-            typeFilter={typeFilter}
-            setTypeFilter={setTypeFilter}
-            stageFilter={stageFilter}
-            setStageFilter={setStageFilter}
-            counts={counts}
-          />
-          <PlaceList
-            places={filteredPlaces}
-            selectedPinId={selectedPinId}
-            onSelect={setSelectedPinId}
-            tripColorById={tripColorById}
-          />
+          {layer === "mine" && (
+            <>
+              <Input
+                value={mineQuery}
+                onChange={(e) => setMineQuery(e.target.value)}
+                placeholder="搜尋我的地點或旅程…"
+                className="h-8 shrink-0 text-xs"
+              />
+              <TripLegend
+                trips={data.trips}
+                tripColorById={tripColorById}
+                tripFilter={tripFilter}
+                setTripFilter={setTripFilter}
+              />
+              <FilterTile
+                typeFilter={typeFilter}
+                setTypeFilter={setTypeFilter}
+                stageFilter={stageFilter}
+                setStageFilter={setStageFilter}
+                counts={counts}
+              />
+              <PlaceList
+                places={filteredPlaces}
+                selectedPinId={selectedPinId}
+                onSelect={setSelectedPinId}
+                tripColorById={tripColorById}
+              />
+            </>
+          )}
+
+          {layer === "explore" && (
+            <ExplorePanel
+              query={exploreQuery}
+              setQuery={setExploreQuery}
+              onSearch={runExploreSearch}
+              exploreType={exploreType}
+              setExploreType={setExploreType}
+              curatedPois={curatedPois}
+              googlePlaces={googlePlaces}
+              loading={exploreLoading}
+              selectedPinId={selectedPinId}
+              onSelect={setSelectedPinId}
+              hasDestination={Boolean(destination)}
+            />
+          )}
+
+          {layer === "routes" && (
+            <RoutesPanel
+              routes={routes}
+              loading={routesLoading}
+              selectedRouteId={selectedRouteId}
+              onSelectRoute={setSelectedRouteId}
+              hasDestination={Boolean(destination)}
+            />
+          )}
         </aside>
 
         <div className="surface-tile relative min-h-[420px] overflow-hidden lg:col-span-9">
           <TripMapCanvas
-            destination={fauxDestination}
-            pins={pins}
-            dayRoutes={dayRoutes}
+            destination={activeDestination}
+            pins={activePins}
+            dayRoutes={activeRoutes}
             selectedPinId={selectedPinId}
             onPinSelect={(p) => setSelectedPinId(p.id)}
             mapTypeId={basemap}
           />
-          {selectedPlace && (
+
+          {layer === "mine" && selectedMinePlace && (
             <DetailFloater
-              place={selectedPlace}
-              tripColor={tripColorById.get(selectedPlace.tripId) ?? "#3b82f6"}
+              place={selectedMinePlace}
+              tripColor={tripColorById.get(selectedMinePlace.tripId) ?? "#3b82f6"}
               onClose={() => setSelectedPinId(null)}
             />
           )}
-          {pins.length === 0 && (
+          {layer !== "mine" && selectedPin && (
+            <PinFloater pin={selectedPin} onClose={() => setSelectedPinId(null)} />
+          )}
+
+          {activePins.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-sunken)]/30">
               <p className="rounded-lg bg-[var(--surface-raised)] px-4 py-2 text-xs text-[var(--text-muted)] shadow-[var(--shadow-flat)]">
-                沒有符合條件的地點。
+                {emptyMessage(layer, exploreLoading || routesLoading)}
               </p>
             </div>
           )}
@@ -299,49 +604,91 @@ export function GlobalMapView() {
   );
 }
 
+function emptyMessage(layer: Layer, loading: boolean): string {
+  if (loading) return "載入中…";
+  if (layer === "mine") return "沒有符合條件的地點。";
+  if (layer === "explore")
+    return "此目的地尚無策展地點，試試右上角搜尋 Google 地點。";
+  return "此目的地尚無策展路線。";
+}
+
 // ─── Header ──────────────────────────────────────────────────────────────────
 
 function Header({
-  totalPlaces,
-  shownPlaces,
-  totalTrips,
+  layer,
+  setLayer,
+  destinations,
+  destination,
+  setDestination,
   basemap,
   setBasemap,
-  query,
-  setQuery,
+  totalTrips,
+  shownCount,
 }: {
-  totalPlaces: number;
-  shownPlaces: number;
-  totalTrips: number;
+  layer: Layer;
+  setLayer: (v: Layer) => void;
+  destinations: Destination[];
+  destination: string | null;
+  setDestination: (v: string) => void;
   basemap: Basemap;
   setBasemap: (v: Basemap) => void;
-  query: string;
-  setQuery: (v: string) => void;
+  totalTrips: number;
+  shownCount: number;
 }) {
+  const needsDestination = layer !== "mine";
   return (
     <header className="surface-tile flex shrink-0 flex-wrap items-center gap-2 p-2">
-      <span className="text-sm font-semibold">🗺 主地圖</span>
-      <span aria-hidden className="text-[var(--text-faint)]">·</span>
+      <span className="text-sm font-semibold">🧭 探索地圖</span>
+
+      <div className="flex items-center gap-1">
+        <LayerTab
+          active={layer === "mine"}
+          onClick={() => setLayer("mine")}
+          label="我的地點"
+        />
+        <LayerTab
+          active={layer === "explore"}
+          onClick={() => setLayer("explore")}
+          label="探索 POI"
+        />
+        <LayerTab
+          active={layer === "routes"}
+          onClick={() => setLayer("routes")}
+          label="路線"
+        />
+      </div>
+
+      {needsDestination && (
+        <label className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+          <span>目的地</span>
+          <select
+            value={destination ?? ""}
+            onChange={(e) => setDestination(e.target.value)}
+            className="rounded-md border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-2 py-1 text-xs"
+          >
+            {destinations.length === 0 && <option value="">無可用目的地</option>}
+            {destinations.map((d) => (
+              <option key={d.name} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <span className="text-mono text-[11px] text-[var(--text-muted)]">
-        {totalTrips} 趟旅程 · {shownPlaces} / {totalPlaces} 個地點
+        {layer === "mine"
+          ? `${totalTrips} 趟旅程 · ${shownCount} 個地點`
+          : `${shownCount} 個地點`}
       </span>
 
       <div className="ml-auto flex flex-wrap items-center gap-1.5">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜尋地點或旅程…"
-          className="h-8 w-56 text-xs"
-        />
-        <span aria-hidden className="text-[var(--text-faint)]">|</span>
         {(["roadmap", "satellite", "hybrid"] as const).map((b) => (
           <Chip
             key={b}
             active={basemap === b}
             onClick={() => setBasemap(b)}
-            label={
-              b === "roadmap" ? "地圖" : b === "satellite" ? "衛星" : "混合"
-            }
+            label={b === "roadmap" ? "地圖" : b === "satellite" ? "衛星" : "混合"}
           />
         ))}
       </div>
@@ -349,7 +696,284 @@ function Header({
   );
 }
 
-// ─── Trip legend ─────────────────────────────────────────────────────────────
+// ─── Explore panel (left rail) ─────────────────────────────────────────────────
+
+function ExplorePanel({
+  query,
+  setQuery,
+  onSearch,
+  exploreType,
+  setExploreType,
+  curatedPois,
+  googlePlaces,
+  loading,
+  selectedPinId,
+  onSelect,
+  hasDestination,
+}: {
+  query: string;
+  setQuery: (v: string) => void;
+  onSearch: () => void;
+  exploreType: TypeFilter;
+  setExploreType: (v: TypeFilter) => void;
+  curatedPois: ExplorePoi[];
+  googlePlaces: NearbyPlace[];
+  loading: boolean;
+  selectedPinId: string | null;
+  onSelect: (id: string) => void;
+  hasDestination: boolean;
+}) {
+  const curated = curatedPois.filter(
+    (p) => exploreType === "all" || p.itemType === exploreType
+  );
+  const google = googlePlaces.filter(
+    (g) =>
+      exploreType === "all" ||
+      inferItemTypeFromGoogleType(g.primaryType) === exploreType
+  );
+
+  return (
+    <>
+      <section className="surface-tile shrink-0 p-2">
+        <div className="flex gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="想找什麼？例如「溫泉」「拉麵」"
+            className="h-8 text-xs"
+            disabled={!hasDestination}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSearch();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            className="h-8"
+            onClick={onSearch}
+            disabled={!hasDestination}
+          >
+            搜尋
+          </Button>
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          <Chip
+            active={exploreType === "all"}
+            onClick={() => setExploreType("all")}
+            label="全部"
+          />
+          {(["hotel", "restaurant", "activity", "transport"] as const).map((t) => (
+            <Chip
+              key={t}
+              active={exploreType === t}
+              onClick={() => setExploreType(t)}
+              label={`${TYPE_GLYPH[t]} ${TYPE_LABEL[t]}`}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="surface-tile flex-1 overflow-y-auto">
+        {loading && (
+          <p className="p-4 text-center text-xs text-[var(--text-muted)]">
+            載入策展地點中…
+          </p>
+        )}
+        {!loading && curated.length === 0 && google.length === 0 && (
+          <p className="p-6 text-center text-xs text-[var(--text-muted)]">
+            此目的地尚無策展地點。輸入關鍵字搜尋 Google 地點。
+          </p>
+        )}
+
+        {curated.length > 0 && (
+          <>
+            <p className="px-3 pt-2 text-caps">策展地點 · {curated.length}</p>
+            <ul className="divide-y divide-[var(--border-hairline)]">
+              {curated.map((p) => (
+                <ExploreRow
+                  key={p.placeId}
+                  id={`poi:${p.placeId}`}
+                  glyph={TYPE_GLYPH[p.itemType] ?? "📌"}
+                  title={p.name}
+                  subtitle={p.description || null}
+                  badge="策展"
+                  tags={p.tags}
+                  selected={selectedPinId === `poi:${p.placeId}`}
+                  onSelect={onSelect}
+                />
+              ))}
+            </ul>
+          </>
+        )}
+
+        {google.length > 0 && (
+          <>
+            <p className="px-3 pt-3 text-caps">Google 搜尋 · {google.length}</p>
+            <ul className="divide-y divide-[var(--border-hairline)]">
+              {google.map((g) => (
+                <ExploreRow
+                  key={g.placeId}
+                  id={`gplace:${g.placeId}`}
+                  glyph={
+                    TYPE_GLYPH[inferItemTypeFromGoogleType(g.primaryType)] ?? "📌"
+                  }
+                  title={g.name}
+                  subtitle={g.address}
+                  badge={g.rating != null ? `⭐ ${g.rating.toFixed(1)}` : "Google"}
+                  selected={selectedPinId === `gplace:${g.placeId}`}
+                  onSelect={onSelect}
+                />
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
+
+function ExploreRow({
+  id,
+  glyph,
+  title,
+  subtitle,
+  badge,
+  tags,
+  selected,
+  onSelect,
+}: {
+  id: string;
+  glyph: string;
+  title: string;
+  subtitle: string | null;
+  badge: string;
+  tags?: string[];
+  selected: boolean;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(id)}
+        className={cn(
+          "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--surface-sunken)]/60",
+          selected && "bg-[var(--accent-line-soft)]"
+        )}
+      >
+        <span
+          aria-hidden
+          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-sunken)] text-base"
+        >
+          {glyph}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-sm font-medium">{title}</p>
+            <Badge variant="secondary" className="shrink-0 text-[9px]">
+              {badge}
+            </Badge>
+          </div>
+          {subtitle && (
+            <p className="line-clamp-2 text-[11px] text-[var(--text-muted)]">
+              {subtitle}
+            </p>
+          )}
+          {tags && tags.length > 0 && (
+            <p className="mt-0.5 truncate text-[10px] text-[var(--text-faint)]">
+              {tags.slice(0, 4).map((t) => `#${t}`).join(" ")}
+            </p>
+          )}
+        </div>
+      </button>
+    </li>
+  );
+}
+
+// ─── Routes panel (left rail) ──────────────────────────────────────────────────
+
+function RoutesPanel({
+  routes,
+  loading,
+  selectedRouteId,
+  onSelectRoute,
+  hasDestination,
+}: {
+  routes: ExploreRoute[];
+  loading: boolean;
+  selectedRouteId: string | null;
+  onSelectRoute: (id: string) => void;
+  hasDestination: boolean;
+}) {
+  if (!hasDestination) {
+    return (
+      <section className="surface-tile flex-1 p-6 text-center text-xs text-[var(--text-muted)]">
+        選擇目的地以瀏覽策展路線。
+      </section>
+    );
+  }
+  if (loading) {
+    return (
+      <section className="surface-tile flex-1 p-6 text-center text-xs text-[var(--text-muted)]">
+        載入路線中…
+      </section>
+    );
+  }
+  if (routes.length === 0) {
+    return (
+      <section className="surface-tile flex-1 border-dashed p-6 text-center text-xs text-[var(--text-muted)]">
+        此目的地尚無策展路線。
+      </section>
+    );
+  }
+  return (
+    <section className="surface-tile flex-1 overflow-y-auto">
+      <p className="px-3 pt-2 text-caps">策展路線 · {routes.length}</p>
+      <ul className="space-y-2 p-2">
+        {routes.map((r) => {
+          const active = selectedRouteId === r.routeId;
+          return (
+            <li key={r.routeId}>
+              <button
+                type="button"
+                onClick={() => onSelectRoute(r.routeId)}
+                className={cn(
+                  "w-full rounded-lg border p-2.5 text-left transition-colors",
+                  active
+                    ? "border-[var(--accent-line)] bg-[var(--accent-line-soft)]"
+                    : "border-[var(--border-hairline)] hover:bg-[var(--surface-sunken)]/60"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold">{r.title}</p>
+                  <Badge variant="secondary" className="shrink-0 text-[9px]">
+                    {r.places.length} 站
+                  </Badge>
+                </div>
+                <p className="mt-1 line-clamp-2 text-[11px] text-[var(--text-muted)]">
+                  {r.summary}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[10px] text-[var(--text-faint)]">
+                  <span className="rounded-full bg-[var(--surface-sunken)] px-1.5 py-0.5">
+                    {PACE_LABEL[r.pace] ?? r.pace}
+                  </span>
+                  {r.vibeTags.slice(0, 3).map((t) => (
+                    <span key={t}>#{t}</span>
+                  ))}
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+// ─── Trip legend (my places) ───────────────────────────────────────────────────
 
 function TripLegend({
   trips,
@@ -424,7 +1048,7 @@ function TripLegend({
   );
 }
 
-// ─── Filter tile ─────────────────────────────────────────────────────────────
+// ─── Filter tile (my places) ───────────────────────────────────────────────────
 
 function FilterTile({
   typeFilter,
@@ -487,7 +1111,7 @@ function FilterTile({
   );
 }
 
-// ─── Place list ──────────────────────────────────────────────────────────────
+// ─── Place list (my places) ────────────────────────────────────────────────────
 
 function PlaceList({
   places,
@@ -558,7 +1182,7 @@ function PlaceList({
   );
 }
 
-// ─── Detail floater (over the map) ───────────────────────────────────────────
+// ─── Detail floater: my places (over the map) ──────────────────────────────────
 
 function DetailFloater({
   place,
@@ -646,7 +1270,77 @@ function DetailFloater({
   );
 }
 
+// ─── Pin floater: explore / routes (over the map) ──────────────────────────────
+
+function PinFloater({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
+  const gMapsUrl =
+    pin.bookingUrl ??
+    `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
+  return (
+    <div className="surface-glass absolute right-3 top-3 w-72 rounded-lg p-3 shadow-[var(--shadow-flat)]">
+      <div className="flex items-start gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface-sunken)] text-xl">
+          {TYPE_GLYPH[pin.itemType] ?? "📌"}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{pin.title}</p>
+          <p className="mt-0.5 text-[10px] uppercase text-[var(--text-muted)]">
+            {TYPE_LABEL[pin.itemType] ?? pin.itemType}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+          aria-label="關閉"
+        >
+          ✕
+        </button>
+      </div>
+      {pin.subtitle && (
+        <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+          {pin.subtitle}
+        </p>
+      )}
+      <div className="text-mono mt-2 text-[10px] text-[var(--text-muted)]">
+        {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1">
+        <a
+          href={gMapsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-md border border-[var(--border-hairline)] px-2 py-1 text-[11px] hover:bg-[var(--surface-sunken)]/60"
+        >
+          Google Maps ↗
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function inferItemTypeFromGoogleType(
+  primary: string | null | undefined
+): "hotel" | "restaurant" | "activity" | "transport" {
+  if (!primary) return "activity";
+  if (primary.includes("lodging") || primary.includes("hotel")) return "hotel";
+  if (
+    primary.includes("restaurant") ||
+    primary.includes("cafe") ||
+    primary.includes("food") ||
+    primary.includes("bar")
+  )
+    return "restaurant";
+  if (
+    primary.includes("station") ||
+    primary.includes("transit") ||
+    primary.includes("airport")
+  )
+    return "transport";
+  return "activity";
+}
 
 function countsFor(places: GlobalMapPlace[]): Record<string, number> {
   const c: Record<string, number> = {
@@ -705,6 +1399,31 @@ function Chip({
           {count}
         </span>
       )}
+    </button>
+  );
+}
+
+function LayerTab({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
+        active
+          ? "bg-[var(--text-primary)] text-[var(--surface-raised)]"
+          : "text-[var(--text-muted)] hover:bg-[var(--surface-sunken)]"
+      )}
+    >
+      {label}
     </button>
   );
 }
