@@ -183,6 +183,54 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
   return healthy;
 }
 
+export interface ExplorableRoute {
+  routeId: string;
+  title: string;
+  summary: string;
+  vibeTags: string[];
+  pace: string;
+  placeIds: string[];
+  qualityScore: number;
+}
+
+/**
+ * Explorer-facing route listing. Returns the curated routes for a destination
+ * ordered by promotion levers (boost desc, then quality_score desc) WITHOUT the
+ * vibe-similarity gate the generator applies — the map explorer wants to show
+ * the full menu of routes for a place, not a vibe-filtered shortlist. Place
+ * resolution (place_ids → coordinates) is left to the caller via
+ * loadPoisByIds so this stays a single table read.
+ */
+export async function listRoutesForDestination(
+  destination: string,
+  limit = 20
+): Promise<ExplorableRoute[]> {
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("route_templates")
+    .select("id, title, summary, vibe_tags, pace, place_ids, quality_score, boost")
+    .eq("is_archived", false)
+    .ilike("destination_name", destination)
+    .order("boost", { ascending: false })
+    .order("quality_score", { ascending: false })
+    .limit(limit);
+  if (error) {
+    logger.error("[route-engine] listRoutesForDestination failed", {
+      error: String(error.message ?? error),
+    });
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    routeId: r.id as string,
+    title: r.title as string,
+    summary: r.summary as string,
+    vibeTags: (r.vibe_tags as string[] | null) ?? [],
+    pace: r.pace as string,
+    placeIds: (r.place_ids as string[] | null) ?? [],
+    qualityScore: Number(r.quality_score) || 0,
+  }));
+}
+
 /**
  * Greedy packer. Walks `duration_days` slots in order; assigns the top-scoring
  * route whose place_ids don't collide with any already-picked. Routes are

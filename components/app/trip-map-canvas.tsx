@@ -18,8 +18,8 @@ export interface MapPin {
   title: string;
   subtitle: string | null;
   itemType: string;
-  stage: "confirmed" | "pending" | "todo" | "shared";
-  kind: "item" | "option" | "memory";
+  stage: "confirmed" | "pending" | "todo" | "shared" | "explore";
+  kind: "item" | "option" | "memory" | "poi";
   itemId: string | null;
   optionId: string | null;
   dayKey: string | null;

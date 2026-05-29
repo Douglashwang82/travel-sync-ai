@@ -5,7 +5,7 @@ import { GlobalMapView } from "@/components/app/global-map-view";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "TravelSync — Main Map",
+  title: "TravelSync — Explore Map",
 };
 
 export default async function GlobalMapPage() {
