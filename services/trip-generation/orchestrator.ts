@@ -201,7 +201,10 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
         title: pick.title,
         tags: pick.tags.join(",") || "(none)",
         days: pick.days
-          .map((d) => `D${d.day_number}=[${d.place_ids.map((id) => byId.get(id)?.name ?? id.slice(0, 8)).join(" | ")}]`)
+          .map((d) => `D${d.day_number}=[${d.place_ids.map((id) => {
+            const p = byId.get(id);
+            return `${p?.name ?? id.slice(0, 8)}[${p?.source ?? "?"}]`;
+          }).join(" | ")}]`)
           .join("  ") || "(empty)",
       });
     } else {
@@ -525,9 +528,13 @@ async function persistTemplate(
   const db = createAdminClient();
   const byId = new Map(enriched.map((p) => [p.placeId, p]));
 
-  const items = routedDays.flatMap((day) =>
-    day.stops.map((stop, idx) => {
+  const items = routedDays.flatMap((day) => {
+    const coveredByRoute = compose.coveredDays.get(day.dayNumber);
+    return day.stops.map((stop, idx) => {
       const poi = byId.get(stop.poi.placeId);
+      const source_tag = coveredByRoute
+        ? coveredByRoute.source
+        : (poi?.source ?? "unknown");
       return {
         day_number: day.dayNumber,
         order_index: idx,
@@ -540,9 +547,10 @@ async function persistTemplate(
         lng: poi?.lng ?? null,
         external_url: null as string | null,
         duration_minutes: stop.departMinutes - stop.arriveMinutes,
+        source_tag,
       };
-    })
-  );
+    });
+  });
 
   const slug = generateSlug(pick.title);
   const contentHash = computeContentHash(items, pick.title, pick.summary);
@@ -732,6 +740,7 @@ function computeContentHash(
     address: string | null;
     external_url: string | null;
     duration_minutes: number | null;
+    source_tag?: string;
   }>,
   title: string,
   summary: string | null

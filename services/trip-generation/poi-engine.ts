@@ -35,6 +35,8 @@ export interface PoiCandidate {
   lat: number | null;
   lng: number | null;
   similarity: number;
+  /** Provenance of this POI (e.g. 'google_places', 'admin_upload', 'google_places_live'). */
+  source: string;
   /**
    * Curated rows (non-Google place_ids) carry their own live data here so
    * enrichWithLiveData doesn't waste a Google call that would 404. Null for
@@ -104,6 +106,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     description: string | null;
     lat: number | null;
     lng: number | null;
+    source: string;
     live_data?: PlaceLiveData | null;
     similarity: number;
   }>;
@@ -131,6 +134,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     description: r.description ?? "",
     lat: r.lat,
     lng: r.lng,
+    source: r.source,
     similarity: r.similarity,
     liveData: r.live_data ?? null,
   }));
@@ -193,6 +197,7 @@ export async function searchPoisByText(input: PoiTextSearchInput): Promise<PoiCa
     description: string | null;
     lat: number | null;
     lng: number | null;
+    source: string;
     live_data?: PlaceLiveData | null;
     similarity: number;
   }>;
@@ -205,6 +210,7 @@ export async function searchPoisByText(input: PoiTextSearchInput): Promise<PoiCa
     description: r.description ?? "",
     lat: r.lat,
     lng: r.lng,
+    source: r.source,
     similarity: r.similarity,
     liveData: r.live_data ?? null,
   }));
@@ -236,6 +242,7 @@ async function liveTextSearchFallback(
         description: c.name,
         lat: null,
         lng: null,
+        source: "google_places_live",
         similarity: 0.5,
       });
     }
@@ -265,7 +272,7 @@ export async function loadPoisByIds(placeIds: string[], genId?: string): Promise
   const db = createAdminClient();
   const { data, error } = await db
     .from("poi_embeddings")
-    .select("place_id, name, item_type, tags, description, lat, lng, live_data")
+    .select("place_id, name, item_type, tags, description, lat, lng, source, live_data")
     .in("place_id", unique);
   if (error) {
     logger.error("[poi-engine] loadPoisByIds failed", { genId, error: String(error.message ?? error) });
@@ -287,6 +294,7 @@ export async function loadPoisByIds(placeIds: string[], genId?: string): Promise
     description: string | null;
     lat: number | null;
     lng: number | null;
+    source: string;
     live_data: PlaceLiveData | null;
   }>;
   return rows.map((r) => ({
@@ -297,6 +305,7 @@ export async function loadPoisByIds(placeIds: string[], genId?: string): Promise
     description: r.description ?? "",
     lat: r.lat,
     lng: r.lng,
+    source: r.source,
     similarity: 1,
     liveData: r.live_data,
   }));

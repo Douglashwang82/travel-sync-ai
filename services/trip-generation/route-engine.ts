@@ -36,6 +36,8 @@ export interface RouteCandidate {
   qualityScore: number;
   pinnedVibes: string[];
   finalScore: number;
+  /** Provenance of this route (e.g. 'curated', 'synthesized'). */
+  source: string;
 }
 
 export interface RouteSearchInput {
@@ -122,6 +124,7 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
     boost: number | string;
     quality_score: number | string;
     pinned_vibes: string[] | null;
+    source: string | null;
     similarity: number;
   }>;
   if (rows.length === 0) {
@@ -153,6 +156,7 @@ export async function searchRoutesByVibe(input: RouteSearchInput): Promise<Route
       qualityScore: quality,
       pinnedVibes: pinned,
       finalScore,
+      source: r.source ?? "curated",
     };
   });
 
