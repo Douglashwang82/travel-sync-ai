@@ -201,7 +201,7 @@ async function loadPois(destination: string): Promise<PoiCandidate[]> {
   const db = createAdminClient();
   const { data, error } = await db
     .from("poi_embeddings")
-    .select("place_id, name, item_type, tags, description, lat, lng")
+    .select("place_id, name, item_type, tags, description, lat, lng, source")
     .eq("destination_name", destination);
   if (error) throw new Error(`poi_embeddings load failed: ${error.message}`);
   return (data ?? []).map((r) => ({
@@ -212,6 +212,7 @@ async function loadPois(destination: string): Promise<PoiCandidate[]> {
     description: (r.description as string | null) ?? "",
     lat: r.lat as number | null,
     lng: r.lng as number | null,
+    source: (r.source as string | null) ?? "google_places",
     similarity: 1,
   }));
 }
