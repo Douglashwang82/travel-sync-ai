@@ -1,7 +1,9 @@
 -- Keep vector-search POI rows self-contained for curated/local place_ids.
 -- Without live_data in the RPC result, enrichWithLiveData cannot see the
 -- curated opening hours and may try to call Google Places with local IDs.
-create or replace function search_pois_by_vibe(
+drop function if exists search_pois_by_vibe(text, vector, text[], integer);
+
+create function search_pois_by_vibe(
   p_destination       text,
   p_query_embedding   vector(768),
   p_item_types        text[] default null,

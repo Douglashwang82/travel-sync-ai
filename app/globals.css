@@ -623,6 +623,33 @@ html.dark .hero-countdown-panel {
   will-change: transform;
 }
 
+/* Hero headline word-stagger (opt-in via .hero-word + scroll-reveal-ready). */
+@keyframes word-enter {
+  0%   { opacity: 0; transform: translateY(0.35em); filter: blur(6px); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+html.scroll-reveal-ready .hero-word {
+  opacity: 0;
+  animation: word-enter 680ms var(--ease-confirm) both;
+  animation-delay: calc(var(--word-i, 0) * 110ms + 60ms);
+}
+
+/* Blinking caret for the hero typewriter. */
+@keyframes cursor-blink {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+.hero-cursor {
+  display: inline-block;
+  width: 0.055em;
+  height: 0.82em;
+  background: currentColor;
+  margin-left: 0.06em;
+  vertical-align: middle;
+  border-radius: 1px;
+  animation: cursor-blink 800ms step-end infinite;
+}
+
 /* Reduced motion — respect it. */
 @media (prefers-reduced-motion: reduce) {
   *,

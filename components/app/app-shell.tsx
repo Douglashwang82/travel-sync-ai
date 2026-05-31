@@ -25,7 +25,6 @@ export function AppShell({
       id="app-shell"
       className="relative min-h-screen bg-[var(--surface-base)]"
     >
-      {!isFullBleed && <div aria-hidden className="ambient-mesh" />}
 
       <AppSidebar
         user={user}

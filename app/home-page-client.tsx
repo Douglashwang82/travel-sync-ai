@@ -292,6 +292,57 @@ const CONTENT = {
   },
 } satisfies Record<Locale, Copy>;
 
+function useTypewriter(text: string, forceMotion: boolean) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setDisplayed("");
+    setDone(false);
+
+    const reduceMotion = !forceMotion && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setDisplayed(text);
+      setDone(true);
+      return;
+    }
+
+    let timer: ReturnType<typeof setTimeout>;
+    let i = 0;
+    let deleting = false;
+
+    const tick = () => {
+      if (!deleting) {
+        i++;
+        setDisplayed(text.slice(0, i));
+        if (i < text.length) {
+          timer = setTimeout(tick, 52);
+        } else {
+          setDone(true);
+          // pause at full text, then start deleting
+          timer = setTimeout(() => { deleting = true; tick(); }, 1800);
+        }
+      } else {
+        i--;
+        setDisplayed(text.slice(0, i));
+        if (i > 0) {
+          timer = setTimeout(tick, 32);
+        } else {
+          // pause at empty, then retype
+          deleting = false;
+          setDone(false);
+          timer = setTimeout(tick, 600);
+        }
+      }
+    };
+
+    timer = setTimeout(tick, 900);
+    return () => clearTimeout(timer);
+  }, [text, forceMotion]);
+
+  return { displayed, done };
+}
+
 const iconMap = {
   bot: Bot,
   vote: Vote,
@@ -325,6 +376,7 @@ export default function HomePageClient() {
   }, [forceMotion]);
 
   useIntroScrollMotion(locale, forceMotion);
+  const { displayed: typedAccent, done: typewriterDone } = useTypewriter(copy.hero.titleAccent, forceMotion);
 
   return (
     <div className="min-h-screen bg-[#edf3f8] text-[#0e1822] selection:bg-[#00b900] selection:text-white dark:bg-[#0a121b] dark:text-[#e6eff5]">
@@ -421,7 +473,6 @@ export default function HomePageClient() {
 
       <main>
         <section className="relative min-h-screen overflow-hidden pt-16">
-          <IntroCanvas forceMotion={forceMotion} />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,243,248,0.2)_0%,rgba(237,243,248,0.82)_76%,#edf3f8_100%)] dark:bg-[linear-gradient(180deg,rgba(10,18,27,0.08)_0%,rgba(10,18,27,0.72)_72%,#0a121b_100%)]" />
           <MountainSilhouette />
           <SnowflakeField />
@@ -437,11 +488,23 @@ export default function HomePageClient() {
               </p>
               <h1
                 className="max-w-4xl text-[clamp(3.4rem,10vw,6.7rem)] font-black leading-[0.9] tracking-normal"
-                data-scroll-reveal="up"
-                style={{ "--reveal-delay": "80ms" } as CSSProperties}
+                aria-label={`${copy.hero.title} ${copy.hero.titleAccent}`}
               >
-                <span className="block">{copy.hero.title}</span>
-                <span className="block text-[#00b900]">{copy.hero.titleAccent}</span>
+                <span className="block" aria-hidden>
+                  {copy.hero.title.split(" ").map((word, i, arr) => (
+                    <span
+                      key={i}
+                      className="hero-word text-gradient-aurora inline-block"
+                      style={{ "--word-i": i } as CSSProperties}
+                    >
+                      {word}{i < arr.length - 1 ? " " : ""}
+                    </span>
+                  ))}
+                </span>
+                <span className="block text-[#00b900]" aria-hidden>
+                  {typedAccent}
+                  {!typewriterDone && <span className="hero-cursor" />}
+                </span>
               </h1>
               <p
                 className="mt-8 max-w-2xl text-lg leading-8 text-[#3f4a55] dark:text-[#b3c2cf]"
@@ -644,17 +707,43 @@ function IntroCanvas({ forceMotion }: { forceMotion: boolean }) {
     let frame = 0;
     let width = 0;
     let height = 0;
+    let dpr = 1;
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = canvas.clientWidth;
-      height = canvas.clientHeight;
+      const rect = canvas.getBoundingClientRect();
+      const nextWidth = Math.floor(rect.width);
+      const nextHeight = Math.floor(rect.height);
+      const nextDpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      if (nextWidth <= 0 || nextHeight <= 0) {
+        return false;
+      }
+
+      if (
+        width === nextWidth &&
+        height === nextHeight &&
+        dpr === nextDpr &&
+        canvas.width === Math.floor(nextWidth * nextDpr) &&
+        canvas.height === Math.floor(nextHeight * nextDpr)
+      ) {
+        return true;
+      }
+
+      width = nextWidth;
+      height = nextHeight;
+      dpr = nextDpr;
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return true;
     };
 
     const draw = (time = 0) => {
+      if (!resize()) {
+        frame = window.requestAnimationFrame(draw);
+        return;
+      }
+
       context.clearRect(0, 0, width, height);
 
       const t = time * 0.00018;
@@ -793,14 +882,18 @@ function IntroCanvas({ forceMotion }: { forceMotion: boolean }) {
       }
     };
 
-    resize();
-    draw();
+    const observer = new ResizeObserver(() => {
+      if (reducedMotion) {
+        draw(performance.now());
+      }
+    });
+
+    observer.observe(canvas);
     window.addEventListener("resize", resize);
-    if (!reducedMotion) {
-      frame = window.requestAnimationFrame(draw);
-    }
+    frame = window.requestAnimationFrame(draw);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", resize);
       window.cancelAnimationFrame(frame);
     };
