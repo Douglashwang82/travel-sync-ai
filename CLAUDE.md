@@ -2,11 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Mandatory checks before every commit
+
+After every code change, run these three commands and fix all errors before committing:
+
+```bash
+npm run build          # type gate — must exit 0 (zero TypeScript errors)
+npm run lint           # ESLint — must exit 0 (zero lint errors)
+npm test               # Vitest — must not introduce new test failures
+```
+
+`npm run build` is the **only** type-checker; there is no separate `tsc` or `typecheck` script.
+Do **not** report a task as complete if any of these three commands emit errors.
+
 ## Commands
 
 ```bash
 npm run dev            # Next.js dev server on :3000
-npm run build          # Production build
+npm run build          # Production build + type check
 npm run lint           # ESLint (flat config in eslint.config.mjs)
 npm test               # Vitest run (all tests under __tests__/)
 npm run test:watch     # Vitest watch mode

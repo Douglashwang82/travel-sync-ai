@@ -354,17 +354,16 @@ export default function HomePageClient() {
   const [forceMotion, setForceMotion] = useState(false);
   const copy = CONTENT[locale];
 
+  // Reads from localStorage after hydration to sync persisted user prefs.
+  // Calling setState here is intentional (avoids SSR/client mismatch).
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-      if (saved === "en" || saved === "zh-TW") {
-        setLocale(saved);
-      }
-
-      setForceMotion(window.localStorage.getItem(MOTION_STORAGE_KEY) === "on");
-    });
-
-    return () => window.cancelAnimationFrame(frame);
+    const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved === "en" || saved === "zh-TW") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocale(saved);
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForceMotion(window.localStorage.getItem(MOTION_STORAGE_KEY) === "on");
   }, []);
 
   useEffect(() => {

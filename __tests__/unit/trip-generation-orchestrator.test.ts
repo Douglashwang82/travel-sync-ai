@@ -55,6 +55,7 @@ function poi(id: string, type: EnrichedPoi["itemType"] = "activity"): EnrichedPo
     description: `${id} description`,
     lat,
     lng,
+    source: "google_places",
     similarity: 0.9,
     live: {
       placeId: id,
@@ -226,6 +227,7 @@ function makeRoute(opts: Partial<RouteCandidate> & { routeId: string; placeIds: 
     qualityScore: opts.qualityScore ?? 0,
     pinnedVibes: opts.pinnedVibes ?? [],
     finalScore: opts.finalScore ?? 0.85,
+    source: opts.source ?? "curated",
   };
 }
 
