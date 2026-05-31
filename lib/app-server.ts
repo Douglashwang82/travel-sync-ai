@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/db";
+import { lineUserIdFromAuthHeader } from "@/lib/app-tokens";
 
 /**
- * Cookie-based session for the `/app` web experience.
+ * Session resolution for the `/app` experience, web and mobile.
  *
- * The cookie holds a `line_user_id`. For users who signed in via LINE Login
- * this is their real LINE id; for users who registered with email/password
- * we generate a synthetic id (`app_<uuid>`) so all downstream tables that
- * key on `line_user_id` keep working without branching. Identity is resolved
- * to an `app_users` row via `requireAppUser`.
+ * Identity is a `line_user_id`. For users who signed in via LINE Login this is
+ * their real LINE id; for users who registered with email/password we generate
+ * a synthetic id (`app_<uuid>`) so all downstream tables that key on
+ * `line_user_id` keep working without branching. It is resolved to an
+ * `app_users` row via `requireAppUser`.
+ *
+ * Two transports carry the identity, checked in this order:
+ *   1. `Authorization: Bearer <jwt>` — native mobile apps (see `lib/app-tokens.ts`).
+ *      Native clients can't use the browser cookie jar, so they send a signed
+ *      access token instead.
+ *   2. The HttpOnly `ts_app_user` cookie — the web `/app` client.
+ *
+ * Both resolve to the same `line_user_id`, so every guard below is transport
+ * agnostic: adding bearer support here unlocks the entire `/api/app` surface
+ * for mobile without touching individual route handlers.
  */
 
 export const APP_SESSION_COOKIE = "ts_app_user";
@@ -39,6 +50,19 @@ export function clearAppSessionCookie(res: NextResponse): void {
 export async function readAppSessionCookieFromRequest(
   req: NextRequest
 ): Promise<string | null> {
+  return req.cookies.get(APP_SESSION_COOKIE)?.value ?? null;
+}
+
+/**
+ * Resolve the caller's `line_user_id` from either transport: a bearer access
+ * token (mobile) takes precedence, falling back to the session cookie (web).
+ * Returns `null` when neither is present or valid.
+ */
+export async function resolveSessionLineUserId(
+  req: NextRequest
+): Promise<string | null> {
+  const fromBearer = lineUserIdFromAuthHeader(req.headers.get("authorization"));
+  if (fromBearer) return fromBearer;
   return req.cookies.get(APP_SESSION_COOKIE)?.value ?? null;
 }
 
@@ -83,7 +107,7 @@ export type AppAuthResult =
   | { ok: false; response: NextResponse };
 
 export async function requireAppUser(req: NextRequest): Promise<AppAuthResult> {
-  const lineUserId = await readAppSessionCookieFromRequest(req);
+  const lineUserId = await resolveSessionLineUserId(req);
   if (!lineUserId) return { ok: false, response: unauthorized() };
 
   const db = createAdminClient();

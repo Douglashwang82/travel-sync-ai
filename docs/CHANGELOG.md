@@ -3,6 +3,13 @@
 ## [Unreleased] — Japan Ski Refocus (v1)
 
 ### Added
+- **Native mobile app — Phase 0 (auth foundation)** — groundwork for a native iOS/Android app (Expo / React Native) that reuses the existing `/api/app/*` surface:
+  - `lib/app-tokens.ts` — stateless HMAC-SHA256 bearer tokens (access + refresh) signed with `APP_JWT_SECRET`, using only `node:crypto` (no new dependency, same approach as `lib/passwords.ts`)
+  - `lib/app-server.ts` — new `resolveSessionLineUserId()` resolves identity from an `Authorization: Bearer <jwt>` header (mobile) **or** the `ts_app_user` cookie (web); `requireAppUser` now uses it, so the entire App API accepts mobile tokens without per-route changes
+  - `app/api/app/auth/mobile/login` (email/password → token pair), `app/api/app/auth/mobile/refresh` (rotate pair), `app/api/app/auth/mobile/line` (verify a LINE `id_token` from the Expo PKCE flow → token pair)
+  - `APP_JWT_SECRET` added to `.env.example`; `__tests__/unit/app-tokens.test.ts` covers signing, expiry, tamper/wrong-secret rejection, and type confusion
+  - Docs: new SAD section "App authentication: cookie + bearer" and a mobile note in the web-workspace user guide (EN + ZH_TW); auth routes auto-document under "App API · Auth"
+
 - **Vibrant web app reface** — a visual redesign of the `/app` workspace toward a more modern, expressive look with micro-animations, structure unchanged:
   - `motion` (Framer Motion) added; `components/motion/` centralizes the motion vocabulary — `MotionProvider` (MotionConfig `reducedMotion="user"`), `variants.ts` (fadeUp / stagger / springPop / pageTransition), and reusable `Reveal`, `Stagger`/`StaggerItem`, `PageTransition`, `AnimatedNumber` helpers
   - `app/globals.css` gains a vibrant token layer: secondary accent axis (`--accent-warm`/`-cool`/`-violet`), gradient tokens (`--gradient-brand`/`-warm`/`-cool`/`-aurora`/mesh), glow shadows, re-saturated status colors, and utilities (`.btn-gradient`, `.text-gradient`, `.text-gradient-aurora`, `.tile-glow`, `.ambient-mesh`, `.chip-gradient`)

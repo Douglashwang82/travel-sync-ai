@@ -131,6 +131,7 @@ const EN: DocsCopy = {
           "Map — Cross-trip map of every place that has been mentioned.",
           "Templates — Public trip templates you can fork into a new trip.",
           "Inbox — Notifications: reminders, vote outcomes, incidents and digests.",
+          "Mobile app — The same workspace is available as a native iOS/Android app. Sign in with LINE or your email and password; the app keeps you signed in securely on the device.",
         ],
       },
       {
@@ -190,6 +191,14 @@ const EN: DocsCopy = {
           "                   ▼",
           "          outbound_messages (tracked, retried, backed-off)",
         ].join("\n"),
+      },
+      {
+        id: "sad-app-auth",
+        title: "App authentication: cookie + bearer",
+        body: [
+          "The /api/app/* surface authenticates a caller to a single line_user_id, then resolves it to an app_users row. Two transports carry that identity and are checked in one place — resolveSessionLineUserId in lib/app-server.ts: an Authorization: Bearer <jwt> header (native mobile) takes precedence, falling back to the HttpOnly ts_app_user cookie (web). Because every guard funnels through requireAppUser, adding bearer support unlocked the whole App API for mobile without editing individual route handlers.",
+          "Mobile tokens are stateless HMAC-SHA256 JWTs signed with APP_JWT_SECRET (lib/app-tokens.ts, no extra dependency — same node:crypto approach as password hashing). /api/app/auth/mobile/login issues a short-lived access token plus a 60-day refresh token from an email/password pair; /api/app/auth/mobile/line mints the same pair after verifying a LINE id_token from the Expo PKCE flow; /api/app/auth/mobile/refresh rotates the pair. The token subject is the line_user_id, identical to what the cookie holds, so both paths converge downstream.",
+        ],
       },
       {
         id: "sad-inbound",
@@ -372,6 +381,7 @@ const ZH_TW: DocsCopy = {
           "地圖 — 跨旅程地圖，顯示曾被提及的所有地點。",
           "範本 — 公開的旅程範本，可一鍵 Fork 成新旅程。",
           "收件匣 — 通知：提醒、投票結果、事件處理與摘要。",
+          "行動 App — 相同的工作區也提供原生 iOS／Android App。可用 LINE 或電子郵件與密碼登入；App 會在裝置上安全地保持登入狀態。",
         ],
       },
       {
@@ -431,6 +441,14 @@ const ZH_TW: DocsCopy = {
           "                   ▼",
           "          outbound_messages（追蹤、重試、指數退避）",
         ].join("\n"),
+      },
+      {
+        id: "sad-app-auth",
+        title: "App 身分驗證：Cookie + Bearer",
+        body: [
+          "/api/app/* 介面會將呼叫者驗證為單一 line_user_id，再解析為 app_users 資料列。兩種傳輸方式攜帶此身分，並集中在 lib/app-server.ts 的 resolveSessionLineUserId 檢查：Authorization: Bearer <jwt> 標頭（原生行動 App）優先，其次才回退到 HttpOnly 的 ts_app_user cookie（Web）。由於所有授權檢查都經過 requireAppUser，加入 bearer 支援即可讓整個 App API 對行動端開放，無須修改個別的路由處理程式。",
+          "行動端 token 是以 APP_JWT_SECRET 簽署的無狀態 HMAC-SHA256 JWT（lib/app-tokens.ts，未新增相依套件，沿用與密碼雜湊相同的 node:crypto 方式）。/api/app/auth/mobile/login 以電子郵件與密碼簽發短效 access token 與 60 天的 refresh token；/api/app/auth/mobile/line 在驗證 Expo PKCE 流程取得的 LINE id_token 後簽發相同的 token 組；/api/app/auth/mobile/refresh 則負責輪替。token 的 subject 即 line_user_id，與 cookie 內容一致，因此兩條路徑在下游收斂為同一身分。",
+        ],
       },
       {
         id: "sad-inbound",
