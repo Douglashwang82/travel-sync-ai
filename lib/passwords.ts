@@ -13,12 +13,13 @@ const scrypt = promisify(scryptCb) as (
   password: string,
   salt: Buffer,
   keylen: number,
-  options: { N: number; r: number; p: number }
+  options: { N: number; r: number; p: number; maxmem: number }
 ) => Promise<Buffer>;
 
 const N = 1 << 15; // 32768 — keeps hashing under ~150ms on Vercel's hobby tier.
 const R = 8;
 const P = 1;
+const MAXMEM = 64 * 1024 * 1024;
 const KEY_LEN = 64;
 const SALT_LEN = 16;
 
@@ -27,7 +28,7 @@ export async function hashPassword(plain: string): Promise<string> {
     throw new Error("Password cannot be empty");
   }
   const salt = randomBytes(SALT_LEN);
-  const derived = await scrypt(plain, salt, KEY_LEN, { N, r: R, p: P });
+  const derived = await scrypt(plain, salt, KEY_LEN, { N, r: R, p: P, maxmem: MAXMEM });
   return [
     "scrypt",
     N.toString(),
@@ -57,7 +58,12 @@ export async function verifyPassword(plain: string, encoded: string): Promise<bo
     return false;
   }
 
-  const derived = await scrypt(plain, salt, expected.length, { N: n, r, p });
+  let derived: Buffer;
+  try {
+    derived = await scrypt(plain, salt, expected.length, { N: n, r, p, maxmem: MAXMEM });
+  } catch {
+    return false;
+  }
   if (derived.length !== expected.length) return false;
   return timingSafeEqual(derived, expected);
 }

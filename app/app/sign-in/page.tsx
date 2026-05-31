@@ -41,7 +41,7 @@ const COPY = {
     devSignIn: "Dev sign-in (staging only)",
     pickMember: "Pick a member",
     members: (count: number) => `${count} member${count === 1 ? "" : "s"}`,
-    filterPlaceholder: "Filter by name, group, or LINE ID",
+    filterPlaceholder: "Filter by name, email, group, or LINE ID",
     untitledLineGroup: "Untitled LINE group",
     unknown: "Unknown",
     organizer: "organizer",
@@ -94,7 +94,7 @@ const COPY = {
     devSignIn: "開發登入（僅限 staging）",
     pickMember: "選擇成員",
     members: (count: number) => `${count} 位成員`,
-    filterPlaceholder: "依姓名、群組或 LINE ID 篩選",
+    filterPlaceholder: "依姓名、Email、群組或 LINE ID 篩選",
     untitledLineGroup: "未命名 LINE 群組",
     unknown: "未知使用者",
     organizer: "發起人",
@@ -183,7 +183,9 @@ export default function SignInPage() {
       ? members.filter((m) => {
           const haystack = [
             m.displayName ?? "",
+            m.email ?? "",
             m.lineUserId,
+            ...m.groups.flatMap((group) => [group.groupName ?? "", group.lineGroupId]),
           ]
             .join(" ")
             .toLowerCase();
@@ -407,13 +409,18 @@ export default function SignInPage() {
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {m.displayName ?? copy.unknown}
+                        {m.displayName ?? m.email ?? copy.unknown}
                         {m.role === "organizer" && (
                           <span className="ml-2 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#166534] dark:bg-[#14532d] dark:text-[#86efac]">
                             {copy.organizer}
                           </span>
                         )}
                       </p>
+                      {m.email && (
+                        <p className="truncate text-[11px] text-[var(--muted-foreground)]">
+                          {m.email}
+                        </p>
+                      )}
                       <p className="truncate font-mono text-[11px] text-[var(--muted-foreground)]">
                         {m.lineUserId}
                       </p>

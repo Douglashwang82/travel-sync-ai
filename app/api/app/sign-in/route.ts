@@ -41,6 +41,7 @@ const SignInSchema = z.object({
 export interface SignInMember {
   lineUserId: string;
   displayName: string | null;
+  email: string | null;
   role: string;
   groups: Array<{
     groupId: string;
@@ -53,16 +54,23 @@ export async function GET(): Promise<NextResponse> {
   if (devPickerDisabled()) return disabledResponse();
 
   const db = createAdminClient();
-  const { data, error } = await db
-    .from("group_members")
-    .select(
-      "line_user_id, display_name, role, joined_at, group_id, line_groups!inner(id, line_group_id, name, status)"
-    )
-    .is("left_at", null)
-    .order("joined_at", { ascending: false })
-    .order("display_name", { ascending: true });
+  const [{ data: memberRows, error: membersError }, { data: appUserRows, error: usersError }] =
+    await Promise.all([
+      db
+        .from("group_members")
+        .select(
+          "line_user_id, display_name, role, joined_at, group_id, line_groups!inner(id, line_group_id, name, status)"
+        )
+        .is("left_at", null)
+        .order("joined_at", { ascending: false })
+        .order("display_name", { ascending: true }),
+      db
+        .from("app_users")
+        .select("email, display_name, line_user_id, created_at")
+        .order("created_at", { ascending: false }),
+    ]);
 
-  if (error) {
+  if (membersError || usersError) {
     return NextResponse.json(
       { error: "Failed to load members", code: "DB_ERROR" },
       { status: 500 }
@@ -71,7 +79,7 @@ export async function GET(): Promise<NextResponse> {
 
   const membersByLineUserId = new Map<string, SignInMember>();
 
-  for (const row of data ?? []) {
+  for (const row of memberRows ?? []) {
     const group = Array.isArray(row.line_groups) ? row.line_groups[0] : row.line_groups;
     const lineUserId = row.line_user_id as string;
     const existing = membersByLineUserId.get(lineUserId);
@@ -85,6 +93,7 @@ export async function GET(): Promise<NextResponse> {
       membersByLineUserId.set(lineUserId, {
         lineUserId,
         displayName: row.display_name as string | null,
+        email: null,
         role: row.role as string,
         groups: [groupSummary],
       });
@@ -104,9 +113,34 @@ export async function GET(): Promise<NextResponse> {
     }
   }
 
+  for (const row of appUserRows ?? []) {
+    const lineUserId = row.line_user_id as string;
+    const displayName = (row.display_name as string | null) ?? null;
+    const email = (row.email as string | null) ?? null;
+    const existing = membersByLineUserId.get(lineUserId);
+
+    if (!existing) {
+      membersByLineUserId.set(lineUserId, {
+        lineUserId,
+        displayName,
+        email,
+        role: "member",
+        groups: [],
+      });
+      continue;
+    }
+
+    if (existing.displayName == null && displayName != null) {
+      existing.displayName = displayName;
+    }
+    if (existing.email == null && email != null) {
+      existing.email = email;
+    }
+  }
+
   const members = Array.from(membersByLineUserId.values()).sort((left, right) => {
-    const leftName = (left.displayName ?? left.lineUserId).toLowerCase();
-    const rightName = (right.displayName ?? right.lineUserId).toLowerCase();
+    const leftName = (left.displayName ?? left.email ?? left.lineUserId).toLowerCase();
+    const rightName = (right.displayName ?? right.email ?? right.lineUserId).toLowerCase();
     return leftName.localeCompare(rightName);
   });
 
@@ -143,24 +177,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .limit(1)
     .maybeSingle();
 
-  if (!member) {
-    return NextResponse.json(
-      { error: "User is not a member of any active group", code: "NOT_FOUND" },
-      { status: 404 }
+  if (member) {
+    // Ensure a corresponding `app_users` row exists so `requireAppUser` can
+    // resolve the cookie back to a known identity.
+    const appUser = await ensureAppUserForLineId(
+      parsed.data.lineUserId,
+      (member.display_name as string | null) ?? null
     );
-  }
+    if (!appUser) {
+      return NextResponse.json(
+        { error: "Failed to materialize app user", code: "DB_ERROR" },
+        { status: 500 }
+      );
+    }
+  } else {
+    const { data: appUser } = await db
+      .from("app_users")
+      .select("id")
+      .eq("line_user_id", parsed.data.lineUserId)
+      .maybeSingle();
 
-  // Ensure a corresponding `app_users` row exists so `requireAppUser` can
-  // resolve the cookie back to a known identity.
-  const appUser = await ensureAppUserForLineId(
-    parsed.data.lineUserId,
-    (member.display_name as string | null) ?? null
-  );
-  if (!appUser) {
-    return NextResponse.json(
-      { error: "Failed to materialize app user", code: "DB_ERROR" },
-      { status: 500 }
-    );
+    if (!appUser) {
+      return NextResponse.json(
+        {
+          error: "User is not a member of any active group or registered app user",
+          code: "NOT_FOUND",
+        },
+        { status: 404 }
+      );
+    }
   }
 
   const res = NextResponse.json({ ok: true, lineUserId: parsed.data.lineUserId });
