@@ -40,14 +40,17 @@ Path alias: `@/*` maps to repo root (e.g. `@/services/event-processor`, `@/lib/l
 
 ## Architecture invariants (do not violate)
 
-This is a LINE bot whose entire async pipeline funnels through three chokepoints. Before adding "let's add X" for webhook, event, or outbound code, check whether it already exists.
+This is an AI-powered travel agent app that helps travelers gather information, make decisions, get suggestions, and manage trips end-to-end. LINE is the messaging interface; the web app at `/app` is the primary UI. The async pipeline funnels through three chokepoints — before adding inbound, dispatch, or outbound code, check whether it already exists.
 
-- **Single inbound endpoint:** `app/api/line/webhook/route.ts`. Verifies signature, persists every event to `line_events` (idempotent via `line_event_uid`), returns 200 in <1s, schedules processing via Next.js `after()`.
-- **Single dispatcher:** `services/event-processor.ts` routes by `(event.type, source.type)`. DM detection: `lineGroupId === userId`. Slash commands (`text.startsWith("/")`) → `bot/router.ts`. Free text in groups → `services/parsing/` (the "group monitor"). Free text in 1:1 → `services/private-chat/` (LLM reasoning via Gemini).
-- **Single outbound chokepoint:** `lib/line.ts`. Never call `@line/bot-sdk` directly outside this file (CLI scripts in `scripts/` are the only exception). All pushes are tracked in `outbound_messages` with retry + backoff.
+- **Single inbound endpoint:** `app/api/line/webhook/route.ts`. Verifies LINE signature, persists every event to `line_events` (idempotent via `line_event_uid`), returns 200 in <1s, schedules processing via Next.js `after()`.
+- **Single dispatcher:** `services/event-processor.ts` routes by `(event.type, source.type)`. DM detection: `lineGroupId === userId`. Slash commands (`text.startsWith("/")`) → `bot/router.ts`. Free text in groups → `services/parsing/` (Gemini-powered entity extraction). Free text in 1:1 → `services/private-chat/` (LLM reasoning). Postbacks keyed on `prefix|...` data scheme → `handlePostback()`.
+- **Single outbound chokepoint:** `lib/line.ts`. Never call `@line/bot-sdk` directly outside this file (CLI scripts in `scripts/` are the only exception). All pushes tracked in `outbound_messages` with retry + backoff.
 - **Durable queue = `line_events` table.** No external queue lib. Webhook fast-path is `after()`; the `process-events` cron (`app/api/cron/process-events/route.ts`) is the recovery sweeper for crashed workers, stalled `processing` rows (>5 min), and `failed` rows whose `next_retry_at` has elapsed. Backoff: `2^(retry_count+1)s`, capped at 1h, via `computeNextRetryAt` in `services/event-processor.ts`.
-- **Postbacks are not commands.** They live in `services/event-processor.ts` `handlePostback`, keyed on a `prefix|...` data scheme.
-- **Notifications are event-sourced**, not cron-driven. `services/notifications/index.ts` exposes `notifyXxx()` wrappers; crons handle reminders/digests, not the primary delivery path.
+- **Per-trip AI orchestrator** (`services/orchestrator/`). Each trip gets a tool-use loop (max 8 turns, Gemini or Claude) that can read and mutate trip state. Triggered by cron sweeper (`app/api/cron/orchestrator/route.ts`) or immediately via `wakeOrchestrator(tripId, reason)` on relevant mutations. Tools live in `services/orchestrator/tools.ts`; the autonomy dial enforces propose-only vs. auto-apply per trip.
+- **Agent system** (`services/agents/`). Eight agents (flight-price-tracker, weather-forecast, chat-digest, itinerary-drafter, packing-suggester, hotel-price-watch, consensus-radar, social-media-photos) run on custom grids. Modes: **monitor** (read-only), **propose** (draft pending items for human review), **assist** (on-demand). Scheduled via `app/api/cron/agent-grids/route.ts` with dependency ordering. Never add agent logic outside this system.
+- **Two LLM providers, one router.** `lib/llm.ts` routes tasks to Gemini (default: `gemini-2.5-flash`) or Anthropic Claude (default: `claude-sonnet-4-6`) via `LLM_PROVIDER_<TASK_CLASS>` env vars. Never call `@google/genai` or `@anthropic-ai/sdk` directly outside `lib/gemini.ts` / `lib/llm.ts`. All calls logged to `llm_calls` for cost tracking and replay.
+- **Notifications are event-sourced**, not cron-driven. `services/notifications/index.ts` exposes `notifyXxx()` wrappers; crons handle reminders/digests only, not primary delivery.
+- **MCP server** (`app/api/mcp/route.ts`). JSON-RPC 2.0 endpoint for external AI clients (Claude Desktop, Cursor). Authenticated via `MCP_SIGNING_SECRET`.
 
 ## Layout at a glance
 
@@ -96,6 +99,6 @@ The `/app/docs` page is the canonical project doc. **Every code change that touc
 
 ## Environment
 
-Local dev needs `.env.local` (copy from `.env.example`). Required for the bot to function: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `GEMINI_API_KEY`. `CRON_SECRET` is required in production for the Vercel cron routes to authenticate. Health check: `GET /api/health`.
+Local dev needs `.env.local` (copy from `.env.example`). Required: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `GEMINI_API_KEY`. Optional: `ANTHROPIC_API_KEY` (enables Claude via `lib/llm.ts`), `LLM_PROVIDER_DEFAULT` / `LLM_PROVIDER_<TASK_CLASS>` (route tasks to gemini or anthropic), `GOOGLE_MAPS_SERVER_API_KEY`, `MCP_SIGNING_SECRET`. `CRON_SECRET` is required in production for Vercel cron auth. Health check: `GET /api/health`.
 
 For local LINE webhook testing, expose port 3000 via ngrok and set `https://<subdomain>.ngrok.io/api/line/webhook` as the channel's webhook URL.

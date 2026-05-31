@@ -12,10 +12,12 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 alter table trip_template_items
-  add column source_tag text;
+  add column if not exists source_tag text;
 
 -- ─── search_pois_by_vibe — add source to return set ─────────────────────────
-create or replace function search_pois_by_vibe(
+drop function if exists search_pois_by_vibe(text, vector, text[], integer);
+
+create function search_pois_by_vibe(
   p_destination       text,
   p_query_embedding   vector(768),
   p_item_types        text[] default null,
@@ -28,6 +30,7 @@ create or replace function search_pois_by_vibe(
   description  text,
   lat          double precision,
   lng          double precision,
+  live_data    jsonb,
   source       text,
   similarity   float
 ) language sql stable as $$
@@ -39,17 +42,23 @@ create or replace function search_pois_by_vibe(
     p.description,
     p.lat,
     p.lng,
+    p.live_data,
     p.source,
     1 - (p.embedding <=> p_query_embedding) as similarity
   from poi_embeddings p
-  where lower(p.destination_name) = lower(p_destination)
+  where (
+      lower(p.destination_name) = lower(trim(p_destination))
+      or lower(trim(p_destination)) = any(p.destination_aliases)
+    )
     and (p_item_types is null or p.item_type = any(p_item_types))
   order by p.embedding <=> p_query_embedding
   limit p_limit;
 $$;
 
 -- ─── search_routes_by_vibe — add source to return set ───────────────────────
-create or replace function search_routes_by_vibe(
+drop function if exists search_routes_by_vibe(text, vector, text, integer);
+
+create function search_routes_by_vibe(
   p_destination       text,
   p_query_embedding   vector(768),
   p_pace              text default null,
@@ -81,7 +90,10 @@ create or replace function search_routes_by_vibe(
     1 - (r.embedding <=> p_query_embedding) as similarity
   from route_templates r
   where r.is_archived = false
-    and lower(r.destination_name) = lower(p_destination)
+    and (
+      lower(r.destination_name) = lower(trim(p_destination))
+      or lower(trim(p_destination)) = any(r.destination_aliases)
+    )
     and (p_pace is null or r.pace = p_pace)
   order by r.embedding <=> p_query_embedding
   limit p_limit;
