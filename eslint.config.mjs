@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The mobile app and shared package have their own toolchains (Expo /
+    // React Native) and are linted from within apps/mobile, not the web root.
+    "apps/**",
+    "packages/**",
   ]),
 ]);
 

@@ -1,0 +1,21 @@
+{
+  "name": "@travel-sync/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Framework-agnostic API contracts and a typed client shared by the web and mobile clients.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
