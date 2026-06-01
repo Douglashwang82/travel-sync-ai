@@ -634,6 +634,69 @@ html.scroll-reveal-ready .hero-word {
   animation-delay: calc(var(--word-i, 0) * 110ms + 60ms);
 }
 
+/* Intent-aware kicker swap — the rotating "who this is for" line. A single
+ * rise+fade so it reads as the page adapting, not as decoration. */
+@keyframes intent-rise {
+  0%   { opacity: 0; transform: translateY(0.5em); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.intent-swap { animation: intent-rise 520ms var(--ease-confirm) both; }
+
+/* Hero "plan assembles" scene — gentle ambient float so cards breathe at rest,
+ * plus the typing dots on the source chat bubble. Both collapse under the
+ * global reduced-motion rule. */
+@keyframes scene-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.scene-bob { animation: scene-float 6.2s ease-in-out infinite; }
+
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30%           { opacity: 1; transform: translateY(-1px); }
+}
+.typing-dot { animation: typing-dot 1.3s ease-in-out infinite; }
+
+/* Magnetic CTA — the single primary action springs toward the cursor, then
+ * eases home. Translation is driven by --mag-x/--mag-y set in JS; the spring
+ * easing lives here so reduced-motion can flatten it. */
+.btn-magnetic {
+  transform: translate3d(var(--mag-x, 0), var(--mag-y, 0), 0);
+  transition: transform var(--duration-morph) var(--spring-snappy),
+              box-shadow var(--duration-confirm) var(--ease-confirm);
+  will-change: transform;
+}
+.btn-magnetic:hover { box-shadow: 0 26px 60px -22px rgb(0 185 0 / 0.95); }
+.btn-magnetic:active { transform: translate3d(var(--mag-x, 0), var(--mag-y, 0), 0) scale(0.98); }
+
+/* Editorial scroll reveal — a calm rise + de-blur as sections enter. Opt in
+ * with [data-reveal]; reduced motion shows everything immediately (below). */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity 760ms var(--ease-confirm),
+    filter 760ms var(--ease-confirm),
+    transform 760ms var(--ease-confirm);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, filter, transform;
+}
+.reveal-ready [data-reveal][data-inview="true"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .intent-swap { animation: none !important; }
+}
+
 /* Blinking caret for the hero typewriter. */
 @keyframes cursor-blink {
   0%, 45% { opacity: 1; }

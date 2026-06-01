@@ -32,6 +32,9 @@ npx vitest run -t "majority closes vote"
 # LINE rich menu management (uses .env.local via tsx --env-file)
 npm run setup:rich-menu
 npm run delete:rich-menu
+
+# Route synthesis (uses .env.local via tsx --env-file)
+npm run synth:routes
 ```
 
 There is no `typecheck` script — `next build` is the type gate. Tests are isolated per file (`vitest.config.ts`) to reset module-level state (rate limiter, etc.).
