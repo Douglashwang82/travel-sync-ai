@@ -60,18 +60,28 @@ export interface VibeSearchInput {
   genId?: string;
 }
 
+export interface VibeSearchResult {
+  pois: PoiCandidate[];
+  /**
+   * The embedding generated for the vibe query, or null when the corpus
+   * fallback ran (embedding was unavailable). Passed to rerankCandidates
+   * and recordFeedback so the orchestrator doesn't re-embed.
+   */
+  queryEmbedding: number[] | null;
+}
+
 /**
  * Build the embedding query text from survey signals. Kept short and concrete —
  * embedding models match meaning, not adjective count.
  */
-function buildVibeQuery(input: VibeSearchInput): string {
+export function buildVibeQuery(input: VibeSearchInput): string {
   const vibes = (input.vibe ?? []).join(", ") || "balanced";
   const pace = input.pace ?? "balanced";
   const budget = input.budget ?? "mid";
   return `Travel experiences in ${input.destination} for a ${pace}-paced, ${budget}-budget trip with a ${vibes} vibe.`;
 }
 
-export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandidate[]> {
+export async function searchPoisByVibe(input: VibeSearchInput): Promise<VibeSearchResult> {
   const k = input.k ?? 30;
   const genId = input.genId;
   const db = createAdminClient();
@@ -82,7 +92,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
   } catch (err) {
     if (err instanceof GeminiUnavailableError) {
       logger.warn("[poi-engine] embedding unavailable, falling back to live text search", { genId });
-      return liveTextSearchFallback(input, k, genId);
+      return { pois: await liveTextSearchFallback(input, k, genId), queryEmbedding: null };
     }
     throw err;
   }
@@ -95,7 +105,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
   });
   if (error) {
     logger.error("[poi-engine] vector RPC failed", { genId, error: String(error.message ?? error) });
-    return liveTextSearchFallback(input, k, genId);
+    return { pois: await liveTextSearchFallback(input, k, genId), queryEmbedding: null };
   }
 
   const rows = (data ?? []) as Array<{
@@ -116,7 +126,7 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
       genId,
       destination: input.destination,
     });
-    return liveTextSearchFallback(input, k, genId);
+    return { pois: await liveTextSearchFallback(input, k, genId), queryEmbedding: null };
   }
 
   logger.info("[poi-engine] vector search", {
@@ -126,18 +136,21 @@ export async function searchPoisByVibe(input: VibeSearchInput): Promise<PoiCandi
     bottomSim: rows[rows.length - 1].similarity.toFixed(3),
   });
 
-  return rows.map((r) => ({
-    placeId: r.place_id,
-    name: r.name,
-    itemType: coerceItemType(r.item_type),
-    tags: r.tags ?? [],
-    description: r.description ?? "",
-    lat: r.lat,
-    lng: r.lng,
-    source: r.source,
-    similarity: r.similarity,
-    liveData: r.live_data ?? null,
-  }));
+  return {
+    pois: rows.map((r) => ({
+      placeId: r.place_id,
+      name: r.name,
+      itemType: coerceItemType(r.item_type),
+      tags: r.tags ?? [],
+      description: r.description ?? "",
+      lat: r.lat,
+      lng: r.lng,
+      source: r.source,
+      similarity: r.similarity,
+      liveData: r.live_data ?? null,
+    })),
+    queryEmbedding,
+  };
 }
 
 export interface PoiTextSearchInput {

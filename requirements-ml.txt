@@ -1,0 +1,10 @@
+# Python dependencies for offline ML training scripts.
+# Install with: pip install -r requirements-ml.txt
+# NOT required for the Next.js app — inference runs in TypeScript via reranker.ts.
+
+torch>=2.3.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+supabase>=2.4.0
+google-generativeai>=0.7.0
+tqdm>=4.66.0
