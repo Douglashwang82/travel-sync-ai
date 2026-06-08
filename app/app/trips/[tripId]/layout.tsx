@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/db";
 import { parseAppLocale, type AppLocale } from "@/lib/app-locale";
 import { readAppSessionCookie } from "@/lib/app-server";
 import type { Trip } from "@/lib/types";
-import { TripChatNavbar } from "@/components/app/trip-chat-navbar";
+import { TripGridsRail } from "@/components/app/trip-grids-rail";
 
 export const dynamic = "force-dynamic";
 
@@ -156,7 +156,7 @@ export default async function TripLayout({
           {copy.you}: {copy.role[role]}
         </span>
         {appUserId && (
-          <TripChatNavbar tripId={tripId} currentAppUserId={appUserId} />
+          <TripGridsRail tripId={tripId} currentAppUserId={appUserId} />
         )}
       </nav>
 

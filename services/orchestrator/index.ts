@@ -1,12 +1,19 @@
 import { after } from "next/server";
+import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/db";
 import { captureError } from "@/lib/monitoring";
-import { runOrchestrator } from "./runner";
+import { runOrchestrator, resolveDispatchedTask } from "./runner";
 import { getTool } from "./tools";
-import type { OrchestratorActionStatus, OrchestratorTrigger, ToolAutonomyMap, TripPlan } from "./types";
+import type {
+  DispatchedTask,
+  OrchestratorActionStatus,
+  OrchestratorTrigger,
+  ToolAutonomyMap,
+  TripPlan,
+} from "./types";
 import type { AgentAutonomy } from "@/services/agents/types";
 
-export { runOrchestrator } from "./runner";
+export { runOrchestrator, resolveDispatchedTask } from "./runner";
 export { listTools, getTool, listCustomGridAgents } from "./tools";
 export type * from "./types";
 
@@ -124,6 +131,128 @@ export async function wakeOrchestrator(tripId: string, reason: string): Promise<
       captureError(err, { context: "wakeOrchestrator.run", tripId, reason });
     }
   });
+}
+
+// ─── dispatched tasks ────────────────────────────────────────────────────────
+// One-off tasks dropped onto the rail's "Dispatched tasks" zone. Stored on the
+// orchestrator's `memory.dispatchedTasks` (newest first) and resolved by a
+// focused tool-use run. No dedicated table — the memory column is freeform.
+
+const MAX_DISPATCHED_TASKS = 50;
+
+function readDispatchedTasks(memory: Record<string, unknown> | null): DispatchedTask[] {
+  const raw = (memory as { dispatchedTasks?: unknown } | null)?.dispatchedTasks;
+  return Array.isArray(raw) ? (raw as DispatchedTask[]) : [];
+}
+
+export async function listDispatchedTasks(tripId: string): Promise<DispatchedTask[]> {
+  const orch = await getOrchestrator(tripId);
+  return orch ? readDispatchedTasks(orch.memory) : [];
+}
+
+/** Read-modify-write the dispatched-tasks list on the orchestrator's memory. */
+async function mutateDispatchedTasks(
+  orchestratorId: string,
+  fn: (tasks: DispatchedTask[]) => DispatchedTask[],
+): Promise<void> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("trip_orchestrators")
+    .select("memory")
+    .eq("id", orchestratorId)
+    .single();
+  const memory = (data?.memory as Record<string, unknown> | null) ?? {};
+  const next = fn(readDispatchedTasks(memory)).slice(0, MAX_DISPATCHED_TASKS);
+  await db
+    .from("trip_orchestrators")
+    .update({ memory: { ...memory, dispatchedTasks: next } })
+    .eq("id", orchestratorId);
+}
+
+function patchTask(
+  tasks: DispatchedTask[],
+  taskId: string,
+  patch: Partial<DispatchedTask>,
+): DispatchedTask[] {
+  return tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t));
+}
+
+export interface AddDispatchedTaskInput {
+  text: string;
+  messageId?: string | null;
+  createdBy?: string | null;
+}
+
+/**
+ * Record a dispatched task (status `pending`) and kick off its resolution. The
+ * resolution runs out-of-band via `after()` so the originating request returns
+ * immediately; the task row is the client's source of truth for status/outcome,
+ * polled by the rail. If `after()` isn't available (e.g. tests), we resolve
+ * inline as a fallback.
+ */
+export async function addDispatchedTask(
+  tripId: string,
+  input: AddDispatchedTaskInput,
+): Promise<DispatchedTask> {
+  const orch = await ensureOrchestrator(tripId);
+  const task: DispatchedTask = {
+    id: randomUUID(),
+    text: input.text.trim(),
+    messageId: input.messageId ?? null,
+    status: "pending",
+    summary: null,
+    runId: null,
+    createdBy: input.createdBy ?? null,
+    createdAt: new Date().toISOString(),
+    finishedAt: null,
+  };
+  await mutateDispatchedTasks(orch.id, (tasks) => [task, ...tasks]);
+
+  const runResolution = async () => {
+    await mutateDispatchedTasks(orch.id, (tasks) =>
+      patchTask(tasks, task.id, { status: "running" }),
+    );
+    const fresh = (await getOrchestrator(tripId)) ?? orch;
+    if (!fresh.enabled) {
+      await mutateDispatchedTasks(orch.id, (tasks) =>
+        patchTask(tasks, task.id, {
+          status: "failed",
+          summary: "AI planner is turned off for this trip.",
+          finishedAt: new Date().toISOString(),
+        }),
+      );
+      return;
+    }
+    const result = await resolveDispatchedTask(fresh, task.text);
+    await mutateDispatchedTasks(orch.id, (tasks) =>
+      patchTask(tasks, task.id, {
+        status: result.status === "success" ? "done" : "failed",
+        summary: result.summary,
+        runId: result.runId || null,
+        finishedAt: new Date().toISOString(),
+      }),
+    );
+  };
+
+  const markFailed = async (err: unknown) => {
+    captureError(err, { context: "dispatched_task_resolve", tripId, taskId: task.id });
+    await mutateDispatchedTasks(orch.id, (tasks) =>
+      patchTask(tasks, task.id, {
+        status: "failed",
+        summary: err instanceof Error ? err.message : "Resolution failed",
+        finishedAt: new Date().toISOString(),
+      }),
+    ).catch(() => {});
+  };
+
+  try {
+    after(() => runResolution().catch(markFailed));
+  } catch {
+    // No request scope (tests / scripts) — resolve inline.
+    await runResolution().catch(markFailed);
+  }
+
+  return task;
 }
 
 export interface UpdateOrchestratorInput {

@@ -127,7 +127,8 @@ const EN: DocsCopy = {
         title: "The web workspace",
         body: [
           "Trips — Browse every trip your LINE groups are planning, in one list.",
-          "Trip workspace — Itinerary, votes, expenses, packing list, documents and per-day plans for a single trip.",
+          "Trip workspace — A shared group chat room is the main view: everyone on the trip talks here alongside your AI planner. As you chat, the AI planner reads the conversation and, when it spots something worth tracking (flight prices, weather, hotel deals, packing, photos), it proposes a bento grid as a card right in the chat — tap Add grid to accept or Not now to dismiss. You can also hover a message: if it's something an agent can handle it shows a small ⚡ chip, and you can drag that message onto the grids rail to create the grid yourself.",
+          "Right rail — Your confirmed grids live here at the top; open one to see its latest output. Members and agent chats are in the People section below, and Trip tools links to the overview, itinerary, votes, expenses, ideas, map and packing pages.",
           "Map — Cross-trip map of every place that has been mentioned.",
           "Templates — Public trip templates you can fork into a new trip.",
           "Inbox — Notifications: reminders, vote outcomes, incidents and digests.",
@@ -231,7 +232,7 @@ const EN: DocsCopy = {
           "Templates — Publishable trip templates with likes, comments, access requests and grants.",
           "Orchestrator — LLM agent with bounded tool calls for the private chat and the in-app plan-master.",
           "Agents — Background agents (services/agents/) for scheduled, autonomous work.",
-          "Web workspace — /app/* pages backed by /api/app/* JSON endpoints, with LINE Login and email/password auth.",
+          "Web workspace — /app/* pages backed by /api/app/* JSON endpoints, with LINE Login and email/password auth. The trip workspace is a shared group chat room (trip_chat_threads kind='group'); posting a message wakes the per-trip orchestrator, which can propose a bento grid via the propose-only grids.add_agent action. Proposals surface as confirm/dismiss cards in the chat and, once confirmed, become custom_grids shown in the right rail. A message can also be classified on demand (POST /api/app/trips/[tripId]/chat/classify, LLM over the agent registry) and, if it maps to an agent, dragged from the chat onto the grids rail (native HTML5 DnD, MIME application/x-chat-task) to create the custom_grid directly — falling back to the prefilled Add-grid dialog when required config is missing.",
         ],
       },
       {
@@ -368,7 +369,8 @@ const ZH_TW: DocsCopy = {
         title: "Web 工作區",
         body: [
           "旅程 — 一次瀏覽所有 LINE 群組正在規劃中的旅程。",
-          "旅程工作區 — 行程、投票、支出、打包清單、文件與每日計畫。",
+          "旅程工作區 — 主畫面是共用的群組聊天室：所有成員與 AI 規劃助手都在這裡對話。當你們聊天時，AI 規劃助手會閱讀對話，發現值得追蹤的事項（機票價格、天氣、飯店優惠、打包、照片）時，會直接在聊天中以卡片形式建議一個 bento 格子 — 點「新增格子」接受，或「暫時不要」忽略。你也可以把游標移到訊息上：若該訊息是某個代理人能處理的任務，會顯示一個 ⚡ 標記，將該訊息拖曳到右側欄的格子區即可自行建立對應的格子。",
+          "右側欄 — 已確認的格子顯示在最上方，點開即可查看最新結果。成員與代理人對話在下方的「成員」區，而「旅程工具」連到總覽、行程、投票、支出、點子、地圖與打包頁面。",
           "地圖 — 跨旅程地圖，顯示曾被提及的所有地點。",
           "範本 — 公開的旅程範本，可一鍵 Fork 成新旅程。",
           "收件匣 — 通知：提醒、投票結果、事件處理與摘要。",
@@ -472,7 +474,7 @@ const ZH_TW: DocsCopy = {
           "範本 — 可發佈的旅程範本，含 Like、留言、存取請求與授權。",
           "Orchestrator — 為私訊與 Web App 計畫管理用的 LLM agent，含工具呼叫上限。",
           "Agents — services/agents/ 底下的常駐型自動代理人。",
-          "Web 工作區 — /app/* 頁面背後是 /api/app/* JSON 端點，支援 LINE Login 與 Email/Password 登入。",
+          "Web 工作區 — /app/* 頁面背後是 /api/app/* JSON 端點，支援 LINE Login 與 Email/Password 登入。旅程工作區是一個共用的群組聊天室（trip_chat_threads kind='group'）；發送訊息會喚醒該旅程的 orchestrator，它可透過 propose-only 的 grids.add_agent 動作建議一個 bento 格子。建議會以確認／忽略卡片的形式出現在聊天中，確認後即成為顯示在右側欄的 custom_grids。訊息也可以即時分類（POST /api/app/trips/[tripId]/chat/classify，以 LLM 比對代理人清單）；若對應到某個代理人，便可從聊天直接拖曳到右側欄格子區（原生 HTML5 拖放，MIME application/x-chat-task）以直接建立 custom_grid，若缺少必填設定則退回預先填好的新增格子對話框。",
         ],
       },
       {

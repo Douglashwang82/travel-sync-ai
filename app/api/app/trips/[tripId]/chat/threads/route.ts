@@ -8,7 +8,7 @@ type RouteContext = { params: Promise<{ tripId: string }> };
 export interface ChatThread {
   id: string;
   tripId: string;
-  kind: "member_dm" | "agent";
+  kind: "member_dm" | "agent" | "group";
   memberAppUserIdLo: string | null;
   memberAppUserIdHi: string | null;
   agentCustomGridId: string | null;
@@ -23,6 +23,10 @@ const OpenSchema = z.union([
   z.object({
     kind: z.literal("agent"),
     customGridId: z.string().uuid(),
+  }),
+  // The trip's singleton group room — every member + the AI planner.
+  z.object({
+    kind: z.literal("group"),
   }),
 ]);
 
@@ -44,6 +48,7 @@ function rowToThread(row: Record<string, unknown>): ChatThread {
  * Idempotently opens (or returns) a chat thread for either:
  *   - a 1:1 DM with another trip member (kind: "member_dm")
  *   - the AI agent backing one of the trip's custom_grids (kind: "agent")
+ *   - the trip's singleton group room (kind: "group")
  */
 export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { tripId } = await ctx.params;
@@ -66,6 +71,41 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   }
 
   const db = createAdminClient();
+
+  if (parsed.data.kind === "group") {
+    // One group room per trip (enforced by a partial unique index). Return the
+    // existing room, or create it — falling back to a re-select if a concurrent
+    // open won the unique index first (this route is hit on every chat mount).
+    const { data: existing } = await db
+      .from("trip_chat_threads")
+      .select("*")
+      .eq("trip_id", tripId)
+      .eq("kind", "group")
+      .maybeSingle();
+    if (existing) return NextResponse.json({ thread: rowToThread(existing) });
+
+    const { data: created } = await db
+      .from("trip_chat_threads")
+      .insert({ trip_id: tripId, kind: "group" })
+      .select("*")
+      .single();
+    if (created) {
+      return NextResponse.json({ thread: rowToThread(created) }, { status: 201 });
+    }
+
+    const { data: raced } = await db
+      .from("trip_chat_threads")
+      .select("*")
+      .eq("trip_id", tripId)
+      .eq("kind", "group")
+      .maybeSingle();
+    if (raced) return NextResponse.json({ thread: rowToThread(raced) });
+
+    return NextResponse.json(
+      { error: "Failed to open thread", code: "DB_ERROR" },
+      { status: 500 },
+    );
+  }
 
   if (parsed.data.kind === "member_dm") {
     if (parsed.data.targetAppUserId === auth.appUserId) {

@@ -13,6 +13,7 @@ export interface AppMember {
   lineUserId: string;
   appUserId: string | null;
   displayName: string | null;
+  avatarUrl: string | null;
   role: string;
   joinedAt: string;
   source: "line_group" | "trip_member";
@@ -56,13 +57,15 @@ export async function GET(
 
     const lineUserIds = (lineMembers ?? []).map((m) => m.line_user_id as string);
     const appUserByLineId = new Map<string, string>();
+    const avatarByLineId = new Map<string, string | null>();
     if (lineUserIds.length) {
       const { data: appUsers } = await db
         .from("app_users")
-        .select("id, line_user_id")
+        .select("id, line_user_id, avatar_url")
         .in("line_user_id", lineUserIds);
       for (const u of appUsers ?? []) {
         appUserByLineId.set(u.line_user_id as string, u.id as string);
+        avatarByLineId.set(u.line_user_id as string, (u.avatar_url as string | null) ?? null);
       }
     }
 
@@ -72,6 +75,7 @@ export async function GET(
         lineUserId,
         appUserId: appUserByLineId.get(lineUserId) ?? null,
         displayName: (m.display_name as string | null) ?? null,
+        avatarUrl: avatarByLineId.get(lineUserId) ?? null,
         role: m.role as string,
         joinedAt: m.joined_at as string,
         source: "line_group",
@@ -83,7 +87,7 @@ export async function GET(
   const { data: tripMembers, error: tmError } = await db
     .from("trip_members")
     .select(
-      "role, joined_at, line_user_id, app_users!inner(id, email, display_name)"
+      "role, joined_at, line_user_id, app_users!inner(id, email, display_name, avatar_url)"
     )
     .eq("trip_id", tripId)
     .is("left_at", null);
@@ -104,6 +108,7 @@ export async function GET(
       lineUserId,
       appUserId: (user.id as string | null) ?? null,
       displayName: (user.display_name as string | null) ?? null,
+      avatarUrl: (user.avatar_url as string | null) ?? null,
       role: m.role as string,
       joinedAt: m.joined_at as string,
       source: "trip_member",

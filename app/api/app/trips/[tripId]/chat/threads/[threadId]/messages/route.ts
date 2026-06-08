@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db";
 import { requireAppTripAccess } from "@/lib/app-server";
 import { getAgent } from "@/services/agents/registry";
+import { wakeOrchestrator } from "@/services/orchestrator";
 import {
   generateConversation,
   GeminiUnavailableError,
@@ -186,6 +187,13 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       parsed.data.content,
       userMessage.id,
     );
+  }
+
+  // In the group room, a member's message wakes the per-trip orchestrator so
+  // the AI planner reads the conversation and can propose a grid. wakeOrchestrator
+  // returns fast (it schedules the actual run via Next.js `after()`).
+  if (result.thread.kind === "group") {
+    await wakeOrchestrator(tripId, "web group chat message");
   }
 
   return NextResponse.json({ message: userMessage, agentMessage }, { status: 201 });

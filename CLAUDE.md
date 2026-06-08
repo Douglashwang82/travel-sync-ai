@@ -81,7 +81,7 @@ These live in `.agents/rules/`; the important ones to internalize:
 - **No deprecated packages.** Prefer latest stable Supabase v2 patterns; do not introduce v1 env-var conventions.
 - **Never delete existing tests.** If a change breaks a test, update the test or revert the change.
 - **MVP discipline:** Boring tech over experimental. If a feature would take >4h, propose a manual workaround or SaaS shortcut instead.
-
+- **Must Have ID** Every Html element should have a unique ID assigned to them so user can assign tasks base on the IDs.
 ## Documentation surface
 
 The `/app/docs` page is the canonical project doc. **Every code change that touches user-visible behavior, the architecture, an HTTP route, or the database must keep it in sync.** Some of that is automatic; some requires editing `lib/docs/copy.ts`. Know which is which before assuming the docs are still correct.
