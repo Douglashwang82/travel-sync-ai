@@ -12,23 +12,84 @@
   ],
   "routes": [
     {
-      "title": "青森春泉 滑雪一日",
-      "summary": "青森春泉滑雪場坐落於壯麗的岩木山山腳下，共5條纜車、22條雪道，包含最大傾斜角30度的高級雪道。SKI IN、SKI OUT的設計，滑完雪直接回飯店泲湯放鬆。 Tohoku's northernmost major resort, at the base of Mt. Iwaki. Open-air onsen looks out over the Sea of Japan. Includes two covered high-speed quads and a gondola.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "青森春泉 Aomori Spring 滑雪一日",
+      "summary": "岩木山山腳的 Aomori Spring，5 條纜車 22 條雪道，最大斜度 30 度，Ski-in / Ski-out 飯店與溫泉。 Tohoku's northernmost major resort under Mt Iwaki: covered quads, gondola, ski-in onsen lodge.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "aomori-spring"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["aomori-spring"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "八甲田 Hakkoda 山岳一日",
+      "summary": "Hakkoda 纜車雪場以樹冰、Powder backcountry 與少壓雪聞名，是 Tohoku 行家聖地。 Hakkoda ropeway: backcountry, minimal grooming, the famous Juhyo snow monsters.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["hakkoda-ropeway"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Owani Onsen 大鰐溫泉 滑雪一日",
+      "summary": "弘前南鄰的大鰐溫泉滑雪場，邊滑邊泡湯，Tohoku 經典慢遊。 Hirosaki-area onsen-town resort: relaxed Tohoku ski-and-soak combo.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["owani-onsen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Moya Hills 滑雪一日",
+      "summary": "從青森車站僅 30 分鐘的 Moya Hills 雪場，初學者友善並提供夜間滑雪。 30 min from JR Aomori; beginner-friendly with night skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "nightlife", "city"],
+      "pace": "chill",
+      "place_ids": ["moya-hills"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Mt Iwaki 岩木山 滑雪一日",
+      "summary": "岩木山 Bairin 雪場與背景津輕平原雪景，Aomori Spring 旁的另一條家庭路線。 Mt Iwaki Bairin runs with views over Tsugaru plain; family-oriented sister to Aomori Spring.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "chill",
+      "place_ids": ["iwaki-bairin"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hakkoda 樹冰 + Sukayu 酸湯溫泉",
+      "summary": "上午八甲田纜車賞樹冰滑行 → 下午酸湯溫泉千人風呂浸泡。 Hakkoda ropeway morning, Sukayu Onsen's hinoki Thousand-Person Bath afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hakkoda-ropeway", "sukayu-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Aomori Spring + 弘前城雪景",
+      "summary": "上午 Aomori Spring 滑雪 → 下午弘前城雪見散策與蘋果派下午茶。 Aomori Spring skiing then Hirosaki Castle snow walk and apple-pie tea.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["aomori-spring", "hirosaki-castle", "hirosaki-apple-cafe"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Aomori 3 日深度",
+      "summary": "Day1 Hakkoda + 酸湯、Day2 Aomori Spring、Day3 Owani Onsen + 大間鮪魚午餐。 Day 1 Hakkoda + Sukayu → Day 2 Aomori Spring → Day 3 Owani + Oma tuna lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "foodie", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hakkoda-ropeway", "sukayu-onsen", "aomori-spring", "owani-onsen-ski", "oma-tuna-market"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "津輕半島 雪見列車 + 半日 Hakkoda",
+      "summary": "上午津輕鐵道 Stove 列車 → 午後 Hakkoda 半日滑雪。 Tsugaru Stove-train scenic morning, Hakkoda half-day ski afternoon.",
+      "vibe_tags": ["snow", "winter", "scenic", "train", "ski"],
+      "pace": "balanced",
+      "place_ids": ["tsugaru-stove-train", "hakkoda-ropeway"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "弘前 蘋果園 + 滑雪半日",
+      "summary": "弘前蘋果觀光園品嘗蘋果汁 → 下午 Owani Onsen 半日滑雪。 Hirosaki apple orchards in the morning, Owani Onsen ski half-day.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "local"],
+      "pace": "balanced",
+      "place_ids": ["hirosaki-apple-park", "owani-onsen-ski"],
+      "pinned_vibes": ["foodie"]
     }
   ]
 }

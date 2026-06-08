@@ -12,243 +12,500 @@
   ],
   "routes": [
     {
-      "title": "白馬八方尾根 滑雪一日",
-      "summary": "長野是日本比較罕見的內陸縣之一，被稱作日本的屋脊。這裡廣為人知的是白馬八方尾根，這個曾經舉辦過1998年冬奥運會的滑雪場，是日本知名的滑雪勝地。 Hakuba Valley's largest and most central resort; hosted the 1998 Olympic alpine events. Some of the steepest piste in the valley.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "白馬 Happo-One 滑雪一日",
+      "summary": "Hakuba Valley 旗艦、1998 冬奧 Alpine 場地，雪道最大、最具挑戰。 Hakuba Valley flagship & 1998 Olympic alpine venue: steepest pitches in the valley.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "hakuba-happo-one"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hakuba-happo-one"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "栀池高原 滑雪一日",
-      "summary": "相當受初中級者歡迎的滑雪場，適合全家同遊，超寬敞的初中級滑道佔了全體的80%，緩斜面全長14,000m，箱型纜車直達山頂。 Hakuba Valley resort renowned for the widest, gentlest greens in the area. 80% beginner / intermediate; 4.6 km longest run; lift-accessed tree runs above.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "adventure"
-      ],
+      "title": "栂池高原 Tsugaike 滑雪一日",
+      "summary": "Hakuba Valley 最寬廣綠色道、80% 初中級、4.6 公里長下滑、林間樹滑。 Hakuba Valley's widest greens: 80% beginner/intermediate, 4.6 km longest, tree skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "tree-skiing"],
       "pace": "balanced",
-      "place_ids": [
-        "tsugaike-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["tsugaike-kogen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "野澤温泉 滑雪一日",
-      "summary": "飄溢著温泉香味，恬静安詳的野澤温泉村充滿了溫暖人心的魅力。以豐富的泉量而自豪的温泉，是日本Mt.6六大高山温泉滑雪区之一。 MT.6 resort with an attached traditional onsen town. 50 km of trails, 10 km top-to-bottom run, two main gondolas.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "野澤温泉 Nozawa Onsen 滑雪一日",
+      "summary": "Mt.6 老字號 + 溫泉鄉，50 公里雪道、10 公里長下滑。 Mt.6 member with attached onsen town: 50 km of trails, 10 km top-to-bottom.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "nozawa-onsen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["nozawa-onsen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "志賀高原 滑雪一日",
-      "summary": "長野！這個以高山風光著稱的滑雪大縣，志賀高原是為其中著名的滑雪勝地之一(1998年長野冬季奥運會滑雪的比賽主場地)。『日本六大高山滑雪度假村』(MT.6)中的三個都在長野縣。 Japan's largest interconnected ski area: 18 sub-resorts, ~50 interconnected lifts, 80+ km of trails. Hosted 1998 Olympic giant slalom.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "志賀高原 Shiga Kogen 滑雪一日",
+      "summary": "日本最大相連雪場：18 場、~50 部纜車、80+ 公里雪道、1998 奧運場地。 Japan's largest interconnected: 18 sub-resorts, ~50 lifts, 80+ km, Olympic legacy.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "shiga-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["shiga-kogen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "北志賀龍王 滑雪一日",
-      "summary": "搭乘著SKYLAND EXPRESS箱型纜車上山，從山頂一覽北信濃的美麗山景，雪場有超過一半的初中級滑道，讓初學者在學習上沒有壓力。 166-passenger Skyland Express ropeway to the SORA Terrace at 1,770 m. Famous Kiotoshi advanced course at 36°.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "adventure"
-      ],
+      "title": "北志賀龍王 Ryuoo 滑雪一日",
+      "summary": "166 人 Sky Ropeway 直上 1,770 公尺 SORA Terrace、Kiotoshi 36° 名道。 166-pax Skyland ropeway to SORA Terrace at 1,770 m; the famous 36° Kiotoshi run.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "ryuoo-ski-park"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["ryuoo-ski-park"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "白樺池之平 滑雪一日",
-      "summary": "白樺高原位處號稱「日本小瑞士」的地帶。海拔超過 1400m, 加上高品質的粉雪, 白樺高原在日本也受到許多滑雪客的稱許。 Family resort attached to Ikenotaira Hotel. High sunshine rate (~80%). Beginner-friendly with strong ski-school presence.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "family"
-      ],
+      "summary": "白樺高原家庭雪場，海拔 1,400 公尺、晴天率 80%。 Family resort at 1,400 m with ~80% sunny days; strong ski school.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family"],
       "pace": "balanced",
-      "place_ids": [
-        "shirakaba-ikenotaira"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["shirakaba-ikenotaira"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "木島平 滑雪一日",
-      "summary": "木島平滑雪場位於長野縣，信州是自古至今長野縣的別稱。木島平全區有7條纜車，10條滑道。最長滑走距離可達 3公里。 Rebranded as 'Snow Resort Romance no Kamisama' for 2023/24. Quiet, beginner-friendly Iiyama-area resort.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "family"
-      ],
+      "title": "木島平 Kijimadaira 滑雪一日",
+      "summary": "飯山 Kijimadaira（Romance no Kamisama）quiet family resort。 Iiyama-area Kijimadaira ('Romance no Kamisama'): quiet beginner-leaning resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
       "pace": "balanced",
-      "place_ids": [
-        "kijimadaira"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["kijimadaira"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "軽井澤 滑雪一日",
-      "summary": "由王子飯店集團所屬的軽井澤王子飯店滑雪場，海拔1155m，從山頂仰視軽井澤街道美不勝收，號稱90%晴天率的軽井澤讓你盡情享受滑雪的藍天美景。軽井澤雪場旁邊即是新幹線車站。 10-minute walk from Karuizawa Shinkansen station; one of the easiest ski resorts to reach from Tokyo. 90% sunny days, heavy snowmaking, beginner-leaning.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "family"
-      ],
-      "pace": "balanced",
-      "place_ids": [
-        "karuizawa-prince"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "title": "輕井澤 Karuizawa Prince 滑雪一日",
+      "summary": "新幹線站旁，雪場海拔 1,155 公尺、90% 晴天率。 10 min walk from Karuizawa Shinkansen; 1,155 m top, 90% sunny days.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["karuizawa-prince"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "斑尾高原 滑雪一日",
-      "summary": "斑尾高原位於長野縣北面，介於野澤温泉滑雪場及妙高高原滑雪場之間。斑尾高原滑雪場中60%為非壓雪雪道，可盡情享受粉雪。斑尾高原滑雪場與斑尾東急滑雪場相連。 Japan's first tree-skiing-focused resort: 10 official glades, 60% ungroomed. Connected via pass with neighbouring Tangram. Famed for 'Madapow'.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "adventure"
-      ],
+      "title": "斑尾高原 Madarao 滑雪一日",
+      "summary": "日本第一個樹滑導向雪場，60% 未壓雪、Madapow 樹間粉雪。 Japan's first tree-skiing-focused resort: 60% ungroomed, 'Madapow' glades.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
       "pace": "balanced",
-      "place_ids": [
-        "madarao-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["madarao-kogen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "菅平高原 滑雪一日",
-      "summary": "菅平高原滑雪場坐落在海拔2,207m的根子岳山腳下的高原上，是一個被壯觀的山景和美麗的自然環境所包圍的地方。它因為有著和瑞士的達沃斯一樣的景色，而被稱為「日本達沃斯」。 Three linked zones (Pine Beak, Taro, Davos). 60 courses across 175 ha; nicknamed 'Davos of Japan' for its high-altitude setting.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "菅平高原 Sugadaira 滑雪一日",
+      "summary": "Pine Beak / Taro / Davos 3 區、60 條雪道 175 公頃，「日本達沃斯」。 Three linked zones: 60 courses across 175 ha, 'Davos of Japan'.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "sugadaira-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["sugadaira-kogen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "白馬 47 / 五龍 連通滑雪一日",
-      "summary": "白馬五龍與 Hakuba 47 山頂相連，共用同一張通票，合計 16 條雪道、垂直落差 926 公尺、最長距離 5,000 公尺，共有 20 部纜車（含兩座 Gondola）。Hakuba 47 以細緻的壓雪與全日本最大的 snowpark 聞名，五龍側則以開闊雪道與夜間滑雪取勝。 Hakuba 47 and Goryu share a top-station boundary and one lift pass: 20 lifts (2 gondolas), 926 m vertical, 5 km longest run, plus Japan's biggest park.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "nightlife",
-        "park",
-        "adventure"
-      ],
+      "title": "Hakuba 47 / Goryu 連通滑雪一日",
+      "summary": "Hakuba 47 與五龍山頂相連，共 20 部纜車、926m 落差、5km 長下滑。 47 + Goryu linked at the top: 20 lifts, 926 m vertical, 5 km longest run.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "nightlife", "adventure"],
       "pace": "packed",
-      "place_ids": [
-        "hakuba-47-goryu"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hakuba-47-goryu"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "白馬岩岳 雪場一日",
-      "summary": "白馬岩岳 Snow Field 擁有白馬三山 360 度全景，雪道穿過寬廣的山頂雪原，雪況穩定、樹林滑行條件佳，較適合中級者與板友。山頂的 Hakuba Mountain Harbor 觀景台、Cafe 與 Yu-Topia 溫泉設施讓行程更舒適。 Hakuba Valley resort with the iconic Mountain Harbor viewpoint over the Northern Alps. Reliable snow, great tree skiing, and a relaxed mid-mountain cafe scene.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "scenic",
-        "cafe",
-        "relaxed"
-      ],
+      "title": "Hakuba Iwatake 滑雪一日",
+      "summary": "Hakuba 三山 360° 全景、Mountain Harbor 觀景台與 Cafe。 Iconic Mountain Harbor viewpoint over the Northern Alps; relaxed mid-mountain cafe.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "cafe", "relaxed"],
       "pace": "balanced",
-      "place_ids": [
-        "hakuba-iwatake"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hakuba-iwatake"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "白馬 Cortina 雪場一日",
-      "summary": "位於白馬山谷最北端、隔著樹林與栂池高原相連的 Hakuba Cortina，因豐沛的降雪量、容易進入的林間滑雪、以及山腳那座造型奇特的綠色屋頂飯店而聞名。 The northernmost Hakuba Valley resort: deepest snowfall, glade-skiing-friendly terrain, and a Tyrolean-style base lodge.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "powder",
-        "tree-skiing",
-        "adventure"
-      ],
+      "title": "Hakuba Cortina 滑雪一日",
+      "summary": "Hakuba Valley 最北、降雪量最多、樹間 glade 最棒。 Northernmost Hakuba Valley resort: deepest snowfall, best glades, Tyrolean lodge.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
       "pace": "balanced",
-      "place_ids": [
-        "hakuba-cortina"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hakuba-cortina"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hakuba Norikura 滑雪一日",
+      "summary": "栂池北鄰的 Hakuba Norikura，與 Cortina 通票連線、樹滑友善。 Linked-pass with Cortina; gentle and glades-rich.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-norikura"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hakuba Sanosaka 滑雪一日",
+      "summary": "Hakuba Sanosaka 雪場，小型、家庭、湖景。 Tiny Hakuba family resort with Lake Aoki views.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "chill",
+      "place_ids": ["hakuba-sanosaka"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Hakuba Minekata 滑雪一日",
+      "summary": "Hakuba Minekata mini 雪場，少人、雪況穩。 Minekata mini-resort: quiet, reliable.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["hakuba-minekata"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Jigatake 鹿島槍 滑雪一日",
+      "summary": "Hakuba 南部 Kashimayari 雪場，3 區段、家庭雪場。 South Hakuba's Kashimayari: 3 zones, family-friendly.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "balanced",
+      "place_ids": ["kashimayari-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Shiga Kogen Yakebitaiyama 滑雪一日",
+      "summary": "志賀高原 Yakebitaiyama 區段，2,000 公尺高地、雪況最穩。 Shiga's Yakebitaiyama zone: highest at 2,000 m, most reliable powder.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["shiga-yakebitaiyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Shiga Kogen Okushiga 滑雪一日",
+      "summary": "志賀高原 Okushiga 區段，幽靜林間 + 私房粉雪。 Shiga's Okushiga zone: quiet glades, secret powder.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["shiga-okushiga"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Shiga Kogen Ichinose 滑雪一日",
+      "summary": "志賀高原 Ichinose 區段，最熱鬧 + 雪後夜生活。 Shiga's Ichinose zone: most lively base village with apres-ski.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife"],
+      "pace": "balanced",
+      "place_ids": ["shiga-ichinose"],
+      "pinned_vibes": ["nightlife"]
+    },
+    {
+      "title": "Shiga Kogen Kumanoyu 滑雪一日",
+      "summary": "志賀高原 Kumanoyu 區段，第一條纜車、歷史源頭。 Shiga's Kumanoyu zone: where it all started in 1948.",
+      "vibe_tags": ["ski", "snow", "winter", "heritage", "scenic"],
+      "pace": "chill",
+      "place_ids": ["shiga-kumanoyu"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Shiga Kogen Yokoteyama 滑雪一日",
+      "summary": "志賀高原 Yokoteyama / Shibutoge 區段，2,307 公尺、日本最高雪道。 Shiga's Yokoteyama: 2,307 m, Japan's highest-elevation lift.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["shiga-yokoteyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "野澤温泉 + Nakao 街道散步",
+      "summary": "上午 Nozawa Onsen 全山滑雪 → 下午街道 13 共同湯巡禮。 Nozawa skiing then a stroll between the 13 free public baths.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "culture"],
+      "pace": "balanced",
+      "place_ids": ["nozawa-onsen", "nozawa-soto-yu-walk"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "野澤 火祭 1 月 15 + 滑雪",
+      "summary": "Nozawa 火祭夜祭典 + 隔日全山滑雪。 Nozawa Fire Festival (Jan 15) + skiing the next day.",
+      "vibe_tags": ["ski", "snow", "winter", "festival", "culture"],
+      "pace": "packed",
+      "place_ids": ["nozawa-fire-festival", "nozawa-onsen"],
+      "pinned_vibes": ["festival"]
+    },
+    {
+      "title": "Hakuba Valley 全 10 場通票 3 日",
+      "summary": "Hakuba Valley 10 場通票 3 日，每日不同雪場挑戰。 Hakuba Valley 10-resort 3-day pass: a new resort each day.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "luxury"],
+      "pace": "packed",
+      "place_ids": ["hakuba-happo-one", "tsugaike-kogen", "hakuba-47-goryu", "hakuba-iwatake", "hakuba-cortina"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Happo-One + Snat Bar Wine 夜",
+      "summary": "上午 Happo-One 全山 → 晚上 Hakuba Snat Bar 酒吧夜晚。 Happo-One day + Snat Bar wine apres in Echoland.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "wine"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-happo-one", "hakuba-snat-bar"],
+      "pinned_vibes": ["nightlife"]
+    },
+    {
+      "title": "栂池 + 八方溫泉",
+      "summary": "上午栂池滑雪 → 下午八方溫泉宿。 Tsugaike skiing then Happo Onsen ryokan.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["tsugaike-kogen", "happo-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Karuizawa Prince + 輕井澤 Outlet",
+      "summary": "上午 Karuizawa Prince 雪場 → 下午輕井澤 Outlet 購物。 Karuizawa Prince ski morning, Karuizawa Outlet afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "shopping", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["karuizawa-prince", "karuizawa-outlet"],
+      "pinned_vibes": ["shopping"]
+    },
+    {
+      "title": "Shiga Kogen 全山 4 日通票",
+      "summary": "Shiga Kogen 4 日通票，18 場每日換滑。 Shiga Kogen 4-day all-mountain pass: switch resorts daily.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["shiga-kogen", "shiga-yakebitaiyama", "shiga-okushiga", "shiga-yokoteyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "野澤 7 日 滑雪 + 溫泉慢遊",
+      "summary": "野澤 7 日：每日滑雪 + 每晚一處共同湯。 Nozawa week: ski every day, soak in a different public bath each night.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "culture"],
+      "pace": "balanced",
+      "place_ids": ["nozawa-onsen", "nozawa-soto-yu-walk"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Hakuba 47 Park + 晚上 Pizzakaya",
+      "summary": "全日 Hakuba 47 Park 玩法 + Pizzakaya 晚餐。 Hakuba 47 park session + Pizzakaya dinner.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-47-goryu", "pizzakaya-hakuba"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Iwatake Mountain Harbor + Cafe 早午餐",
+      "summary": "Mountain Harbor 早午餐 → 下午 Iwatake 半日滑雪。 Mountain Harbor brunch then Iwatake half-day ski.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "cafe", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-mountain-harbor", "hakuba-iwatake"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Madarao Tree Skiing + Tangram",
+      "summary": "Madarao Park West 樹滑早場 + Tangram 林間下午。 Madarao Park West glades morning + Tangram trees afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "tree-skiing", "powder"],
+      "pace": "packed",
+      "place_ids": ["madarao-kogen", "tangram-ski-circus"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "Hakuba Onsen 露天巡禮 + 半日 Happo",
+      "summary": "上午 Happo 半日 → 下午八方 / 倉下露天巡禮。 Happo half-day + tour of Happo and Kurashita rotenburo.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-happo-one", "kurashita-no-yu"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Nozawa + Iiyama 雪見列車",
+      "summary": "Day1 Nozawa、Day2 飯山雪見列車 + 街道散步。 Day 1 Nozawa, Day 2 Iiyama snow-train + town walk.",
+      "vibe_tags": ["ski", "snow", "winter", "train", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["nozawa-onsen", "iiyama-snow-train"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Tokyo → Hakuba 1 日 Express",
+      "summary": "Tokyo 早 Shinkansen + 巴士 → Hakuba Happo 全日 → 晚回 Tokyo。 Tokyo Shinkansen + bus → Happo full day → return.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient"],
+      "pace": "packed",
+      "place_ids": ["hakuba-happo-one"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Nagano 5 日 滑雪城市行",
+      "summary": "Day1-2 Nozawa、Day3 Shiga Kogen、Day4 Hakuba、Day5 善光寺 + 城下町。 5-day grand: Nozawa → Shiga → Hakuba → Zenkoji & city.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "onsen", "adventure"],
+      "pace": "packed",
+      "place_ids": ["nozawa-onsen", "shiga-kogen", "hakuba-happo-one", "zenkoji-temple"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Madarao + Tangram + Iiyama 慢遊",
+      "summary": "Day1 Madarao、Day2 Tangram、Day3 飯山町雪見。 Day 1 Madarao, Day 2 Tangram, Day 3 Iiyama town.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["madarao-kogen", "tangram-ski-circus", "iiyama-town"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "Hakuba 蕎麥麵 + 滑雪",
+      "summary": "上午 Iwatake 半日 → 中午 Hakuba 在來蕎麥麵 → 下午 Goryu 半日。 Iwatake AM + Hakuba soba lunch + Goryu PM.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hakuba-iwatake", "hakuba-soba-house", "hakuba-47-goryu"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "白馬山岳 backcountry 1 日",
+      "summary": "Happo / Cortina backcountry gate 嚮導 1 日。 Hakuba backcountry guided day from Happo / Cortina gates.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-backcountry-guide"],
+      "pinned_vibes": ["backcountry"]
+    },
+    {
+      "title": "戶隱 Togakushi 滑雪一日",
+      "summary": "長野市旁戶隱雪場，林間古寺氛圍、家庭友善。 Togakushi ski hill outside Nagano City: ancient-shrine forest ambience.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "family"],
+      "pace": "chill",
+      "place_ids": ["togakushi-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "X-JAM 高井富士 滑雪一日",
+      "summary": "高井富士 X-JAM 雪場，板友 + Park 群族。 X-JAM Takai Fuji: snowboarder + park scene.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["x-jam-takai-fuji"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "御嶽 Ontake 滑雪一日",
+      "summary": "御嶽 Ontake 雪場，高地、雪質穩定、活火山景色。 Ontake resort: high altitude, reliable snow, active-volcano backdrop.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "powder"],
+      "pace": "balanced",
+      "place_ids": ["ontake-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Norikura 乘鞍高原 滑雪一日",
+      "summary": "Norikura 高原雪場，背山溫泉 + 雪原。 Norikura Kogen with onsen base village and broad snowfields.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["norikura-kogen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Pilatus Tateshina 滑雪一日",
+      "summary": "蓼科 Pilatus Tateshina 雪場，2,200m Ropeway、長野市郊。 Pilatus Tateshina: 2,200 m ropeway, near Nagano city.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["pilatus-tateshina"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Yawata-no-Sato / 飯綱 滑雪一日",
+      "summary": "長野市旁 Iizuna 高原雪場。 Iizuna Kogen near Nagano city: family-friendly cruisers.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["iizuna-kogen"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "湯之丸 Yunomaru 滑雪一日",
+      "summary": "上田 Yunomaru 雪場，林間 + 家庭友善。 Ueda's Yunomaru: family glades and intermediate cruisers.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["yunomaru-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Asama 2000 Park 滑雪一日",
+      "summary": "Asama 2,000 Park 高地雪場，輕井澤上方。 Asama 2000 Park high-altitude resort above Karuizawa.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["asama-2000-park"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Geihoku 木曽福島 滑雪一日",
+      "summary": "木曽福島雪場，山中私房地、雪況穩。 Kiso Fukushima local resort: quiet and reliable.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed", "family"],
+      "pace": "chill",
+      "place_ids": ["kiso-fukushima-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Akakura + 妙高 全 5 日",
+      "summary": "Day1-2 Akakura、Day3 Lotte Arai、Day4 Suginohara、Day5 池之平。 5-day Myoko stay across Akakura, Arai, Suginohara, Ikenotaira.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "powder", "luxury"],
+      "pace": "packed",
+      "place_ids": ["akakura-onsen", "lotte-arai", "myoko-suginohara", "ikenotaira-myoko"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "白馬五龍 高架 + Goryu 晚餐",
+      "summary": "上午五龍滑雪 + 晚餐 Goryu 酒場山屋。 Goryu skiing + dinner at Goryu Sakaba lodge.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "nightlife"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-47-goryu", "goryu-sakaba"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Hakuba 47 + 黑部水煮蛋早餐",
+      "summary": "上午 Hakuba 47 半日 → 中午黑部山屋水煮蛋。 Hakuba 47 morning, Hakuba mountain-lodge brunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-47-goryu", "hakuba-mountain-lodge-brunch"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Hakuba Cortina + Wadano Forest 飯店",
+      "summary": "Cortina 全日 + Wadano Forest Hotel 法式晚餐。 Cortina day + Wadano Forest Hotel French dinner.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-cortina", "wadano-forest-hotel"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Madarao + 飯山 蕎麥麵晚餐",
+      "summary": "Madarao 全日 + 飯山富倉蕎麥晚餐。 Madarao day + Iiyama Tomikura soba dinner.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["madarao-kogen", "iiyama-tomikura-soba"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "戶隱 + 戶隱蕎麥麵",
+      "summary": "上午戶隱滑雪 + 戶隱蕎麥午餐。 Togakushi ski + Togakushi soba lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "culture"],
+      "pace": "balanced",
+      "place_ids": ["togakushi-ski", "togakushi-soba"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Karuizawa 雪鞋健行 + Prince 半日",
+      "summary": "上午輕井澤雪鞋健行 → 下午 Karuizawa Prince 半日。 Karuizawa snowshoe morning, Karuizawa Prince ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "snowshoe", "family"],
+      "pace": "balanced",
+      "place_ids": ["karuizawa-snowshoe", "karuizawa-prince"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "白馬 7 日深度",
+      "summary": "Hakuba 7 日通票 + 雪場輪滑 + 溫泉 + 晚餐。 7-day Hakuba Valley pass with full rotation, onsen, dining.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury", "foodie", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hakuba-happo-one", "tsugaike-kogen", "hakuba-47-goryu", "hakuba-iwatake", "hakuba-cortina", "happo-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "上田 + Sugadaira + 真田丸城下町",
+      "summary": "Day1 Sugadaira 滑雪、Day2 上田城真田丸雪見。 Day 1 Sugadaira, Day 2 Ueda Castle (Sanada).",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "family"],
+      "pace": "balanced",
+      "place_ids": ["sugadaira-kogen", "ueda-castle"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "松本城雪見 + Norikura 滑雪",
+      "summary": "上午松本城雪見 → 下午 Norikura 半日滑雪。 Matsumoto Castle snow morning, Norikura ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["matsumoto-castle", "norikura-kogen-ski"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Hakuba + 黑部立山雪牆 (春)",
+      "summary": "春季 Hakuba 滑雪 + 黑部立山雪牆健行。 Spring Hakuba ski + Tateyama Snow Wall walk.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "scenic", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hakuba-happo-one", "tateyama-snow-wall"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Karuizawa Prince + Outlet + 王ヶ頭 spa",
+      "summary": "雪 + 購物 + spa 三合一 1 日。 Ski + Outlet + spa all-in-one Karuizawa day.",
+      "vibe_tags": ["ski", "snow", "winter", "shopping", "luxury", "spa"],
+      "pace": "packed",
+      "place_ids": ["karuizawa-prince", "karuizawa-outlet", "karuizawa-spa"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "新宿 Highway Bus → Madarao 滑雪 2 日",
+      "summary": "Shinjuku 夜行巴士 → Madarao 滑雪 2 日 → 夜行巴士回。 Shinjuku overnight bus → Madarao 2-day ski → return overnight.",
+      "vibe_tags": ["ski", "snow", "winter", "budget", "powder"],
+      "pace": "packed",
+      "place_ids": ["shinjuku-highway-bus", "madarao-kogen"],
+      "pinned_vibes": ["budget"]
     }
   ]
 }

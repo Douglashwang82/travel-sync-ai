@@ -12,23 +12,100 @@
   ],
   "routes": [
     {
-      "title": "SKIJAM勝山 滑雪一日",
-      "summary": "日本關西規模最大滑雪場，有多條雪道可滿足不同級別滑雪者的需求，初學者到資深滑雪者都有適合的滑道。雪場也提供小朋友遊玩的兒童樂園。 Western Japan's largest ski area, operated by Tokyu Resort Group. Longest run 5.8 km. About 3 h from Osaka.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "SKIJAM 勝山 滑雪一日",
+      "summary": "西日本規模最大、Tokyu Resort 經營，5.8 公里 長下滑、大阪 3 小時。 Western Japan's largest by Tokyu Resort Group: 5.8 km longest run, ~3 h from Osaka.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "skijam-katsuyama"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["skijam-katsuyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "今庄 365 滑雪一日",
+      "summary": "南越前町 365 雪場、地方人最愛、近名古屋 / 大阪。 Minami-Echizen's 365 resort: locals' favourite, easy from Nagoya/Osaka.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["imajo-365"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "六呂師 高原 Rokuroshi 滑雪一日",
+      "summary": "大野市 Rokuroshi 高原家庭雪場。 Ono's Rokuroshi family resort: gentle and quiet.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["rokuroshi-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Sukoyaka 雷鳥 滑雪一日",
+      "summary": "Sukoyaka Raicho 高原雪場，板友 + 家庭。 Sukoyaka Raicho Kogen: snowboarder + family blend.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "family"],
+      "pace": "chill",
+      "place_ids": ["sukoyaka-raicho"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Skijam 勝山 + 越前蟹晚餐",
+      "summary": "上午 Skijam 全山 → 晚上越前蟹懷石。 Skijam day + Echizen-gani kaiseki dinner.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["skijam-katsuyama", "echizen-gani-kaiseki"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Skijam + 永平寺雪見",
+      "summary": "上午 Skijam 半日 + 下午永平寺雪見參拜。 Skijam morning, Eiheiji UNESCO snow visit afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco"],
+      "pace": "balanced",
+      "place_ids": ["skijam-katsuyama", "eiheiji-temple"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "東尋坊 + 今庄 365",
+      "summary": "上午東尋坊雪見 → 下午今庄 365 半日。 Tojinbo cliffs snow morning, Imajo 365 ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["tojinbo-cliffs", "imajo-365"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "大阪 → SKIJAM 1 日來回",
+      "summary": "大阪早班 + Skijam 全日 + 晚回。 Osaka morning + Skijam full day + return.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["skijam-katsuyama"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Fukui 3 日 滑雪 + 蟹 + 寺",
+      "summary": "Day1 Skijam、Day2 永平寺 + 越前蟹、Day3 Imajo 365。 Day 1 Skijam, Day 2 Eiheiji + Echizen crab, Day 3 Imajo 365.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "culture", "luxury"],
+      "pace": "packed",
+      "place_ids": ["skijam-katsuyama", "eiheiji-temple", "echizen-gani-kaiseki", "imajo-365"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Tsuruga 海岸 + Sukoyaka 半日",
+      "summary": "上午敦賀港雪見 + 下午 Sukoyaka 半日。 Tsuruga port snow morning, Sukoyaka ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["tsuruga-port", "sukoyaka-raicho"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "蘆原溫泉 + Skijam 滑雪",
+      "summary": "上午蘆原溫泉開湯 + 下午 Skijam 全日。 Awara Onsen morning soak + Skijam full-day ski.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["awara-onsen", "skijam-katsuyama"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Rokuroshi + 大野城雪見",
+      "summary": "上午 Rokuroshi 半日 → 下午大野城雪見 + 越前蕎麥午餐。 Rokuroshi ski morning, Ono Castle snow + Echizen soba lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["rokuroshi-ski", "ono-castle", "echizen-soba"],
+      "pinned_vibes": ["culture"]
     }
   ]
 }

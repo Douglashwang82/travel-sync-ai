@@ -12,60 +12,124 @@
   ],
   "routes": [
     {
-      "title": "安比高原 滑雪一日",
-      "summary": "安比高原位於日本本州的東北部，鄰接八幡平十和田國立公園的安比高原，整座山被粉狀白雪覆蓋，擁有最高品質的積雪與標高差828公尺、最長5.5公里的滑雪道。 Adjacent to Towada-Hachimantai National Park. 21 courses including a 5.5 km top-to-bottom; 2 km night skiing piste. Two gondolas, three high-speed quads.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "安比高原 Appi Kogen 滑雪一日",
+      "summary": "Tohoku 規模最大、雪質最乾爽的 Appi Kogen，21 條雪道、5.5 公里長下滑、2 條 Gondola + 3 條高速 Quad。 21 trails, 5.5 km top-to-bottom, 2 gondolas, 3 high-speed quads, 2 km night-ski piste.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "appi-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["appi-kogen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "雫石高原 滑雪一日",
-      "summary": "從雪場遙望壯麗的岩手山，視野開闊是雫石高原滑雪場的一大特色。雪道變化豐富的11條滑道，從初學者到上級雪友都可以盡情享受其中，下雪過後的未壓雪滑道更是不能錯過。 Prince Hotels resort with a 4.5 km World Cup downhill course. Views of Mt. Iwate; gondola to the upper station.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "雫石 Shizukuishi 滑雪一日",
+      "summary": "Prince 經營、含 4.5 公里世界盃 Downhill 賽道的 Shizukuishi 滑雪場，岩手山全景。 Prince Hotels resort with a 4.5 km World Cup downhill, Mt Iwate views, gondola access.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "shizukuishi"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["shizukuishi"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "八幡平 滑雪一日",
-      "summary": "八幡平滑雪場位於日本岩手縣，以其絕佳的自然風景、多樣化的滑道和優質的雪質而聞名。 Two linked resorts (Panorama + Shimokura) at the foot of Mt. Iwate inside Towada-Hachimantai National Park. Shuttles connect the two.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "Hachimantai Panorama / Shimokura 滑雪一日",
+      "summary": "十和田八幡平國立公園裡的 Panorama + Shimokura 兩相連雪場，雪量穩定、景色壯麗。 Two linked resorts inside Towada-Hachimantai National Park, connected by shuttle.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "hachimantai-panorama-shimokura"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hachimantai-panorama-shimokura"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "夏油高原 Geto Kogen 滑雪一日",
+      "summary": "Geto Kogen 以 backcountry 與穩定的乾粉雪聞名，14 條雪道內含 6 條未壓雪路線。 Famous for powder and lift-accessed backcountry; 14 runs including 6 ungroomed.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["geto-kogen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "網張 Amihari 溫泉滑雪一日",
+      "summary": "盛岡西郊岩手山麓的 Amihari 溫泉雪場，山間溫泉旅館旁的小巧雪場。 Iwate-san onsen-village resort west of Morioka, ski-in onsen ryokan adjacent.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["amihari-onsen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "岩手高原 Snow Park 滑雪一日",
+      "summary": "盛岡市旁的 Iwate Kogen Snow Park，初學者與家庭專用，纜車快速。 Family resort outside Morioka with reliable beginner grooming and quick lifts.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["iwate-kogen-snowpark"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "湯田 Yuda 滑雪一日",
+      "summary": "西和賀町湯田溫泉鄉旁雪場，雪後直接入湯。 Nishiwaga's Yuda Onsen ski hill: ski straight to a hot soak.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen"],
+      "pace": "chill",
+      "place_ids": ["yuda-onsen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "玉山 Tamayama 滑雪一日",
+      "summary": "盛岡市內 30 分鐘的 Tamayama 雪場，夜滑與家庭友善路線。 30 min from central Morioka; night skiing, family routes.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "nightlife"],
+      "pace": "chill",
+      "place_ids": ["tamayama-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Appi Hot-Spring + Night Ski",
+      "summary": "上午 Appi 全山滑雪 → 晚上 Appi 飯店溫泉 + 2 公里 夜滑。 Day Appi skiing → onsen → 2 km night-ski piste.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife"],
+      "pace": "packed",
+      "place_ids": ["appi-kogen", "appi-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Shizukuishi + 小岩井農場雪見",
+      "summary": "上午 Shizukuishi 滑雪 → 下午小岩井農場品嘗濃醇牛奶與冰淇淋。 Shizukuishi skiing → Koiwai Farm snow walk + farm-fresh dairy.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "foodie", "family"],
+      "pace": "balanced",
+      "place_ids": ["shizukuishi", "koiwai-farm"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Geto Kogen 粉雪 + Hanamaki 溫泉",
+      "summary": "上午 Geto Kogen backcountry → 晚上花卷溫泉鄉宿。 Geto Kogen powder day → Hanamaki Onsen overnight.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "onsen"],
+      "pace": "balanced",
+      "place_ids": ["geto-kogen", "hanamaki-onsen"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "盛岡冷麵 + Appi 滑雪日",
+      "summary": "上午盛岡 Pyongyang 冷麵 → 下午 Appi Kogen 半日滑雪。 Morioka reimen lunch first, Appi half-day ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "city"],
+      "pace": "balanced",
+      "place_ids": ["pyongyang-reimen", "appi-kogen"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Iwate 3 日 Powder + Onsen 路線",
+      "summary": "Day1 Appi、Day2 Geto Kogen、Day3 Hachimantai + 八幡平溫泉 stay。 Day 1 Appi → Day 2 Geto → Day 3 Hachimantai + onsen stay.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "onsen", "adventure"],
+      "pace": "packed",
+      "place_ids": ["appi-kogen", "geto-kogen", "hachimantai-panorama-shimokura", "hachimantai-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hanamaki 童話 + Shizukuishi 半日",
+      "summary": "上午宮澤賢治記念館 → 下午 Shizukuishi 半日滑雪。 Miyazawa Kenji museum morning, Shizukuishi half-day ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "family"],
+      "pace": "balanced",
+      "place_ids": ["miyazawa-kenji-museum", "shizukuishi"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "中尊寺平泉 + Appi 滑雪 2 日",
+      "summary": "Day1 平泉中尊寺世界遺產雪景、Day2 Appi 全山滑雪。 Day 1 Chuson-ji UNESCO site (snow), Day 2 Appi full-mountain ski.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco"],
+      "pace": "balanced",
+      "place_ids": ["chusonji-temple", "appi-kogen"],
+      "pinned_vibes": ["culture"]
     }
   ]
 }

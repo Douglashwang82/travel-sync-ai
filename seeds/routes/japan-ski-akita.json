@@ -13,61 +13,83 @@
   "routes": [
     {
       "title": "田澤湖 Tazawako 滑雪一日",
-      "summary": "秋田仙北市的田澤湖滑雪場，是秋田縣規模最大、設施最完善的雪場，從雪道上可俯瞰寶石綠的田澤湖，搭配輕盈乾爽的粉雪與少人潮，被稱為日本國際滑雪客的私房秘境。 Akita's largest and most-equipped resort: panoramic views of emerald Lake Tazawa, light dry powder, English ski schools, and quiet runs.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "scenic",
-        "powder",
-        "relaxed"
-      ],
+      "summary": "秋田仙北市的 Tazawako 雪場，俯瞰寶石綠田澤湖、輕乾粉雪、英文滑雪學校。 Akita's largest resort: emerald Lake Tazawa views, dry powder, English ski school.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic", "powder", "relaxed"],
       "pace": "balanced",
-      "place_ids": [
-        "tazawako"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["tazawako"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "阿仁 Ani Ski 滑雪一日",
-      "summary": "位於森吉山山麓的阿仁滑雪場，最高點海拔 1,210 公尺，是秋田縣海拔最高的雪場。深邃的雪量、寬廣空無一人的雪道，以及冬季限定的森吉山「樹冰」奇景，是行家的私藏地。 At the base of Mt Moriyoshi: 1,210 m top, Akita's highest. Deep snow, empty wide runs, and the famous Juhyo 'snow monsters' on the summit ridge.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "powder",
-        "scenic",
-        "adventure"
-      ],
+      "summary": "森吉山麓 Ani Ski，1,210 公尺秋田縣最高，深雪、空盪雪道與樹冰奇景。 Mt Moriyoshi base, Akita's highest top at 1,210 m, deep snow, summit Juhyo monsters.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "scenic", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "ani-ski"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["ani-ski"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "秋田八幡平 滑雪一日",
-      "summary": "秋田八幡平滑雪場是東北地區每年最早開放的雪場之一，11 月中旬即可滑雪。雪場規模迷你、適合家庭與初學者，旁邊就是八幡平溫泉鄉，可邊滑邊泡湯。 One of Tohoku's earliest-opening resorts (mid-November). Cozy family-scale layout next to Hachimantai onsen village.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "family",
-        "relaxed"
-      ],
+      "summary": "Tohoku 最早開季的雪場之一 (11 月中)，迷你規模適合家庭。 One of Tohoku's earliest openings (mid-November); cozy family scale.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family"],
       "pace": "chill",
-      "place_ids": [
-        "akita-hachimantai"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["akita-hachimantai"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Jeunesse 栗駒 滑雪一日",
+      "summary": "秋田南部栗駒山雪場，雪量穩定、人潮少。 South Akita's Kurikoma-area resort: reliable snow, very quiet.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["jeunesse-kurikoma"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "鹿角 Kazuno Hanawa 滑雪一日",
+      "summary": "秋田北部鹿角花輪雪場，初學者與家庭友善。 Northern Akita's Kazuno Hanawa: beginner runs, family-oriented.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["kazuno-hanawa-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Yamabushi 山伏 高原 滑雪一日",
+      "summary": "秋田縣中部 Yamabushi 高原小型雪場，地方人愛戴的私房地。 Mid-Akita micro-resort beloved by locals; off-the-beaten-path.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["yamabushi-kogen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "田澤湖 Tazawako + 乳頭溫泉",
+      "summary": "上午 Tazawako 滑雪 → 下午乳頭溫泉鄉鶴之湯露天浴池。 Tazawako skiing morning, Tsurunoyu open-air bath at Nyuto Onsen afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["tazawako", "tsurunoyu-nyuto-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Ani Ski + 森吉山樹冰 + 阿仁前森溫泉",
+      "summary": "Ani 雪場+樹冰觀光+阿仁前森溫泉宿。 Ani slopes + summit snow-monsters + Maemori Onsen stay.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic", "adventure"],
+      "pace": "packed",
+      "place_ids": ["ani-ski", "moriyoshi-juhyo", "maemori-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "秋田 3 日深度",
+      "summary": "Day1 Tazawako、Day2 Ani Ski 樹冰、Day3 Hachimantai + Akita 城下町。 Day 1 Tazawako → Day 2 Ani snow-monsters → Day 3 Hachimantai + Akita town.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic", "adventure"],
+      "pace": "packed",
+      "place_ids": ["tazawako", "ani-ski", "akita-hachimantai", "akita-city-walk"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "角館武家屋敷 + Tazawako 半日",
+      "summary": "上午角館武家屋敷雪見散步 → 下午 Tazawako 半日滑雪。 Kakunodate samurai district morning, Tazawako half-day ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["kakunodate-samurai", "tazawako"],
+      "pinned_vibes": ["culture"]
     }
   ]
 }

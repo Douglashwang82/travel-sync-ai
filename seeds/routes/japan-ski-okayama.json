@@ -1,0 +1,63 @@
+{
+  "destination": "Okayama, Japan",
+  "destination_aliases": [
+    "okayama, japan",
+    "okayama",
+    "岡山",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "Hiruzen 蒜山 滑雪一日",
+      "summary": "岡山北部 Hiruzen 高原雪場、家庭友善。 Northern Okayama's Hiruzen Kogen: family-friendly resort under Mt Hiruzen.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "chill",
+      "place_ids": ["hiruzen-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Iizuka 高原 滑雪一日",
+      "summary": "真庭 Iizuka 高原雪場、Park 設施齊全。 Maniwa's Iizuka Kogen: solid park terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "family"],
+      "pace": "balanced",
+      "place_ids": ["iizuka-kogen-okayama"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Tsuyama Wonder Forest 滑雪一日",
+      "summary": "津山 Wonder Forest 小型雪場、家庭友善。 Tsuyama Wonder Forest: small family resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["tsuyama-wonder-forest"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Hiruzen + 倉敷美觀地區",
+      "summary": "上午 Hiruzen 滑雪 + 下午倉敷美觀地區雪見。 Hiruzen ski morning + Kurashiki Bikan snow afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hiruzen-ski", "kurashiki-bikan"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Hiruzen + 蒜山牧場午餐",
+      "summary": "上午 Hiruzen 滑雪 + 蒜山牧場乳製品午餐。 Hiruzen ski + Hiruzen dairy farm lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "family"],
+      "pace": "balanced",
+      "place_ids": ["hiruzen-ski", "hiruzen-dairy-farm"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "岡山 3 日 城下町 + 滑雪",
+      "summary": "Day1 岡山後樂園雪見、Day2 Hiruzen、Day3 倉敷美觀地區 + Tsuyama 半日。 Day 1 Korakuen, Day 2 Hiruzen, Day 3 Kurashiki + Tsuyama ski.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["korakuen", "hiruzen-ski", "kurashiki-bikan", "tsuyama-wonder-forest"],
+      "pinned_vibes": ["culture"]
+    }
+  ]
+}

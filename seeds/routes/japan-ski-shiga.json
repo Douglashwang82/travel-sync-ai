@@ -1,0 +1,114 @@
+{
+  "destination": "Shiga, Japan",
+  "destination_aliases": [
+    "shiga, japan",
+    "shiga prefecture",
+    "滋賀",
+    "biwako",
+    "biwa lake",
+    "kansai",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "琵琶湖 Valley Biwako Valley 滑雪一日",
+      "summary": "京都旁琵琶湖谷雪場、雪場山頂俯瞰琵琶湖全景。 Biwako Valley above Lake Biwa: summit panoramic view, easy day from Kyoto.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "chill",
+      "place_ids": ["biwako-valley"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "箱館山 Hakodateyama 滑雪一日",
+      "summary": "高島市 Hakodateyama 雪場，琵琶湖北部、纜車登山。 Takashima's Hakodateyama: north Lake Biwa, ropeway-only access.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["hakodateyama-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Okuibuki 奧伊吹 滑雪一日",
+      "summary": "米原市奧伊吹雪場、米原站近、關西最近大雪場之一。 Maibara's Okuibuki: one of Kansai's largest, easy from Maibara station.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["okuibuki-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "葛川 Kutsuki Snow Park 滑雪一日",
+      "summary": "高島 Kutsuki Snow Park，京都北 1.5 小時、家庭雪場。 Takashima Kutsuki Snow Park: 1.5 h from Kyoto, family terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["kutsuki-snow"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "余呉 Yogo 高原 滑雪一日",
+      "summary": "長浜 Yogo 高原小型雪場，地方人愛。 Nagahama's Yogo Kogen: small local resort.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed", "family"],
+      "pace": "chill",
+      "place_ids": ["yogo-kogen"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Grandsnow 奧伊吹 Park 滑雪一日",
+      "summary": "Okuibuki 旁的 Grandsnow Park 主打 Half-pipe + Park。 Park-focused sister area at Okuibuki: big half-pipe.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["okuibuki-grandsnow"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "京都 → Biwako Valley 1 日",
+      "summary": "京都早班 + Biwako Valley 全日 + 晚回。 Kyoto morning + Biwako Valley day trip.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["biwako-valley"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Hakodateyama + 琵琶湖魚市午餐",
+      "summary": "上午 Hakodateyama 半日 + 下午琵琶湖湖魚午餐。 Hakodateyama ski morning, Lake Biwa freshwater fish lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hakodateyama-ski", "biwako-funa-zushi-lunch"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Okuibuki + 長浜城雪見",
+      "summary": "上午 Okuibuki 滑雪 + 下午長浜城雪見散策。 Okuibuki morning, Nagahama Castle snow afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["okuibuki-ski", "nagahama-castle"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Biwako Valley + 比叡山雪見",
+      "summary": "上午 Biwako Valley 半日 + 下午比叡山雪見。 Biwako Valley morning, Mt Hiei snow afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["biwako-valley", "mt-hiei"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Shiga 3 日 城下町 + 滑雪",
+      "summary": "Day1 Biwako Valley、Day2 Hakodateyama、Day3 Okuibuki + 大津港雪見。 Day 1 Biwako Valley, Day 2 Hakodateyama, Day 3 Okuibuki + Otsu port.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "packed",
+      "place_ids": ["biwako-valley", "hakodateyama-ski", "okuibuki-ski", "otsu-port"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "京都和食 + Kutsuki 雪 1 日",
+      "summary": "京都早班和食朝餐 + Kutsuki 全日。 Kyoto washoku breakfast + Kutsuki ski day.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["kyoto-washoku-breakfast", "kutsuki-snow"],
+      "pinned_vibes": ["foodie"]
+    }
+  ]
+}

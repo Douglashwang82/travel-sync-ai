@@ -12,23 +12,84 @@
   ],
   "routes": [
     {
-      "title": "鬼首 滑雪一日",
-      "summary": "鬼首滑雪場分山脊部和山腳部，由雪道連接，合理的佈局適合初級到專業滑雪者自由滑雪。為極限滑雪愛好者精心設計全套專業滑道園地，還為家庭遊客提供家庭專用滑道以及托兒服務。 Two-level layout (ridge + base) connected by linking trails. 7 km of slopes; family-friendly with childcare on site.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "鬼首 Onikoube 滑雪一日",
+      "summary": "鬼首雪場分山脊與山腳兩區、7 公里雪道，托兒服務齊全。 Two-level resort (ridge + base) with 7 km of pistes, on-site childcare.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "onikoube"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["onikoube"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "藏王 Eboshi 滑雪一日",
+      "summary": "宮城藏王 Eboshi 雪場，與山形 Zao 同山系，11 條雪道、夜滑、樹冰一日遊。 Miyagi-side Zao resort: 11 trails, night skiing, summit Juhyo monsters.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "nightlife"],
+      "pace": "balanced",
+      "place_ids": ["miyagi-zao-eboshi"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Sumikawa Snow Park 滑雪一日",
+      "summary": "宮城藏王 Sumikawa 主打 snowpark + 大型 Half-pipe，板友與年輕族群天堂。 Miyagi Zao snowpark resort: huge half-pipe and rails, snowboarder magnet.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["sumikawa-snowpark"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Spring Valley 仙台泉 滑雪一日",
+      "summary": "仙台市區開車 30 分鐘的 Spring Valley，是仙台都會圈最近的滑雪場。 30 min from central Sendai; the metro's closest resort, night skiing till 10 pm.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "convenient", "nightlife"],
+      "pace": "chill",
+      "place_ids": ["spring-valley-sendai"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Semboku 七ヶ宿 滑雪一日",
+      "summary": "宮城南部七ヶ宿雪場，價格親民、家庭友善。 South Miyagi family resort: budget-friendly, quiet midweek.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["shichikashuku-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Onikoube + 鳴子溫泉",
+      "summary": "上午 Onikoube 滑雪 → 下午鳴子溫泉鄉露天浴池。 Onikoube skiing then Naruko Onsen open-air bath.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["onikoube", "naruko-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "宮城 Zao + 仙台牛舌晚餐",
+      "summary": "上午 Eboshi 滑雪 → 晚上仙台牛舌名店利久。 Eboshi day skiing, gyutan dinner at Rikyu in Sendai.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "city"],
+      "pace": "balanced",
+      "place_ids": ["miyagi-zao-eboshi", "rikyu-gyutan"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Sendai 1-Day City + Spring Valley 夜滑",
+      "summary": "白天仙台市街 + 牛舌午餐 → 晚上 Spring Valley 夜滑。 Sendai city + gyutan lunch, Spring Valley night skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "nightlife", "foodie"],
+      "pace": "packed",
+      "place_ids": ["sendai-city-walk", "rikyu-gyutan", "spring-valley-sendai"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "宮城 2 日 Zao + Onikoube",
+      "summary": "Day1 Eboshi 賞樹冰、Day2 Onikoube + 鳴子溫泉。 Day 1 Eboshi juhyo, Day 2 Onikoube + Naruko Onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["miyagi-zao-eboshi", "onikoube", "naruko-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "松島雪見 + Spring Valley 半日",
+      "summary": "上午松島灣雪景遊船 → 下午 Spring Valley 半日滑雪。 Matsushima Bay snow cruise morning, Spring Valley ski half-day.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["matsushima-bay", "spring-valley-sendai"],
+      "pinned_vibes": ["scenic"]
     }
   ]
 }

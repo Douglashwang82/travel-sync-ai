@@ -1,0 +1,56 @@
+{
+  "destination": "Shimane, Japan",
+  "destination_aliases": [
+    "shimane, japan",
+    "shimane",
+    "島根",
+    "san'in",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "Mizuho Highland 滑雪一日 (島根側)",
+      "summary": "島根與廣島邊界 Mizuho Highland 雪場 (島根側入口)。 Mizuho Highland from the Shimane side: family-leaning resort on the prefectural border.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["mizuho-highland"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Akana Snow Park 滑雪一日",
+      "summary": "島根 Akana Snow Park 小型雪場、地方家庭去處。 Shimane's Akana Snow Park: small local family hill.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["akana-snow-park"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Sankoso 高原 滑雪一日",
+      "summary": "島根 Sankoso 山口縣邊界小雪場。 Sankoso ski hill near the Yamaguchi border.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["sankoso-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "出雲大社雪見 + Akana 半日",
+      "summary": "上午出雲大社雪見參拜 + 下午 Akana Snow Park 半日。 Izumo Taisha snow visit morning, Akana ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["izumo-taisha", "akana-snow-park"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Matsue 城下町 + Mizuho 1 日",
+      "summary": "上午松江城雪見 + 下午 Mizuho Highland 半日。 Matsue Castle snow morning + Mizuho Highland afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "family"],
+      "pace": "balanced",
+      "place_ids": ["matsue-castle", "mizuho-highland"],
+      "pinned_vibes": ["culture"]
+    }
+  ]
+}

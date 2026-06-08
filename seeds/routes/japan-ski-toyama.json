@@ -14,40 +14,83 @@
   "routes": [
     {
       "title": "立山山麓 Tateyama Sanroku 滑雪一日",
-      "summary": "北陸地區最大的滑雪場，由「雷鳥谷 Raicho Valley」與「極樂坂 Gokurakuzaka」兩區組成。山頂海拔 1,188 公尺，最長下滑 3,000 公尺，7 部纜車覆蓋 9.9 公里雪道。極樂坂有雪道公園與正規 mogul 路線，雷鳥谷則寬廣平緩、適合家庭與初學者。 Hokuriku's largest resort: two zones (Raicho Valley + Gokurakuzaka), 7 lifts, 9.9 km of pistes, top elevation 1,188 m, 3 km longest run.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "family",
-        "scenic",
-        "adventure"
-      ],
+      "summary": "北陸最大滑雪場：雷鳥谷 + 極樂坂 2 區，7 部纜車、9.9 公里雪道、3 km 長下滑。 Hokuriku's largest resort: two zones (Raicho Valley + Gokurakuzaka), 7 lifts, 9.9 km of pistes.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "tateyama-sanroku"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["tateyama-sanroku"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "IOX-AROSA 滑雪一日",
-      "summary": "南礪市的 IOX-AROSA 雪場，以穩定壓雪、立山連峰與日本海雙重全景而聞名，是富山縣最具國際感的小型度假村。 South Toyama resort known for meticulous grooming and a rare panorama of both the Tateyama Range and the Sea of Japan.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "scenic",
-        "relaxed"
-      ],
+      "summary": "南礪市 IOX-AROSA，立山連峰 + 日本海全景，性格獨具的小型度假村。 South Toyama resort with rare double panorama of Tateyama Range + Sea of Japan.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "relaxed"],
       "pace": "chill",
-      "place_ids": [
-        "iox-arosa"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["iox-arosa"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Kurobe Snow Park 滑雪一日",
+      "summary": "黑部 Snow Park 雪場，初級者天堂、雪況穩。 Kurobe Snow Park: beginner-friendly with reliable snowfall.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["kurobe-snow"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "牛岳 Ushidake 溫泉滑雪一日",
+      "summary": "牛岳溫泉雪場、邊滑邊泡。 Ushidake Onsen resort: classic ski + hot-spring combo.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["ushidake-onsen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Tateyama 春季雪牆 + 室堂",
+      "summary": "4-5 月 Tateyama 雪壁 + 室堂巴士 + Snow Walk。 Tateyama Snow Wall spring season + Murodo plateau walk.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "scenic", "ropeway"],
+      "pace": "balanced",
+      "place_ids": ["tateyama-snow-wall", "murodo-snow-walk"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Tateyama Sanroku + 立山溫泉",
+      "summary": "上午 Tateyama Sanroku 雪場 + 下午立山溫泉宿。 Tateyama Sanroku ski + Tateyama Onsen ryokan.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen"],
+      "pace": "balanced",
+      "place_ids": ["tateyama-sanroku", "tateyama-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "富山市 + Tateyama Sanroku 1 日",
+      "summary": "上午富山市區海鮮丼早餐 → 下午 Tateyama Sanroku 半日。 Toyama city seafood-rice breakfast, Tateyama Sanroku ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["toyama-fish-market-breakfast", "tateyama-sanroku"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Kurobe 峽谷 + Snow Park 2 日",
+      "summary": "Day1 黑部峽谷雪見、Day2 Kurobe Snow Park。 Day 1 Kurobe Gorge snow view, Day 2 Kurobe Snow Park.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["kurobe-gorge-winter", "kurobe-snow"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Toyama 3 日 富山灣 + 雪場",
+      "summary": "Day1 富山灣 + 寒鰤午餐、Day2 Tateyama Sanroku、Day3 IOX-AROSA。 Day 1 Toyama Bay buri lunch, Day 2 Tateyama Sanroku, Day 3 IOX-AROSA.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "scenic"],
+      "pace": "packed",
+      "place_ids": ["toyama-bay-buri", "tateyama-sanroku", "iox-arosa"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "金澤 → IOX-AROSA 1 日",
+      "summary": "金澤早班 + IOX-AROSA 全日 + 晚回。 Kanazawa morning + IOX-AROSA full day + return.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["kanazawa-station", "iox-arosa"],
+      "pinned_vibes": ["convenient"]
     }
   ]
 }

@@ -12,157 +12,252 @@
   ],
   "routes": [
     {
-      "title": "留壽都 滑雪一日",
-      "summary": "位於日本北海道羊蹄山山麓的留壽都滑雪場Rusutsu，飯店包含了RUSUTSU RESORT以及24層樓高的RUSUTSU TOWER。冬季時變身成北海道有名的滑雪、度假聖地，並以粉狀雪質而聞名全世。 Hokkaido's largest single resort, spread across three peaks (West Mountain, East Mountain, Mount Isola). World-renowned for powder.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "留壽都 Rusutsu 滑雪一日",
+      "summary": "羊蹄山山麓的 Rusutsu，是北海道規模最大的單一度假村，三座山 18 部纜車 37 條雪道，乾爽粉雪聞名世界。 Hokkaido's largest single-resort: three peaks, 18 lifts, 37 courses, world-class powder.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "rusutsu"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["rusutsu"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "KIRORO 滑雪一日",
-      "summary": "以朝里岳為中心，位於豪雪地帶距札幌不遠的KIRORO滑雪度假村，這裡是北海道雪量跟雪質都是一絕的滑雪場。 Inland resort known for exceptional snow quality. Gondola to summit with the Asari panoramic restaurant overlooking the Sea of Japan.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "summary": "札幌郊外朝里岳的 KIRORO，雪量驚人、設施完備，山頂有 Asari 全景餐廳俯瞰日本海。 Inland resort west of Sapporo: exceptional snow, gondola to the Asari summit restaurant.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "kiroro-resort"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["kiroro-resort"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "富良野 滑雪一日",
-      "summary": "位於道北富良野市西側的富良野滑雪場，擁有廣大滑雪區域，兩個山頭的最高點分別為海拔1209m與940m，滑行最長距離約4000m，共有23條難易度各異的滑雪道。 Operated by Prince Hotels. Two zones (Kitanomine + Furano) linked by lifts. Hosts FIS competitions; one of the steepest mountains in Hokkaido.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "adventure"
-      ],
+      "title": "富良野 Furano 滑雪一日",
+      "summary": "Prince 經營的富良野雪場橫跨 Kitanomine 與 Furano 兩區，海拔 1,209 公尺，4 公里最長下滑，FIS 比賽常駐地。 Prince Hotels resort: two linked zones, 1,209 m top, 4 km longest run, FIS-grade pitches.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "furano"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["furano"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "佐幌度假村 滑雪一日",
-      "summary": "位於海拔1,059公尺的滑雪場，整個滑雪季節中的晴天率達 70%，整座山都被粉雪包裹。既有適合初、中級滑雪者而設的緩坡長距離雪道，還有最大70度的超陟滑道。 Central Hokkaido. 70% sunny days through the season; views over the Tokachi plain. Family-friendly with one steep advanced run.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "佐幌 Sahoro 滑雪一日",
+      "summary": "十勝平原邊的 Sahoro，70% 晴天率，闊葉粉雪山，適合家庭與中級玩家。 Central Hokkaido. 70% sunny days, family-friendly grooming above the Tokachi plain.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "family"],
       "pace": "balanced",
-      "place_ids": [
-        "sahoro-resort"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["sahoro-resort"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "Niseko United 全山通票 滑雪一日",
-      "summary": "二世古聯合度假村由 Hanazono、Grand Hirafu、Niseko Village、Annupuri 四個相連雪場組成，共用全山通票，是日本最國際化的高端粉雪聖地。垂直落差 933 公尺，全北海道最大；325 公頃地形、夜間滑雪、餐廳與夜生活一應俱全。 Japan's most internationally renowned powder resort: four interconnected sub-resorts, 933 m vertical (Hokkaido's biggest), 30+ lifts, night skiing, and unrivalled apres-ski.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "nightlife",
-        "luxury",
-        "adventure"
-      ],
+      "summary": "Hanazono、Grand Hirafu、Niseko Village、Annupuri 四場相連，垂直落差 933 公尺，全北海道最大、最國際化。 Four interconnected sub-resorts, 933 m vertical (Hokkaido's biggest), 30+ lifts, world-famous powder.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "luxury", "adventure"],
       "pace": "packed",
-      "place_ids": [
-        "niseko-united"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["niseko-united"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko Grand Hirafu 滑雪一日",
+      "summary": "Niseko United 規模最大、夜生活最熱鬧的子場 Hirafu，雪量穩定、餐廳酒吧林立。 Niseko's flagship sub-resort: biggest terrain, liveliest village, and dependable nightly powder.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["niseko-grand-hirafu"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko Hanazono 滑雪一日",
+      "summary": "Hanazono 側擁有最現代化的纜車與 Park、Pipe，受 PARK RAT 與兒童學校歡迎。 Niseko's most modernised gondola network, big terrain park, family ski school.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "park"],
+      "pace": "balanced",
+      "place_ids": ["niseko-hanazono"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko Village 滑雪一日",
+      "summary": "緊鄰 Hilton 與 Green Leaf 飯店的 Niseko Village 區段，路線設計流暢、樹林滑雪友善。 Ski-in/ski-out at Hilton Niseko Village; flowing groomed runs and excellent trees.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["niseko-village"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko Annupuri 滑雪一日",
+      "summary": "Annupuri 山頂下的最西側雪區，寬廣緩坡 + Ungated backcountry gate 4 出口，雪友最愛。 Westernmost Niseko sub-resort: gentle groomers and gate 4 to legendary backcountry.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "backcountry"],
+      "pace": "balanced",
+      "place_ids": ["niseko-annupuri"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Moiwa Ski Resort 滑雪一日",
+      "summary": "與 Niseko 相鄰但不在通票內的 Moiwa，獨立經營、人潮少、林間雪況絕佳。 Independent Niseko-area resort: quieter than United, superb glades, no pass mark-up.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["niseko-moiwa"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "星野 TOMAMU 滑雪一日",
-      "summary": "位於北海道中央占冠村的星野TOMAMU度假村，11 條纜車、29 條滑道、垂直落差約 585 公尺，並擁有極具特色的「冰之教堂」與冰之村（Ice Village）。家庭友善、雪質乾爽，夜晚還有水之教堂與星野溫泉相伴。 Central Hokkaido all-season resort with 11 lifts and the famous Ice Village. Family-friendly grooming and dry champagne powder.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "family",
-        "luxury",
-        "relaxed"
-      ],
+      "summary": "占冠的星野 TOMAMU，11 部纜車 + 冰之村 + 水之教堂，家庭友善並結合渡假村體驗。 Central Hokkaido all-season resort: 11 lifts, the famous Ice Village, family grooming.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family", "luxury"],
       "pace": "balanced",
-      "place_ids": [
-        "tomamu-resort"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["tomamu-resort"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "札幌手稻 Sapporo Teine 滑雪一日",
-      "summary": "札幌市西郊的手稻滑雪場曾是 1972 札幌冬奧場地，搭電車從札幌出發僅一小時，可即日往返。上層 Highland Zone 為 1972 奧運大回轉場地，下層 Olympia Zone 則對家庭與初學者友善。 Former 1972 Winter Olympics venue, 60 min from central Sapporo by train. Upper Highland Zone has Olympic GS pitches; Olympia Zone caters to families.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "family",
-        "city",
-        "convenient"
-      ],
+      "summary": "1972 札幌冬奧場地，從札幌市電車 60 分鐘到雪場，高地 / 奧林匹亞兩區覆蓋全程度。 Former 1972 Olympic venue, 60 min by train from central Sapporo; two zones for all levels.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "city", "convenient"],
       "pace": "chill",
-      "place_ids": [
-        "sapporo-teine"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["sapporo-teine"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "旭岳 Asahidake 山岳滑雪一日",
-      "summary": "北海道最高峰旭岳（2,291m）山腰的旭岳纜車雪場，只有兩條纜車與少量壓雪道，但纜車終點即為廣闊的高山樹林與粉雪 backcountry，是進階滑雪者最愛的私密粉雪場。 Hokkaido's highest peak. A single ropeway accesses high-alpine tree runs and backcountry; minimal grooming, maximum powder.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "backcountry",
-        "powder",
-        "adventure"
-      ],
+      "title": "札幌國際 Sapporo Kokusai 滑雪一日",
+      "summary": "札幌市區巴士直達、雪況穩定的札幌國際，初中級者天堂，平日不擠。 60 min from central Sapporo by bus; reliable snow, intermediate-friendly grooming.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["sapporo-kokusai"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "札幌盤溪 Sapporo Bankei 滑雪一日",
+      "summary": "札幌市內僅 30 分鐘的 Bankei，夜間滑雪與 Half-pipe 出名，年輕族群與板友愛好者多。 30 min from Sapporo CBD. Night skiing, big half-pipe; popular with locals and snowboarders.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "nightlife", "park"],
+      "pace": "chill",
+      "place_ids": ["sapporo-bankei"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "札幌藻岩山 Mt Moiwa 滑雪一日",
+      "summary": "札幌市區藻岩山雪場，夜景與夜滑雙重享受，平日票價親民。 In-city Sapporo resort with night skiing over the city lights; affordable and central.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "nightlife", "budget"],
+      "pace": "chill",
+      "place_ids": ["sapporo-mt-moiwa"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Fu's Snow Area 滑雪一日",
+      "summary": "札幌市南郊的 Fu's，初學者與家庭友善，夜間滑雪選擇多。 Family-focused Sapporo-area resort with extensive night skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "city", "nightlife"],
+      "pace": "chill",
+      "place_ids": ["sapporo-fus-snow"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "小樽天狗山 Otaru Tenguyama 滑雪一日",
+      "summary": "小樽市內的天狗山雪場，山頂可俯瞰小樽港與石狩灣，夜景極美。 Tiny in-Otaru resort with stunning views over Otaru harbour and Ishikari Bay.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "city"],
+      "pace": "chill",
+      "place_ids": ["otaru-tenguyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "旭岳 Asahidake 山岳一日",
+      "summary": "北海道最高峰旭岳 (2,291m) 山腰，纜車終點即為高山樹林與粉雪 backcountry。 Hokkaido's highest peak. Single ropeway accesses high-alpine trees and backcountry.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "asahidake"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["asahidake"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "層雲峽 黑岳 Kurodake 滑雪一日",
+      "summary": "大雪山系黑岳，纜車 + 升降椅組合到 1,520 公尺，少壓雪、多粉雪、賞層雲峽。 Daisetsuzan ropeway-and-chairlift combo; minimal grooming, deep powder, Sounkyo gorge views.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["sounkyo-kurodake"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Kamui Ski Links 滑雪一日",
+      "summary": "旭川附近的 Kamui Ski Links，25 條雪道 + 山頂大全景，當地人秘境。 Asahikawa-area resort: 25 trails, panoramic summit, popular with locals.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "powder"],
+      "pace": "balanced",
+      "place_ids": ["kamui-ski-links"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Pippu Ski Resort 滑雪一日",
+      "summary": "旭川北邊的比布雪場，特色是穩定的雪量與當地家庭氛圍。 Quiet family resort north of Asahikawa; reliable snowfall, no crowds.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "powder"],
+      "pace": "chill",
+      "place_ids": ["pippu-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko Hilton + Hanazono 兩場連線",
+      "summary": "從 Hilton Niseko Village 滑入 Hanazono 區，午餐在 Hanazono 308 山屋，下午回 Niseko Village。 Two-resort connector: Niseko Village morning, lunch at Hanazono 308 lodge, Village afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "foodie"],
+      "pace": "packed",
+      "place_ids": ["niseko-village", "hanazono-308-lodge", "niseko-hanazono"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko Hirafu 夜滑 + 居酒屋",
+      "summary": "Hirafu 夜滑 → Bar Gyu+ 冰塊酒吧 → Kamimura 上村洋一郎現代日料晚餐。 Hirafu night ski → Bar Gyu+ (the ice-block bar) → Kamimura tasting menu dinner.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "foodie", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["niseko-grand-hirafu", "bar-gyu-plus-niseko", "kamimura-niseko"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko + 二世古昆布溫泉 半日",
+      "summary": "上午 Hirafu 雪場 → 下午黃金溫泉 Konbu Onsen 雪見湯。 Half-day Hirafu skiing then Konbu Onsen for a snowy outdoor soak.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["niseko-grand-hirafu", "konbu-onsen-niseko"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Rusutsu + 洞爺湖 兩日",
+      "summary": "Day 1 留壽都全山滑雪；Day 2 洞爺湖溫泉與遊船。 Day 1 Rusutsu skiing; day 2 Lake Toya onsen and lake cruise.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["rusutsu", "lake-toya-onsen", "lake-toya-cruise"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Sapporo 1-day City + Ski Combo",
+      "summary": "上午札幌國際雪場 → 下午回市區大通公園、湯咖哩晚餐。 Morning at Sapporo Kokusai → Odori Park stroll → soup-curry dinner in town.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "foodie"],
+      "pace": "packed",
+      "place_ids": ["sapporo-kokusai", "odori-park-sapporo", "soup-curry-garaku"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Otaru Tenguyama 夜景 + 運河晚餐",
+      "summary": "天狗山夜滑與札幌夜景 → 小樽運河區海鮮晚餐。 Tenguyama night ski with Otaru lights → seafood dinner along Otaru Canal.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "foodie", "city"],
+      "pace": "balanced",
+      "place_ids": ["otaru-tenguyama", "otaru-canal-restaurants"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Furano 富良野滑雪 + 美瑛雪景",
+      "summary": "上午 Furano 雪場，午後到 Biei 拼布之路與青池雪景。 Furano skiing in the morning, Biei patchwork road and Blue Pond in winter afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "photography"],
+      "pace": "balanced",
+      "place_ids": ["furano", "biei-patchwork-road", "biei-blue-pond"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "TOMAMU Ice Village + 夜滑",
+      "summary": "下午 TOMAMU 夜滑 → 晚上冰之村吃火鍋與看冰之教堂。 TOMAMU night skiing then Ice Village hotpot and the Ice Chapel.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "nightlife", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["tomamu-resort", "tomamu-ice-village"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Asahidake 山岳 + Sounkyo 冰瀑祭",
+      "summary": "上午旭岳 backcountry → 傍晚層雲峽冰瀑祭。 Asahidake backcountry by day, Sounkyo Ice Falls Festival at night.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "festival", "scenic"],
+      "pace": "packed",
+      "place_ids": ["asahidake", "sounkyo-ice-festival"],
+      "pinned_vibes": ["backcountry"]
+    },
+    {
+      "title": "Hokkaido 5 日粉雪深度行",
+      "summary": "Day1-2 Niseko、Day3 Rusutsu、Day4 Kiroro、Day5 Sapporo Teine + 札幌。 Niseko 2 days → Rusutsu → Kiroro → Sapporo Teine + city.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "rusutsu", "kiroro-resort", "sapporo-teine"],
+      "pinned_vibes": ["ski"]
     }
   ]
 }

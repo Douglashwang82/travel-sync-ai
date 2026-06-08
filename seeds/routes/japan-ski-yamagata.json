@@ -12,24 +12,84 @@
   ],
   "routes": [
     {
-      "title": "藏王温泉 滑雪一日",
-      "summary": "身為Mt.6的日本老字號的滑雪場『藏王温泉』ZAO，雪量豐富時當地人俗稱的樹冰雪怪佔據整個山頭，奇景『樹冰原』由於嚴厲的冬季季風氣候所產生。 Tohoku's largest ski area, famous for juhyo (snow monster) ice-encrusted trees. 14 interconnected zones across the slopes of Mt. Zao; 9 km top-to-bottom run.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "藏王温泉 Zao Onsen 滑雪一日",
+      "summary": "Mt.6 老字號雪場 Zao Onsen，東北最大面積，14 條相連雪區、9 公里長下滑、樹冰奇景。 Tohoku's biggest ski area: 14 linked zones across Mt Zao, 9 km top-to-bottom, the iconic Juhyo monsters.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "zao-onsen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["zao-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "藏王 樹冰夜間點燈 + 滑雪",
+      "summary": "白天 Zao 全山滑雪 → 晚上樹冰夜間點燈遊覽。 Day skiing then evening Juhyo illumination ropeway tour.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "festival", "night"],
+      "pace": "packed",
+      "place_ids": ["zao-onsen", "zao-juhyo-illumination"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "月山 Gassan 春季滑雪",
+      "summary": "Gassan 月山雪場 4 月才開季、可滑到 7 月，春季滑雪聖地。 Spring-only resort: opens in April, lasts until July; legendary late-season terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["gassan-spring-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Asahi 自然觀察 Center 滑雪一日",
+      "summary": "西山形 Asahi 自然之家小型滑雪場，雪況穩定、家庭友善。 West Yamagata Asahi nature centre: family-scale terrain with reliable snow.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "nature"],
+      "pace": "chill",
+      "place_ids": ["asahi-shizen-no-ie"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Tengendai 高原 滑雪一日",
+      "summary": "米澤 Tengendai 高原由纜車進入的高山雪場，未壓雪比例高，受 backcountry 愛好者歡迎。 Yonezawa-side high-mountain area reached by ropeway; lots of ungroomed terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder"],
+      "pace": "balanced",
+      "place_ids": ["tengendai-kogen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Yamagata Zao Bodaira 滑雪一日",
+      "summary": "Zao 旁的 Bodaira 高原中小型雪場，初學者友善與夜滑。 Mid-size Bodaira resort near Zao: beginner runs and night ski.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "nightlife"],
+      "pace": "chill",
+      "place_ids": ["zao-bodaira"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "藏王 + 銀山溫泉",
+      "summary": "上午 Zao 滑雪 → 下午銀山溫泉鄉雪景。 Zao skiing → Ginzan Onsen night snow scene.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["zao-onsen", "ginzan-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Yamadera 立石寺雪見 + Zao 半日",
+      "summary": "山寺立石寺雪見參拜 → 下午 Zao 半日滑雪。 Yamadera Risshakuji snow visit morning, Zao half-day ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "packed",
+      "place_ids": ["yamadera-risshakuji", "zao-onsen"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "山形米澤牛 + Tengendai 滑雪",
+      "summary": "米澤牛涮涮鍋午餐 → 下午 Tengendai 高原滑雪。 Yonezawa beef shabu-shabu lunch, Tengendai ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["yonezawa-beef-shabu", "tengendai-kogen"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Yamagata 3 日 Powder + Onsen",
+      "summary": "Day1 Zao 樹冰、Day2 Tengendai 粉雪、Day3 月山春滑 (季節)。 Day 1 Zao juhyo → Day 2 Tengendai powder → Day 3 Gassan spring (if in season).",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "powder", "adventure"],
+      "pace": "packed",
+      "place_ids": ["zao-onsen", "tengendai-kogen", "gassan-spring-ski"],
+      "pinned_vibes": ["ski"]
     }
   ]
 }

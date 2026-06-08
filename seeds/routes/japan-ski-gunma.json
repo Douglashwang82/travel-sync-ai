@@ -12,62 +12,204 @@
   ],
   "routes": [
     {
-      "title": "草津温泉 滑雪一日",
-      "summary": "草津温泉距今已有1000年以上的歷史。尤其以號稱治病健體的著名温泉而遠近聞名。由於年平均溫度只有7度，櫃花開得晚，4月底之前，整個草津都仍處於白雪皓皓的世界。 On Mt. Shirane above the historic Kusatsu onsen town. 4.3 km longest run; new 8-seater Pulse Gondola from 2023/24. Higher base elevation than most Gunma resorts.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "family"
-      ],
+      "title": "草津 Kusatsu 溫泉滑雪一日",
+      "summary": "白根山上 1,000 年歷史的草津溫泉雪場，4.3 公里長下滑、新 8 人 Pulse Gondola、4 月底還有雪。 Above historic Kusatsu Onsen: 4.3 km longest run, new 8-seater pulse gondola, snow lasts into April.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "family"],
       "pace": "balanced",
-      "place_ids": [
-        "kusatsu-onsen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["kusatsu-onsen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "尾瀬岩鞍 滑雪一日",
-      "summary": "日本關東最大規模的滑雪場 尾瀬岩鞍，這裡不但雪質優良、雪場規模大，雪道更是變化豐富，適合各種程度的滑雪客前來拜訪。 Largest ski area in Kanto region. Gondola plus 9 lifts; 18 courses span beginner cruisers to ungroomed advanced terrain.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "尾瀨岩鞍 Oze Iwakura 滑雪一日",
+      "summary": "關東規模最大雪場 Oze Iwakura，18 條雪道、Gondola + 9 部纜車。 Kanto's largest: 18 courses, gondola + 9 lifts.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "oze-iwakura"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["oze-iwakura"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "萬座温泉 滑雪一日",
-      "summary": "萬座温泉位於白根山與萬座山之間的山麓，於綠色環抱的上信越高原國立公園內，泉質屬於乳白色帶硫磺味的優質温泉，由於是標高1800m的高山温泉，又稱為雲上的温泉。 Highest-base resort in Gunma (1,800 m). Operated by Prince Hotels; small but light powder thanks to elevation. Sulphurous milky onsen on site.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "family"
-      ],
+      "title": "萬座溫泉 Manza Onsen 滑雪一日",
+      "summary": "Prince 旗下、海拔 1,800 公尺的雲上 Manza 雪場 + 乳白硫磺溫泉。 Prince resort at 1,800 m: Gunma's highest base, milky-sulphur onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "powder", "luxury"],
       "pace": "balanced",
-      "place_ids": [
-        "manza-onsen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["manza-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "水上高原 Minakami 滑雪一日",
+      "summary": "水上高原雪場 Hodaigi、Houdaigi、Tanigawa Tenjindaira 三場聯合通票。 Minakami-area pass linking Hodaigi, Houdaigi, and Tanigawadake Tenjindaira.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["minakami-pass"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Tanigawadake 天神平 滑雪一日",
+      "summary": "上越國境谷川岳天神平纜車雪場，東京最近的 2,000 公尺級高山。 Closest 2,000 m alpine resort to Tokyo: Tanigawadake Tenjindaira ropeway.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "backcountry"],
+      "pace": "balanced",
+      "place_ids": ["tanigawadake-tenjin"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hodaigi 寶台樹 滑雪一日",
+      "summary": "水上 Hodaigi 雪場，16 條雪道、北面雪況好。 Minakami's Hodaigi: 16 trails, north-facing terrain, dependable powder.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "family"],
+      "pace": "balanced",
+      "place_ids": ["hodaigi-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Houdaigi 滑雪一日",
+      "summary": "水上 Houdaigi 雪場，初學者友善、Park 完善。 Minakami Houdaigi: beginner-friendly with a solid park.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "family"],
+      "pace": "chill",
+      "place_ids": ["houdaigi-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "片品 Marunuma Kogen 滑雪一日",
+      "summary": "片品丸沼高原雪場，2,000 公尺纜車、長下滑 4 公里。 Katashina's Marunuma Kogen: gondola to 2,000 m, 4 km longest run.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "powder"],
+      "pace": "balanced",
+      "place_ids": ["marunuma-kogen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Norn Minakami 滑雪一日",
+      "summary": "水上 Norn 雪場，東京當天往返最方便。 Norn Minakami: among Tokyo's most accessible day-trip resorts.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "family"],
+      "pace": "chill",
+      "place_ids": ["norn-minakami"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Snow Park Oguna 武尊 滑雪一日",
+      "summary": "Oguna 武尊雪場， snowpark 是 Gunma 規模之最。 Oguna Hotaka resort: Gunma's biggest terrain park.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["oguna-hotaka-snowpark"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "鹿沢 Snow Area 滑雪一日",
+      "summary": "嬬戀 Kazawa 雪場，緩坡 + 樹間雪況，初學者愛好。 Tsumagoi's Kazawa: cruisers + intermediate trees, gentle profile.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["kazawa-snow"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "輕井澤 Snow Park 滑雪 (Gunma 入口)",
+      "summary": "輕井澤旁邊的 Karuizawa Snow Park 經 Gunma 入山，新幹線方便。 Karuizawa Snow Park accessible via Gunma; Shinkansen-friendly.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "family"],
+      "pace": "chill",
+      "place_ids": ["karuizawa-snowpark"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "白根山 Shirane 火口 滑雪 backcountry",
+      "summary": "白根山 backcountry，需嚮導、體驗火口雪原。 Shirane volcano backcountry: guided crater-rim runs.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["shirane-backcountry"],
+      "pinned_vibes": ["backcountry"]
+    },
+    {
+      "title": "草津溫泉 + Kusatsu 雪場 2 日",
+      "summary": "Day1 草津雪場 + 湯畑夜景、Day2 西の河原露天大浴池。 Day 1 Kusatsu ski + Yubatake at night, Day 2 Sai-no-Kawara open-air bath.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["kusatsu-onsen", "kusatsu-yubatake", "sainokawara-rotenburo"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Manza 雲上溫泉 + 滑雪",
+      "summary": "全天 Manza 雪場 + 露天溫泉夜泡。 Full-day Manza ski plus high-altitude rotenburo soak at dusk.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["manza-onsen", "manza-rotenburo"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Tokyo 出發 1 日 Norn 滑雪",
+      "summary": "東京 Shinkansen 直達 Norn，全日滑雪當天回東京。 Shinkansen day-trip from Tokyo to Norn Minakami.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient"],
+      "pace": "packed",
+      "place_ids": ["norn-minakami"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Marunuma + 吹割瀑布雪景",
+      "summary": "上午 Marunuma 滑雪 → 下午吹割瀑布冰景。 Marunuma ski → Fukiware Falls ice walk.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "nature"],
+      "pace": "balanced",
+      "place_ids": ["marunuma-kogen", "fukiware-falls"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Minakami 水上 3 日",
+      "summary": "Day1 Tanigawadake、Day2 Hodaigi、Day3 Houdaigi + 水上溫泉。 Day 1 Tanigawadake → Day 2 Hodaigi → Day 3 Houdaigi + Minakami Onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "adventure"],
+      "pace": "packed",
+      "place_ids": ["tanigawadake-tenjin", "hodaigi-ski", "houdaigi-ski", "minakami-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "尾瀨岩鞍 + 片品溫泉",
+      "summary": "上午 Oze Iwakura 雪場 → 下午片品溫泉宿。 Oze Iwakura skiing → Katashina onsen ryokan stay.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["oze-iwakura", "katashina-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Kusatsu + Manza 連線 3 日",
+      "summary": "Day1 Kusatsu、Day2 Manza、Day3 Suga / 嬬戀雪見。 Day 1 Kusatsu → Day 2 Manza → Day 3 Tsumagoi snow scene.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic", "adventure"],
+      "pace": "packed",
+      "place_ids": ["kusatsu-onsen", "manza-onsen", "tsumagoi-snow-scenery"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Gunma 5 日 全縣豪華 Pass",
+      "summary": "Day1-2 Kusatsu、Day3 Manza、Day4 Minakami、Day5 Marunuma + Oze。 5-day Gunma grand tour across the prefecture's biggest resorts.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["kusatsu-onsen", "manza-onsen", "minakami-pass", "marunuma-kogen", "oze-iwakura"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Ikaho 伊香保溫泉 + Houdaigi 半日",
+      "summary": "上午伊香保溫泉石段雪見 → 下午 Houdaigi 半日滑雪。 Ikaho stone-stair onsen morning, Houdaigi ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "culture"],
+      "pace": "balanced",
+      "place_ids": ["ikaho-onsen", "houdaigi-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Norn + 谷川岳 1 日 backcountry",
+      "summary": "上午 Norn 暖身 → 下午谷川岳天神平 backcountry。 Norn warm-up morning, Tanigawadake backcountry afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "adventure"],
+      "pace": "packed",
+      "place_ids": ["norn-minakami", "tanigawadake-tenjin"],
+      "pinned_vibes": ["backcountry"]
+    },
+    {
+      "title": "Kusatsu + 茶屋甘酒 + 滑雪",
+      "summary": "晨間湯畑甘酒 → 全日 Kusatsu 滑雪。 Yubatake amazake morning, full-day Kusatsu skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "culture"],
+      "pace": "balanced",
+      "place_ids": ["kusatsu-yubatake-amazake", "kusatsu-onsen"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Karuizawa Snow Park + 高崎 SHU 烏龍麵",
+      "summary": "上午 Karuizawa Snow Park 半日 → 高崎水沢烏龍麵午餐。 Karuizawa snow morning, Mizusawa udon lunch in Takasaki.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["karuizawa-snowpark", "mizusawa-udon"],
+      "pinned_vibes": ["foodie"]
     }
   ]
 }

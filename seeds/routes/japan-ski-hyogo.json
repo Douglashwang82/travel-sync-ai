@@ -14,60 +14,163 @@
   "routes": [
     {
       "title": "Hachi-Hachikita 滑雪一日",
-      "summary": "位於兵庫北部、Hachibuse 山頂（1,221m）的 Hachi-Hachikita 滑雪場是關西最大、西日本規模屬一屬二的雪場，共 25 條雪道分布在 Hachi 與 Hachikita 兩區，從大阪、神戶開車約 3 小時即達。 Kansai's largest resort: 25 courses across two interlinked zones (Hachi + Hachikita) topping out at Mt Hachibuse 1,221 m. ~3 h from Osaka/Kobe.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "kansai",
-        "convenient",
-        "adventure"
-      ],
+      "summary": "關西最大雪場 Hachi-Hachikita，25 條雪道、Hachi + Hachikita 兩相連，從大阪 / 神戶 3 小時。 Kansai's largest: 25 courses across two linked zones, ~3 h from Osaka/Kobe.",
+      "vibe_tags": ["ski", "snow", "winter", "kansai", "convenient", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "hachi-hachikita"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hachi-hachikita"],
+      "pinned_vibes": ["ski"]
     },
     {
       "title": "Hachi 高原 滑雪一日",
-      "summary": "與 Hachikita 在山頂相連的 Hachi Kogen 滑雪場，以寬廣中央緩坡與安靜的林間道路著稱；HYWOD 製作的 The Parks 是關西最大的 snowpark。 Sister resort to Hachikita, linked at the summit. Wide central greens, tree-lined cruisers, and HYWOD's The Parks — the largest snowpark in Kansai.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "park",
-        "family",
-        "relaxed"
-      ],
+      "summary": "與 Hachikita 山頂相連 Hachi Kogen，HYWOD The Parks 是關西最大 Snowpark。 Hachi Kogen: linked at the top, hosts HYWOD's biggest Kansai snowpark.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "family"],
       "pace": "balanced",
-      "place_ids": [
-        "hachi-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hachi-kogen"],
+      "pinned_vibes": ["park"]
     },
     {
       "title": "Mineyama 高原 滑雪一日",
-      "summary": "兵庫縣神河町的 Mineyama 高原雪場，雪道設計平緩、適合家庭與初學者，從姫路出發約 1 小時，是關西當天往返的熱門選擇。 Family-friendly resort in Kamikawa, Hyogo. About 1 h from Himeji; popular day-trip destination from the Kansai metro.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "family",
-        "convenient",
-        "chill"
-      ],
+      "summary": "神河町 Mineyama，姫路 1 小時，當天往返。 Kamikawa's Mineyama: 1 h from Himeji; popular day-trip resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
       "pace": "chill",
-      "place_ids": [
-        "mineyama-kogen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["mineyama-kogen"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Banshu Tojo Lake 滑雪一日",
+      "summary": "兵庫南 Banshu Tojo Lake mini 雪場，神戶 1 小時。 South Hyogo Banshu Tojo: tiny family resort 1 h from Kobe.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["banshu-tojo-lake"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Sky Valley 滑雪一日",
+      "summary": "兵庫 Sky Valley + Chair-21 Park 連雪場。 Hyogo Sky Valley + Chair-21 Park linked resort.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["sky-valley-hyogo"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Onzui Marukoshi 滑雪一日",
+      "summary": "Onzui Marukoshi 雪場，新溫泉町、地方人氣。 Shin-Onsen town Onzui Marukoshi: local hub.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "onsen"],
+      "pace": "chill",
+      "place_ids": ["onzui-marukoshi"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Hyonosen 高原 滑雪一日",
+      "summary": "兵庫 Hyonosen 1,510 公尺、雪量穩。 Mt Hyonosen at 1,510 m: reliable snow, Kansai's powder pocket.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hyonosen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "氷ノ山國際 滑雪一日",
+      "summary": "氷ノ山國際雪場、Hyogo 北部最高、Kansai 雪友愛戴。 Hyonosen Kokusai: northern Hyogo's highest, beloved by Kansai skiers.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["hyonosen-kokusai"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "Up Kannabe 滑雪一日",
+      "summary": "Up Kannabe 上神鍋雪場，4 個區段、家庭友善。 Kami-Kannabe: four-zone family resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "balanced",
+      "place_ids": ["up-kannabe"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Kannabe Kogen 滑雪一日",
+      "summary": "Kannabe 高原雪場，與 Up Kannabe 通票連線。 Kannabe Kogen: pass-linked with Up Kannabe.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "park"],
+      "pace": "balanced",
+      "place_ids": ["kannabe-kogen"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Wadayama 神鍋高原 滑雪一日",
+      "summary": "Wadayama 神鍋高原雪場、雪後溫泉。 Wadayama Kannabe: ski + onsen combo in north Hyogo.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family"],
+      "pace": "chill",
+      "place_ids": ["wadayama-kannabe"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "氷ノ山 + Yumura 溫泉",
+      "summary": "上午氷ノ山滑雪 + 晚上湯村溫泉宿。 Mt Hyonosen ski day + Yumura Onsen ryokan stay.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["hyonosen-ski", "yumura-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Kobe 神戶 → Hachi-Hachikita 1 日",
+      "summary": "神戶早班 + Hachi-Hachikita 全日 + 神戶牛晚餐。 Kobe morning + Hachi-Hachikita day + Kobe-beef dinner.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "luxury"],
+      "pace": "packed",
+      "place_ids": ["hachi-hachikita", "kobe-beef-restaurant"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "城崎溫泉 + Up Kannabe 1 日",
+      "summary": "城崎溫泉 7 共同湯 + Up Kannabe 半日滑雪。 Kinosaki Onsen 7-bath stroll + Up Kannabe ski.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "culture"],
+      "pace": "packed",
+      "place_ids": ["kinosaki-onsen", "up-kannabe"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "出石蕎麥 + Hachi Kogen 半日",
+      "summary": "上午出石町蕎麥午餐 + 下午 Hachi Kogen 半日。 Izushi soba lunch + Hachi Kogen ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "culture"],
+      "pace": "balanced",
+      "place_ids": ["izushi-soba", "hachi-kogen"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "姬路城雪見 + Mineyama 半日",
+      "summary": "上午姬路城雪見 + 下午 Mineyama 半日滑雪。 Himeji Castle snow morning + Mineyama ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic", "unesco"],
+      "pace": "balanced",
+      "place_ids": ["himeji-castle", "mineyama-kogen"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Hyogo 3 日 北部山岳行",
+      "summary": "Day1 Hachi-Hachikita、Day2 氷ノ山國際、Day3 城崎溫泉 + Kannabe。 Day 1 Hachi-Hachikita, Day 2 Hyonosen Kokusai, Day 3 Kinosaki + Kannabe.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hachi-hachikita", "hyonosen-kokusai", "kinosaki-onsen", "kannabe-kogen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "大阪 → Sky Valley 1 日",
+      "summary": "大阪早班 + Sky Valley 全日 + 晚回。 Osaka morning + Sky Valley day trip.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "convenient"],
+      "pace": "packed",
+      "place_ids": ["sky-valley-hyogo"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Mineyama + 灘酒造參觀",
+      "summary": "上午 Mineyama 半日 + 下午灘酒造參觀。 Mineyama ski morning + Nada Sake brewery tour.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "culture"],
+      "pace": "balanced",
+      "place_ids": ["mineyama-kogen", "nada-sake-brewery"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "氷ノ山 + Yumura 朝市 + 蟹",
+      "summary": "Day1 氷ノ山滑雪、Day2 湯村朝市 + 香住蟹午餐。 Day 1 Hyonosen ski, Day 2 Yumura market + Kasumi-gani lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hyonosen-ski", "yumura-morning-market", "kasumi-crab-lunch"],
+      "pinned_vibes": ["foodie"]
     }
   ]
 }

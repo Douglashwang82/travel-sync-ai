@@ -1,0 +1,80 @@
+{
+  "destination": "Tottori, Japan",
+  "destination_aliases": [
+    "tottori, japan",
+    "tottori",
+    "鳥取",
+    "san'in",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "大山 Daisen 滑雪一日",
+      "summary": "中國地方靈峰大山雪場、3 區段聯通、西日本最大山岳雪場之一。 Sacred Mt Daisen: three linked zones, one of western Japan's biggest alpine resorts.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["daisen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Daisen White Resort 滑雪一日",
+      "summary": "Daisen White Resort，3 雪場相連 + 國際 Park。 Daisen White Resort: 3 linked sub-resorts + international-spec park.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["daisen-white-resort"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "若杉高原大屋 滑雪一日",
+      "summary": "智頭 Wakasugi Kogen 大屋雪場，少人潮、家庭友善。 Chizu's Wakasugi Kogen Oya: quiet family-only hill.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["wakasugi-oya"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Hiruzen 蒜山 滑雪一日 (鳥取邊)",
+      "summary": "鳥取與岡山邊界 Hiruzen 雪場、家庭。 Hiruzen on the Tottori-Okayama border: family-friendly.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "chill",
+      "place_ids": ["hiruzen-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Daisen + 鳥取砂丘雪見",
+      "summary": "上午 Daisen 滑雪 → 下午鳥取砂丘雪景。 Daisen morning ski, Tottori Sand Dunes snow afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "unique"],
+      "pace": "balanced",
+      "place_ids": ["daisen-ski", "tottori-sand-dunes"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Daisen + 米子皆生溫泉",
+      "summary": "上午 Daisen 滑雪 → 晚上皆生溫泉海邊宿。 Daisen ski + Kaike Onsen seaside ryokan.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["daisen-ski", "kaike-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "鳥取 3 日 山陰行",
+      "summary": "Day1 Daisen、Day2 倉吉雪見、Day3 White Resort + 鳥取市。 Day 1 Daisen, Day 2 Kurayoshi snow town, Day 3 White Resort + Tottori city.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "culture"],
+      "pace": "balanced",
+      "place_ids": ["daisen-ski", "kurayoshi-town", "daisen-white-resort"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Osaka → Daisen 1 日",
+      "summary": "大阪夜行巴士 + Daisen 全日 + 夜回。 Osaka overnight bus + Daisen full day.",
+      "vibe_tags": ["ski", "snow", "winter", "budget", "convenient"],
+      "pace": "packed",
+      "place_ids": ["daisen-ski"],
+      "pinned_vibes": ["convenient"]
+    }
+  ]
+}

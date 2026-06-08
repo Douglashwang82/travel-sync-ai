@@ -12,63 +12,164 @@
   ],
   "routes": [
     {
-      "title": "豬苗代 滑雪一日",
-      "summary": "福島是一個日本滑雪場聚集的熱門地點。主要的滑雪場圍繞在豬苗代湖及盤梯山，除了湖光山色令人留連忘返外，豐富的温泉資源也是這裡得天獨厚的特色。 On the slopes of Mt. Bandai overlooking Lake Inawashiro. Gondola + 4 hooded high-speed quads. Two contiguous ski areas with a 3.5 km top-to-bottom.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "豬苗代 Inawashiro 滑雪一日",
+      "summary": "磐梯山南麓、俯瞰豬苗代湖，Gondola + 4 部高速 Quad、兩相連雪區、3.5 公里 top-to-bottom。 Mt Bandai south face over Lake Inawashiro; gondola, 4 hooded quads, 3.5 km run.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "inawashiro"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["inawashiro"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "星野貓魔山 滑雪一日",
-      "summary": "貓魔山滑雪場是星野集團打造的世界級滑雪勝地，它坐落在磐梯山，根駒嶽，馬屋山三座雄偉的山峰之間。兩座雪場加總面積為993公頃、多達 33 條滑道與 13 座纜車，為東北最大的滑雪場！ Re-launched in 2023/24 by Hoshino Resorts merging Alts Bandai (south) and Nekoma (north) into one pass. 993 ha across north and south slopes of Mt. Nekoma.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
-      "pace": "balanced",
-      "place_ids": [
-        "nekoma-mountain"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "title": "Nekoma Mountain 滑雪一日",
+      "summary": "星野經營，Alts Bandai (南) + Nekoma (北) 合併後的 993 公頃巨型雪場，33 條雪道 13 部纜車。 Hoshino's merged Alts Bandai + Nekoma: Tohoku's biggest at 993 ha, 33 trails, 13 lifts.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["nekoma-mountain"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "裏磐梯GRANDECO 滑雪一日",
-      "summary": "Grandeco滑雪場是日本福島縣的一個知名滑雪勝地，擁有豐富的雪量、優質的粉雪及多樣化的滑道。滑雪場位於裏磐梯山腳下，周圍環繞著壯麗的自然景觀。 Urabandai (north Bandai) ski area with a gondola + 3 hooded quad lifts. Ski-in / ski-out hotel; all-northern-slope orientation preserves powder.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "adventure"
-      ],
+      "title": "Grandeco 裏磐梯 滑雪一日",
+      "summary": "裏磐梯北面 Grandeco，Gondola + 3 部 Quad，全北面雪況保存最佳。 North-facing Urabandai resort: gondola + 3 quads, powder lasts longest.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "powder"],
       "pace": "balanced",
-      "place_ids": [
-        "grandeco"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["grandeco"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Adatara 安達太良 滑雪一日",
+      "summary": "二本松安達太良山中型雪場，Gondola 到頂、寬廣中級道。 Mid-size Mt Adatara resort, gondola to summit, intermediate-friendly grooming.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["adatara-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Listel Inawashiro 滑雪一日",
+      "summary": "Hotel Listel 渡假村雪場，從飯店直接 Ski-out。 Hotel Listel resort: full ski-in / ski-out, family base.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "luxury"],
+      "pace": "chill",
+      "place_ids": ["listel-inawashiro"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Aizu Kogen Daikura 滑雪一日",
+      "summary": "南會津 Aizu Kogen Daikura，國道沿線方便、家庭友善。 South Aizu Daikura: highway-side, family-friendly grooming.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["aizu-kogen-daikura"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Daikura Star 滑雪一日",
+      "summary": "南會津 Daikura Star 度假村，配 Hoshino 旁系飯店，性價比高。 South Aizu Daikura Star: smaller, value-driven family resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["daikura-star"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Minami Aizu 高原 Takatsue 滑雪一日",
+      "summary": "南會津高杖原雪場，10 條雪道，雪量穩定、家庭友善。 South Aizu Takatsue: 10 trails, steady snow, family terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "powder"],
+      "pace": "balanced",
+      "place_ids": ["takatsue-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "DAIKURA 滑雪一日",
+      "summary": "桧枝岐村 DAIKURA 山中雪場，幽靜林間滑雪。 Hinoemata DAIKURA backcountry-leaning resort: quiet glades.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "backcountry"],
+      "pace": "balanced",
+      "place_ids": ["hinoemata-daikura"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Mineyama 高原 福島 滑雪一日",
+      "summary": "福島 Mineyama 高原小型滑雪場，地方人秘境。 Local Fukushima Mineyama micro-resort.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["fukushima-mineyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hoshino Alts Bandai 南斜面 滑雪一日",
+      "summary": "Hoshino 旗下 Alts Bandai 南斜面區段，公園與 Park 設施齊全。 Alts Bandai south face: terrain parks and big intermediate cruisers.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "family"],
+      "pace": "balanced",
+      "place_ids": ["alts-bandai"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Numajiri 沼尻 滑雪一日",
+      "summary": "豬苗代北邊沼尻雪場，Tohoku 歷史最悠久之一。 One of Tohoku's oldest resorts, north of Inawashiro.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "heritage"],
+      "pace": "chill",
+      "place_ids": ["numajiri-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Bandai-X Quattro 滑雪一日",
+      "summary": "磐梯山 Quattro 通票連結 Inawashiro / Nekoma / Grandeco / Alts Bandai 四場。 Bandai 4-resort pass: Inawashiro + Nekoma + Grandeco + Alts.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "luxury"],
+      "pace": "packed",
+      "place_ids": ["inawashiro", "nekoma-mountain", "grandeco", "alts-bandai"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "豬苗代湖 + Inawashiro 滑雪",
+      "summary": "上午 Inawashiro 雪場 → 下午豬苗代湖白鳥群欣賞。 Inawashiro ski morning, Lake Inawashiro swan-flock afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "nature"],
+      "pace": "balanced",
+      "place_ids": ["inawashiro", "lake-inawashiro-swans"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "會津若松鶴城 + Aizu Kogen 滑雪",
+      "summary": "上午鶴城雪見 → 下午 Aizu Kogen 半日滑雪。 Tsuruga Castle snow morning, Aizu Kogen ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["tsuruga-castle", "aizu-kogen-daikura"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "東山溫泉 + Nekoma 滑雪",
+      "summary": "Day1 Nekoma 滑雪、Day2 東山溫泉鄉。 Day 1 Nekoma ski, Day 2 Higashiyama Onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["nekoma-mountain", "higashiyama-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "大內宿雪見 + Aizu 半日滑雪",
+      "summary": "上午大內宿茅葺町雪見散策 → 下午會津高原 Daikura 半日。 Ouchi-juku snow walk morning, Aizu Kogen Daikura ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["ouchi-juku", "aizu-kogen-daikura"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "福島 5 日 Powder + Onsen",
+      "summary": "Day1 Inawashiro、Day2 Nekoma、Day3 Grandeco、Day4 Adatara + Iizaka 溫泉、Day5 Aizu Kogen + 鶴城。 5-day tour: Inawashiro → Nekoma → Grandeco → Adatara + Iizaka onsen → Aizu castles.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "powder", "culture"],
+      "pace": "packed",
+      "place_ids": ["inawashiro", "nekoma-mountain", "grandeco", "adatara-ski", "iizaka-onsen", "aizu-kogen-daikura", "tsuruga-castle"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Fukushima 滑雪 + 喜多方拉麵",
+      "summary": "上午 Nekoma 滑雪 → 中午喜多方拉麵老店午餐。 Nekoma skiing morning, Kitakata ramen lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["nekoma-mountain", "kitakata-ramen"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Grandeco 雪 + 五色沼健行",
+      "summary": "上午 Grandeco 滑雪 → 下午五色沼湖沼群雪健行。 Grandeco ski morning, Goshiki-numa snow hike afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "nature"],
+      "pace": "balanced",
+      "place_ids": ["grandeco", "goshiki-numa"],
+      "pinned_vibes": ["scenic"]
     }
   ]
 }

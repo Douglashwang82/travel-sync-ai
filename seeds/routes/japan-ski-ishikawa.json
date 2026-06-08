@@ -13,41 +13,84 @@
   ],
   "routes": [
     {
-      "title": "白山一里野溫泉 滑雪一日",
-      "summary": "白山一里野溫泉滑雪場是石川縣規模最大的雪場，雪道分布在海拔 550–1,050 公尺、共 6 部纜車與約 20 公里雪道，包含 3 條陡峭未壓雪的進階道、多條中級巡航道與寬廣的初學者區，山腳即是一里野溫泉，方便雪後泡湯。 Ishikawa's largest resort: 20 km of pistes, 6 lifts, 550–1,050 m elevation, plus an onsen village right at the base.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "family",
-        "relaxed"
-      ],
+      "title": "白山一里野溫泉 Hakusan Ichirino 滑雪一日",
+      "summary": "石川縣規模最大的雪場，20 公里雪道、6 部纜車、550–1,050 公尺、山腳即一里野溫泉。 Ishikawa's biggest: 20 km of pistes, 6 lifts, 550–1,050 m, onsen village at the base.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family", "relaxed"],
       "pace": "balanced",
-      "place_ids": [
-        "hakusan-ichirino"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["hakusan-ichirino"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "Seymour 雪場 滑雪一日",
-      "summary": "與白山一里野同屬 SAM Hakusan 集團的 Seymour 雪場，規模更迷你、雪道更密集，是當地家庭與初學者的首選。 Sister to Hakusan Ichirino under SAM Hakusan: smaller and quieter, beginner-friendly, popular with local families.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "family",
-        "chill"
-      ],
+      "title": "Seymour Ski Area 滑雪一日",
+      "summary": "SAM Hakusan 集團 Seymour 雪場，較小、家庭與初學者首選。 SAM Hakusan's Seymour: smaller and quieter, beginner-only haven.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "chill"],
       "pace": "chill",
-      "place_ids": [
-        "seymour-ski"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["seymour-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "白山菖蒲谷 Shobudani 滑雪一日",
+      "summary": "白山市 Shobudani 雪場，地方人氣場。 Hakusan city's Shobudani ski area: local favourite.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["shobudani-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "輪島 Nadagiri 滑雪一日",
+      "summary": "能登半島 Nadagiri 高原小型雪場。 Noto Peninsula's Nadagiri Kogen micro-resort.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["nadagiri-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Ichirino + 白山溫泉",
+      "summary": "全日 Hakusan Ichirino + 山腳溫泉宿。 Full-day Hakusan Ichirino + onsen-village ryokan stay.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed"],
+      "pace": "balanced",
+      "place_ids": ["hakusan-ichirino", "hakusan-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "金澤 城下町 + Ichirino 半日",
+      "summary": "上午金澤兼六園 + 金澤城雪見 → 下午 Ichirino 半日。 Kenrokuen + Kanazawa Castle snow morning, Ichirino ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["kenrokuen", "kanazawa-castle", "hakusan-ichirino"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "金澤 海鮮市場 + Seymour 半日",
+      "summary": "上午近江町市場海鮮丼 + 下午 Seymour 半日。 Omicho Market seafood-rice morning, Seymour ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "family"],
+      "pace": "balanced",
+      "place_ids": ["omicho-market", "seymour-ski"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "能登半島雪見 + Nadagiri 半日",
+      "summary": "上午能登千枚田雪景 → 下午 Nadagiri 半日。 Senmaida rice-terrace winter morning, Nadagiri ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "culture"],
+      "pace": "balanced",
+      "place_ids": ["senmaida-noto", "nadagiri-ski"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Ishikawa 3 日 城下町 + 滑雪",
+      "summary": "Day1 金澤、Day2 Ichirino、Day3 Seymour + 加賀屋溫泉。 Day 1 Kanazawa, Day 2 Ichirino, Day 3 Seymour + Kagaya onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "culture", "luxury"],
+      "pace": "packed",
+      "place_ids": ["kanazawa-station", "hakusan-ichirino", "seymour-ski", "kagaya-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "金澤夜景 + Ichirino 夜滑",
+      "summary": "上午金澤茶屋街 → 下午 Ichirino 半日 + 夜滑。 Kanazawa Higashi Chaya morning, Ichirino afternoon + night ski.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "culture"],
+      "pace": "packed",
+      "place_ids": ["kanazawa-higashi-chaya", "hakusan-ichirino"],
+      "pinned_vibes": ["nightlife"]
     }
   ]
 }

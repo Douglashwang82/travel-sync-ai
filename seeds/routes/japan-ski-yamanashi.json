@@ -1,0 +1,137 @@
+{
+  "destination": "Yamanashi, Japan",
+  "destination_aliases": [
+    "yamanashi, japan",
+    "yamanashi",
+    "山梨",
+    "fuji",
+    "mt fuji",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "富士天神山 Fujiten 滑雪一日",
+      "summary": "富士山北麓 Fujiten 雪場，富士山全景、東京 2 小時。 Fujiten resort with full Mt Fuji views; 2 h from Tokyo.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "chill",
+      "place_ids": ["fujiten-snow"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Snowtown Yeti 滑雪一日",
+      "summary": "靜岡邊界 Snowtown Yeti，日本最早開季雪場 (10 月)、富士山下。 Snowtown Yeti opens in October (Japan's earliest); right under Mt Fuji.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "chill",
+      "place_ids": ["snowtown-yeti"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Sun Meadows Kiyosato 滑雪一日",
+      "summary": "Kiyosato Sun Meadows，山梨高原家庭雪場、晴天率高。 Kiyosato highland family resort: 80%+ sunny days, gentle terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "chill",
+      "place_ids": ["sun-meadows-kiyosato"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Kawaguchiko Snow Resort 滑雪一日",
+      "summary": "河口湖 Snow Resort，富士五湖區家庭雪場。 Kawaguchiko Snow Resort: tiny family-only resort in the Fuji Five Lakes.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "chill",
+      "place_ids": ["kawaguchiko-snow"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Kasugai 春日居町 滑雪一日",
+      "summary": "甲府盆地北側 Kasugai mini 雪場。 Tiny Kasugai resort north of Kofu Basin.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["kasugai-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Yatsugatake 八ヶ岳南麓 滑雪一日",
+      "summary": "八ヶ岳南麓雪場群，星空滑雪聞名。 Yatsugatake south face: clear-sky resort cluster, famous for stargazing.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "stargazing"],
+      "pace": "balanced",
+      "place_ids": ["yatsugatake-south-ski"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Carvas Yamanaka 滑雪一日",
+      "summary": "山中湖 Carvas 小型滑雪場，富士山旁。 Yamanaka-ko Carvas mini-resort beside Mt Fuji.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "chill",
+      "place_ids": ["carvas-yamanaka"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Fujiten + 富士河口湖溫泉",
+      "summary": "上午 Fujiten 滑雪 + 富士山全景 → 下午河口湖溫泉。 Fujiten skiing with Fuji views, Kawaguchiko onsen afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["fujiten-snow", "kawaguchiko-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Snowtown Yeti 早季 + 富士山温泉",
+      "summary": "Snowtown Yeti 10 月開季 + Fuji 温泉村泡湯。 Yeti early-season ski + Fuji Onsen village soak.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "early-season"],
+      "pace": "balanced",
+      "place_ids": ["snowtown-yeti", "fuji-onsen-village"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Sun Meadows + 清里牧場",
+      "summary": "上午 Sun Meadows 滑雪 → 下午清里牧場品嚐軟質冰淇淋。 Sun Meadows ski + Kiyosato dairy farm soft-serve afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["sun-meadows-kiyosato", "kiyosato-farm"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Yamanashi 紅酒之旅 + Fujiten 半日",
+      "summary": "上午甲府 Wine 酒莊巡禮 + 下午 Fujiten 半日滑雪。 Koshu wine tour morning, Fujiten ski half-day.",
+      "vibe_tags": ["ski", "snow", "winter", "wine", "foodie", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["koshu-wine-tour", "fujiten-snow"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Tokyo → Snowtown Yeti 早季 1 日",
+      "summary": "東京 10 月 Snowtown Yeti 1 日早季滑雪。 October day trip from Tokyo to Snowtown Yeti.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "early-season"],
+      "pace": "packed",
+      "place_ids": ["snowtown-yeti"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Fuji 五湖 3 日 滑雪 + 觀景",
+      "summary": "Day1 Fujiten、Day2 河口湖纜車 + 富岳風穴、Day3 Yeti。 Day 1 Fujiten, Day 2 Kawaguchiko ropeway + lava caves, Day 3 Yeti.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["fujiten-snow", "kawaguchiko-ropeway", "fugaku-wind-cave", "snowtown-yeti"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Sun Meadows + Yatsugatake 雪 2 日",
+      "summary": "Day1 Sun Meadows、Day2 八ヶ岳南麓滑雪 + 星空夜觀。 Day 1 Sun Meadows, Day 2 Yatsugatake skiing + stargazing.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "stargazing"],
+      "pace": "balanced",
+      "place_ids": ["sun-meadows-kiyosato", "yatsugatake-south-ski"],
+      "pinned_vibes": ["stargazing"]
+    },
+    {
+      "title": "Yamanaka 湖 + Carvas 半日",
+      "summary": "上午山中湖天鵝船 + 下午 Carvas 半日。 Yamanaka-ko swan-boat morning + Carvas ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "chill",
+      "place_ids": ["yamanakako-swan-boat", "carvas-yamanaka"],
+      "pinned_vibes": ["family"]
+    }
+  ]
+}

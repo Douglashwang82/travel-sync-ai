@@ -12,81 +12,324 @@
   ],
   "routes": [
     {
-      "title": "苗場 滑雪一日",
-      "summary": "越後湯澤全區共有多達 19 座滑雪場，其中佔地面積最廣、最具人氣指標的就首推苗場滑雪場。『雪鄉』的新潟縣，下雪天數超過全季的50％，平均雪量達 2 公尺以上。 Yuzawa-area flagship. Connected to neighbouring Kagura by the 5.5 km Dragondola (Japan's longest gondola). ~2.5 M annual skier visits.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "苗場 Naeba 滑雪一日",
+      "summary": "越後湯澤旗艦雪場 Naeba，5.5 公里 Dragondola 連 Kagura，年遊客 2.5 萬人。 Yuzawa flagship: 5.5 km Dragondola (Japan's longest) linking to Kagura; ~2.5 M annual visitors.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "naeba"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["naeba"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "上越國際 滑雪一日",
-      "summary": "上越雪場佔地1000萬平方米，配置有25條基本道和22條變化豐富的雪道，日本屈指可數的大滑雪場之一。本雪場也是日本滑板玩家口中，相當熱門的地點。 1,000 ha terrain split into 4 zones (Mother's, Panorama, Active, Forest). Niigata-style heavy snow; popular with snowboarders.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "adventure"
-      ],
+      "title": "上越國際 Joetsu Kokusai 滑雪一日",
+      "summary": "1,000 公頃、4 大區 47 條雪道的上越國際，板友天堂。 1,000 ha, four zones (Mother's, Panorama, Active, Forest), 47 trails; snowboarder favourite.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "joetsu-kokusai"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["joetsu-kokusai"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "妙高高原 / 赤倉温泉 滑雪一日",
-      "summary": "「赤倉温泉滑雪場」位於妙高山是日本古温泉且是日本Mt.6高山六大温泉滑雪區之一。鬆軟的天然雪況和22條豐富多彩的路線，讓你盡情暢遊在妙高温泉滑雪場！ Largest Myoko Kogen ski area; operating since 1937. Three sections (Yodel, Kumado, Ginrei). Night skiing available. Linked-pass with neighbouring Akakura Kanko.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "赤倉溫泉 Akakura 滑雪一日",
+      "summary": "妙高高原最大雪場、Mt.6 之一，3 大區段、夜滑、與 Kanko 通票連線。 Largest Myoko-Kogen resort, Mt.6 member, three sections, night skiing, linked pass with Kanko.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
       "pace": "balanced",
-      "place_ids": [
-        "akakura-onsen"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["akakura-onsen"],
+      "pinned_vibes": ["ski"]
     },
     {
-      "title": "舞子 滑雪一日",
-      "summary": "舞子滑雪場位於新潟縣南魚沼市，是四季皆宜的度假勝地。雪場共3大區域，擁有全長約6,000公尺的滑道，總共有26條滑雪道。ski-in、ski-out的設計非常的方便。 Three connected zones (Maiko / Nagamine / Okusoechi). 6 km top-to-bottom. Free shuttle from Echigo-Yuzawa Shinkansen station.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "onsen",
-        "relaxed",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "舞子 Maiko Snow Resort 滑雪一日",
+      "summary": "南魚沼舞子 + 長峰 + 奧添地三相連，6 公里長下滑，Shinkansen 站直送。 Maiko + Nagamine + Okusoechi linked zones, 6 km longest run, Shinkansen shuttle.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "convenient"],
       "pace": "balanced",
-      "place_ids": [
-        "maiko-snow-resort"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["maiko-snow-resort"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "神樂 Kagura 滑雪一日",
+      "summary": "與 Naeba 經 Dragondola 相連的 Kagura，海拔較高、雪況穩定、5 月仍可滑。 Linked to Naeba via Dragondola; higher elevation, steady snow into May.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "spring-ski"],
+      "pace": "balanced",
+      "place_ids": ["kagura-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "赤倉觀光 Akakura Kanko 滑雪一日",
+      "summary": "1937 開業的 Akakura Kanko，雪道優雅、Hotel 等級高。 Historic 1937 resort with elegant fall-line runs; classic Akakura Kanko Hotel base.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury", "heritage"],
+      "pace": "balanced",
+      "place_ids": ["akakura-kanko"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "妙高杉之原 Myoko Suginohara 滑雪一日",
+      "summary": "日本最長 8.5 公里下滑、Gondola 直達 1,856 公尺。 Japan's longest single run at 8.5 km; gondola to 1,856 m.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["myoko-suginohara"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "池之平 Ikenotaira Myoko 滑雪一日",
+      "summary": "妙高池之平，家庭區、初級緩坡 + Kids Park。 Family-focused Myoko resort with beginner cruisers and a kids' park.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["ikenotaira-myoko"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Lotte 阿羅哈 Myoko Hill 滑雪一日",
+      "summary": "Lotte Arai Resort，2017 重生，深粉雪 + 5 公里長下滑 + 樹間雪況。 Lotte Arai: relaunched in 2017, deep powder, 5 km top-to-bottom, lift-served trees.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury", "tree-skiing"],
+      "pace": "packed",
+      "place_ids": ["lotte-arai"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Madarao 斑尾高原 (Niigata 側) 滑雪一日",
+      "summary": "斑尾與 Tangram 兩場通票，60% 未壓雪、Madapow 樹間。 Madarao + Tangram linked pass: 60% ungroomed, 'Madapow' tree skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["madarao-tangram"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Ishiuchi Maruyama 滑雪一日",
+      "summary": "石打丸山雪場、3 個 Gondola、Shinkansen 站 5 分鐘巴士。 Ishiuchi Maruyama: 3 gondolas, 5 min from Shinkansen station, huge family terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["ishiuchi-maruyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Gala 湯澤 滑雪一日",
+      "summary": "新幹線直達站內就是 Gala Yuzawa 雪場入口，東京到雪場 75 分。 Gala Yuzawa: Shinkansen station literally inside the base; Tokyo-to-snow in 75 min.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "chill",
+      "place_ids": ["gala-yuzawa"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Yuzawa Park 越後湯澤 滑雪一日",
+      "summary": "越後湯澤車站旁，2 個區段、家庭與初學者首選。 Beside Echigo-Yuzawa station: small but convenient family resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["yuzawa-park"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "湯澤高原 Yuzawa Kogen 滑雪一日",
+      "summary": "Yuzawa 站旁 166 人座 Gondola 上山，雪場山頂景觀好。 Big ropeway up from Yuzawa station; summit views and family pistes.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "scenic"],
+      "pace": "chill",
+      "place_ids": ["yuzawa-kogen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "中里 Iwappara 滑雪一日",
+      "summary": "南魚沼 Iwappara 雪場，平日少人潮、3 公里長下滑。 South Uonuma Iwappara: midweek-empty 3 km top-to-bottom.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed", "family"],
+      "pace": "chill",
+      "place_ids": ["iwappara-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Hakkaisan 八海山 滑雪一日",
+      "summary": "Hakkaisan 雪場，Ropeway 直達 1,147 公尺，1,700m 落差。 Hakkaisan ropeway resort: top at 1,147 m, big vertical.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["hakkaisan-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Shiozawa Snow Resort 滑雪一日",
+      "summary": "鹽澤宇佐美雪場，與 Maiko 鄰、地方人愛戴。 Shiozawa-Usami resort near Maiko; local favourite.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["shiozawa-snow"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Nakazato Snowwood 滑雪一日",
+      "summary": "中里 Snowwood 雪場，Park + Half-pipe 出色。 Nakazato Snowwood: great park and half-pipe for snowboarders.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["nakazato-snowwood"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Shimohei 神立 滑雪一日",
+      "summary": "神立 Snow Resort，越後湯澤站 5 分鐘巴士。 Kandatsu Snow Resort: 5 min bus from Echigo-Yuzawa station.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "nightlife"],
+      "pace": "balanced",
+      "place_ids": ["kandatsu-snow"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "上越 Charmant 火打 滑雪一日",
+      "summary": "上越 Charmant Hiuchi 雪場，少壓雪、樹間 + 大空中。 Charmant Hiuchi: minimal grooming, plentiful glades.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["charmant-hiuchi"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Iozumi 五色之原 滑雪一日",
+      "summary": "妙高 Iozumi 五色之原雪場，林間滑行樂趣多。 Myoko Iozumi backcountry-feel resort.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["iozumi-goshikinohara"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "湯澤 Park Snowboarder's 滑雪一日",
+      "summary": "湯澤雪場專為 Snowboarder 設計，Park 路線豐富。 Yuzawa Park-focused resort designed for snowboarders.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["yuzawa-park-snowboarders"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "新潟 Mt 鳥屋野 滑雪一日",
+      "summary": "新潟市區邊緣鳥屋野山小雪場。 In-city Niigata's tiny Toyano resort.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "convenient"],
+      "pace": "chill",
+      "place_ids": ["toyano-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "佐渡 Sado-Sankyo 滑雪一日",
+      "summary": "佐渡島山岳 mini 雪場，海島滑雪的奇妙體驗。 Sado Island micro-resort: unique sea-island skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "unique"],
+      "pace": "chill",
+      "place_ids": ["sado-sankyo"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Naspa New Otani Yuzawa 滑雪一日",
+      "summary": "Naspa New Otani 飯店雪場，純為飯店住客設計。 Naspa New Otani in-house guest-only resort.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "family"],
+      "pace": "chill",
+      "place_ids": ["naspa-yuzawa"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "苗場 + Dragondola + Kagura 1 日",
+      "summary": "Naeba 早場 → 5.5 公里 Dragondola → Kagura 下午雪。 Naeba morning → Dragondola → Kagura afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "scenic"],
+      "pace": "packed",
+      "place_ids": ["naeba", "dragondola", "kagura-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "妙高 Myoko 3 場通票",
+      "summary": "Akakura Onsen + Akakura Kanko + Suginohara 三場連線 1 日。 Akakura Onsen + Akakura Kanko + Suginohara linked-pass full day.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure"],
+      "pace": "packed",
+      "place_ids": ["akakura-onsen", "akakura-kanko", "myoko-suginohara"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Lotte Arai 粉雪 + 韓食晚餐",
+      "summary": "全日 Lotte Arai 滑雪 + 飯店韓國料理晚餐。 Lotte Arai ski day + Korean kaiseki dinner in the hotel.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "foodie", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["lotte-arai", "lotte-arai-korean-restaurant"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "Gala Yuzawa + 越後湯澤啤酒",
+      "summary": "上午 Gala 滑雪 → 下午越後湯澤車站 Ponshukan 利酒體驗。 Gala morning, Ponshukan sake-tasting bar at Echigo-Yuzawa station.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["gala-yuzawa", "ponshukan-yuzawa"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Hakkaisan 滑雪 + 八海山酒造",
+      "summary": "上午 Hakkaisan 滑雪 → 下午八海山酒造參觀品酒。 Hakkaisan ski, then Hakkaisan Sake Brewery tour.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "culture"],
+      "pace": "balanced",
+      "place_ids": ["hakkaisan-ski", "hakkaisan-brewery"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "湯澤 1 日 滑雪 + 兜湯",
+      "summary": "上午湯澤高原 → 下午湯澤站旁兜湯泡湯。 Yuzawa Kogen morning, Kabuto-no-Yu onsen by Yuzawa station afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "convenient"],
+      "pace": "chill",
+      "place_ids": ["yuzawa-kogen", "kabuto-no-yu"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "苗場 + Prince 晚會",
+      "summary": "Naeba 全日滑雪 + 苗場 Prince 晚間 Apre-Ski。 Full-day Naeba + Naeba Prince apres-ski evening.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["naeba", "naeba-prince-hotel"],
+      "pinned_vibes": ["nightlife"]
+    },
+    {
+      "title": "Ishiuchi + Maiko 連線 1 日",
+      "summary": "Ishiuchi 早 + Maiko 午後，新幹線站旁雙場。 Ishiuchi morning + Maiko afternoon (both station-side).",
+      "vibe_tags": ["ski", "snow", "winter", "convenient"],
+      "pace": "packed",
+      "place_ids": ["ishiuchi-maruyama", "maiko-snow-resort"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niigata 5 日 Yuzawa + Myoko 巡禮",
+      "summary": "Day1 Naeba、Day2 Kagura、Day3 Lotte Arai、Day4 Akakura Onsen、Day5 Suginohara。 5-day grand tour across Yuzawa and Myoko.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["naeba", "kagura-ski", "lotte-arai", "akakura-onsen", "myoko-suginohara"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "湯澤 Snow Country 1 日小資路線",
+      "summary": "Tokyo 早 Shinkansen → Gala 滑雪 → 晚回 Tokyo。 Tokyo morning Shinkansen → Gala Yuzawa → return same day.",
+      "vibe_tags": ["ski", "snow", "winter", "budget", "convenient"],
+      "pace": "packed",
+      "place_ids": ["gala-yuzawa"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "妙高 Myoko + 飯山町 雪見散策",
+      "summary": "Day1 Akakura、Day2 Suginohara + 飯山雪見。 Day 1 Akakura + Day 2 Suginohara + Iiyama snow town.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "culture"],
+      "pace": "balanced",
+      "place_ids": ["akakura-onsen", "myoko-suginohara", "iiyama-town"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Naeba 4 日 Prince Pass",
+      "summary": "Naeba/Kagura/Tashiro/Mitsumata 4 場通票 4 日。 Naeba Prince 4-resort pass over 4 days (Naeba/Kagura/Tashiro/Mitsumata).",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["naeba", "kagura-ski", "tashiro-ski", "mitsumata-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "湯澤兼宿 + 鶉粥早餐 + 滑雪",
+      "summary": "宿越後湯澤旅館 + 早餐魚沼鶉粥 + Maiko 全日滑雪。 Yuzawa ryokan + Uonuma rice porridge breakfast + Maiko full-day ski.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "onsen", "culture"],
+      "pace": "balanced",
+      "place_ids": ["yuzawa-ryokan", "uonuma-rice-breakfast", "maiko-snow-resort"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Niigata 海鮮 + Yuzawa 滑雪 2 日",
+      "summary": "Day1 Yuzawa 滑雪、Day2 新潟市寺泊魚市海鮮。 Day 1 Yuzawa skiing, Day 2 Teradomari fish market.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "city"],
+      "pace": "balanced",
+      "place_ids": ["yuzawa-kogen", "teradomari-fish-market"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Madarao Niigata Side + 嬬恋 / 越後湯澤",
+      "summary": "Madarao + Tangram 兩場通票 + 越後湯澤泊。 Madarao + Tangram linked-pass + Yuzawa overnight.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["madarao-tangram", "echigo-yuzawa-stay"],
+      "pinned_vibes": ["powder"]
     }
   ]
 }

@@ -1,0 +1,823 @@
+{
+  "destination": "Japan",
+  "destination_aliases": [
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan",
+    "全日本滑雪",
+    "japan grand ski",
+    "日本滑雪"
+  ],
+  "routes": [
+    {
+      "title": "Japan Powder Grand Tour 12 日 (Hokkaido + Honshu)",
+      "summary": "12 日跨北海道與本州粉雪行：Niseko → Rusutsu → Asahidake → Hakkoda → Zao → Nozawa → Hakuba。 12-day grand tour: Niseko, Rusutsu, Asahidake, Hakkoda, Zao, Nozawa, Hakuba.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "rusutsu", "asahidake", "hakkoda-ropeway", "zao-onsen", "nozawa-onsen", "hakuba-happo-one"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Tohoku 10 日 樹冰 + 溫泉",
+      "summary": "Tohoku 10 日：Zao 樹冰 → Hakkoda → Appi → Geto → Inawashiro → Nekoma。 10-day Tohoku: Zao monsters, Hakkoda, Appi, Geto, Inawashiro, Nekoma.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic", "powder"],
+      "pace": "packed",
+      "place_ids": ["zao-onsen", "hakkoda-ropeway", "appi-kogen", "geto-kogen", "inawashiro", "nekoma-mountain"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hokkaido 7 日 Niseko + Tomamu",
+      "summary": "7 日 Hokkaido：Niseko 3 日 → Rusutsu → Tomamu 2 日 → 札幌。 Hokkaido week: Niseko 3 days, Rusutsu, Tomamu 2 days, Sapporo.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "rusutsu", "tomamu-resort", "sapporo-teine"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hakuba Valley 全 10 場 4 日通票",
+      "summary": "Hakuba Valley 4 日通票 + 10 場輪滑。 4-day Hakuba Valley pass covering all 10 resorts.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hakuba-happo-one", "tsugaike-kogen", "hakuba-47-goryu", "hakuba-iwatake", "hakuba-cortina", "hakuba-norikura", "kashimayari-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Myoko Akakura + Shiga Kogen 6 日",
+      "summary": "Myoko Akakura 3 日 + Shiga Kogen 3 日。 Myoko Akakura 3 days + Shiga Kogen 3 days.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "adventure"],
+      "pace": "packed",
+      "place_ids": ["akakura-onsen", "shiga-kogen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niigata + Nagano 5 日 雪鄉行",
+      "summary": "Day1-2 Naeba/Kagura、Day3 Nozawa、Day4 Shiga Kogen、Day5 Hakuba。 5-day Yuzawa-to-Hakuba arc.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "onsen", "adventure"],
+      "pace": "packed",
+      "place_ids": ["naeba", "kagura-ski", "nozawa-onsen", "shiga-kogen", "hakuba-happo-one"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Tokyo 出發 週末雪場 Top 5",
+      "summary": "Gala Yuzawa / Naeba / Hakuba / Kusatsu / Karuizawa 五場任選。 Weekend Top-5 day-trip options from Tokyo.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["gala-yuzawa", "naeba", "hakuba-happo-one", "kusatsu-onsen", "karuizawa-prince"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "西日本 Kansai 5 日 滑雪",
+      "summary": "Kansai 5 日：Hachi-Hachikita → Skijam Katsuyama → Biwako Valley → Daisen → Hiruzen。 Kansai 5-day: Hachi-Hachikita, Skijam, Biwako, Daisen, Hiruzen.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "adventure"],
+      "pace": "packed",
+      "place_ids": ["hachi-hachikita", "skijam-katsuyama", "biwako-valley", "daisen-ski", "hiruzen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Family 親子 7 日 (Karuizawa + 草津 + Nozawa)",
+      "summary": "親子 7 日：Karuizawa Prince → 草津溫泉 → Nozawa Onsen → 上越國際。 Family week: Karuizawa, Kusatsu, Nozawa, Joetsu.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "onsen"],
+      "pace": "balanced",
+      "place_ids": ["karuizawa-prince", "kusatsu-onsen", "nozawa-onsen", "joetsu-kokusai"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Luxury 奢華 Onsen + Ski 7 日",
+      "summary": "Lotte Arai + Niseko Hilton + Nozawa Onsen 老旅館 + 萬座溫泉。 Luxury onsen-ski week: Lotte Arai, Hilton Niseko, Nozawa ryokan, Manza Onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "onsen", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["lotte-arai", "niseko-village", "nozawa-onsen", "manza-onsen"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Backcountry 行家 7 日 Hokkaido + Hakkoda",
+      "summary": "Niseko gate 4 + Asahidake + Kurodake + Hakkoda 4 處 backcountry。 Pro backcountry tour: Niseko gate 4, Asahidake, Kurodake, Hakkoda.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-annupuri", "asahidake", "sounkyo-kurodake", "hakkoda-ropeway"],
+      "pinned_vibes": ["backcountry"]
+    },
+    {
+      "title": "Snowboarder Park 行 6 日",
+      "summary": "Niseko Hanazono + Dynaland + Hakuba 47 + Sumikawa snowpark。 Park-rat tour: Hanazono, Dynaland, Hakuba 47, Sumikawa.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "packed",
+      "place_ids": ["niseko-hanazono", "dynaland", "hakuba-47-goryu", "sumikawa-snowpark"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "新幹線雪場 7 日連線 (Tokyo Hub)",
+      "summary": "東京為基地、Shinkansen 連 Yuzawa / Karuizawa / Nagano / Aomori。 Tokyo-hub Shinkansen tour: Yuzawa, Karuizawa, Nagano, Aomori.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "train"],
+      "pace": "packed",
+      "place_ids": ["gala-yuzawa", "karuizawa-prince", "nozawa-onsen", "hakkoda-ropeway"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Mt.6 全六場朝聖 14 日",
+      "summary": "MT.6 高山温泉滑雪：Zao / Nozawa / Shiga Kogen / Myoko / Hakuba / Kusatsu。 The Six Great Onsen Resorts pilgrimage tour.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "heritage", "adventure"],
+      "pace": "packed",
+      "place_ids": ["zao-onsen", "nozawa-onsen", "shiga-kogen", "akakura-onsen", "hakuba-happo-one", "kusatsu-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Spring Skiing 4 月-5 月 7 日",
+      "summary": "春滑：Gassan → Norikura Ropeway → Tateyama 雪牆 → Kagura。 Spring ski tour: Gassan, Norikura, Tateyama Snow Wall, Kagura.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "scenic", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["gassan-spring-ski", "norikura-ropeway-ski", "tateyama-snow-wall", "kagura-ski"],
+      "pinned_vibes": ["spring-ski"]
+    },
+    {
+      "title": "Early Season 10-11 月 4 日",
+      "summary": "Snowtown Yeti → Akita Hachimantai → Manza。 Earliest-opening resorts: Yeti, Akita Hachimantai, Manza.",
+      "vibe_tags": ["ski", "snow", "winter", "early-season"],
+      "pace": "balanced",
+      "place_ids": ["snowtown-yeti", "akita-hachimantai", "manza-onsen"],
+      "pinned_vibes": ["early-season"]
+    },
+    {
+      "title": "Japan 50 場 21 日終極粉雪",
+      "summary": "21 日跨 4 大島 (Hokkaido、Honshu、Shikoku 過、Kyushu 過)：50 場跑透。 21-day ultimate powder tour across Japan's major regions.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "rusutsu", "kiroro-resort", "tomamu-resort", "asahidake", "hakkoda-ropeway", "appi-kogen", "zao-onsen", "nozawa-onsen", "shiga-kogen", "hakuba-happo-one", "naeba", "kagura-ski", "kusatsu-onsen", "manza-onsen", "skijam-katsuyama", "hachi-hachikita", "daisen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "First Timer 初心者 5 日 (Hakuba 入門)",
+      "summary": "初心者 5 日 Hakuba Iwatake / Tsugaike / Goryu 初級雪道 + 學校。 Beginner week: Iwatake, Tsugaike, Goryu greens with English ski school.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "beginner"],
+      "pace": "chill",
+      "place_ids": ["hakuba-iwatake", "tsugaike-kogen", "hakuba-47-goryu"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "First Timer 初心者 5 日 (Niseko 入門)",
+      "summary": "初心者 5 日 Niseko Hanazono / Hirafu 初級雪道 + 英文學校。 Beginner Niseko week with English ski school at Hanazono/Hirafu.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "beginner"],
+      "pace": "chill",
+      "place_ids": ["niseko-hanazono", "niseko-grand-hirafu"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Foodie 食通滑雪 6 日",
+      "summary": "Niseko 高級懷石 + Hakuba French + 札幌湯咖哩 + Hida 飛驒牛 + Echizen 蟹。 Foodie tour: Niseko kaiseki, Hakuba French, Sapporo soup curry, Hida beef, Echizen crab.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["niseko-united", "hakuba-happo-one", "sapporo-teine", "takasu-mountains", "skijam-katsuyama"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Onsen 溫泉行家 7 日",
+      "summary": "草津 → 萬座 → Nozawa → Zao → Hakkoda → 酸湯 → 二世古昆布。 Onsen master-week: Kusatsu, Manza, Nozawa, Zao, Hakkoda, Sukayu, Konbu.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "relaxed", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["kusatsu-onsen", "manza-onsen", "nozawa-onsen", "zao-onsen", "hakkoda-ropeway", "sukayu-onsen", "konbu-onsen-niseko"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "World Cup Course 賽道 5 日",
+      "summary": "Naeba + Hakuba Happo + Shizukuishi 三場 World Cup 賽道體驗。 Three official World Cup courses: Naeba, Happo, Shizukuishi.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "racing"],
+      "pace": "balanced",
+      "place_ids": ["naeba", "hakuba-happo-one", "shizukuishi"],
+      "pinned_vibes": ["adventure"]
+    },
+    {
+      "title": "Honeymoon 雪月 5 日 (Tomamu + Niseko)",
+      "summary": "Tomamu 冰之教堂 → Niseko Park Hyatt 浪漫晚餐。 Tomamu Ice Chapel + Park Hyatt Niseko romance week.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "romance"],
+      "pace": "balanced",
+      "place_ids": ["tomamu-resort", "tomamu-ice-village", "niseko-hanazono", "park-hyatt-niseko"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Family Kids 5 日 (Karuizawa + Hakuba Iwatake)",
+      "summary": "Karuizawa Prince Kids Park + Hakuba Iwatake 兒童雪上樂園。 Karuizawa Kids + Iwatake Children Park family week.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "kids"],
+      "pace": "chill",
+      "place_ids": ["karuizawa-prince", "hakuba-iwatake"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Train Otaku 列車迷 5 日",
+      "summary": "津輕 Stove 列車 + 雪見 SL 銀河 + 飯山雪見 train。 Train-otaku week: Tsugaru Stove, SL Ginga, Iiyama snow train.",
+      "vibe_tags": ["ski", "snow", "winter", "train", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["tsugaru-stove-train", "sl-ginga", "iiyama-snow-train"],
+      "pinned_vibes": ["train"]
+    },
+    {
+      "title": "Photographer 攝影師 5 日",
+      "summary": "Biei 青池 + Goshikinuma + Shirakawa-go + Ginzan Onsen。 Photographer's week: Blue Pond, Goshiki-numa, Shirakawa-go, Ginzan Onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "photography"],
+      "pace": "balanced",
+      "place_ids": ["biei-blue-pond", "goshiki-numa", "shirakawa-go", "ginzan-onsen"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Solo Traveler 一人旅 7 日",
+      "summary": "Hakuba 47 → Madarao → Nozawa → Akakura: 旅館單人房 + 滑雪學校。 Solo-friendly week: Hakuba 47, Madarao, Nozawa, Akakura.",
+      "vibe_tags": ["ski", "snow", "winter", "solo"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-47-goryu", "madarao-kogen", "nozawa-onsen", "akakura-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Budget 學生 7 日 巴士行",
+      "summary": "新宿巴士 + Madarao 2 日 + 越後湯澤 2 日 + 草津 2 日。 Budget bus tour: Madarao 2 d, Yuzawa 2 d, Kusatsu 2 d.",
+      "vibe_tags": ["ski", "snow", "winter", "budget"],
+      "pace": "balanced",
+      "place_ids": ["shinjuku-highway-bus", "madarao-kogen", "yuzawa-kogen", "kusatsu-onsen"],
+      "pinned_vibes": ["budget"]
+    },
+    {
+      "title": "Festival 雪祭 7 日 (1 月-2 月)",
+      "summary": "札幌雪祭 → 小樽光之雕 → Sounkyo 冰瀑 → 弘前燈雪 + 滑雪。 February festival tour: Sapporo Snow Festival, Otaru, Sounkyo Ice Falls, Hirosaki.",
+      "vibe_tags": ["ski", "snow", "winter", "festival", "culture"],
+      "pace": "packed",
+      "place_ids": ["sapporo-snow-festival", "otaru-light-festival", "sounkyo-ice-festival", "hirosaki-snow-lantern", "appi-kogen"],
+      "pinned_vibes": ["festival"]
+    },
+    {
+      "title": "Pet-Friendly 寵物友善 5 日",
+      "summary": "輕井澤 Pet Hotel + Tsugaike Dog Park + Hakuba 寵物友好雪場。 Pet-friendly ski week: Karuizawa pet hotel, Tsugaike dog park, Hakuba pet resorts.",
+      "vibe_tags": ["ski", "snow", "winter", "pet-friendly", "family"],
+      "pace": "balanced",
+      "place_ids": ["karuizawa-prince", "tsugaike-dog-park", "hakuba-iwatake"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "二週日本滑雪深度",
+      "summary": "二週深度：札幌 → Niseko → Rusutsu → Tomamu → Hakkoda → Appi → Zao → Nozawa → Hakuba。 Two-week deep tour spanning Hokkaido and Honshu's headline resorts.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury"],
+      "pace": "packed",
+      "place_ids": ["sapporo-teine", "niseko-united", "rusutsu", "tomamu-resort", "hakkoda-ropeway", "appi-kogen", "zao-onsen", "nozawa-onsen", "hakuba-happo-one"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Snowshoe + Ski 結合 5 日",
+      "summary": "Shirakawa-go 雪鞋 + Tsumagoi + Hakuba Iwatake + Asahidake snowshoe。 Snowshoe + ski mixed week.",
+      "vibe_tags": ["ski", "snow", "winter", "snowshoe", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["shirakawa-go-snowshoe", "tsumagoi-snow-scenery", "hakuba-iwatake", "asahidake"],
+      "pinned_vibes": ["snowshoe"]
+    },
+    {
+      "title": "Christmas 聖誕滑雪 5 日",
+      "summary": "12 月 22-26 日：Niseko Hilton 聖誕晚餐 + Hakuba 聖誕市集 + 滑雪 4 日。 Christmas ski tour with Niseko Hilton dinner and Hakuba market.",
+      "vibe_tags": ["ski", "snow", "winter", "christmas", "family", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["niseko-village", "hakuba-christmas-market", "hakuba-happo-one"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "New Year 跨年滑雪 5 日",
+      "summary": "12 月 30 - 1 月 3 日：Nozawa 新年 + 跨年滑雪 + 初詣參拜。 New Year ski tour: Nozawa countdown + first ski + first shrine visit.",
+      "vibe_tags": ["ski", "snow", "winter", "new-year", "culture"],
+      "pace": "balanced",
+      "place_ids": ["nozawa-onsen", "nozawa-new-year-shrine"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "1 月 中山道 Onsen + Ski 8 日",
+      "summary": "草津 → 萬座 → 輕井澤 → Hakuba → Nozawa → 新潟。 January Tokaido-route ski + onsen tour.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury", "culture"],
+      "pace": "packed",
+      "place_ids": ["kusatsu-onsen", "manza-onsen", "karuizawa-prince", "hakuba-happo-one", "nozawa-onsen", "naeba"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Hokkaido Hot Spring Crawl 7 日",
+      "summary": "登別 + 洞爺 + 二世古昆布 + 旭岳 + 層雲峽 + 十勝川。 Hokkaido onsen-crawl: Noboribetsu, Toya, Konbu, Asahidake, Sounkyo, Tokachigawa.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["noboribetsu-onsen", "lake-toya-onsen", "konbu-onsen-niseko", "asahidake", "sounkyo-ice-festival", "tokachigawa-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Ski + Sake 釀酒 6 日",
+      "summary": "新潟八海山酒造 + 長野真澄酒造 + Hakuba 47 + Nozawa 滑雪。 Ski-and-sake tour: Hakkaisan + Masumi breweries + skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "sake", "culture"],
+      "pace": "balanced",
+      "place_ids": ["hakkaisan-brewery", "masumi-brewery", "hakuba-47-goryu", "nozawa-onsen"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Anime 聖地 + Ski 5 日",
+      "summary": "Your Name 鈴谷 + 飛驒高山 + 君之名 + Hakuba 雪場。 Anime pilgrimage + Hakuba ski.",
+      "vibe_tags": ["ski", "snow", "winter", "anime", "culture"],
+      "pace": "balanced",
+      "place_ids": ["takayama-old-town", "hida-furukawa-old-town", "kimi-no-na-shrine", "hakuba-happo-one"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Mountain Photographer 山岳攝 7 日",
+      "summary": "Mt Fuji + Tateyama + 立山雪牆 + 旭岳 + 八甲田。 Mountain photography week: Fuji, Tateyama, Asahidake, Hakkoda.",
+      "vibe_tags": ["ski", "snow", "winter", "photography", "scenic", "ropeway"],
+      "pace": "balanced",
+      "place_ids": ["mt-fuji-viewpoint", "tateyama-snow-wall", "asahidake", "hakkoda-ropeway"],
+      "pinned_vibes": ["photography"]
+    },
+    {
+      "title": "Tokyo Hub Day Trip 7 日",
+      "summary": "東京為基地、每日去 Gala / Naeba / Hakuba / Kusatsu / 草津 / Karuizawa / Yeti。 Tokyo-hub 7-day-trip rotation.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["gala-yuzawa", "naeba", "hakuba-happo-one", "kusatsu-onsen", "karuizawa-prince", "snowtown-yeti"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Couples Romantic 情侶 5 日 (Niseko)",
+      "summary": "Niseko Park Hyatt 5 日：每日早 ski、晚高級和食 + 冰之教堂。 Park Hyatt Niseko couples week with kaiseki + ice chapel.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "romance"],
+      "pace": "chill",
+      "place_ids": ["park-hyatt-niseko", "niseko-hanazono", "tomamu-ice-village"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Hokkaido + Tohoku 接力 14 日",
+      "summary": "新千歲 → Niseko → Sapporo → Hakodate Ferry → 青森 Hakkoda → 岩手 Appi → Yamagata Zao。 Hokkaido-to-Tohoku train+ferry week-two.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "train"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "sapporo-teine", "hakkoda-ropeway", "appi-kogen", "zao-onsen"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Tohoku Express 5 日",
+      "summary": "東京 Shinkansen → Zao → Hakkoda → Appi → Geto → 東京。 Tokyo-loop Shinkansen Tohoku express week.",
+      "vibe_tags": ["ski", "snow", "winter", "train", "convenient"],
+      "pace": "packed",
+      "place_ids": ["zao-onsen", "hakkoda-ropeway", "appi-kogen", "geto-kogen"],
+      "pinned_vibes": ["train"]
+    },
+    {
+      "title": "Hakuba Valley Snowboarder 5 日",
+      "summary": "Hakuba 47 Park 4 日 + Cortina 樹滑 1 日。 Hakuba Valley snowboarder week: 47 park + Cortina trees.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-47-goryu", "hakuba-cortina"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Nozawa Festival 火祭 + 滑雪 4 日",
+      "summary": "1 月 13-16 日：野澤温泉 + 火祭 + 滑雪 + 街道散步。 Nozawa Fire Festival week (Jan 13-16).",
+      "vibe_tags": ["ski", "snow", "winter", "festival", "culture", "onsen"],
+      "pace": "balanced",
+      "place_ids": ["nozawa-onsen", "nozawa-fire-festival", "nozawa-soto-yu-walk"],
+      "pinned_vibes": ["festival"]
+    },
+    {
+      "title": "Sapporo Snow Festival 雪祭 + 滑雪 4 日",
+      "summary": "2 月初：札幌雪祭 + Sapporo Teine / Kokusai 滑雪。 Early-February Sapporo Snow Festival + city ski combo.",
+      "vibe_tags": ["ski", "snow", "winter", "festival", "city", "culture"],
+      "pace": "balanced",
+      "place_ids": ["sapporo-snow-festival", "sapporo-teine", "sapporo-kokusai"],
+      "pinned_vibes": ["festival"]
+    },
+    {
+      "title": "Niseko Korea Town + Ski 5 日",
+      "summary": "Niseko 韓食、韓人 ski school、5 日 Niseko United。 Niseko Korean-food + Korean ski-school week.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "powder"],
+      "pace": "balanced",
+      "place_ids": ["niseko-united", "niseko-korean-restaurants"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Niseko Australia Town + Ski 5 日",
+      "summary": "Niseko 澳洲餐廳、英文 ski school、Hirafu 5 日。 Niseko English-speaking expat-town week.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "nightlife"],
+      "pace": "balanced",
+      "place_ids": ["niseko-grand-hirafu", "niseko-aussie-bars"],
+      "pinned_vibes": ["nightlife"]
+    },
+    {
+      "title": "Japan Heli-ski 直升機 7 日",
+      "summary": "Niseko + Furano + Asahidake heli-ski 嚮導行。 Heli-ski week: Niseko cat-skiing + Furano + Asahidake guided heli.",
+      "vibe_tags": ["ski", "snow", "winter", "heli-ski", "backcountry", "luxury"],
+      "pace": "packed",
+      "place_ids": ["niseko-cat-ski", "furano", "asahidake", "hokkaido-heli-ski"],
+      "pinned_vibes": ["heli-ski"]
+    },
+    {
+      "title": "Japan Cat-skiing 雪貓 5 日",
+      "summary": "Niseko + Rusutsu Cat Tours 5 日。 Cat-ski week: Niseko + Rusutsu cat tours.",
+      "vibe_tags": ["ski", "snow", "winter", "cat-ski", "powder", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["niseko-cat-ski", "rusutsu-cat-ski"],
+      "pinned_vibes": ["cat-ski"]
+    },
+    {
+      "title": "Olympic Legacy 1972/1998 滑雪 5 日",
+      "summary": "1972 Teine + 1998 Hakuba Happo + Shiga Kogen + Karuizawa。 Olympic-venue legacy ski tour.",
+      "vibe_tags": ["ski", "snow", "winter", "heritage", "olympic"],
+      "pace": "balanced",
+      "place_ids": ["sapporo-teine", "hakuba-happo-one", "shiga-kogen", "karuizawa-prince"],
+      "pinned_vibes": ["heritage"]
+    },
+    {
+      "title": "Group 6+ 朋友 5 日",
+      "summary": "Hakuba 大別墅 6 人 + Hakuba Valley 5 日通票。 Big-group chalet week: Hakuba 6-pax villa + valley pass.",
+      "vibe_tags": ["ski", "snow", "winter", "group", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-chalet-6pax", "hakuba-happo-one", "hakuba-47-goryu", "hakuba-iwatake"],
+      "pinned_vibes": ["group"]
+    },
+    {
+      "title": "Tokyo + Hakuba 5 日 (新人婚禮)",
+      "summary": "Tokyo 婚禮 1 日 + Hakuba 4 日 ski。 Tokyo wedding + Hakuba honeymoon ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "romance", "wedding"],
+      "pace": "balanced",
+      "place_ids": ["tokyo-wedding-venue", "hakuba-happo-one"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Family Onsen Onsen 5 日 (Kusatsu)",
+      "summary": "Kusatsu 5 日 + 雪場 1 日 + 5 個共同湯。 Kusatsu family-onsen week with 1 day ski.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family"],
+      "pace": "chill",
+      "place_ids": ["kusatsu-onsen", "kusatsu-yubatake", "kusatsu-soto-yu-walk"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Japan First Snow 11 月初訪",
+      "summary": "11 月初開季：Snowtown Yeti / Akita Hachimantai / Lotte Arai (人造雪)。 November first-snow tour for early-season fix.",
+      "vibe_tags": ["ski", "snow", "winter", "early-season"],
+      "pace": "balanced",
+      "place_ids": ["snowtown-yeti", "akita-hachimantai", "lotte-arai"],
+      "pinned_vibes": ["early-season"]
+    },
+    {
+      "title": "March 春滑 7 日",
+      "summary": "3 月：Asahidake + Niseko + Hakuba + Tateyama 雪牆。 March spring-ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["asahidake", "niseko-united", "hakuba-happo-one", "tateyama-snow-wall"],
+      "pinned_vibes": ["spring-ski"]
+    },
+    {
+      "title": "Late Season 4-5 月 GW 滑雪",
+      "summary": "GW 黃金週 4 月底 - 5 月初：Gassan + Kagura + Norikura。 Golden Week late-season skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "late-season"],
+      "pace": "balanced",
+      "place_ids": ["gassan-spring-ski", "kagura-ski", "norikura-ropeway-ski"],
+      "pinned_vibes": ["spring-ski"]
+    },
+    {
+      "title": "Vegan Foodie + Ski 5 日",
+      "summary": "Hakuba T's Restaurant + Niseko Vegan Cafe + 5 日滑雪。 Vegan-foodie ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "vegan"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-ts-vegan", "niseko-vegan-cafe", "hakuba-happo-one", "niseko-united"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Halal Friendly 5 日",
+      "summary": "Halal-friendly 餐廳 + Tokyo Mosque + Hakuba 滑雪。 Halal-friendly ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "halal", "foodie", "family"],
+      "pace": "balanced",
+      "place_ids": ["tokyo-mosque", "hakuba-halal-restaurant", "hakuba-happo-one"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Couples Hot Spring + Powder 5 日",
+      "summary": "野澤温泉 5 日：每日 ski + 不同共同湯 + 私房懷石。 Couples Nozawa onsen + powder week.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "romance", "powder"],
+      "pace": "chill",
+      "place_ids": ["nozawa-onsen", "nozawa-soto-yu-walk", "nozawa-kaiseki"],
+      "pinned_vibes": ["romance"]
+    },
+    {
+      "title": "Park Rat 純板友 7 日",
+      "summary": "Niseko Hanazono + Hakuba 47 + Dynaland + Sumikawa snowpark 7 日。 Pure park-rat week across Japan's biggest parks.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "snowboard"],
+      "pace": "packed",
+      "place_ids": ["niseko-hanazono", "hakuba-47-goryu", "dynaland", "sumikawa-snowpark"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "Wedding 婚禮 + Ski Honeymoon 7 日",
+      "summary": "京都和裝婚禮 + Niseko 雪月。 Kyoto wedding + Niseko honeymoon ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "romance", "wedding"],
+      "pace": "balanced",
+      "place_ids": ["kyoto-wedding-shrine", "niseko-united"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "JR Pass 7 日 全國滑雪",
+      "summary": "JR Pass 7 日：Yuzawa → 仙台 → 札幌 → 名古屋 → 大阪。 JR Pass 7-day inter-city ski tour.",
+      "vibe_tags": ["ski", "snow", "winter", "train", "convenient"],
+      "pace": "packed",
+      "place_ids": ["gala-yuzawa", "zao-onsen", "sapporo-teine", "takasu-mountains", "hachi-hachikita"],
+      "pinned_vibes": ["train"]
+    },
+    {
+      "title": "Snow + City Mix 5 日 (Tokyo + Hakuba)",
+      "summary": "Tokyo 城市觀光 2 日 + Hakuba 3 日 ski。 Tokyo city + Hakuba ski blended week.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["tokyo-city-walk", "hakuba-happo-one"],
+      "pinned_vibes": ["city"]
+    },
+    {
+      "title": "Snow + City Mix 5 日 (Osaka + Hachi)",
+      "summary": "大阪城市觀光 2 日 + Hachi-Hachikita 3 日。 Osaka city + Hachi-Hachikita Kansai week.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "kansai"],
+      "pace": "balanced",
+      "place_ids": ["osaka-city-walk", "hachi-hachikita"],
+      "pinned_vibes": ["city"]
+    },
+    {
+      "title": "Snow + City Mix 5 日 (Sapporo + Niseko)",
+      "summary": "札幌城市觀光 2 日 + Niseko 3 日。 Sapporo city + Niseko ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "powder"],
+      "pace": "balanced",
+      "place_ids": ["sapporo-city-walk", "niseko-united"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "Snow Train 雪見列車 7 日",
+      "summary": "5 大雪見列車 + 4 個 ski 點：津輕 Stove → SL 雪見 → 飯山 → JR 五能線。 7-day snow-train + ski tour.",
+      "vibe_tags": ["ski", "snow", "winter", "train", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["tsugaru-stove-train", "sl-ginga", "iiyama-snow-train", "jr-gono-line", "hakuba-happo-one"],
+      "pinned_vibes": ["train"]
+    },
+    {
+      "title": "Senior 銀髮 5 日輕鬆行",
+      "summary": "輕井澤 + 草津 + Karuizawa 王子飯店 + 慢遊。 Senior-friendly 5-day onsen + light skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "senior", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["karuizawa-prince", "kusatsu-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Single Trip Niseko 1 場 7 日",
+      "summary": "Niseko 7 日純滑雪 + 每日不同子場。 Single-resort Niseko deep dive: rotate sub-resorts daily.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["niseko-united", "niseko-hanazono", "niseko-grand-hirafu", "niseko-village", "niseko-annupuri", "niseko-moiwa"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Single Trip Hakuba 1 場 7 日",
+      "summary": "Hakuba Valley 7 日深度、每日不同雪場。 Single-region Hakuba deep dive: 10-resort rotation.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-happo-one", "tsugaike-kogen", "hakuba-47-goryu", "hakuba-iwatake", "hakuba-cortina", "hakuba-norikura", "kashimayari-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Single Trip Shiga Kogen 1 場 5 日",
+      "summary": "志賀高原 5 日通票，18 場輪滑。 Shiga Kogen single-region 5-day pass rotation.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["shiga-kogen", "shiga-yakebitaiyama", "shiga-okushiga", "shiga-yokoteyama", "shiga-ichinose"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Single Trip Myoko 1 場 5 日",
+      "summary": "妙高 5 日：Akakura Onsen + Kanko + Suginohara + Lotte Arai + 池之平。 Myoko-Kogen single-region 5-day tour.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "luxury", "powder"],
+      "pace": "balanced",
+      "place_ids": ["akakura-onsen", "akakura-kanko", "myoko-suginohara", "lotte-arai", "ikenotaira-myoko"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Single Trip Yuzawa 1 場 5 日",
+      "summary": "越後湯澤 5 日：Naeba + Kagura + Gala + Maiko + Ishiuchi 通票。 Yuzawa single-region 5-resort pass tour.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["naeba", "kagura-ski", "gala-yuzawa", "maiko-snow-resort", "ishiuchi-maruyama"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Single Trip Furano 1 場 5 日",
+      "summary": "富良野 5 日深度：Kitanomine + Furano + Hill 探訪 + 美瑛雪景。 Furano single-region 5-day deep dive + Biei.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "powder"],
+      "pace": "balanced",
+      "place_ids": ["furano", "biei-blue-pond", "biei-patchwork-road"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Single Trip Tomamu 1 場 5 日",
+      "summary": "TOMAMU 5 日：滑雪 + 冰之村 + 水之教堂 + 雲海平台 (春)。 TOMAMU single-resort week: ski + Ice Village + Water Chapel.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "family"],
+      "pace": "balanced",
+      "place_ids": ["tomamu-resort", "tomamu-ice-village"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Single Trip Rusutsu 1 場 5 日",
+      "summary": "Rusutsu 5 日：3 山 18 部纜車 + Cat Tours + 冷凍主題公園 (冬)。 Rusutsu single-resort week + cat tours.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["rusutsu", "rusutsu-cat-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Niseko 私人嚮導 backcountry 5 日",
+      "summary": "Niseko 5 日純嚮導 backcountry，含 gate 4, 5, 6, Mt Yotei 攻頂。 Niseko 5-day fully-guided backcountry incl Mt Yotei summit.",
+      "vibe_tags": ["ski", "snow", "winter", "backcountry", "powder", "luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-backcountry-guide", "mt-yotei-backcountry"],
+      "pinned_vibes": ["backcountry"]
+    },
+    {
+      "title": "Tokachi 十勝 + Sahoro 5 日",
+      "summary": "Sahoro + Tomamu + 十勝牧場 + 帶廣豚丼。 Tokachi region: Sahoro + Tomamu + dairy farms + Obihiro butadon.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["sahoro-resort", "tomamu-resort", "tokachi-dairy-farm", "obihiro-butadon"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Asahikawa + 旭岳 + Furano 5 日",
+      "summary": "旭川市區 + 旭岳 + Furano。 Asahikawa city + Asahidake + Furano regional week.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "powder"],
+      "pace": "balanced",
+      "place_ids": ["asahikawa-city", "asahidake", "furano"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Sapporo 城市行 + 4 雪場 4 日",
+      "summary": "札幌 4 日：Teine + Bankei + Kokusai + Mt Moiwa。 Sapporo city + 4 city-area resorts in 4 days.",
+      "vibe_tags": ["ski", "snow", "winter", "city", "convenient"],
+      "pace": "packed",
+      "place_ids": ["sapporo-teine", "sapporo-bankei", "sapporo-kokusai", "sapporo-mt-moiwa"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "白川鄉 + 高山 + Takasu 5 日",
+      "summary": "Day1-2 高山 → 白川鄉 → Day3-5 Takasu Mountains 全 6 場。 Shirakawa-go + Takasu cluster week.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["shirakawa-go", "takayama-old-town", "takasu-mountains"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "兵庫 + 鳥取 山陰 5 日",
+      "summary": "Hachi-Hachikita + Daisen + Yumura + 城崎溫泉。 Hyogo + Tottori San-in week.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["hachi-hachikita", "daisen-ski", "yumura-onsen", "kinosaki-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "中四國 5 日 Daisen + Hiruzen + Mizuho",
+      "summary": "Daisen + Hiruzen + Mizuho Highland + Megahira 連線。 Chugoku-Shikoku 5-day connector.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["daisen-ski", "hiruzen-ski", "mizuho-highland", "megahira-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "九州雪場 6 日 (Mt Aso + 久住)",
+      "summary": "九州 Mt Aso + 久住高原 ski + 別府溫泉。 Kyushu rare-snow tour: Aso + Kuju + Beppu onsen.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "unique"],
+      "pace": "balanced",
+      "place_ids": ["mt-aso-ski", "kuju-kogen-ski", "beppu-onsen"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Shikoku 四國 雪鄉 5 日",
+      "summary": "石鎚 + Iya Valley + 四國 carwasher 山地。 Shikoku snow tour: Mt Ishizuchi + Iya Valley.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "unique"],
+      "pace": "balanced",
+      "place_ids": ["mt-ishizuchi-ski", "iya-valley-winter"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "5 大滑雪渡假村 5 日",
+      "summary": "Niseko / Rusutsu / Tomamu / Hakuba / Shiga Kogen 五大度假村。 Five-grand-resort week.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "luxury"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "rusutsu", "tomamu-resort", "hakuba-happo-one", "shiga-kogen"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Nagano Olympic 1998 紀念 4 日",
+      "summary": "1998 Nagano 冬奧場地巡禮：Happo (Alpine) + Iizuna (Mogul) + Iiyama (Cross-Country)。 1998 Nagano Olympic venue tour.",
+      "vibe_tags": ["ski", "snow", "winter", "heritage", "olympic"],
+      "pace": "balanced",
+      "place_ids": ["hakuba-happo-one", "iizuna-kogen", "iiyama-town"],
+      "pinned_vibes": ["heritage"]
+    },
+    {
+      "title": "Japan Powder Highway 7 日",
+      "summary": "Niseko + Sasa Snowtreck + Hakuba + Madarao + Nozawa: 粉雪走廊。 Japan's powder highway 7-day route.",
+      "vibe_tags": ["ski", "snow", "winter", "powder", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "hakuba-happo-one", "madarao-kogen", "nozawa-onsen"],
+      "pinned_vibes": ["powder"]
+    },
+    {
+      "title": "Working Holiday Visa 一個月雪季",
+      "summary": "Niseko / Hakuba 一個月 working holiday + 雪場員工宿舍。 One-month WH visa ski-work season at Niseko or Hakuba.",
+      "vibe_tags": ["ski", "snow", "winter", "long-stay", "powder"],
+      "pace": "balanced",
+      "place_ids": ["niseko-united", "hakuba-happo-one"],
+      "pinned_vibes": ["long-stay"]
+    },
+    {
+      "title": "高校滑雪修學旅行 4 日",
+      "summary": "高校生修學旅行：Joetsu Kokusai + 越後湯澤宿。 High-school ski-trip 4-day at Joetsu Kokusai.",
+      "vibe_tags": ["ski", "snow", "winter", "school", "group"],
+      "pace": "balanced",
+      "place_ids": ["joetsu-kokusai", "echigo-yuzawa-stay"],
+      "pinned_vibes": ["group"]
+    },
+    {
+      "title": "Corporate Retreat 公司旅行 4 日",
+      "summary": "Karuizawa 商務 retreat + 雪場 + 會議室。 Karuizawa corporate retreat with ski + meetings.",
+      "vibe_tags": ["ski", "snow", "winter", "corporate", "group"],
+      "pace": "balanced",
+      "place_ids": ["karuizawa-prince", "karuizawa-meeting-rooms"],
+      "pinned_vibes": ["group"]
+    },
+    {
+      "title": "Hakkoda 樹冰夢幻 + Tohoku 5 日",
+      "summary": "Hakkoda 樹冰 + Zao 樹冰 + 銀山溫泉 + 仙台。 Snow-monster + onsen Tohoku tour.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "onsen", "festival"],
+      "pace": "balanced",
+      "place_ids": ["hakkoda-ropeway", "zao-onsen", "ginzan-onsen", "sendai-city-walk"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Hot Spring Resort + Light Snow 5 日 (Senior)",
+      "summary": "Karuizawa + 草津 + Kusatsu Yubatake + 雪場入門。 Senior-friendly light-ski onsen tour.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "senior", "relaxed"],
+      "pace": "chill",
+      "place_ids": ["karuizawa-prince", "kusatsu-onsen", "kusatsu-yubatake"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Japan 一個月 12 場朝聖",
+      "summary": "30 日 12 場深度：Niseko + Rusutsu + Hakkoda + Appi + Zao + Geto + Nozawa + Hakuba + Shiga + 越後湯澤 + Hachi + Daisen。 One-month 12-resort pilgrimage.",
+      "vibe_tags": ["ski", "snow", "winter", "long-stay", "powder", "luxury", "adventure"],
+      "pace": "balanced",
+      "place_ids": ["niseko-united", "rusutsu", "hakkoda-ropeway", "appi-kogen", "zao-onsen", "geto-kogen", "nozawa-onsen", "hakuba-happo-one", "shiga-kogen", "naeba", "hachi-hachikita", "daisen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Japan 7 日 蜜月豪華行 (Tomamu + Niseko Park Hyatt)",
+      "summary": "Tomamu 水之教堂 + Niseko Park Hyatt 蜜月。 Honeymoon: Tomamu Water Chapel + Park Hyatt Niseko.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "romance"],
+      "pace": "balanced",
+      "place_ids": ["tomamu-ice-village", "park-hyatt-niseko"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Japan 5 大 Onsen 雪鄉 5 日",
+      "summary": "5 個老字號溫泉村滑雪：野澤 → 草津 → 萬座 → 藏王 → 二世古昆布。 Five legendary onsen-town resorts in 5 days.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "heritage", "culture"],
+      "pace": "packed",
+      "place_ids": ["nozawa-onsen", "kusatsu-onsen", "manza-onsen", "zao-onsen", "konbu-onsen-niseko"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Sunday Brunch + Half Day Ski 7 日",
+      "summary": "每日早午餐 + 半日輕滑雪：Hakuba Iwatake / Mountain Harbor / Niseko 304 / Lotte Arai cafe。 Brunch + half-day ski week (perfect for families).",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "family", "cafe"],
+      "pace": "chill",
+      "place_ids": ["hakuba-mountain-harbor", "niseko-hanazono", "lotte-arai", "hakuba-iwatake"],
+      "pinned_vibes": ["cafe"]
+    },
+    {
+      "title": "JR Hokkaido 鐵道 + Ski 5 日",
+      "summary": "JR Hokkaido Pass + Sapporo Teine + Niseko Hirafu (車程不開車)。 JR Hokkaido Pass week without renting a car.",
+      "vibe_tags": ["ski", "snow", "winter", "train", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["sapporo-teine", "niseko-grand-hirafu"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "Snow Sculpture 雪雕 + Ski 5 日",
+      "summary": "札幌雪祭 + Otaru 光雪雕 + 越後湯澤雪燈籠 + 滑雪。 Snow-sculpture festivals + ski week.",
+      "vibe_tags": ["ski", "snow", "winter", "festival", "art"],
+      "pace": "balanced",
+      "place_ids": ["sapporo-snow-festival", "otaru-light-festival", "yuzawa-snow-lantern", "gala-yuzawa"],
+      "pinned_vibes": ["festival"]
+    },
+    {
+      "title": "Boutique 5 日 (Niseko Kasara + Park Hyatt + Aman)",
+      "summary": "Niseko 高端精品酒店 5 日：Kasara → Park Hyatt → Aman Niseko (預定)。 Boutique-luxury Niseko week: Kasara, Park Hyatt, Aman.",
+      "vibe_tags": ["ski", "snow", "winter", "luxury", "powder", "romance"],
+      "pace": "balanced",
+      "place_ids": ["kasara-niseko", "park-hyatt-niseko", "aman-niseko", "niseko-united"],
+      "pinned_vibes": ["luxury"]
+    },
+    {
+      "title": "Japan All Resorts 終極 60 日",
+      "summary": "60 日跨北海道、本州、四國、九州、Okinawa 跳島 (Okinawa 無雪)，極限挑戰 60 場以上。 Ultimate 60-day season-long Japan ski challenge (60+ resorts).",
+      "vibe_tags": ["ski", "snow", "winter", "long-stay", "ultra-luxury", "adventure"],
+      "pace": "packed",
+      "place_ids": ["niseko-united", "rusutsu", "tomamu-resort", "asahidake", "hakkoda-ropeway", "appi-kogen", "geto-kogen", "zao-onsen", "nozawa-onsen", "hakuba-happo-one", "shiga-kogen", "naeba", "kagura-ski", "kusatsu-onsen", "manza-onsen", "skijam-katsuyama", "hachi-hachikita", "daisen-ski", "mt-aso-ski"],
+      "pinned_vibes": ["ski"]
+    }
+  ]
+}

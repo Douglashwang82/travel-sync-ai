@@ -1,0 +1,96 @@
+{
+  "destination": "Hiroshima, Japan",
+  "destination_aliases": [
+    "hiroshima, japan",
+    "hiroshima",
+    "広島",
+    "chugoku",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "Megahira 滑雪一日",
+      "summary": "廣島中部 Megahira 雪場，3 個區段、15 條雪道，中國地方雪場代表。 Central Hiroshima Megahira: 3 zones, 15 trails, Chugoku's flagship.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "family"],
+      "pace": "balanced",
+      "place_ids": ["megahira-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Geihoku 國際 (Snow River) 滑雪一日",
+      "summary": "Geihoku 國際 / Snow River 滑雪場，4 雪場相連大型雪場。 Geihoku Kokusai Snow River: 4-area-linked Chugoku resort.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "family"],
+      "pace": "balanced",
+      "place_ids": ["geihoku-snow-river"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Osorakan 滑雪一日",
+      "summary": "Osorakan 大佐山雪場，林間 + 多 Park 設施。 Osorakan: glades and a strong park.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "tree-skiing"],
+      "pace": "balanced",
+      "place_ids": ["osorakan-ski"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "瑞穂 Highland Mizuho 滑雪一日",
+      "summary": "Mizuho Highland、Hiroshima 北、家庭與初學者。 Mizuho Highland: family-friendly north Hiroshima resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["mizuho-highland"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Geihoku 弓削 Yumiseki 滑雪一日",
+      "summary": "Geihoku 弓削雪場、地方人愛戴、家庭友善。 Geihoku Yumiseki: locals' family resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["geihoku-yumiseki"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "宮島雪見 + Megahira 半日",
+      "summary": "上午宮島雪見 + 下午 Megahira 半日。 Miyajima Itsukushima snow morning + Megahira ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["miyajima-itsukushima", "megahira-ski"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "廣島原爆 + Mizuho Highland 半日",
+      "summary": "上午廣島和平公園 + 下午 Mizuho Highland 半日。 Hiroshima Peace Park morning + Mizuho Highland afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["hiroshima-peace-park", "mizuho-highland"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "廣島燒 + Osorakan 半日",
+      "summary": "上午 Osorakan 半日 + 廣島燒午餐。 Osorakan ski morning + Hiroshima-style okonomiyaki lunch.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "convenient"],
+      "pace": "balanced",
+      "place_ids": ["osorakan-ski", "hiroshima-okonomiyaki"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "廣島 3 日 滑雪 + 文化",
+      "summary": "Day1 Megahira、Day2 宮島 + 廣島市、Day3 Snow River。 Day 1 Megahira, Day 2 Miyajima + Hiroshima city, Day 3 Snow River.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco"],
+      "pace": "balanced",
+      "place_ids": ["megahira-ski", "miyajima-itsukushima", "hiroshima-peace-park", "geihoku-snow-river"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "廣島市 → Megahira 1 日來回",
+      "summary": "廣島市早班 + Megahira 全日 + 晚回。 Hiroshima city morning + Megahira day + return.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["megahira-ski"],
+      "pinned_vibes": ["convenient"]
+    }
+  ]
+}

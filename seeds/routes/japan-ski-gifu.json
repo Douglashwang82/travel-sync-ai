@@ -12,22 +12,284 @@
   ],
   "routes": [
     {
-      "title": "高鷲 滑雪一日",
-      "summary": "高鷲山是西日本最大的滑雪勝地之一！TAKASU MOUNTAINS由岐阜縣上市高鷲町的6個滑雪場（WhitePIA、鷲之岳滑雪場、高鷲滑雪場、Dynaland、晝野高原滑雪場、郡上Vacance Mura滑雪場）組成。 Six-resort cluster on a joint lift pass (Takasu Snow Park, Dynaland, WhitePIA, Hirugano Kogen, Washigatake, Gujo Vacance-mura). ~2 h from Nagoya. Dynaland night skiing runs late.",
-      "vibe_tags": [
-        "ski",
-        "snow",
-        "winter",
-        "nightlife",
-        "adventure"
-      ],
+      "title": "Takasu Mountains 6 場通票 1 日",
+      "summary": "西日本最大滑雪群：Takasu Snow Park、Dynaland、WhitePIA、Hirugano、Washigatake、Gujo Vacance 6 場通票。 Six-resort joint pass: Takasu Snow Park, Dynaland, WhitePIA, Hirugano, Washigatake, Gujo Vacance-mura. ~2 h from Nagoya.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "adventure"],
+      "pace": "packed",
+      "place_ids": ["takasu-mountains"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Dynaland 夜滑 滑雪一日",
+      "summary": "Dynaland 西日本最長夜滑 (1:00 收場)、大型 Park。 Dynaland: western Japan's longest night skiing (until 1 am), big terrain park.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "park"],
       "pace": "balanced",
-      "place_ids": [
-        "takasu-mountains"
-      ],
-      "pinned_vibes": [
-        "ski"
-      ]
+      "place_ids": ["dynaland"],
+      "pinned_vibes": ["nightlife"]
+    },
+    {
+      "title": "WhitePIA 高鷲 滑雪一日",
+      "summary": "WhitePIA 高鷲、Takasu Mountains 中型雪場、家庭與初學者。 WhitePIA Takasu: mid-size Takasu cluster resort, family-leaning.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "balanced",
+      "place_ids": ["whitepia-takasu"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Takasu Snow Park 滑雪一日",
+      "summary": "Takasu Snow Park 中央區，Takasu Mountains 主要入口。 Takasu Snow Park: main entry for the cluster, big intermediate grooming.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "family"],
+      "pace": "balanced",
+      "place_ids": ["takasu-snow-park"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Hirugano Kogen 滑雪一日",
+      "summary": "Hirugano 高原雪場，海拔較高、初學者友善。 Hirugano Kogen: higher base elevation, beginner-friendly.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["hirugano-kogen"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Washigatake 滑雪一日",
+      "summary": "Washigatake 雪場、Takasu Mountains 老字號。 Washigatake: classic Takasu Mountains resort, mid-size.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["washigatake-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Gujo Vacance-mura 滑雪一日",
+      "summary": "Gujo Vacance-mura 雪場、家庭與初學者最愛。 Gujo Vacance-mura: gentle family-only resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["gujo-vacance-mura"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Hida-Hagiwara Snow Park 滑雪一日",
+      "summary": "飛驒萩原 Snow Park，名古屋方便、家庭雪場。 Hida Hagiwara: convenient from Nagoya, family layout.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "convenient"],
+      "pace": "chill",
+      "place_ids": ["hida-hagiwara-snow"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Tagawa 平湯 滑雪一日",
+      "summary": "奧飛驒平湯雪場，溫泉鄉旁。 Okuhida Hirayu small ski hill in onsen village.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "family"],
+      "pace": "chill",
+      "place_ids": ["hirayu-onsen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Norikura Hodaka 高原 滑雪一日",
+      "summary": "奧飛驒乘鞍穗高高原雪場，北穗高山景。 Okuhida Norikura-Hodaka resort with North Alps views.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "family"],
+      "pace": "balanced",
+      "place_ids": ["norikura-hodaka-ski"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "Meiho 滑雪一日",
+      "summary": "Meiho Ski Resort 郡上明寶雪場，西日本最長 5 公里下滑。 Meiho Ski Resort in Gujo: 5 km longest run in western Japan.",
+      "vibe_tags": ["ski", "snow", "winter", "adventure", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["meiho-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Mt Norikura Ropeway 滑雪一日",
+      "summary": "Norikura Ropeway 上 2,000 公尺、春滑友善。 Norikura ropeway resort: 2,000 m top, spring-friendly.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["norikura-ropeway-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Geihoku 飛驒高山 滑雪一日",
+      "summary": "高山 Skikan Resort 雪場、雪況穩。 Takayama Skikan resort: reliable snow, mid-size family terrain.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "balanced",
+      "place_ids": ["takayama-skikan"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Mt Iiya 飛驒一宮 滑雪一日",
+      "summary": "高山一宮 Mt Iiya 雪場、地方人愛好。 Hida Ichinomiya's Mt Iiya: locals' weekend hill.",
+      "vibe_tags": ["ski", "snow", "winter", "relaxed", "family"],
+      "pace": "chill",
+      "place_ids": ["mt-iiya-ski"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Mineyama Snow Resort 滑雪一日",
+      "summary": "岐阜 Mineyama 高原雪場，中型家庭雪場。 Gifu's Mineyama Kogen mid-size family resort.",
+      "vibe_tags": ["ski", "snow", "winter", "family"],
+      "pace": "chill",
+      "place_ids": ["gifu-mineyama"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Sukoyaka 滑雪一日",
+      "summary": "Sukoyaka Snow Park，群上市，初級雪友天堂。 Sukoyaka Snow Park in Gujo: beginner-only haven.",
+      "vibe_tags": ["ski", "snow", "winter", "family", "budget"],
+      "pace": "chill",
+      "place_ids": ["sukoyaka-snow"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "Hida Furukawa 滑雪一日",
+      "summary": "飛驒古川雪場、夜滑 + 火車站近。 Hida Furukawa local ski hill: night skiing + train-station access.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "convenient"],
+      "pace": "chill",
+      "place_ids": ["hida-furukawa-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Nagoya 1 日 Dynaland 來回",
+      "summary": "Nagoya 早出 → Dynaland 全日 → 晚回。 Nagoya morning → Dynaland full day → return.",
+      "vibe_tags": ["ski", "snow", "winter", "convenient", "city"],
+      "pace": "packed",
+      "place_ids": ["dynaland"],
+      "pinned_vibes": ["convenient"]
+    },
+    {
+      "title": "高鷲 + 飛驒高山雪見",
+      "summary": "Day1 Takasu Mountains、Day2 飛驒高山古街雪見。 Day 1 Takasu Mountains, Day 2 Takayama old town snow walk.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["takasu-mountains", "takayama-old-town"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "白川鄉雪景 + Meiho 半日",
+      "summary": "上午白川鄉合掌村雪景 → 下午 Meiho 半日。 Shirakawa-go gassho-zukuri morning, Meiho ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco"],
+      "pace": "balanced",
+      "place_ids": ["shirakawa-go", "meiho-ski"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "白川鄉夜景 + Takasu 1 日",
+      "summary": "白川鄉夜間點燈 + Takasu Mountains 1 日。 Shirakawa-go light-up evening + Takasu day.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco", "scenic"],
+      "pace": "packed",
+      "place_ids": ["shirakawa-go-illumination", "takasu-mountains"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "奧飛驒 5 湯 + Hirayu 雪",
+      "summary": "Day1 平湯 + 福地 + 新平湯 + 栃尾 + 新穗高 5 湯巡禮 + Day2 Hirayu 半日。 5-onsen rotation + Hirayu ski.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "packed",
+      "place_ids": ["okuhida-5-onsen", "hirayu-onsen-ski"],
+      "pinned_vibes": ["onsen"]
+    },
+    {
+      "title": "Shin-Hotaka Ropeway 雪景 + Hirayu 半日",
+      "summary": "上午新穗高纜車雪景 → 下午 Hirayu 半日。 Shin-Hotaka ropeway morning, Hirayu ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "scenic", "ropeway"],
+      "pace": "balanced",
+      "place_ids": ["shin-hotaka-ropeway", "hirayu-onsen-ski"],
+      "pinned_vibes": ["scenic"]
+    },
+    {
+      "title": "飛驒牛 + Takasu 1 日",
+      "summary": "上午 Takasu 滑雪 → 中午高山飛驒牛朴葉燒午餐。 Takasu skiing then Hida-gyu hoba-yaki lunch in Takayama.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "luxury"],
+      "pace": "balanced",
+      "place_ids": ["takasu-mountains", "hida-gyu-restaurant"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "Gifu 5 日 西日本粉雪行",
+      "summary": "Day1-2 Takasu、Day3 Dynaland 夜滑、Day4 Meiho、Day5 平湯。 5-day Gifu grand tour: Takasu, Dynaland, Meiho, Hirayu.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "nightlife", "adventure"],
+      "pace": "packed",
+      "place_ids": ["takasu-mountains", "dynaland", "meiho-ski", "hirayu-onsen-ski"],
+      "pinned_vibes": ["ski"]
+    },
+    {
+      "title": "Norikura 春滑 + 黑部立山",
+      "summary": "春季 Norikura Ropeway + 黑部立山雪牆。 Spring Norikura ropeway ski + Tateyama Snow Wall.",
+      "vibe_tags": ["ski", "snow", "winter", "spring-ski", "scenic"],
+      "pace": "packed",
+      "place_ids": ["norikura-ropeway-ski", "tateyama-snow-wall"],
+      "pinned_vibes": ["spring-ski"]
+    },
+    {
+      "title": "Gujo + 鯉魚街道 + Vacance-mura",
+      "summary": "上午郡上八幡鯉魚街道雪見 → 下午 Vacance-mura 半日。 Gujo Hachiman koi-stream morning, Vacance-mura ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["gujo-hachiman-koi-stream", "gujo-vacance-mura"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Hida 飛驒古川 + Furukawa 半日",
+      "summary": "上午飛驒古川老街 + 下午 Furukawa 半日。 Hida Furukawa old town morning, Furukawa ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "family"],
+      "pace": "balanced",
+      "place_ids": ["hida-furukawa-old-town", "hida-furukawa-ski"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Norikura Hodaka + 新穗高拉麵",
+      "summary": "上午 Norikura-Hodaka 滑雪 + 新穗高高山拉麵。 Norikura-Hodaka ski + Shin-Hotaka Takayama ramen.",
+      "vibe_tags": ["ski", "snow", "winter", "foodie", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["norikura-hodaka-ski", "takayama-ramen"],
+      "pinned_vibes": ["foodie"]
+    },
+    {
+      "title": "高山 朝市 + Takayama Skikan 半日",
+      "summary": "上午高山朝市 + 下午 Skikan 半日。 Takayama morning market, Skikan ski afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "foodie"],
+      "pace": "balanced",
+      "place_ids": ["takayama-morning-market", "takayama-skikan"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Dynaland 全日狂滑 + 夜滑",
+      "summary": "Dynaland 全日含夜滑到 1 am。 Full Dynaland day including night ski to 1 am.",
+      "vibe_tags": ["ski", "snow", "winter", "nightlife", "park"],
+      "pace": "packed",
+      "place_ids": ["dynaland"],
+      "pinned_vibes": ["nightlife"]
+    },
+    {
+      "title": "Takasu Mountains + Hirugano 高原雪鞋",
+      "summary": "上午 Takasu 滑雪 + 下午 Hirugano 高原雪鞋。 Takasu morning ski, Hirugano snowshoe afternoon.",
+      "vibe_tags": ["ski", "snow", "winter", "snowshoe", "family"],
+      "pace": "balanced",
+      "place_ids": ["takasu-mountains", "hirugano-snowshoe"],
+      "pinned_vibes": ["family"]
+    },
+    {
+      "title": "白川鄉 5 日深度雪鄉",
+      "summary": "白川鄉 5 日：合掌村 + Shirakawa-Hosaka 雪景 + Takasu。 5-day Shirakawa-go deep dive + Takasu skiing.",
+      "vibe_tags": ["ski", "snow", "winter", "culture", "unesco", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["shirakawa-go", "shirakawa-hosaka-snow", "takasu-mountains"],
+      "pinned_vibes": ["culture"]
+    },
+    {
+      "title": "Snowtown Yeti + Snowtown Heights 2 場",
+      "summary": "上 Yeti 早季 + 下 Heights 練板。 Yeti early-season ski + Heights park practice.",
+      "vibe_tags": ["ski", "snow", "winter", "park", "early-season"],
+      "pace": "balanced",
+      "place_ids": ["snowtown-yeti", "snowtown-heights"],
+      "pinned_vibes": ["park"]
+    },
+    {
+      "title": "新穗高雪見溫泉 + 滑雪",
+      "summary": "新穗高雪見露天 + Hirayu 半日滑雪。 Shin-Hotaka rotenburo + Hirayu ski half-day.",
+      "vibe_tags": ["ski", "snow", "winter", "onsen", "scenic"],
+      "pace": "balanced",
+      "place_ids": ["shin-hotaka-rotenburo", "hirayu-onsen-ski"],
+      "pinned_vibes": ["onsen"]
     }
   ]
 }
