@@ -1,0 +1,73 @@
+{
+  "destination": "Hyogo, Japan",
+  "destination_aliases": [
+    "hyogo, japan",
+    "hyogo",
+    "兵庫",
+    "kansai",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "Hachi-Hachikita 滑雪一日",
+      "summary": "位於兵庫北部、Hachibuse 山頂（1,221m）的 Hachi-Hachikita 滑雪場是關西最大、西日本規模屬一屬二的雪場，共 25 條雪道分布在 Hachi 與 Hachikita 兩區，從大阪、神戶開車約 3 小時即達。 Kansai's largest resort: 25 courses across two interlinked zones (Hachi + Hachikita) topping out at Mt Hachibuse 1,221 m. ~3 h from Osaka/Kobe.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "kansai",
+        "convenient",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hachi-hachikita"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "Hachi 高原 滑雪一日",
+      "summary": "與 Hachikita 在山頂相連的 Hachi Kogen 滑雪場，以寬廣中央緩坡與安靜的林間道路著稱；HYWOD 製作的 The Parks 是關西最大的 snowpark。 Sister resort to Hachikita, linked at the summit. Wide central greens, tree-lined cruisers, and HYWOD's The Parks — the largest snowpark in Kansai.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "park",
+        "family",
+        "relaxed"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hachi-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "Mineyama 高原 滑雪一日",
+      "summary": "兵庫縣神河町的 Mineyama 高原雪場，雪道設計平緩、適合家庭與初學者，從姫路出發約 1 小時，是關西當天往返的熱門選擇。 Family-friendly resort in Kamikawa, Hyogo. About 1 h from Himeji; popular day-trip destination from the Kansai metro.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "family",
+        "convenient",
+        "chill"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "mineyama-kogen"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

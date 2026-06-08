@@ -192,6 +192,63 @@
       "pinned_vibes": [
         "ski"
       ]
+    },
+    {
+      "title": "白馬 47 / 五龍 連通滑雪一日",
+      "summary": "白馬五龍與 Hakuba 47 山頂相連，共用同一張通票，合計 16 條雪道、垂直落差 926 公尺、最長距離 5,000 公尺，共有 20 部纜車（含兩座 Gondola）。Hakuba 47 以細緻的壓雪與全日本最大的 snowpark 聞名，五龍側則以開闊雪道與夜間滑雪取勝。 Hakuba 47 and Goryu share a top-station boundary and one lift pass: 20 lifts (2 gondolas), 926 m vertical, 5 km longest run, plus Japan's biggest park.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "nightlife",
+        "park",
+        "adventure"
+      ],
+      "pace": "packed",
+      "place_ids": [
+        "hakuba-47-goryu"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "白馬岩岳 雪場一日",
+      "summary": "白馬岩岳 Snow Field 擁有白馬三山 360 度全景，雪道穿過寬廣的山頂雪原，雪況穩定、樹林滑行條件佳，較適合中級者與板友。山頂的 Hakuba Mountain Harbor 觀景台、Cafe 與 Yu-Topia 溫泉設施讓行程更舒適。 Hakuba Valley resort with the iconic Mountain Harbor viewpoint over the Northern Alps. Reliable snow, great tree skiing, and a relaxed mid-mountain cafe scene.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "scenic",
+        "cafe",
+        "relaxed"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hakuba-iwatake"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "白馬 Cortina 雪場一日",
+      "summary": "位於白馬山谷最北端、隔著樹林與栂池高原相連的 Hakuba Cortina，因豐沛的降雪量、容易進入的林間滑雪、以及山腳那座造型奇特的綠色屋頂飯店而聞名。 The northernmost Hakuba Valley resort: deepest snowfall, glade-skiing-friendly terrain, and a Tyrolean-style base lodge.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "powder",
+        "tree-skiing",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "hakuba-cortina"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
     }
   ]
 }

@@ -1,0 +1,73 @@
+{
+  "destination": "Akita, Japan",
+  "destination_aliases": [
+    "akita, japan",
+    "akita",
+    "秋田",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "田澤湖 Tazawako 滑雪一日",
+      "summary": "秋田仙北市的田澤湖滑雪場，是秋田縣規模最大、設施最完善的雪場，從雪道上可俯瞰寶石綠的田澤湖，搭配輕盈乾爽的粉雪與少人潮，被稱為日本國際滑雪客的私房秘境。 Akita's largest and most-equipped resort: panoramic views of emerald Lake Tazawa, light dry powder, English ski schools, and quiet runs.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "scenic",
+        "powder",
+        "relaxed"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "tazawako"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "阿仁 Ani Ski 滑雪一日",
+      "summary": "位於森吉山山麓的阿仁滑雪場，最高點海拔 1,210 公尺，是秋田縣海拔最高的雪場。深邃的雪量、寬廣空無一人的雪道，以及冬季限定的森吉山「樹冰」奇景，是行家的私藏地。 At the base of Mt Moriyoshi: 1,210 m top, Akita's highest. Deep snow, empty wide runs, and the famous Juhyo 'snow monsters' on the summit ridge.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "powder",
+        "scenic",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "ani-ski"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "秋田八幡平 滑雪一日",
+      "summary": "秋田八幡平滑雪場是東北地區每年最早開放的雪場之一，11 月中旬即可滑雪。雪場規模迷你、適合家庭與初學者，旁邊就是八幡平溫泉鄉，可邊滑邊泡湯。 One of Tohoku's earliest-opening resorts (mid-November). Cozy family-scale layout next to Hachimantai onsen village.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "family",
+        "relaxed"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "akita-hachimantai"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

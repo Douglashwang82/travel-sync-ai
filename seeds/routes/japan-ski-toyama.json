@@ -1,0 +1,53 @@
+{
+  "destination": "Toyama, Japan",
+  "destination_aliases": [
+    "toyama, japan",
+    "toyama",
+    "富山",
+    "hokuriku",
+    "japan",
+    "japan ski",
+    "japan ski trip",
+    "japan snow",
+    "ski japan"
+  ],
+  "routes": [
+    {
+      "title": "立山山麓 Tateyama Sanroku 滑雪一日",
+      "summary": "北陸地區最大的滑雪場，由「雷鳥谷 Raicho Valley」與「極樂坂 Gokurakuzaka」兩區組成。山頂海拔 1,188 公尺，最長下滑 3,000 公尺，7 部纜車覆蓋 9.9 公里雪道。極樂坂有雪道公園與正規 mogul 路線，雷鳥谷則寬廣平緩、適合家庭與初學者。 Hokuriku's largest resort: two zones (Raicho Valley + Gokurakuzaka), 7 lifts, 9.9 km of pistes, top elevation 1,188 m, 3 km longest run.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "family",
+        "scenic",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "tateyama-sanroku"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "IOX-AROSA 滑雪一日",
+      "summary": "南礪市的 IOX-AROSA 雪場，以穩定壓雪、立山連峰與日本海雙重全景而聞名，是富山縣最具國際感的小型度假村。 South Toyama resort known for meticulous grooming and a rare panorama of both the Tateyama Range and the Sea of Japan.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "scenic",
+        "relaxed"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "iox-arosa"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    }
+  ]
+}

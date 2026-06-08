@@ -85,6 +85,84 @@
       "pinned_vibes": [
         "ski"
       ]
+    },
+    {
+      "title": "Niseko United 全山通票 滑雪一日",
+      "summary": "二世古聯合度假村由 Hanazono、Grand Hirafu、Niseko Village、Annupuri 四個相連雪場組成，共用全山通票，是日本最國際化的高端粉雪聖地。垂直落差 933 公尺，全北海道最大；325 公頃地形、夜間滑雪、餐廳與夜生活一應俱全。 Japan's most internationally renowned powder resort: four interconnected sub-resorts, 933 m vertical (Hokkaido's biggest), 30+ lifts, night skiing, and unrivalled apres-ski.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "nightlife",
+        "luxury",
+        "adventure"
+      ],
+      "pace": "packed",
+      "place_ids": [
+        "niseko-united"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "星野 TOMAMU 滑雪一日",
+      "summary": "位於北海道中央占冠村的星野TOMAMU度假村，11 條纜車、29 條滑道、垂直落差約 585 公尺，並擁有極具特色的「冰之教堂」與冰之村（Ice Village）。家庭友善、雪質乾爽，夜晚還有水之教堂與星野溫泉相伴。 Central Hokkaido all-season resort with 11 lifts and the famous Ice Village. Family-friendly grooming and dry champagne powder.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "onsen",
+        "family",
+        "luxury",
+        "relaxed"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "tomamu-resort"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "札幌手稻 Sapporo Teine 滑雪一日",
+      "summary": "札幌市西郊的手稻滑雪場曾是 1972 札幌冬奧場地，搭電車從札幌出發僅一小時，可即日往返。上層 Highland Zone 為 1972 奧運大回轉場地，下層 Olympia Zone 則對家庭與初學者友善。 Former 1972 Winter Olympics venue, 60 min from central Sapporo by train. Upper Highland Zone has Olympic GS pitches; Olympia Zone caters to families.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "family",
+        "city",
+        "convenient"
+      ],
+      "pace": "chill",
+      "place_ids": [
+        "sapporo-teine"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
+    },
+    {
+      "title": "旭岳 Asahidake 山岳滑雪一日",
+      "summary": "北海道最高峰旭岳（2,291m）山腰的旭岳纜車雪場，只有兩條纜車與少量壓雪道，但纜車終點即為廣闊的高山樹林與粉雪 backcountry，是進階滑雪者最愛的私密粉雪場。 Hokkaido's highest peak. A single ropeway accesses high-alpine tree runs and backcountry; minimal grooming, maximum powder.",
+      "vibe_tags": [
+        "ski",
+        "snow",
+        "winter",
+        "backcountry",
+        "powder",
+        "adventure"
+      ],
+      "pace": "balanced",
+      "place_ids": [
+        "asahidake"
+      ],
+      "pinned_vibes": [
+        "ski"
+      ]
     }
   ]
 }
