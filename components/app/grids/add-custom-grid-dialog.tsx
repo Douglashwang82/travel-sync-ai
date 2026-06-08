@@ -19,6 +19,12 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (grid: CustomGrid) => void;
+  /**
+   * Open straight into the config step for a known agent, with fields
+   * pre-filled. Used by the "drag a chat message onto the rail" flow when an
+   * immediate create failed (e.g. a required field couldn't be derived).
+   */
+  prefill?: { agentType: string; title?: string; config?: Record<string, unknown> } | null;
 }
 
 /**
@@ -26,7 +32,7 @@ interface Props {
  * fields + grid title. On submit, POSTs to /api/app/trips/.../custom-grids
  * and then kicks off an immediate run so the tile shows data right away.
  */
-export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: Props) {
+export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated, prefill }: Props) {
   const [agents, setAgents] = useState<PublicAgent[] | null>(null);
   const [selected, setSelected] = useState<PublicAgent | null>(null);
   const [title, setTitle] = useState("");
@@ -41,7 +47,21 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
     void (async () => {
       try {
         const res = await appFetchJson<{ agents: PublicAgent[] }>("/api/app/agents");
-        if (!cancelled) setAgents(res.agents);
+        if (cancelled) return;
+        setAgents(res.agents);
+        // If opened via a drag-drop prefill, jump straight to the config step
+        // for the named agent and merge the extracted config over its defaults.
+        if (prefill) {
+          const agent = res.agents.find((a) => a.type === prefill.agentType);
+          if (agent) {
+            setSelected(agent);
+            setTitle(prefill.title?.trim() || agent.label);
+            setConfig({
+              ...(agent.defaultConfig as Record<string, unknown>),
+              ...(prefill.config ?? {}),
+            });
+          }
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "載入代理失敗");
       }
@@ -49,7 +69,7 @@ export function AddCustomGridDialog({ tripId, open, onOpenChange, onCreated }: P
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, prefill]);
 
   function handleOpenChange(next: boolean) {
     if (!next) {

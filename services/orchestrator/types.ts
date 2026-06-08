@@ -164,3 +164,28 @@ export interface OrchestratorRunSummary {
 }
 
 export type ToolAutonomyMap = Record<string, AgentAutonomy>;
+
+// ─── dispatched tasks ────────────────────────────────────────────────────────
+// One-off tasks a member hands to the orchestrator by dropping a chat bubble on
+// the rail's "Dispatched tasks" zone. Stored on `trip_orchestrators.memory`
+// under `dispatchedTasks` (no dedicated table) and resolved by a focused
+// tool-use run that reuses the orchestrator's tools + autonomy settings.
+
+export type DispatchedTaskStatus = "pending" | "running" | "done" | "failed";
+
+export interface DispatchedTask {
+  id: string;
+  /** The dispatched instruction — the dropped bubble's text. */
+  text: string;
+  /** Source chat message, when dispatched from a bubble. */
+  messageId: string | null;
+  status: DispatchedTaskStatus;
+  /** One-line outcome the orchestrator wrote when it worked the task. */
+  summary: string | null;
+  /** The orchestrator_runs row that worked this task, for provenance. */
+  runId: string | null;
+  /** Who dropped it (app_user id), best-effort. */
+  createdBy: string | null;
+  createdAt: string;
+  finishedAt: string | null;
+}

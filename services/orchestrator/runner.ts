@@ -222,6 +222,103 @@ export async function runOrchestrator(
   }
 }
 
+/**
+ * Resolve a single member-dispatched task (a chat bubble dropped on the rail's
+ * "Dispatched tasks" zone). A focused, one-shot variant of `runOrchestrator`:
+ * it reuses the same static instruction, trip context, tools, and per-tool
+ * autonomy, but the dynamic prompt directs the model to act on this one task
+ * now. Mutating tools still obey autonomy (propose_only → a pending proposal),
+ * so "resolve" means "act where allowed, propose where not". Returns a short
+ * outcome summary the caller stores on the dispatched-task record.
+ */
+export async function resolveDispatchedTask(
+  orchestrator: OrchestratorRow,
+  taskText: string,
+): Promise<{ runId: string; status: "success" | "failed"; summary: string; error?: string }> {
+  const db = createAdminClient();
+  const startedAt = new Date();
+
+  const { data: runRow } = await db
+    .from("orchestrator_runs")
+    .insert({
+      orchestrator_id: orchestrator.id,
+      trigger: "manual",
+      trigger_reason: `dispatched task: ${taskText.slice(0, 200)}`,
+      status: "running",
+      started_at: startedAt.toISOString(),
+    })
+    .select("id")
+    .single();
+  const runId = (runRow?.id as string) ?? "";
+
+  try {
+    const ctx: ToolContext = {
+      tripId: orchestrator.trip_id,
+      orchestratorId: orchestrator.id,
+      actorKey: ORCH_ACTOR,
+    };
+    const autonomy = orchestrator.tool_autonomy ?? {};
+    const tripCtx = await buildTripContext(orchestrator.trip_id);
+    const base = buildSystemPrompt(orchestrator, tripCtx, autonomy, "manual", taskText);
+    const dynamicContext = [
+      "A trip member has DISPATCHED one specific task for you to resolve right now:",
+      `  "${taskText}"`,
+      "Take concrete action with your tools to resolve it this run. Where a tool's",
+      "autonomy is propose_only, propose the change; otherwise apply it. Ignore the",
+      "plan work-queue below for this run — focus only on the dispatched task — but",
+      "use the trip context for grounding. Finish with a one-sentence summary of",
+      "what you did.",
+      "",
+      base.dynamicContext,
+    ].join("\n");
+
+    const { calls, finalText } = await driveToolLoop({
+      staticInstruction: base.staticInstruction,
+      dynamicContext,
+      promptId: base.promptId,
+      promptHash: base.promptHash,
+      tripId: orchestrator.trip_id,
+      ctx,
+      autonomy,
+      runId,
+    });
+
+    const summary = buildSummaryLine(calls, finalText);
+    const counts = countByStatus(calls);
+    const finishedAt = new Date();
+    await db
+      .from("orchestrator_runs")
+      .update({
+        status: "success",
+        summary,
+        transcript: { calls, finalText } as unknown as Record<string, unknown>,
+        finished_at: finishedAt.toISOString(),
+        duration_ms: finishedAt.getTime() - startedAt.getTime(),
+        tool_call_count: calls.length,
+        applied_count: counts.applied + counts.auto_applied,
+        proposed_count: counts.pending,
+      })
+      .eq("id", runId);
+
+    return { runId, status: "success", summary };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    captureError(err, { context: "orchestrator_dispatched_task", orchestrator_id: orchestrator.id });
+    if (runId) {
+      await db
+        .from("orchestrator_runs")
+        .update({
+          status: "failed",
+          error: msg,
+          finished_at: new Date().toISOString(),
+          duration_ms: Date.now() - startedAt.getTime(),
+        })
+        .eq("id", runId);
+    }
+    return { runId, status: "failed", summary: `Failed: ${msg}`, error: msg };
+  }
+}
+
 // ─── LLM loop ────────────────────────────────────────────────────────────────
 
 interface DriveArgs {
@@ -503,8 +600,11 @@ async function buildTripContext(tripId: string): Promise<TripContext> {
       .limit(15),
     db
       .from("trip_chat_messages")
-      .select("display_name, content, created_at")
-      .eq("trip_id", tripId)
+      .select(
+        "content, created_at, sender_kind, sender:app_users(display_name), thread:trip_chat_threads!inner(trip_id, kind)",
+      )
+      .eq("thread.trip_id", tripId)
+      .eq("thread.kind", "group")
       .order("created_at", { ascending: false })
       .limit(8),
     db
@@ -533,11 +633,17 @@ async function buildTripContext(tripId: string): Promise<TripContext> {
       tool: p.tool as string,
       summary: (p.rationale as string) ?? "",
     })),
-    recentMemberMessages: (msgs ?? []).reverse().map((m) => ({
-      author: (m.display_name as string) ?? "member",
-      text: (m.content as string) ?? "",
-      at: (m.created_at as string) ?? "",
-    })),
+    recentMemberMessages: (msgs ?? []).reverse().map((m) => {
+      const sender = Array.isArray(m.sender) ? m.sender[0] : m.sender;
+      return {
+        author:
+          m.sender_kind === "agent"
+            ? "AI planner"
+            : ((sender?.display_name as string) ?? "member"),
+        text: (m.content as string) ?? "",
+        at: (m.created_at as string) ?? "",
+      };
+    }),
     existingPackLabels: (packs ?? []).map((p) => p.label as string),
   };
 }
@@ -663,6 +769,8 @@ function buildSystemPrompt(
     "",
     "Custom-grid agents available for grids.add_agent:",
     agents,
+    "",
+    "Reading the group chat: members converse in a shared room and you see it under \"Recent member chat\". When the conversation reveals an ongoing, recurring need that one of the agents above covers — e.g. wanting to watch flight or hotel prices, check the weather for the trip dates, gather destination photos, or read group consensus — propose a matching grid with grids.add_agent (propose_only: the member confirms it). Propose at most one grid per run, only when the need is clear and not already covered by an existing or pending grid; never spam proposals for casual chat.",
   ].join("\n");
 
   // DYNAMIC half — per-run trip state. Goes into the first user turn so the
