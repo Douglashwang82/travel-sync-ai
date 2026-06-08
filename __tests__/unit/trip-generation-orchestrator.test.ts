@@ -7,6 +7,7 @@ vi.mock("@/services/trip-generation/poi-engine", () => ({
   searchPoisByVibe: vi.fn(),
   enrichWithLiveData: vi.fn(),
   loadPoisByIds: vi.fn().mockResolvedValue([]),
+  buildVibeQuery: vi.fn().mockReturnValue("test vibe query"),
 }));
 vi.mock("@/services/trip-generation/route-engine", () => ({
   searchRoutesByVibe: vi.fn().mockResolvedValue([]),
@@ -119,7 +120,7 @@ describe("orchestrator — happy path", () => {
       poi("d", "activity"),
     ];
     (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(
-      shortlist.map((p) => ({ ...p }))
+      { pois: shortlist.map((p) => ({ ...p })), queryEmbedding: null }
     );
     (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
 
@@ -156,7 +157,7 @@ describe("orchestrator — happy path", () => {
   it("filters extra LLM tags instead of failing schema validation", async () => {
     const shortlist = [poi("a", "activity"), poi("b", "activity"), poi("c", "restaurant")];
     (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(
-      shortlist.map((p) => ({ ...p }))
+      { pois: shortlist.map((p) => ({ ...p })), queryEmbedding: null }
     );
     (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
 
@@ -197,7 +198,7 @@ describe("orchestrator — guards", () => {
   });
 
   it("rejects empty candidate list", async () => {
-    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue([]);
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({ pois: [], queryEmbedding: null });
     await expect(
       runGenerationPipeline({
         authorLineUserId: "U",
@@ -253,7 +254,7 @@ describe("orchestrator — route layer", () => {
       usedPlaceIds: new Set(["x", "y", "z"]),
     });
     (loadPoisByIds as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(enriched);
-    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([]);
+    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({ pois: [], queryEmbedding: null });
     (enrichWithLiveData as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(enriched);
 
     // Restaurant naturally lands at ~12:20 in [activity, activity, restaurant]
@@ -297,7 +298,7 @@ describe("orchestrator — route layer", () => {
       usedPlaceIds: new Set(["x", "y", "z"]),
     });
     (loadPoisByIds as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(routePois);
-    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(poiPool);
+    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({ pois: poiPool, queryEmbedding: null });
     const allEnriched = [...routePois, ...poiPool];
     (enrichWithLiveData as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(allEnriched);
 
@@ -348,7 +349,7 @@ describe("orchestrator — pace cap enforcement", () => {
     // Chill cap = 3. LLM returns 5; the orchestrator must slice to 3 so the
     // solver never sees too_many_stops.
     const shortlist = Array.from({ length: 5 }, (_, i) => poi(`p${i}`, "activity"));
-    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({ pois: shortlist, queryEmbedding: null });
     (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
 
     (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
@@ -405,7 +406,7 @@ describe("orchestrator — start-date weekday threading", () => {
       closeDay: i + 1,
       closeMinutes: 18 * 60,
     }));
-    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue([a]);
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({ pois: [a], queryEmbedding: null });
     (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue([a]);
 
     (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({
@@ -468,7 +469,7 @@ describe("orchestrator — demotion bonus", () => {
       usedPlaceIds: new Set(["x"]),
     });
     (loadPoisByIds as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([closedToday]);
-    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(pool);
+    (searchPoisByVibe as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({ pois: pool, queryEmbedding: null });
     (enrichWithLiveData as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce([
       closedToday,
       ...pool,
@@ -517,7 +518,7 @@ describe("orchestrator — repair loop", () => {
       }
       return p;
     });
-    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
+    (searchPoisByVibe as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({ pois: shortlist, queryEmbedding: null });
     (enrichWithLiveData as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue(shortlist);
 
     (generateJson as unknown as { mockResolvedValue: (v: unknown) => void }).mockResolvedValue({

@@ -43,6 +43,10 @@ yarn-error.log*
 next-env.d.ts
 .env*.local
 
+# ML model weights — large binary; deploy via CI artifact, not git
+/models/*.json
+!/models/.gitkeep
+
 # Claude Code workspace — share project commands/agents/settings with the
 # team; keep per-machine worktrees + transcripts local.
 .claude/*

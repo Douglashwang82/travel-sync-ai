@@ -26,11 +26,13 @@ import { generateJson, GeminiUnavailableError } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
 import {
   searchPoisByVibe,
+  buildVibeQuery,
   enrichWithLiveData,
   loadPoisByIds,
   type EnrichedPoi,
   type PoiCandidate,
 } from "./poi-engine";
+import { rerankCandidates, recordFeedback } from "./reranker";
 import {
   searchRoutesByVibe,
   composeFromRoutes,
@@ -128,7 +130,7 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
 
   // 2. POI layer — always retrieved. Routes can fail at solve time and demote
   //    days to the LLM flow on repair, so the LLM needs a candidate pool ready.
-  const poiCandidates = await searchPoisByVibe({
+  const { pois: poiCandidates, queryEmbedding } = await searchPoisByVibe({
     destination,
     vibe: input.answers.vibe,
     pace: input.answers.pace,
@@ -145,10 +147,13 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
       : "(empty)",
     topNames: poiCandidates.slice(0, 8).map((p) => p.name).join(" | "),
   });
+  // Re-rank using the trained MLP when weights are available. Falls back to
+  // original similarity order when the model file is absent (cold start).
+  const rankedPoiCandidates = await rerankCandidates(queryEmbedding, poiCandidates, genId);
 
   // 3. Materialize route place_ids as PoiCandidates and union with POI search.
   const routePois = await loadPoisByIds(Array.from(compose.usedPlaceIds), genId);
-  const allCandidates = unionByPlaceId(routePois, poiCandidates);
+  const allCandidates = unionByPlaceId(routePois, rankedPoiCandidates);
   if (allCandidates.length === 0) {
     logger.error("[gen] phase 2: no candidates available", { genId, destination });
     throw new GenerationFailedError("no_candidates", "no routes or POIs available");
@@ -288,6 +293,31 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
     versionId: out.versionId,
     totalStops: routed.days.reduce((acc, d) => acc + d.stops.length, 0),
   });
+
+  // 8. Record re-ranker training feedback (fire-and-forget).
+  // Only when the LLM actually ran — route-only runs carry no vibe-search signal.
+  if (pick && poiCandidates.length > 0) {
+    const vibeQuery = buildVibeQuery({
+      destination,
+      vibe: input.answers.vibe,
+      pace: input.answers.pace,
+      budget: input.answers.budget_tier,
+    });
+    recordFeedback({
+      genId,
+      versionId: out.versionId,
+      vibeQuery,
+      poiCandidates,   // original shortlist rank order — not the re-ranked copy
+      pick,
+      answers: input.answers,
+    }).catch((err) =>
+      logger.warn("[gen] feedback recording failed (non-fatal)", {
+        genId,
+        error: String(err),
+      })
+    );
+  }
+
   return out;
 }
 
