@@ -6,11 +6,14 @@ import { appFetchJson } from "@/lib/app-client";
 import { GridTileError, GridTileSkeleton } from "@/components/app/grids/grid-tile";
 import type { PlanTaskLink, TripPlan } from "@/services/orchestrator/types";
 
+type ToolAutonomy = "propose_only" | "auto_apply_with_undo" | "auto_apply";
+
 interface OrchestratorState {
   id: string;
   enabled: boolean;
   systemGoal: string | null;
   scheduleMinutes: number;
+  toolAutonomy: Record<string, ToolAutonomy>;
   nextRunAt: string | null;
   lastRunAt: string | null;
   lastStatus: string | null;
@@ -19,9 +22,17 @@ interface OrchestratorState {
   pendingReason: string | null;
 }
 
+interface OrchestratorTool {
+  name: string;
+  description: string;
+  grid: string | null;
+  defaultAutonomy: ToolAutonomy;
+}
+
 interface ApiResponse {
   orchestrator: OrchestratorState;
   plan: TripPlan | null;
+  tools: OrchestratorTool[];
   actions: Array<{ id: string; status: string }>;
 }
 
@@ -124,6 +135,47 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
     },
     [tripId, load],
   );
+
+  const setToolAutonomy = useCallback(
+    async (tool: string, next: ToolAutonomy) => {
+      if (!data) return;
+      const prev = data.orchestrator.toolAutonomy ?? {};
+      // PATCH replaces the whole map, so send the merged record.
+      const merged = { ...prev, [tool]: next };
+      setData({ ...data, orchestrator: { ...data.orchestrator, toolAutonomy: merged } });
+      try {
+        await appFetchJson(`/api/app/trips/${tripId}/orchestrator`, {
+          method: "PATCH",
+          body: JSON.stringify({ toolAutonomy: merged }),
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        setData((cur) =>
+          cur ? { ...cur, orchestrator: { ...cur.orchestrator, toolAutonomy: prev } } : cur,
+        );
+        setError(err instanceof Error ? err.message : "Failed to update autonomy");
+      }
+    },
+    [tripId, data],
+  );
+
+  const toggleEnabled = useCallback(async () => {
+    if (!data) return;
+    const next = !data.orchestrator.enabled;
+    setData({ ...data, orchestrator: { ...data.orchestrator, enabled: next } });
+    try {
+      await appFetchJson(`/api/app/trips/${tripId}/orchestrator`, {
+        method: "PATCH",
+        body: JSON.stringify({ enabled: next }),
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      setData((cur) =>
+        cur ? { ...cur, orchestrator: { ...cur.orchestrator, enabled: !next } } : cur,
+      );
+      setError(err instanceof Error ? err.message : "Failed to update");
+    }
+  }, [tripId, data]);
 
   const toggleTask = useCallback(
     async (categoryId: string, taskId: string, done: boolean) => {
@@ -232,6 +284,7 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
             className="rounded-full border border-[var(--accent-line)] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--accent-line)] hover:bg-[var(--accent-line)] hover:text-[var(--surface-base)] disabled:opacity-50"
             title={plan ? "Ask the orchestrator to refresh the plan" : "Ask the orchestrator to draft the plan"}
           >
+            {running && <span aria-hidden className="gc-orb !h-3 !w-3 !flex-none" />}
             {running ? "Running…" : plan ? "Refresh plan" : "Generate plan"}
           </button>
         </div>
@@ -316,18 +369,60 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
         )}
       </section>
 
+      {/* Tools & autonomy — the per-tool dial, surfaced (not just server-side). */}
+      <section id="orchestrator-autonomy">
+        <div className="mb-2">
+          <div className="text-caps text-[10px] text-[var(--text-muted)]">Tools &amp; autonomy</div>
+          <div className="text-sm text-[var(--text-secondary)]">
+            What each tool may do without asking. Suggest only → Auto + undo → Full auto.
+          </div>
+        </div>
+        <ul id="orchestrator-autonomy-list" className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
+          {data.tools.map((tool) => (
+            <li
+              key={tool.name}
+              id={`orchestrator-tool-${tool.name.replace(/[^a-zA-Z0-9]+/g, "-")}`}
+              className="flex items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-2.5 py-1.5"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-mono text-[11px] text-[var(--text-primary)]">
+                  {tool.name}
+                </div>
+                <div className="truncate text-[10px] text-[var(--text-muted)]" title={tool.description}>
+                  {tool.description}
+                </div>
+              </div>
+              <ToolAutonomyChip
+                tool={tool}
+                value={data.orchestrator.toolAutonomy?.[tool.name] ?? tool.defaultAutonomy}
+                onChange={(next) => void setToolAutonomy(tool.name, next)}
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {/* Status footer */}
       <footer className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--border-hairline)] bg-[var(--surface-base)] px-3 py-2 text-[11px] text-[var(--text-muted)]">
         <div className="flex flex-wrap items-center gap-2">
-          <span
+          <button
+            id="orchestrator-pause-toggle"
+            type="button"
+            onClick={() => void toggleEnabled()}
+            aria-pressed={!data.orchestrator.enabled}
+            title={
+              data.orchestrator.enabled
+                ? "Pause the AI for this trip — agents keep their data, nothing runs"
+                : "Resume the AI for this trip"
+            }
             className={
               data.orchestrator.enabled
-                ? "rounded-full bg-[var(--status-settled-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-settled)]"
-                : "rounded-full bg-[var(--surface-sunken)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"
+                ? "rounded-full bg-[var(--status-settled-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-settled-text)] hover:opacity-80"
+                : "rounded-full bg-[var(--surface-sunken)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:opacity-80"
             }
           >
-            {data.orchestrator.enabled ? "Active" : "Paused"}
-          </span>
+            {data.orchestrator.enabled ? "Active — tap to pause" : "Paused — tap to resume"}
+          </button>
           <span className="truncate">
             {data.orchestrator.pendingReason?.startsWith("auto-chain")
               ? `Working on tasks… (${data.orchestrator.pendingReason})`
@@ -348,6 +443,75 @@ export function TripOrchestratorMode({ tripId }: { tripId: string }) {
         <div className="text-[10px] text-[var(--status-blocked)]">{error}</div>
       )}
     </div>
+  );
+}
+
+const AUTONOMY_ORDER: ToolAutonomy[] = ["propose_only", "auto_apply_with_undo", "auto_apply"];
+
+const AUTONOMY_LABEL: Record<ToolAutonomy, string> = {
+  propose_only: "Suggest only",
+  auto_apply_with_undo: "Auto + undo",
+  auto_apply: "Full auto",
+};
+
+/**
+ * Per-tool autonomy dial. Click cycles forward through the three levels;
+ * entering `auto_apply` requires an inline confirm (the tool will then change
+ * the trip without asking). Violet fill tiers mark increasing machine agency.
+ */
+function ToolAutonomyChip({
+  tool,
+  value,
+  onChange,
+}: {
+  tool: OrchestratorTool;
+  value: ToolAutonomy;
+  onChange: (next: ToolAutonomy) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const next = AUTONOMY_ORDER[(AUTONOMY_ORDER.indexOf(value) + 1) % AUTONOMY_ORDER.length]!;
+
+  if (confirming) {
+    return (
+      <span className="flex shrink-0 items-center gap-1 text-[9px]">
+        <span className="text-[var(--text-muted)]">Full auto?</span>
+        <button
+          type="button"
+          onClick={() => {
+            setConfirming(false);
+            onChange("auto_apply");
+          }}
+          className="rounded-full bg-[var(--ai-authored)] px-2 py-0.5 font-semibold uppercase tracking-wide text-[var(--on-accent)]"
+        >
+          Allow
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="rounded-full border border-[var(--border-hairline)] px-2 py-0.5 font-semibold uppercase tracking-wide text-[var(--text-muted)]"
+        >
+          Cancel
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => (next === "auto_apply" ? setConfirming(true) : onChange(next))}
+      aria-label={`${tool.name}: ${AUTONOMY_LABEL[value]}. Press to switch to ${AUTONOMY_LABEL[next]}.`}
+      title={`Press to switch to ${AUTONOMY_LABEL[next]}`}
+      className={
+        value === "auto_apply"
+          ? "shrink-0 rounded-full bg-[var(--ai-authored)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--on-accent)] transition-colors duration-[var(--duration-confirm)]"
+          : value === "auto_apply_with_undo"
+            ? "shrink-0 rounded-full bg-[var(--ai-authored-soft)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--ai-authored)] transition-colors duration-[var(--duration-confirm)]"
+            : "shrink-0 rounded-full border border-[var(--border-hairline)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] transition-colors duration-[var(--duration-confirm)] hover:border-[var(--ai-authored)]/50 hover:text-[var(--ai-authored)]"
+      }
+    >
+      ✦ {AUTONOMY_LABEL[value]}
+    </button>
   );
 }
 

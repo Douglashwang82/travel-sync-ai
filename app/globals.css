@@ -822,11 +822,13 @@ html.dark .chat-composer {
   box-shadow: var(--shadow-raise);
 }
 
-/* AIGhostCard — provenance-marked, dotted border, never sparkle. */
+/* AIGhostCard — provenance-marked, dotted border, never sparkle.
+ * Wears the AI-authorship violet: machine-proposed content never wears
+ * brand green until a human confirms it. */
 .ghost-card {
   position: relative;
-  border: 1px dashed color-mix(in oklab, var(--accent-line) 35%, var(--border-hairline));
-  background: color-mix(in oklab, var(--accent-line-soft) 60%, var(--surface-raised));
+  border: 1px dashed color-mix(in oklab, var(--ai-authored) 35%, var(--border-hairline));
+  background: color-mix(in oklab, var(--ai-authored-soft) 60%, var(--surface-raised));
   border-radius: var(--radius-lg);
 }
 

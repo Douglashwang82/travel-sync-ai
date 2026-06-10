@@ -17,6 +17,7 @@ import { SharedGrid } from "@/components/app/grids/shared-grid";
 import { CustomGrid } from "@/components/app/grids/custom-grid";
 import { AddCustomGridDialog } from "@/components/app/grids/add-custom-grid-dialog";
 import { BentoFrame } from "@/components/app/grids/bento-frame";
+import { TripDeltaStrip } from "@/components/app/trip-delta-strip";
 import {
   useBentoLayout,
   type LayoutEntry,
@@ -229,6 +230,8 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
           Reset layout
         </button>
       </div>
+
+      <TripDeltaStrip tripId={tripId} />
 
       <div ref={tilesRef} className="bento-grid">
         {entries.map(({ entry, def }, index) => {

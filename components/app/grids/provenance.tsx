@@ -45,8 +45,10 @@ export function ProvenanceBadge({
       type={onClick ? "button" : undefined}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-[var(--accent-line)]/40 bg-[var(--accent-line-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--accent-line)]",
-        onClick && "hover:bg-[var(--accent-line)]/15",
+        // AI-authorship violet: machine-authored rows never wear brand green
+        // until a human confirms them (design-spec authorship rule).
+        "inline-flex items-center gap-1 rounded-full border border-[var(--ai-authored)]/40 bg-[var(--ai-authored-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--ai-authored)]",
+        onClick && "hover:bg-[var(--ai-authored)]/15",
         className,
       )}
       title={onClick ? "為什麼會被建議?" : undefined}

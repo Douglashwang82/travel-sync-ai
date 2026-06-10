@@ -56,6 +56,11 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
 
   const output = grid.lastOutput;
   const hasRun = grid.lastStatus === "success" && output;
+  // Stale = older than 2× the grid's own cadence. The tile keeps showing the
+  // last good data — never blank — but stops presenting it as current.
+  const stale =
+    !!grid.lastRunAt &&
+    Date.now() - new Date(grid.lastRunAt).getTime() > 2 * grid.frequencyHours * 3_600_000;
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -64,11 +69,21 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
           <div className="truncate font-medium text-[var(--text-secondary)]">
             {grid.title}
           </div>
-          <div className="truncate">
-            每 {grid.frequencyHours} 小時 ·{" "}
-            {grid.lastRunAt
-              ? `上次執行 ${formatRelative(grid.lastRunAt)}`
-              : "尚未執行"}
+          <div className="flex items-center gap-1.5 truncate">
+            <span className="truncate">
+              每 {grid.frequencyHours} 小時 ·{" "}
+              {grid.lastRunAt
+                ? `上次執行 ${formatRelative(grid.lastRunAt)}`
+                : "尚未執行"}
+            </span>
+            {stale && (
+              <span
+                className="shrink-0 rounded-full bg-[var(--status-needs-decision-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--status-needs-decision-text)]"
+                title={`資料截至 ${new Date(grid.lastRunAt!).toLocaleString("zh-TW")},點「立即執行」更新`}
+              >
+                資料較舊
+              </span>
+            )}
           </div>
           <div className="mt-1">
             <AutonomyChip tripId={tripId} grid={grid} onChange={onChange} />
@@ -79,8 +94,9 @@ export function CustomGrid({ tripId, grid, onChange, onDelete }: Props) {
             type="button"
             disabled={running}
             onClick={runNow}
-            className="rounded-md border border-[var(--border-hairline)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-[var(--border-hairline)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] disabled:opacity-50"
           >
+            {running && <span aria-hidden className="gc-orb !h-2.5 !w-2.5 !flex-none" />}
             {running ? "執行中…" : "立即執行"}
           </button>
           <button

@@ -36,7 +36,7 @@ export function GhostLane({
   return (
     <section
       className={cn(
-        "mb-3 rounded-lg border border-dashed border-[var(--accent-line)]/30 bg-[var(--accent-line-soft)]/60 px-3 py-2",
+        "mb-3 rounded-lg border border-dashed border-[var(--ai-authored)]/30 bg-[var(--ai-authored-soft)] px-3 py-2",
         className,
       )}
     >

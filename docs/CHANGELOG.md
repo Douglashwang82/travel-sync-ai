@@ -3,6 +3,15 @@
 ## [Unreleased] — Japan Ski Refocus (v1)
 
 ### Added
+- **Design-spec implementation, P0–P1** (`docs/DESIGN_SPEC.md`) — token layer + ambient-AI transparency surfaces:
+  - `app/globals.css`: glass ladder (`.glass-1/-2/-3` with adaptive `--tile-dominant` tinting and `@supports`/`prefers-reduced-transparency` fallbacks), AI-provenance violet roles (`--ai-authored*`), deep-field anchors, status-as-text variants, on-accent contrast rule (ink on brand green — white-on-green failed AA at 2.6:1), `--duration-micro`/`--ease-exit`/`--focus-ring` motion tokens, `.text-editorial`
+  - Editorial serif: Fraunces (variable, `opsz`) + Noto Serif TC via `next/font` (`--font-editorial`)
+  - AI authorship recolor: ghost cards, ghost lanes, and provenance badges now wear violet (machine-authored) instead of brand green (reserved for human-confirmed)
+  - `AIUpdatesTile`: proposals capped at 3 visible with a "Review all" expansion (decision-friction budget); ghost list is an `aria-live` feed
+  - Orchestrator mode: per-tool **autonomy dial** UI (Suggest only → Auto + undo → Full auto, with inline confirm before full auto) backed by the existing `toolAutonomy` PATCH; the Active/Paused footer chip is now a per-trip **Pause AI** toggle; run button shows the breathing `gc-orb`
+  - Agent grids: "資料較舊" stale badge when `last_run_at` exceeds 2× the grid's cadence; run-now button shows the orb while running
+  - **Delta strip** — `GET /api/app/trips/:tripId/delta` (Zod-validated `since`) + `TripDeltaStrip` under the bento controls: a one-line "while you were away" summary (AI proposals, pending/auto-applied actions, expenses, agent runs) streamed via `StreamingText`; renders nothing when nothing happened
+
 - **"Living Canvas" chat redesign** — a presentation-only reface of both chat surfaces toward a 2026, immersive, *context-first* feel (data flow, routes, and SSE pipeline unchanged):
   - New shared chat primitives under `components/app/chat/`: `chat-canvas` (perspective field with a pointer-parallaxed ambient-mesh backdrop behind always-crisp text), `chat-bubble` (depth/origin-aware spring entrances with real elevation; distinct mine/member/agent typography), `chat-composer` (floating glass command bar with auto-grow input + magnetic gradient send orb), `thinking-orb` (breathing aurora "reasoning" indicator that rotates context phrases — what the agent is thinking about), `proposal-card-3d` (the one foreground 3D object: a cursor-tilt glass card with pointer-tracking sheen that foregrounds the AI's *rationale* as hero copy), plus `streaming-text` (word-by-word blur→sharp reveal for live AI messages), `use-pointer-tilt`, and `use-live-message-ids`
   - `trip-group-chat.tsx` and `trip-chat-room.tsx` re-render through the shared primitives; the old flat bubbles, boxy textarea/Send, and dot pulse / `GridProposalCard` are retired

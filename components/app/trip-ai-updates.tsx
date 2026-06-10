@@ -16,6 +16,8 @@ const COPY = {
     edit: "Edit",
     dismiss: "Dismiss",
     fallbackItem: "Item",
+    showAll: (n: number) => `Review all ${n} suggestions`,
+    showLess: "Show fewer",
   },
   "zh-TW": {
     title: "AI 摘要",
@@ -25,8 +27,13 @@ const COPY = {
     edit: "編輯",
     dismiss: "略過",
     fallbackItem: "項目",
+    showAll: (n: number) => `查看全部 ${n} 則建議`,
+    showLess: "收合",
   },
 } as const;
+
+/** Max proposals shown without explicit expansion (decision-friction budget). */
+const VISIBLE_CAP = 3;
 
 interface AIUpdatesTileProps {
   board: BoardData;
@@ -47,11 +54,13 @@ export function AIUpdatesTile({
   const all: TripItem[] = [...board.todo, ...board.pending, ...board.confirmed];
   const aiItems = all
     .filter((i) => i.source === "ai")
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 6);
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const visible = aiItems.filter((i) => !dismissed.has(i.id));
+  const [expanded, setExpanded] = useState(false);
+  const pending = aiItems.filter((i) => !dismissed.has(i.id));
+  const visible = expanded ? pending : pending.slice(0, VISIBLE_CAP);
+  const hiddenCount = pending.length - visible.length;
 
   function dismiss(item: TripItem) {
     setDismissed((prev) => new Set(prev).add(item.id));
@@ -59,7 +68,7 @@ export function AIUpdatesTile({
   }
 
   return (
-    <section className="surface-tile flex h-full flex-col p-6">
+    <section id="tile-ai-updates" className="surface-tile flex h-full flex-col p-6">
       <header>
         <h2 className="text-display text-2xl text-[var(--text-primary)]">{copy.title}</h2>
         <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.sub}</p>
@@ -70,21 +79,38 @@ export function AIUpdatesTile({
           <p className="text-sm text-[var(--text-muted)]">{copy.empty}</p>
         </div>
       ) : (
-        <ul className="mt-5 flex-1 space-y-2.5 overflow-y-auto pr-1">
-          {visible.map((item) => (
-            <GhostCard
-              key={item.id}
-              title={item.title}
-              description={item.description ?? null}
-              kindLabel={ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem}
-              provenance={toProvenance(item)}
-              onConfirm={onConfirm ? () => onConfirm(item) : undefined}
-              onEdit={() => onItemClick(item)}
-              onDismiss={() => dismiss(item)}
-              copy={{ confirm: copy.confirm, edit: copy.edit, dismiss: copy.dismiss }}
-            />
-          ))}
-        </ul>
+        <>
+          <ul
+            id="tile-ai-updates-list"
+            role="feed"
+            aria-live="polite"
+            className="mt-5 flex-1 space-y-2.5 overflow-y-auto pr-1"
+          >
+            {visible.map((item) => (
+              <GhostCard
+                key={item.id}
+                title={item.title}
+                description={item.description ?? null}
+                kindLabel={ITEM_TYPE_LABELS[item.item_type] ?? copy.fallbackItem}
+                provenance={toProvenance(item)}
+                onConfirm={onConfirm ? () => onConfirm(item) : undefined}
+                onEdit={() => onItemClick(item)}
+                onDismiss={() => dismiss(item)}
+                copy={{ confirm: copy.confirm, edit: copy.edit, dismiss: copy.dismiss }}
+              />
+            ))}
+          </ul>
+          {(hiddenCount > 0 || expanded) && (
+            <button
+              id="tile-ai-updates-toggle"
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-2 self-start rounded-full border border-[var(--ai-authored)]/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ai-authored)] hover:bg-[var(--ai-authored-soft)]"
+            >
+              {expanded ? copy.showLess : copy.showAll(pending.length)}
+            </button>
+          )}
+        </>
       )}
     </section>
   );
