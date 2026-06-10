@@ -1,9 +1,9 @@
 # TravelSync AI — UI/UX Design Specification
 
-**Version 1.0 · June 2026 · Author: Product Design / UX Architecture**
-**Status: Proposed evolution of the shipped `/app` surface (not a rewrite)**
+**Version 1.1 · June 2026 · Author: Product Design / UX Architecture**
+**Status: Proposed evolution of the shipped `/app` surface (not a rewrite) · Re-verified against `main` @ `b10baaf` (PR #94 — Living Canvas chat, dispatched tasks)**
 
-This specification is grounded in the current codebase: the bento workspace (`components/app/trip-bento-page.tsx`, 11+ tiles), orchestrator mode (`trip-orchestrator-mode.tsx`), the eight grid agents (`services/agents/registry.ts`) with the three-state autonomy dial (`AutonomyChip`), the ghost lane (`orchestrator_actions`, `grids/ghost-lane.tsx`), and the existing token layer in `app/globals.css` (Tailwind v4 `@theme inline`). Every recommendation maps to a real component, table, or token.
+This specification is grounded in the current codebase: the bento workspace (`components/app/trip-bento-page.tsx`, 11+ tiles), orchestrator mode (`trip-orchestrator-mode.tsx`), the eight grid agents (`services/agents/registry.ts`) with the three-state autonomy dial (`AutonomyChip`), the ghost lane (`orchestrator_actions`, `grids/ghost-lane.tsx`), the Living Canvas chat surface (`trip-group-chat.tsx`, `components/app/chat/*`, dispatched tasks), and the existing token layer in `app/globals.css` (Tailwind v4 `@theme inline`). Every recommendation maps to a real component, table, or token.
 
 ---
 
@@ -23,11 +23,12 @@ The unit of value in this product is a **resolved decision**: a `trip_items` row
 
 ### 1.2 Ambient & Transparent AI — "AI is a lane, not a widget"
 
-There is **no floating chat bubble** in the workspace. The orchestrator and the eight agents reach the user through exactly three channels:
+There is **no floating chat helpdesk** bolted onto the corner. The orchestrator and the eight agents reach the user through exactly four channels:
 
 1. **The ghost lane** — pending `orchestrator_actions` and agent proposals render as translucent cards *adjacent to the tile they would mutate* (a proposed hotel appears at the edge of the Decision Center, a proposed packing item at the edge of the Pack tile) — not in a detached inbox. Spatial adjacency *is* the explanation of scope.
 2. **Ambient tiles** — monitor-mode agents (`flight-price-tracker`, `weather-forecast`, `hotel-price-watch`, `social-media-photos`) write into their own bento tiles via `custom_grids.last_output`. Data, not conversation.
 3. **Pre-fill & ranking** — `services/parsing/` extraction and `consensus-radar` adjust defaults and ordering *inside* existing components (action queue priority, vote option ordering), always with a provenance marker.
+4. **The conversation canvas** — the trip group chat (`trip-group-chat.tsx`), where the agent is a *participant, not a widget*: its live messages stream word-by-word (`StreamingText`), its waits name what it is reading (`ThinkingOrb`), and any workable bubble can be dragged to the grids rail to become an agent grid or a dispatched task. The chat is the group's space that the AI joins — the inverse of bolting AI onto the chat.
 
 - **Logic transparency is structural, not optional.** Every machine-authored element carries a provenance affordance (`components/app/grids/provenance.tsx`): **which agent · which run · which source message · confidence**. One tap opens the "why" popover ("Proposed because 4 of 6 members mentioned Shibuya, and your hotel vote closes Friday"); a second tap opens the raw run record (`orchestrator_runs.transcript`). If a "why" cannot be written for a suggestion, the suggestion does not ship.
 - **The override mechanism is absolute and three-tiered:**
@@ -73,7 +74,7 @@ TRIGGER ──► ARRIVE ──► ORIENT ──► RESOLVE (loop) ──► REC
 
 1. **Trigger.** A LINE notification ("Hotel vote closes Friday — 2 of 6 voted") or an agent digest deep-links to `/app/trips/[tripId]?scroll=votes`. The existing scroll-anchor redirect pages (`/votes`, `/expenses`, `/board`, `/pack`, `/ideas` → `?scroll=` anchors) are the **intent-handoff mechanism**: the link encodes the intent, the workspace lands focused (§3.3.1). Cold-start latency budget: interactive shell < 1.5s on 4G.
 2. **Arrive & orient (0–5 seconds).** The hero tile (`trip-hero-tile.tsx`) answers *where/when/who*; the Action Queue (`trip-action-queue.tsx`) answers *what needs me*, ranked, top 3 only. A one-line **delta strip** under the hero answers *what changed since I left*: "Since Tuesday: flight price ↓ NT$1,840 · 2 new proposals · Kenji paid the ryokan deposit." Composed from `custom_grid_runs`, `orchestrator_actions`, and `expenses` since the user's last session — this is the single highest-retention element on the page.
-3. **Resolve loop (the session core).** Triage ghost-lane proposals (confirm / edit / dismiss), cast or close votes (`trip-decision-center.tsx`), settle expenses. Each resolution updates the Action Queue *in place* — the next item slides up (`--spring-snappy`, 220ms); the user never re-orients.
+3. **Resolve loop (the session core).** Triage ghost-lane proposals (confirm / edit / dismiss), cast or close votes (`trip-decision-center.tsx`), settle expenses, or drag a chat bubble to the rail to dispatch it to the planner. Each resolution updates the Action Queue *in place* — the next item slides up (`--spring-snappy`, 220ms); the user never re-orients.
 4. **Receipt.** Every resolution produces a material receipt: the morph animation plus a **readiness delta** ("2 more decisions until your itinerary locks") tied to the readiness model. Progress is framed against the *trip*, not against app engagement.
 5. **Exit hook.** The Next-Up tile (`trip-next-up-tile.tsx`) surfaces the next deadline; the system states what the agents will do in the meantime: "Flight tracker checks again at 06:00; consensus radar will nudge non-voters Thursday." The user leaves knowing the machine is on duty — that is the ambient-AI retention promise.
 
@@ -88,6 +89,7 @@ TRIGGER ──► ARRIVE ──► ORIENT ──► RESOLVE (loop) ──► REC
 | "Am I ready?" | Readiness card; `/ready` in LINE | Checklist computed from `confirmed` items + `booking_status` | Orchestrator proposes missing pieces (insurance, transfers) | Mark any line "not needed" — suppression is remembered |
 | "What changed since I left?" | Opening the workspace | Delta strip (§2.2 step 2) | Digest composed from agent runs + actions log | Tap any delta line → provenance popover |
 | "Plan it for me" | Orchestrator mode toggle; goal editor | Goal → plan tree → tool runs → ghost-lane actions | Full orchestrator loop (max 8 turns), bounded by per-tool autonomy | Autonomy dial per tool; Pause AI per trip; undo per action |
+| "Hand this to the AI" | Drag a workable chat bubble onto the grids rail | Task recorded `pending` (`POST …/dispatched-tasks`); focused tool-use run starts out-of-band; rail shows it resolving | Single-task orchestrator run | Task list visible to all members; results return as proposals governed by the same autonomy dials |
 
 ### 2.4 AI edge cases — explicit UX contracts
 
@@ -125,7 +127,7 @@ TRIGGER ──► ARRIVE ──► ORIENT ──► RESOLVE (loop) ──► REC
 
 - **Sidebar** (`app-sidebar.tsx`): glass-1, sticky. Trip switcher, inbox (badge count from `notifications.read_at IS NULL`), templates, profile. Collapses to icon rail at < 1280px.
 - **Canvas**: the paper field. Hero tile → delta strip → bento bands. Max content width 1180px; the canvas, not the chrome, owns scroll.
-- **Grids rail** (`trip-grids-rail.tsx`): glass-1. Agent grid list with status dots + autonomy chips, dispatched-task zone, "add agent" entry (`add-custom-grid-dialog.tsx`). Collapsible; collapsed state shows status dots only — ambient awareness at 24px width.
+- **Grids rail** (`trip-grids-rail.tsx`): glass-1. Agent grid list with status dots + autonomy chips, dispatched-tasks zone (member-dispatched tasks, newest first, polled while any run), "add agent" entry (`add-custom-grid-dialog.tsx`). The rail is also the drop target for chat bubbles (§3.3 item 5). Collapsible; collapsed state shows status dots only — ambient awareness at 24px width.
 - **Mobile (< 768px):** single column. Sidebar becomes a bottom tab bar (glass-1): *Trip · Decide · Money · Chat · More*. Grids rail becomes a bottom sheet pulled from a status strip under the hero. The Action Queue docks as a one-line glass pill above the tab bar — thumb-reachable triage (§5.2).
 
 ### 3.2 Bento canvas — three altitude bands
@@ -147,7 +149,7 @@ Tile taxonomy and placement are **fixed by band, fluid within band** (users reor
 2. **Orchestrator mode morph** (`trip-workspace.tsx` toggle): bento tiles don't cut away — they **collapse toward the hero** (shared-element: the hero persists, tiles scale to 0.96 and fade 220ms staggered 20ms), and the plan tree (`trip-orchestrator-mode.tsx`) unfolds beneath it on a glass-3 field over a deep-tone backdrop (`--deep-petrol`, §4.3). The reverse morph restores tile positions exactly. The user's mental model: *same trip, deeper layer* — not *different page*.
 3. **Ghost-lane adjacency:** proposal cards mount at the edge of their target tile with a 12px overlap, slightly rotated (−1°), glass-2. On hover/focus the target tile's border tints `--ai-authored-soft` — scope made visible before commitment.
 4. **Sticky chrome adaptation:** on scroll past the hero, a condensed glass-1 header materializes (trip name set in the editorial serif, readiness %, Pause-AI switch). Its tint tracks `--tile-dominant` of the topmost visible band (§1.3).
-5. **Chat ↔ workspace:** the trip chat (`trip-chat-room.tsx`) slides as a right-side glass-2 sheet over the canvas (not a route change), so proposal cards arriving in chat (`ProposalCard3D`) can be dragged—or one-tap "pinned"—into the workspace, becoming ghost cards on the relevant tile.
+5. **Chat ↔ workspace (shipped mechanics, codified):** the trip chat (`trip-group-chat.tsx`) is a depth-aware canvas of bubbles in three roles (`mine` / `member` / `agent`, `chat/chat-bubble.tsx`); the agent's identity is aurora-tinted with a display-font name, and its live messages stream. Workable bubbles are draggable: drop on a sibling to reorder, drop on the grids rail to create an agent grid or dispatch a task. A dispatched bubble takes a "Dispatched" chip while the rail's task zone polls it to resolution. This drag is the chat-side mirror of the ghost-lane confirm — a human gesture that turns conversation into work — and its results return as proposals governed by the same autonomy dials. Proposal cards arriving *in* chat use `ProposalCard3D` (§3.5.3).
 
 ### 3.4 Adaptive transparency — mechanics
 
@@ -180,6 +182,12 @@ Tile taxonomy and placement are **fixed by band, fluid within band** (users reor
 #### 3.5.5 Provenance popover (`grids/provenance.tsx`)
 - Fixed schema, every machine-authored element: **Agent** (name + mode chip) · **Run** (relative time, link → run record / `orchestrator_runs` transcript) · **Inputs** ("read: 14 chat messages, weather 7-day, your votes") · **Confidence** (when applicable) · **Footer actions**: "Pause this agent" · "Change autonomy". The popover is the contract that AI never acts anonymously.
 
+#### 3.5.6 ThinkingOrb & StreamingText — the agent's voice (shipped, PR #94)
+
+- **ThinkingOrb** (`chat/thinking-orb.tsx`): the canonical AI-working indicator — a breathing aurora orb (`gc-orb` keyframes in `globals.css`) beside a phrase rotating every 2.2s that names what the agent is reading ("reading the chat", "scanning dates"). The wait communicates *context*, not progress; generic spinners are banned on AI surfaces. Reduced motion: the orb stops breathing, one static phrase shows.
+- **StreamingText** (`chat/streaming-text.tsx`): word-by-word blur(6px)→sharp reveal, 26ms per word, total stagger capped at 1400ms. Only *live* agent messages stream (`useLiveMessageIds`); history renders instantly. Reduced motion: the full string at once.
+- **Extension rule:** the delta strip (§2.2) and orchestrator `last_summary` adopt this same voice, so all agent narrative across the product reads as authored live, from one register.
+
 ### 3.6 Micro-interaction specification
 
 | # | Interaction | Motion | Duration / easing | Cognitive job |
@@ -191,9 +199,11 @@ Tile taxonomy and placement are **fixed by band, fluid within band** (users reor
 | 5 | Undo toast | Slides up; 10s radial countdown on the Undo button | enter 220ms; countdown linear | Recoverability made visible |
 | 6 | Anchor focus | Target tile expands one span; siblings dim/desaturate then recover | 380ms `--spring-gentle` | Directs attention; teaches layout |
 | 7 | Mode morph (bento ⇄ orchestrator) | Tiles collapse toward hero (stagger 20ms); plan tree unfolds on glass-3 | 380ms total | "Deeper layer, same place" |
-| 8 | Agent run-now | Status dot → orbiting pulse; on success, tile content cross-fades and "as of" timestamp resets | pulse 1200ms loop; swap 220ms | Working / fresh, without a spinner |
+| 8 | Agent run-now | Status dot → breathing `gc-orb`; on success, tile content cross-fades and "as of" timestamp resets | breathe ~2.2s loop; swap 220ms | Working / fresh, without a spinner |
 | 9 | Provisional → owned field | Dotted underline solidifies; value ink shifts muted → primary | 140ms ease-out | "This value is yours now" |
 | 10 | Numeric delta (prices, totals) | Count-up/down with sign-colored trail fading | 600ms ease-out | Change magnitude at a glance |
+| 11 | Live agent message | Word-by-word blur→sharp reveal (`StreamingText`) | 26ms/word, cap 1400ms, `--ease-confirm` | "The agent's words are authored live" |
+| 12 | Bubble → rail dispatch | Bubble lifts on drag (`springSnappy`); rail drop target glows `--glow-brand`; "Dispatched" chip stamps on drop | lift 220ms | "Conversation became work" |
 
 All rows degrade under `prefers-reduced-motion` per §5.3.
 
@@ -275,6 +285,8 @@ Strategy: desaturated warm field (≤ 8% chroma) → deep saturated anchors for 
 /* Rule: violet appears ONLY on machine-authored/ -proposed elements.
    Human content never wears violet; AI content never wears brand green
    until a human confirms it. The palette itself encodes authorship. */
+/* Shipped (PR #94): chat bubble role hues --mine / --member / --agent.
+   --agent must stay in the violet/aurora family per this authorship rule. */
 
 /* ── Status (existing) + accessible text variants (NEW) ── */
 --status-needs-decision: #e08c00;  --status-needs-decision-text: #8a5600;
@@ -301,6 +313,8 @@ Gradients (existing `--gradient-brand`, `--gradient-warm`, `--gradient-cool`, `-
 /* Spacing: 8-pt scale (4 only for icon-text gaps). Tile padding 20px.
    Intra-cluster gap 12px; inter-cluster 24px (§1.1). */
 --shadow-flat / --shadow-raise / --shadow-deep / --shadow-tactile  /* existing */
+--border-hairline / --border-strong  /* existing (PR #94) — the only legal border strokes;
+                                        no ad-hoc rgba borders */
 ```
 
 ### 4.4 Materiality tokens — the glass ladder (NEW)
@@ -333,11 +347,14 @@ Budget rules: ≤ 3 blurred layers composited simultaneously; blur never nests i
 ```css
 /* Existing */ --spring-snappy; --spring-gentle; --ease-confirm: cubic-bezier(0.32,0.72,0,1);
 --duration-confirm: 220ms; --duration-morph: 380ms; --duration-glow: 1200ms;
+/* Existing (PR #94) */ gc-orb-breathe keyframes; --glow-brand; --accent-line-glow;
 /* NEW */
 --duration-micro: 140ms;                    /* hover, press, field-claim */
 --ease-exit: cubic-bezier(0.4, 0, 1, 1);    /* dismissals — fast out, no bounce */
 --focus-ring: 0 0 0 2px var(--surface-base), 0 0 0 4px var(--accent-cool);
 ```
+
+React-land counterpart: `components/motion/variants.ts` exports `springSnappy` / `springGentle` / `easeConfirm` for `motion/react` components. These must stay numerically locked to the CSS motion tokens — neither side may drift independently.
 
 ---
 
@@ -378,7 +395,7 @@ Travelers use this app in airports, on trains, mid-argument about dinner. A dedi
 ### 5.4 AI compute fallbacks (the latency ladder, normative)
 
 1. **0–100ms:** optimistic shell renders instantly from cache (`custom_grids.last_output`, cached trip payload in `trip-overview-bento.tsx`). The workspace is *never* gated on a model.
-2. **100ms–4s:** skeleton shimmer, **one cycle maximum** — after one pass, the shimmer freezes to a calm placeholder (perpetual shimmer reads as anxiety).
+2. **100ms–4s:** skeleton shimmer, **one cycle maximum** — after one pass, the shimmer freezes to a calm placeholder (perpetual shimmer reads as anxiety). On conversational surfaces the wait state is the `ThinkingOrb` with context phrases (§3.5.6) — skeletons are for data tiles only.
 3. **> 4s:** cached content + "as of {time}" stale badge; the fresh run continues in background and cross-fades in on arrival (220ms) with the timestamp resetting.
 4. **Failure:** tile keeps last good data; quiet retry affordance; `last_error` in provenance popover. Empty-state only if there has *never* been data.
 5. **Outage** (circuit breaker open): one global "AI paused — your trip is unaffected" pill; all violet affordances enter dormant state; zero impact on CRUD/votes/expenses.
@@ -401,6 +418,8 @@ Travelers use this app in airports, on trains, mid-argument about dinner. A dedi
 | `components/app/grids/custom-grid.tsx`, `trip-orchestrator-mode.tsx` | AutonomyChip per orchestrator tool (§3.5.2); run-now pulse; stale badges |
 | `components/app/trip-workspace.tsx`, `trip-bento-page.tsx` | Band taxonomy, anchor-focus behavior, mode morph, delta strip (new component under hero) |
 | `components/app/grids/provenance.tsx` | Fixed popover schema (§3.5.5) with pause/autonomy footer actions |
+| `components/motion/variants.ts` | Single source for React-side springs/easings, numerically locked to the CSS motion tokens (§4.5) |
+| `components/app/chat/*` (`chat-bubble`, `streaming-text`, `thinking-orb`, `chat-composer`) | Living Canvas register: bubble roles, streamed agent voice, dispatch drag affordances (§3.3 item 5, §3.5.6) |
 | `lib/docs/copy.ts` | User-guide + SAD updates (EN + ZH_TW) in the same PRs as the UI changes |
 
 **Phasing:** P0 — token layer + fallback ladders + contrast fixes (status text variants, on-accent rule). P1 — ghost-lane consolidation, provenance everywhere, autonomy dial in orchestrator mode, delta strip. P2 — mode morph, Glance mode, adaptive tinting.
