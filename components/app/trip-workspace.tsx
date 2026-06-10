@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
+import { easeConfirm } from "@/components/motion/variants";
 import { TripBentoPage } from "@/components/app/trip-bento-page";
 import { TripOrchestratorMode } from "@/components/app/trip-orchestrator-mode";
 import { TripOrchestratorPulse } from "@/components/app/trip-orchestrator-pulse";
@@ -92,11 +94,43 @@ export function TripWorkspace({ tripId }: { tripId: string }) {
         </div>
       </div>
 
-      {mode === "bento" ? (
-        <TripBentoPage tripId={tripId} />
-      ) : (
-        <TripOrchestratorMode tripId={tripId} />
-      )}
+      {/* Mode morph: same trip, deeper layer — the canvas scales back a step
+          while the next layer settles in. Orchestrator mode sits on a
+          violet-tinted glass field: glass is the material of the machine.
+          MotionProvider's reducedMotion="user" collapses this to a cut. */}
+      <AnimatePresence mode="wait" initial={false}>
+        {mode === "bento" ? (
+          <motion.div
+            key="bento"
+            id="workspace-mode-bento"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.38, ease: easeConfirm }}
+            style={{ transformOrigin: "top center" }}
+          >
+            <TripBentoPage tripId={tripId} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="orchestrator"
+            id="workspace-mode-orchestrator"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.38, ease: easeConfirm }}
+            className="glass-3 rounded-[var(--radius-tile)] p-4 md:p-6"
+            style={
+              {
+                transformOrigin: "top center",
+                "--tile-dominant": "var(--ai-authored)",
+              } as CSSProperties
+            }
+          >
+            <TripOrchestratorMode tripId={tripId} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

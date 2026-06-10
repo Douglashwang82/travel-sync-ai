@@ -1108,8 +1108,14 @@ html.scroll-reveal-ready .hero-word {
 .bento-frame {
   /* Frosted glass: flat translucent surface over the shell's ambient mesh,
    * with a top highlight + saturated backdrop blur. Falls back to a solid
-   * surface where backdrop-filter or reduced-transparency rule it out (below). */
-  background: color-mix(in oklab, var(--surface-raised) 68%, transparent);
+   * surface where backdrop-filter or reduced-transparency rule it out (below).
+   * Adaptive tint: tiles publish `--tile-dominant` (semantic accent; violet
+   * for agent tiles) and the frame picks up 7% of it. */
+  background: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--surface-raised) 68%, transparent) 93%,
+    var(--tile-dominant, transparent) 7%
+  );
   border-color: var(--surface-glass-edge);
   backdrop-filter: blur(18px) saturate(170%);
   -webkit-backdrop-filter: blur(18px) saturate(170%);
@@ -1175,6 +1181,29 @@ html.dark .bento-frame {
 .bento-frame[data-resizing="true"] > div {
   opacity: 0.7;
   transition: opacity var(--duration-confirm) var(--ease-confirm);
+}
+
+/* ─── Glance mode ───────────────────────────────────────────────────────── */
+/*
+ * High-distraction preset (airports, trains): only the Decide tiles render
+ * (handled in trip-bento-page), type steps up a notch, muted text is
+ * promoted one contrast tier (AAA enforcement), and motion collapses.
+ * `zoom` is the one lever that scales the fixed Tailwind type ramp without
+ * relayout hacks; supported across modern engines (Firefox 126+).
+ */
+.bento-glance {
+  zoom: 1.06;
+  --text-muted: var(--text-secondary);
+  --text-faint: var(--text-muted);
+}
+.bento-glance .bento-cell {
+  animation: none;
+}
+.bento-glance *,
+.bento-glance *::before,
+.bento-glance *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
 }
 
 /* ─── Bento per-tile micro-interactions ─────────────────────────────────── */

@@ -63,6 +63,22 @@ function isCustomTileId(id: string): boolean {
 }
 
 /**
+ * Adaptive tinting: each tile publishes its semantic accent as
+ * `--tile-dominant`; the frosted frame (and any glass above it) picks up a
+ * few percent of that hue. Agent tiles wear the AI-authorship violet.
+ */
+const TILE_DOMINANT: Record<string, string> = {
+  hero: "var(--accent-line)",
+  budget: "var(--accent-cool)",
+  votes: "var(--status-needs-decision)",
+};
+
+/** Glance mode keeps only the Decide tiles — everything else is one tap away. */
+const GLANCE_TILE_IDS = new Set(["hero", "tasks", "votes", "budget"]);
+
+const GLANCE_KEY = (tripId: string) => `trip-glance:${tripId}`;
+
+/**
  * Single-page bento grid workspace. Every feature is rendered through the
  * uniform `BentoFrame` shell — same background, same chrome, same drag
  * handle and size cycle button. Order and per-tile size persist to
@@ -74,6 +90,28 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
   const tilesRef = useRef<HTMLDivElement>(null);
   const [customGrids, setCustomGrids] = useState<CustomGridData[]>([]);
   const [addOpen, setAddOpen] = useState(false);
+  const [glance, setGlance] = useState(false);
+
+  // Glance mode (high-distraction preset) persists per trip.
+  useEffect(() => {
+    try {
+      setGlance(localStorage.getItem(GLANCE_KEY(tripId)) === "1");
+    } catch {
+      // Private mode etc.
+    }
+  }, [tripId]);
+
+  const toggleGlance = useCallback(() => {
+    setGlance((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(GLANCE_KEY(tripId), next ? "1" : "0");
+      } catch {
+        // Non-fatal.
+      }
+      return next;
+    });
+  }, [tripId]);
 
   useEffect(() => {
     void (async () => {
@@ -135,12 +173,23 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
     [order, tileMap]
   );
 
-  // Scroll to ?scroll=<id> (used by sub-route redirects).
+  const visibleEntries = useMemo(
+    () => (glance ? entries.filter(({ entry }) => GLANCE_TILE_IDS.has(entry.id)) : entries),
+    [entries, glance],
+  );
+  const glanceHiddenCount = entries.length - visibleEntries.length;
+
+  // Scroll to ?scroll=<id> (used by sub-route redirects), then pulse the
+  // target tile so the deep link teaches where the content lives.
   useEffect(() => {
     const id = searchParams?.get("scroll");
     if (!id) return;
     const t = setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.add("accent-pulse");
+      window.setTimeout(() => el.classList.remove("accent-pulse"), 1300);
     }, 50);
     return () => clearTimeout(t);
   }, [searchParams]);
@@ -214,6 +263,20 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
 
       <div className="mb-3 flex items-center justify-end gap-2 text-xs text-[var(--text-muted)]">
         <button
+          id="bento-glance-toggle"
+          type="button"
+          onClick={toggleGlance}
+          aria-pressed={glance}
+          className={
+            glance
+              ? "rounded-full bg-[var(--text-primary)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--surface-base)]"
+              : "rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+          }
+          title="Glance mode: only the decide tiles, larger type, no motion — for airports and trains"
+        >
+          {glance ? "Exit glance" : "Glance"}
+        </button>
+        <button
           type="button"
           onClick={() => setAddOpen(true)}
           className="rounded-full border border-[var(--border-hairline)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] hover:border-[var(--accent-line)] hover:text-[var(--text-primary)]"
@@ -233,17 +296,24 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
 
       <TripDeltaStrip tripId={tripId} />
 
-      <div ref={tilesRef} className="bento-grid">
-        {entries.map(({ entry, def }, index) => {
+      <div ref={tilesRef} className={glance ? "bento-grid bento-glance" : "bento-grid"}>
+        {visibleEntries.map(({ entry, def }, index) => {
           const Component = def.Component;
           const customGrid = isCustomTileId(entry.id)
             ? customGridMap.get(entry.id)
             : null;
+          // Agent tiles wear the AI violet; feature tiles their semantic hue.
+          const dominant = customGrid ? "var(--ai-authored)" : TILE_DOMINANT[entry.id];
           return (
             <div
               key={entry.id}
               className={`bento-cell bento-size-${entry.size}`}
-              style={{ "--bento-i": index } as CSSProperties}
+              style={
+                {
+                  "--bento-i": index,
+                  ...(dominant ? { "--tile-dominant": dominant } : {}),
+                } as CSSProperties
+              }
             >
               <BentoFrame
                 id={entry.id}
@@ -270,6 +340,17 @@ export function TripBentoPage({ tripId }: { tripId: string }) {
           );
         })}
       </div>
+
+      {glance && glanceHiddenCount > 0 && (
+        <button
+          id="bento-glance-hidden"
+          type="button"
+          onClick={toggleGlance}
+          className="mt-4 w-full rounded-[var(--radius-lg)] border border-dashed border-[var(--border-hairline)] px-4 py-3 text-center text-xs text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+        >
+          {glanceHiddenCount} tiles hidden in glance mode — tap to show everything
+        </button>
+      )}
 
       <BentoGridStyles />
     </>
