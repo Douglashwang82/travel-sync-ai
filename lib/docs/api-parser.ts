@@ -115,6 +115,7 @@ function deriveGroup(pattern: string): { slug: string; label: string; order: num
     if (sub === "chat") return { slug: "api-app-chat", label: "App API · Chat", order: 6 };
     return { slug: "api-app-other", label: "App API · Other", order: 7 };
   }
+  if (top === "home") return { slug: "api-home", label: "Home survey demo", order: 8 };
   if (top === "cron") return { slug: "api-cron", label: "Cron jobs", order: 10 };
   if (top === "admin") return { slug: "api-admin", label: "Admin", order: 20 };
   if (top === "line") return { slug: "api-line", label: "LINE webhook", order: 30 };

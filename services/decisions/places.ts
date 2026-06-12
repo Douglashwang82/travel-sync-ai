@@ -311,6 +311,37 @@ export async function findDestinationPlace(destination: string): Promise<PlaceCa
   }
 }
 
+/**
+ * Find the first Places photo resource name for a free-text query.
+ * Used by the public landing-page photo proxy; returns null when the key is
+ * missing or the place has no photos so callers can fall back gracefully.
+ */
+export async function findPlacePhotoName(query: string): Promise<string | null> {
+  const apiKey = getPlacesApiKey();
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.id,places.photos",
+      },
+      body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
+    });
+    if (!res.ok) {
+      console.error(`[places] findPlacePhotoName HTTP ${res.status}`);
+      return null;
+    }
+    const data = (await res.json()) as { places?: GooglePlace[] };
+    return data.places?.[0]?.photos?.[0]?.name ?? null;
+  } catch (err) {
+    console.error("[places] findPlacePhotoName threw", err);
+    return null;
+  }
+}
+
 export async function getTimeZoneForCoordinates(
   lat: number,
   lng: number,
