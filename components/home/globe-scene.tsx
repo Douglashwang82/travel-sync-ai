@@ -75,7 +75,7 @@ function pointInPolygon(lng: number, lat: number, poly: LngLat[]): boolean {
 function buildLandDots(): LandDot[] {
   if (landDotsCache) return landDotsCache;
   const dots: LandDot[] = [];
-  const latStep = 2.2;
+  const latStep = 1.7; // denser sampling so continents read clearly at hero size
   for (let lat = -58; lat <= 80; lat += latStep) {
     const cos = Math.cos((lat * Math.PI) / 180);
     const lngStep = latStep / Math.max(0.18, cos);
@@ -103,6 +103,7 @@ interface GlobeSceneProps {
 export default function GlobeScene({ locale, selected, onSelect }: GlobeSceneProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const glassRef = useRef<HTMLDivElement | null>(null);
   const markerRefs = useRef<Map<HomeCountryCode, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
@@ -121,7 +122,7 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
 
     // Rotation state lives in refs-like locals; the RAF loop owns rendering.
     let rotY = (-138 * Math.PI) / 180; // start with East Asia facing the viewer
-    let tilt = 0.42;
+    let tilt = 0.26;
     let velY = 0;
     let dragging = false;
     let lastPointer: { x: number; y: number; t: number } | null = null;
@@ -130,6 +131,11 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
     let width = 0;
     let height = 0;
     let dpr = 1;
+    // Sphere geometry — owned by resize() so the canvas, the glass overlay
+    // and the marker projection all agree.
+    let cx = 0;
+    let cy = 0;
+    let R = 0;
 
     const resize = () => {
       dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -139,6 +145,21 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       canvas.height = Math.round(height * dpr);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+
+      // The sphere targets 90% of the stage width. On short viewports it
+      // outgrows the wrapper and rises like a planet over the fold — the
+      // height*1.1 cap keeps the marker band (lat 20–45°N) on screen.
+      R = Math.min(width * 0.45, height * 1.1);
+      cx = width / 2;
+      cy = height >= 2 * R + 48 ? height / 2 : 24 + R;
+
+      const glass = glassRef.current;
+      if (glass) {
+        glass.style.left = `${cx - R}px`;
+        glass.style.top = `${cy - R}px`;
+        glass.style.width = `${2 * R}px`;
+        glass.style.height = `${2 * R}px`;
+      }
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -173,22 +194,19 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       }
 
       const dark = isDark();
-      const cx = width / 2;
-      const cy = height / 2;
-      const R = Math.min(width, height) * 0.44;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
 
-      // Sphere base + rim
+      // Sphere base tint (the CSS glass overlay underneath carries the gloss)
       const base = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
       if (dark) {
-        base.addColorStop(0, "rgba(43, 210, 74, 0.10)");
-        base.addColorStop(0.55, "rgba(63, 208, 227, 0.05)");
+        base.addColorStop(0, "rgba(43, 210, 74, 0.12)");
+        base.addColorStop(0.55, "rgba(63, 208, 227, 0.06)");
         base.addColorStop(1, "rgba(22, 23, 15, 0.0)");
       } else {
-        base.addColorStop(0, "rgba(0, 185, 0, 0.07)");
-        base.addColorStop(0.55, "rgba(31, 182, 201, 0.05)");
+        base.addColorStop(0, "rgba(0, 185, 0, 0.09)");
+        base.addColorStop(0.55, "rgba(31, 182, 201, 0.06)");
         base.addColorStop(1, "rgba(255, 255, 255, 0)");
       }
       ctx.beginPath();
@@ -196,7 +214,7 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       ctx.fillStyle = base;
       ctx.fill();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = dark ? "rgba(239,236,226,0.14)" : "rgba(20,19,15,0.10)";
+      ctx.strokeStyle = dark ? "rgba(239,236,226,0.16)" : "rgba(20,19,15,0.12)";
       ctx.stroke();
 
       // Land dots (front hemisphere only, brightness by depth)
@@ -210,13 +228,23 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
         const y = d.sinPhi * cosTilt - z0 * sinTilt;
         const z = d.sinPhi * sinTilt + z0 * cosTilt;
         if (z <= 0) continue;
-        const alpha = 0.16 + 0.6 * z;
-        const size = (0.7 + 0.9 * z) * (R / 230);
+        const py = cy - y * R;
+        if (py < -6 || py > height + 6) continue; // skip dots cropped by the wrapper
+        const alpha = 0.3 + 0.58 * z;
+        const size = (0.85 + 1.0 * z) * (R / 300);
         ctx.beginPath();
-        ctx.arc(cx + x * R, cy - y * R, size, 0, Math.PI * 2);
+        ctx.arc(cx + x * R, py, size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${dotBase},${alpha.toFixed(3)})`;
         ctx.fill();
       }
+
+      // Glass rim light — a bright arc along the upper-left edge.
+      ctx.beginPath();
+      ctx.arc(cx, cy, R - 1.5, Math.PI * 0.85, Math.PI * 1.62);
+      ctx.strokeStyle = dark ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.75)";
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.stroke();
 
       // Marker pings on canvas + reposition the HTML buttons
       for (const country of HOME_COUNTRIES) {
@@ -238,7 +266,9 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
 
         if (btn) {
           const visible = p.z > 0.08;
-          btn.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) translate(-50%, -50%) scale(${(0.78 + 0.3 * Math.max(0, p.z)).toFixed(3)})`;
+          // Anchor the pin dot on the projected point with the label floating
+          // above it, so labels never clip against the cropped lower limb.
+          btn.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) translate(-50%, -100%) translateY(8px) scale(${(0.82 + 0.26 * Math.max(0, p.z)).toFixed(3)})`;
           btn.style.opacity = visible ? "1" : "0";
           btn.style.pointerEvents = visible ? "auto" : "none";
           btn.style.zIndex = visible ? "5" : "0";
@@ -263,7 +293,7 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       const dx = e.clientX - lastPointer.x;
       const dy = e.clientY - lastPointer.y;
       rotY += dx * 0.005;
-      tilt = Math.max(-0.2, Math.min(0.9, tilt + dy * 0.004));
+      tilt = Math.max(0.05, Math.min(0.6, tilt + dy * 0.004));
       const dtMs = Math.max(1, nowT - lastPointer.t);
       velY = (dx * 0.005) / (dtMs / 1000);
       velY = Math.max(-1.4, Math.min(1.4, velY));
@@ -294,9 +324,26 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
     <div
       id="home-globe"
       ref={wrapRef}
-      className="relative mx-auto aspect-square w-full max-w-[640px] cursor-grab touch-none select-none active:cursor-grabbing"
+      className="relative mx-auto h-[420px] w-full cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
+      style={{ height: "clamp(380px, calc(100svh - 300px), 820px)" }}
     >
+      {/* Frosted glass sphere — sized/positioned by the canvas resize handler
+          so it always hugs the projected globe exactly. */}
+      <div
+        id="home-globe-glass"
+        ref={glassRef}
+        aria-hidden
+        className="pointer-events-none absolute rounded-full border border-white/35 bg-[radial-gradient(circle_at_32%_26%,rgba(255,255,255,0.36),rgba(255,255,255,0.10)_38%,rgba(255,255,255,0.03)_58%,rgba(255,255,255,0.015)_78%)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.55),inset_0_-30px_70px_rgba(20,60,30,0.07),0_50px_140px_-50px_rgba(0,110,55,0.45)] backdrop-blur-[7px] backdrop-saturate-150 dark:border-white/15 dark:bg-[radial-gradient(circle_at_32%_26%,rgba(255,255,255,0.13),rgba(255,255,255,0.04)_40%,rgba(255,255,255,0.01)_60%,transparent_78%)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_50px_140px_-50px_rgba(43,210,74,0.35)]"
+      />
+
       <canvas id="home-globe-canvas" ref={canvasRef} className="absolute inset-0" aria-hidden />
+
+      {/* Horizon fade — blends the cropped lower limb into the page surface. */}
+      <div
+        id="home-globe-fade"
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[4] h-[20%] bg-gradient-to-t from-[var(--surface-base)] to-transparent"
+      />
 
       {HOME_COUNTRIES.map((country) => {
         const isSelected = selected === country.code;
@@ -311,15 +358,9 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
             type="button"
             onClick={() => onSelect(country.code)}
             aria-label={locale === "zh-TW" ? `選擇${country.nameZh}` : `Choose ${country.name}`}
-            className="group absolute left-0 top-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 outline-none transition-opacity duration-200"
+            className="group absolute left-0 top-0 flex flex-col items-center gap-1.5 outline-none transition-opacity duration-200"
             style={{ opacity: 0, pointerEvents: "none" }}
           >
-            <span
-              id={`home-globe-marker-dot-${country.code}`}
-              className={`grid h-4 w-4 place-items-center rounded-full border-2 border-white bg-[var(--accent-line)] shadow-[0_0_0_4px_color-mix(in_oklab,var(--accent-line)_25%,transparent)] transition-transform duration-200 group-hover:scale-125 group-focus-visible:scale-125 dark:border-[#16170f] ${
-                isSelected ? "scale-150" : ""
-              }`}
-            />
             <span
               id={`home-globe-marker-label-${country.code}`}
               className="surface-glass flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--border-hairline)] px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-raise)] transition-transform duration-200 group-hover:-translate-y-0.5"
@@ -327,6 +368,12 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
               <span id={`home-globe-marker-flag-${country.code}`} aria-hidden>{country.flag}</span>
               {locale === "zh-TW" ? country.nameZh : country.name}
             </span>
+            <span
+              id={`home-globe-marker-dot-${country.code}`}
+              className={`grid h-4 w-4 place-items-center rounded-full border-2 border-white bg-[var(--accent-line)] shadow-[0_0_0_4px_color-mix(in_oklab,var(--accent-line)_25%,transparent)] transition-transform duration-200 group-hover:scale-125 group-focus-visible:scale-125 dark:border-[#16170f] ${
+                isSelected ? "scale-150" : ""
+              }`}
+            />
           </button>
         );
       })}
