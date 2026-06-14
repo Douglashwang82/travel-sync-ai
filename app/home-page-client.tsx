@@ -67,7 +67,23 @@ type Copy = {
 const LANGUAGE_STORAGE_KEY = "travelsync-home-locale";
 const MOTION_STORAGE_KEY = "travelsync-home-force-motion";
 
+<<<<<<< Updated upstream
 const CONTENT = {
+=======
+const PHASE_ORDER: Phase[] = ["globe", "pois", "reasoning", "itinerary"];
+const GLOBE_QUESTION_ROTATE_MS = 2600;
+
+const GLOBE_ROTATING_QUESTIONS: Record<Locale, string[]> = {
+  en: [
+    "Where do you want to go?",
+    "When do you want to go?",
+    "What kind of trip are you dreaming of?",
+  ],
+  "zh-TW": ["你想去哪裡？", "你想什麼時候出發？", "你想要哪一種旅行體驗？"],
+};
+
+const COPY = {
+>>>>>>> Stashed changes
   en: {
     brand: "TravelSync AI",
     editionBadge: "Group travel",
@@ -272,8 +288,17 @@ function MagneticButton({
 
 export default function HomePageClient() {
   const [locale, setLocale] = useState<Locale>("zh-TW");
+<<<<<<< Updated upstream
   const [forceMotion, setForceMotion] = useState(false);
   const copy = CONTENT[locale];
+=======
+  const [phase, setPhase] = useState<Phase>("globe");
+  const [globeQuestionIndex, setGlobeQuestionIndex] = useState(0);
+  const [country, setCountry] = useState<HomeCountryCode | null>(null);
+  const [diving, setDiving] = useState(false);
+  const [selectedPoiIds, setSelectedPoiIds] = useState<ReadonlySet<string>>(new Set());
+  const [itinerary, setItinerary] = useState<HomeItinerary | null>(null);
+>>>>>>> Stashed changes
 
   // Reads from localStorage after hydration to sync persisted user prefs.
   // Calling setState here is intentional (avoids SSR/client mismatch).
@@ -292,11 +317,83 @@ export default function HomePageClient() {
   }, [locale]);
 
   useEffect(() => {
+<<<<<<< Updated upstream
     window.localStorage.setItem(MOTION_STORAGE_KEY, forceMotion ? "on" : "system");
   }, [forceMotion]);
 
   useScrollReveal(locale, forceMotion);
   const intentIndex = useRotatingIndex(copy.hero.intents.length, forceMotion);
+=======
+    setGlobeQuestionIndex(0);
+    if (phase !== "globe") return;
+
+    const questions = GLOBE_ROTATING_QUESTIONS[locale];
+    if (questions.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setGlobeQuestionIndex((prev) => (prev + 1) % questions.length);
+    }, GLOBE_QUESTION_ROTATE_MS);
+
+    return () => window.clearInterval(timer);
+  }, [phase, locale]);
+
+  const handleCountrySelect = useCallback((code: HomeCountryCode) => {
+    setCountry(code);
+    setDiving(true);
+    // Let the dive animation play before swapping scenes.
+    window.setTimeout(() => {
+      setDiving(false);
+      setSelectedPoiIds(new Set());
+      setPhase("pois");
+    }, 620);
+  }, []);
+
+  const togglePoi = useCallback((id: string) => {
+    setSelectedPoiIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const restart = useCallback(() => {
+    setItinerary(null);
+    setSelectedPoiIds(new Set());
+    setCountry(null);
+    setPhase("globe");
+  }, []);
+
+  const goToPhase = useCallback(
+    (target: Phase) => {
+      // The rail only travels backwards: forward progress comes from the scenes.
+      if (PHASE_ORDER.indexOf(target) >= PHASE_ORDER.indexOf(phase)) return;
+      if (target === "globe") restart();
+      else if (target === "pois" && country) {
+        setItinerary(null);
+        setPhase("pois");
+      }
+    },
+    [phase, country, restart],
+  );
+
+  const heroTitle =
+    phase === "globe"
+      ? (GLOBE_ROTATING_QUESTIONS[locale][globeQuestionIndex] ?? copy.globeTitle)
+      : phase === "pois"
+        ? copy.poisTitle
+        : phase === "reasoning"
+          ? copy.reasoningTitle
+          : itinerary?.title ?? "";
+  const heroSub =
+    phase === "globe"
+      ? copy.globeSub
+      : phase === "pois" && activeCountry
+        ? copy.poisSub(zh ? activeCountry.nameZh : activeCountry.name)
+        : phase === "reasoning"
+          ? copy.reasoningSub
+          : "";
+>>>>>>> Stashed changes
 
   return (
     <div className="min-h-screen bg-[#f6f7f5] text-[#0b0d0c] antialiased selection:bg-[#00b900] selection:text-white dark:bg-[#08090b] dark:text-[#eef2f0]">
@@ -367,6 +464,7 @@ export default function HomePageClient() {
                 </span>
               </p>
 
+<<<<<<< Updated upstream
               <h1
                 className="text-[clamp(2.9rem,8.4vw,5.6rem)] font-semibold leading-[0.96] tracking-[-0.035em] [font-family:var(--font-display)]"
                 aria-label={`${copy.hero.title} ${copy.hero.titleAccent}`}
@@ -435,6 +533,17 @@ export default function HomePageClient() {
               className="mt-7 max-w-4xl text-[clamp(1.9rem,4.6vw,3.4rem)] font-semibold leading-[1.08] tracking-[-0.03em] [font-family:var(--font-display)]"
               data-reveal
               style={{ "--reveal-delay": "80ms" } as CSSProperties}
+=======
+          <HeroTitle key={`${phase}-${locale}-${heroTitle}`} text={heroTitle} locale={locale} />
+          {heroSub && (
+            <motion.p
+              key={`sub-${phase}-${locale}`}
+              id="home-hero-sub"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4, ease: easeConfirm }}
+              className="mt-3 text-[15px] text-[var(--text-muted)]"
+>>>>>>> Stashed changes
             >
               {copy.statement.heading}
             </h2>
