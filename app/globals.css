@@ -1210,3 +1210,13 @@ html.dark .bento-frame {
 
 /* Error fade-up */
 .wizard-error { animation: wizard-phrase-in var(--duration-confirm) var(--ease-confirm); }
+
+/* ─── Index-page survey pipeline ────────────────────────────────────────── */
+/* Faux-video POI tiles drift slowly (Ken Burns) so photo stills read as
+ * footage. Collapses under the global reduced-motion block above. */
+@keyframes home-kenburns {
+  0%   { transform: scale(1) translate(0, 0); }
+  50%  { transform: scale(1.14) translate(1.5%, -1.5%); }
+  100% { transform: scale(1) translate(0, 0); }
+}
+.home-kenburns { animation: home-kenburns 16s ease-in-out infinite; }
