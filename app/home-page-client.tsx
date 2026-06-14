@@ -30,8 +30,17 @@ type Locale = "en" | "zh-TW";
 type Phase = "globe" | "pois" | "reasoning" | "itinerary";
 
 const LANGUAGE_STORAGE_KEY = "travelsync-home-locale";
-
 const PHASE_ORDER: Phase[] = ["globe", "pois", "reasoning", "itinerary"];
+const GLOBE_QUESTION_ROTATE_MS = 2600;
+
+const GLOBE_ROTATING_QUESTIONS: Record<Locale, string[]> = {
+  en: [
+    "Where do you want to go?",
+    "When do you want to go?",
+    "What kind of trip are you dreaming of?",
+  ],
+  "zh-TW": ["你想去哪裡？", "你想什麼時候出發？", "你想要哪一種旅行體驗？"],
+};
 
 const COPY = {
   en: {
@@ -65,6 +74,7 @@ const COPY = {
 export default function HomePageClient() {
   const [locale, setLocale] = useState<Locale>("zh-TW");
   const [phase, setPhase] = useState<Phase>("globe");
+  const [globeQuestionIndex, setGlobeQuestionIndex] = useState(0);
   const [country, setCountry] = useState<HomeCountryCode | null>(null);
   const [diving, setDiving] = useState(false);
   const [selectedPoiIds, setSelectedPoiIds] = useState<ReadonlySet<string>>(new Set());
@@ -87,6 +97,20 @@ export default function HomePageClient() {
     document.documentElement.lang = locale;
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, locale);
   }, [locale]);
+
+  useEffect(() => {
+    setGlobeQuestionIndex(0);
+    if (phase !== "globe") return;
+
+    const questions = GLOBE_ROTATING_QUESTIONS[locale];
+    if (questions.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setGlobeQuestionIndex((prev) => (prev + 1) % questions.length);
+    }, GLOBE_QUESTION_ROTATE_MS);
+
+    return () => window.clearInterval(timer);
+  }, [phase, locale]);
 
   const handleCountrySelect = useCallback((code: HomeCountryCode) => {
     setCountry(code);
@@ -130,7 +154,7 @@ export default function HomePageClient() {
 
   const heroTitle =
     phase === "globe"
-      ? copy.globeTitle
+      ? (GLOBE_ROTATING_QUESTIONS[locale][globeQuestionIndex] ?? copy.globeTitle)
       : phase === "pois"
         ? copy.poisTitle
         : phase === "reasoning"

@@ -115,10 +115,9 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
 
     const dots = buildLandDots();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const isDark = () =>
-      document.documentElement.classList.contains("dark") ||
-      (!document.documentElement.classList.contains("light") && darkQuery.matches);
+    // Tailwind's dark variant and the page tokens are class-driven. Following
+    // the OS preference here would paint white land over an otherwise light UI.
+    const isDark = () => document.documentElement.classList.contains("dark");
 
     // Rotation state lives in refs-like locals; the RAF loop owns rendering.
     let rotY = (-138 * Math.PI) / 180; // start with East Asia facing the viewer
@@ -201,24 +200,24 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       // Sphere base tint (the CSS glass overlay underneath carries the gloss)
       const base = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
       if (dark) {
-        base.addColorStop(0, "rgba(43, 210, 74, 0.12)");
-        base.addColorStop(0.55, "rgba(63, 208, 227, 0.06)");
-        base.addColorStop(1, "rgba(22, 23, 15, 0.0)");
+        base.addColorStop(0, "rgba(43, 210, 74, 0.2)");
+        base.addColorStop(0.58, "rgba(63, 208, 227, 0.12)");
+        base.addColorStop(1, "rgba(12, 30, 25, 0.22)");
       } else {
-        base.addColorStop(0, "rgba(0, 185, 0, 0.09)");
-        base.addColorStop(0.55, "rgba(31, 182, 201, 0.06)");
-        base.addColorStop(1, "rgba(255, 255, 255, 0)");
+        base.addColorStop(0, "rgba(235, 255, 242, 0.48)");
+        base.addColorStop(0.58, "rgba(31, 182, 201, 0.18)");
+        base.addColorStop(1, "rgba(33, 111, 112, 0.13)");
       }
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, Math.PI * 2);
       ctx.fillStyle = base;
       ctx.fill();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = dark ? "rgba(239,236,226,0.16)" : "rgba(20,19,15,0.12)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = dark ? "rgba(239,236,226,0.3)" : "rgba(20,55,43,0.28)";
       ctx.stroke();
 
       // Land dots (front hemisphere only, brightness by depth)
-      const dotBase = dark ? "239,236,226" : "20,19,15";
+      const dotBase = dark ? "232,246,235" : "18,48,38";
       const cosTilt = Math.cos(tilt);
       const sinTilt = Math.sin(tilt);
       for (const d of dots) {
@@ -230,8 +229,8 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
         if (z <= 0) continue;
         const py = cy - y * R;
         if (py < -6 || py > height + 6) continue; // skip dots cropped by the wrapper
-        const alpha = 0.3 + 0.58 * z;
-        const size = (0.85 + 1.0 * z) * (R / 300);
+        const alpha = 0.46 + 0.5 * z;
+        const size = (1 + 1.05 * z) * (R / 300);
         ctx.beginPath();
         ctx.arc(cx + x * R, py, size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${dotBase},${alpha.toFixed(3)})`;
