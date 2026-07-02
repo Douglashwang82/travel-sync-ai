@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   HOME_COUNTRIES,
+  HOME_POI_CATEGORIES,
   HOME_POIS,
   getHomeCountry,
+  getHomePoiCategories,
   getHomePois,
+  matchesHomePoiQuery,
 } from "@/lib/home-survey";
 import {
   MAX_STOPS_PER_DAY,
@@ -47,6 +50,54 @@ describe("home survey catalog", () => {
       expect(pois.length).toBeGreaterThanOrEqual(8);
       expect(new Set(pois.map((p) => p.media))).toEqual(new Set(["photo", "video", "insta"]));
     }
+  });
+});
+
+describe("POI categories + keyword search", () => {
+  const knownCategories = new Set(HOME_POI_CATEGORIES.map((c) => c.id));
+
+  it("files every POI under a known category with at least one tag", () => {
+    for (const poi of HOME_POIS) {
+      expect(knownCategories.has(poi.category)).toBe(true);
+      expect(poi.tags.length).toBeGreaterThan(0);
+      expect(poi.tags.every((t) => t.trim().length > 0)).toBe(true);
+    }
+  });
+
+  it("uses every defined category at least once across the catalog", () => {
+    const used = new Set(HOME_POIS.map((p) => p.category));
+    for (const cat of HOME_POI_CATEGORIES) {
+      expect(used.has(cat.id)).toBe(true);
+    }
+  });
+
+  it("returns present categories in catalog order with accurate counts", () => {
+    const jpCats = getHomePoiCategories(jpPois);
+    const order = HOME_POI_CATEGORIES.map((c) => c.id);
+    const returnedOrder = jpCats.map((c) => c.id);
+    expect(returnedOrder).toEqual([...returnedOrder].sort((a, b) => order.indexOf(a) - order.indexOf(b)));
+    for (const cat of jpCats) {
+      expect(cat.count).toBe(jpPois.filter((p) => p.category === cat.id).length);
+    }
+    expect(jpCats.reduce((s, c) => s + c.count, 0)).toBe(jpPois.length);
+  });
+
+  it("matches an empty query against everything", () => {
+    expect(jpPois.every((p) => matchesHomePoiQuery(p, ""))).toBe(true);
+    expect(jpPois.every((p) => matchesHomePoiQuery(p, "   "))).toBe(true);
+  });
+
+  it("matches on name, tags and is case-insensitive", () => {
+    const fushimi = jpPois.find((p) => p.id === "jp-fushimi")!;
+    expect(matchesHomePoiQuery(fushimi, "FUSHIMI")).toBe(true);
+    expect(matchesHomePoiQuery(fushimi, "torii")).toBe(true);
+    expect(matchesHomePoiQuery(fushimi, "ramen")).toBe(false);
+  });
+
+  it("AND-matches every term in a multi-word query", () => {
+    const fushimi = jpPois.find((p) => p.id === "jp-fushimi")!;
+    expect(matchesHomePoiQuery(fushimi, "free hike")).toBe(true);
+    expect(matchesHomePoiQuery(fushimi, "free sushi")).toBe(false);
   });
 });
 

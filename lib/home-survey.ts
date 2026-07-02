@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Home survey catalog — the data backbone of the index-page survey pipeline.
 //
-// The landing page walks visitors through four phases:
+// The landing page walks visitors through five phases:
 //   1. pick a country on the spinning globe,
-//   2. pick POIs from a media wall,
-//   3. watch the AI agent reason an itinerary together,
-//   4. explore the finished plan on an animated map.
+//   2. zoom into that country and pick an available city,
+//   3. pick POIs from a media wall,
+//   4. watch the AI agent reason an itinerary together,
+//   5. explore the finished plan on an animated map.
 //
 // This module is client-safe (no server imports): both the React scenes and
 // the /api/home/* routes import the same catalog so the server never trusts
@@ -15,6 +16,26 @@
 export type HomeCountryCode = "jp" | "tw" | "us";
 export type HomeMediaKind = "photo" | "video" | "insta";
 export type HomePoiType = "activity" | "restaurant";
+
+/**
+ * Browsable category a POI is filed under on the picking wall. Distinct from
+ * {@link HomePoiType} (which the itinerary solver uses to place meals): a
+ * category is the visitor-facing bucket the filter chips toggle.
+ */
+export type HomePoiCategory =
+  | "landmark"
+  | "culture"
+  | "nature"
+  | "food"
+  | "museum"
+  | "nightlife";
+
+export interface HomeCategoryMeta {
+  id: HomePoiCategory;
+  label: string;
+  labelZh: string;
+  emoji: string;
+}
 
 export interface HomeCountry {
   code: HomeCountryCode;
@@ -29,6 +50,18 @@ export interface HomeCountry {
   currency: { code: string; symbol: string; perUsd: number; round: number };
 }
 
+export interface HomeCity {
+  id: string;
+  country: HomeCountryCode;
+  name: string;
+  nameZh: string;
+  lat: number;
+  lng: number;
+  poiCount: number;
+  activityCount: number;
+  restaurantCount: number;
+}
+
 export interface HomePoi {
   id: string;
   country: HomeCountryCode;
@@ -36,6 +69,10 @@ export interface HomePoi {
   nameZh: string;
   city: string;
   itemType: HomePoiType;
+  /** Visitor-facing bucket the filter chips toggle. */
+  category: HomePoiCategory;
+  /** Free-text keywords powering the search box (e.g. "sunset", "free", "hike"). */
+  tags: string[];
   lat: number;
   lng: number;
   blurb: string;
@@ -93,10 +130,50 @@ export const HOME_COUNTRIES: HomeCountry[] = [
   },
 ];
 
+const HOME_CITY_NAME_ZH: Record<HomeCountryCode, Record<string, string>> = {
+  jp: {
+    Tokyo: "東京",
+    Kyoto: "京都",
+    Osaka: "大阪",
+  },
+  tw: {
+    Taipei: "台北",
+    "New Taipei": "新北",
+  },
+  us: {
+    "New York": "紐約",
+    "San Francisco": "舊金山",
+    "Los Angeles": "洛杉磯",
+  },
+};
+
+/**
+ * Ordered catalog of POI categories. Drives the filter chips on the picking
+ * wall; the order here is the order chips render in.
+ */
+export const HOME_POI_CATEGORIES: HomeCategoryMeta[] = [
+  { id: "landmark", label: "Landmarks", labelZh: "地標", emoji: "🏙️" },
+  { id: "culture", label: "Temples & culture", labelZh: "寺廟與文化", emoji: "⛩️" },
+  { id: "nature", label: "Nature & outdoors", labelZh: "自然與戶外", emoji: "🌿" },
+  { id: "food", label: "Food & markets", labelZh: "美食與市場", emoji: "🍜" },
+  { id: "museum", label: "Art & museums", labelZh: "藝術與博物館", emoji: "🎨" },
+  { id: "nightlife", label: "Nightlife & shopping", labelZh: "夜生活與購物", emoji: "🌃" },
+];
+
+const HOME_CATEGORY_BY_ID: Record<HomePoiCategory, HomeCategoryMeta> = Object.fromEntries(
+  HOME_POI_CATEGORIES.map((c) => [c.id, c]),
+) as Record<HomePoiCategory, HomeCategoryMeta>;
+
+export function getHomeCategoryMeta(id: HomePoiCategory): HomeCategoryMeta {
+  return HOME_CATEGORY_BY_ID[id];
+}
+
 export const HOME_POIS: HomePoi[] = [
   // ── Japan ──────────────────────────────────────────────────────────────────
   {
     id: "jp-shibuya-crossing",
+    category: "landmark",
+    tags: ["iconic", "neon", "crossing", "night", "free", "views"],
     country: "jp",
     name: "Shibuya Crossing",
     nameZh: "澀谷十字路口",
@@ -118,6 +195,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-sensoji",
+    category: "culture",
+    tags: ["temple", "history", "free", "iconic", "lantern"],
     country: "jp",
     name: "Sensō-ji Temple",
     nameZh: "淺草寺",
@@ -138,6 +217,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-teamlab",
+    category: "museum",
+    tags: ["art", "immersive", "digital", "instagram", "interactive"],
     country: "jp",
     name: "teamLab Planets",
     nameZh: "teamLab Planets",
@@ -158,6 +239,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-tsukiji",
+    category: "food",
+    tags: ["market", "seafood", "sushi", "breakfast", "street food"],
     country: "jp",
     name: "Tsukiji Outer Market",
     nameZh: "築地場外市場",
@@ -178,6 +261,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-meiji",
+    category: "culture",
+    tags: ["shrine", "forest", "free", "nature", "peaceful"],
     country: "jp",
     name: "Meiji Shrine",
     nameZh: "明治神宮",
@@ -198,6 +283,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-skytree",
+    category: "landmark",
+    tags: ["tower", "views", "observation", "sunset", "skyline"],
     country: "jp",
     name: "Tokyo Skytree",
     nameZh: "東京晴空塔",
@@ -219,6 +306,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-ichiran",
+    category: "food",
+    tags: ["ramen", "noodles", "tonkotsu"],
     country: "jp",
     name: "Ichiran Ramen Shibuya",
     nameZh: "一蘭拉麵 澀谷店",
@@ -239,6 +328,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-goldengai",
+    category: "nightlife",
+    tags: ["bars", "night", "drinks", "alley", "lantern"],
     country: "jp",
     name: "Shinjuku Golden Gai",
     nameZh: "新宿黃金街",
@@ -259,6 +350,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-fushimi",
+    category: "culture",
+    tags: ["shrine", "torii", "hike", "free", "iconic", "instagram"],
     country: "jp",
     name: "Fushimi Inari Taisha",
     nameZh: "伏見稻荷大社",
@@ -279,6 +372,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-kinkakuji",
+    category: "culture",
+    tags: ["temple", "golden", "garden", "iconic", "pond"],
     country: "jp",
     name: "Kinkaku-ji",
     nameZh: "金閣寺",
@@ -299,6 +394,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-arashiyama",
+    category: "nature",
+    tags: ["bamboo", "forest", "free", "instagram", "walk"],
     country: "jp",
     name: "Arashiyama Bamboo Grove",
     nameZh: "嵐山竹林小徑",
@@ -320,6 +417,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "jp-dotonbori",
+    category: "food",
+    tags: ["street food", "neon", "night", "market"],
     country: "jp",
     name: "Dōtonbori",
     nameZh: "道頓堀",
@@ -342,6 +441,8 @@ export const HOME_POIS: HomePoi[] = [
   // ── Taiwan ─────────────────────────────────────────────────────────────────
   {
     id: "tw-taipei101",
+    category: "landmark",
+    tags: ["tower", "views", "observation", "shopping", "skyline"],
     country: "tw",
     name: "Taipei 101",
     nameZh: "台北 101",
@@ -362,6 +463,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-jiufen",
+    category: "culture",
+    tags: ["old street", "teahouse", "lantern", "mountain", "instagram"],
     country: "tw",
     name: "Jiufen Old Street",
     nameZh: "九份老街",
@@ -382,6 +485,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-shilin",
+    category: "food",
+    tags: ["night market", "street food", "night", "snacks"],
     country: "tw",
     name: "Shilin Night Market",
     nameZh: "士林夜市",
@@ -403,6 +508,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-cks",
+    category: "culture",
+    tags: ["memorial", "history", "free", "architecture"],
     country: "tw",
     name: "Chiang Kai-shek Memorial",
     nameZh: "中正紀念堂",
@@ -423,6 +530,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-elephant",
+    category: "nature",
+    tags: ["hike", "views", "sunset", "free", "instagram", "skyline"],
     country: "tw",
     name: "Elephant Mountain Trail",
     nameZh: "象山步道",
@@ -443,6 +552,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-dintaifung",
+    category: "food",
+    tags: ["dumplings", "dim sum", "xiao long bao"],
     country: "tw",
     name: "Din Tai Fung (Xinyi)",
     nameZh: "鼎泰豐 信義店",
@@ -463,6 +574,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-longshan",
+    category: "culture",
+    tags: ["temple", "history", "free", "incense"],
     country: "tw",
     name: "Longshan Temple",
     nameZh: "龍山寺",
@@ -483,6 +596,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-beitou",
+    category: "nature",
+    tags: ["hot spring", "onsen", "relax", "sulfur"],
     country: "tw",
     name: "Beitou Hot Springs",
     nameZh: "北投溫泉",
@@ -504,6 +619,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-ximending",
+    category: "nightlife",
+    tags: ["shopping", "street", "youth", "bubble tea"],
     country: "tw",
     name: "Ximending",
     nameZh: "西門町",
@@ -524,6 +641,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-palace",
+    category: "museum",
+    tags: ["museum", "history", "art", "treasures"],
     country: "tw",
     name: "National Palace Museum",
     nameZh: "國立故宮博物院",
@@ -544,6 +663,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-yehliu",
+    category: "nature",
+    tags: ["coast", "rock", "geology", "scenic"],
     country: "tw",
     name: "Yehliu Geopark",
     nameZh: "野柳地質公園",
@@ -565,6 +686,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "tw-raohe",
+    category: "food",
+    tags: ["night market", "street food", "night", "snacks"],
     country: "tw",
     name: "Raohe Night Market",
     nameZh: "饒河街觀光夜市",
@@ -586,6 +709,8 @@ export const HOME_POIS: HomePoi[] = [
   // ── United States ──────────────────────────────────────────────────────────
   {
     id: "us-timessquare",
+    category: "landmark",
+    tags: ["iconic", "neon", "night", "free", "billboards"],
     country: "us",
     name: "Times Square",
     nameZh: "時報廣場",
@@ -607,6 +732,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-centralpark",
+    category: "nature",
+    tags: ["park", "free", "walk", "autumn", "lake"],
     country: "us",
     name: "Central Park",
     nameZh: "中央公園",
@@ -627,6 +754,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-brooklynbridge",
+    category: "landmark",
+    tags: ["bridge", "walk", "sunset", "free", "iconic"],
     country: "us",
     name: "Brooklyn Bridge",
     nameZh: "布魯克林大橋",
@@ -647,6 +776,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-katz",
+    category: "food",
+    tags: ["deli", "sandwich", "pastrami"],
     country: "us",
     name: "Katz's Delicatessen",
     nameZh: "Katz's 熟食店",
@@ -667,6 +798,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-goldengate",
+    category: "landmark",
+    tags: ["bridge", "fog", "iconic", "free", "views"],
     country: "us",
     name: "Golden Gate Bridge",
     nameZh: "金門大橋",
@@ -687,6 +820,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-alcatraz",
+    category: "culture",
+    tags: ["history", "prison", "island", "tour"],
     country: "us",
     name: "Alcatraz Island",
     nameZh: "惡魔島",
@@ -708,6 +843,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-fishermanswharf",
+    category: "food",
+    tags: ["seafood", "chowder", "pier", "sea lions"],
     country: "us",
     name: "Fisherman's Wharf",
     nameZh: "漁人碼頭",
@@ -728,6 +865,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-griffith",
+    category: "museum",
+    tags: ["observatory", "views", "telescope", "sunset", "hollywood"],
     country: "us",
     name: "Griffith Observatory",
     nameZh: "葛瑞菲斯天文台",
@@ -748,6 +887,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-santamonica",
+    category: "nature",
+    tags: ["beach", "pier", "ferris wheel", "sunset", "ocean"],
     country: "us",
     name: "Santa Monica Pier",
     nameZh: "聖塔莫尼卡碼頭",
@@ -769,6 +910,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-innout",
+    category: "food",
+    tags: ["burger", "fast food", "fries"],
     country: "us",
     name: "In-N-Out Burger",
     nameZh: "In-N-Out 漢堡",
@@ -789,6 +932,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-met",
+    category: "museum",
+    tags: ["museum", "art", "history"],
     country: "us",
     name: "The Met Museum",
     nameZh: "大都會藝術博物館",
@@ -809,6 +954,8 @@ export const HOME_POIS: HomePoi[] = [
   },
   {
     id: "us-venicebeach",
+    category: "nature",
+    tags: ["beach", "skate", "murals", "free", "boardwalk"],
     country: "us",
     name: "Venice Beach Boardwalk",
     nameZh: "威尼斯海灘步道",
@@ -833,12 +980,94 @@ export function getHomeCountry(code: string): HomeCountry | null {
   return HOME_COUNTRIES.find((c) => c.code === code) ?? null;
 }
 
-export function getHomePois(country: HomeCountryCode): HomePoi[] {
-  return HOME_POIS.filter((p) => p.country === country);
+function cityId(country: HomeCountryCode, city: string): string {
+  return `${country}-${city.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+export function getHomeCities(country: HomeCountryCode): HomeCity[] {
+  const byName = new Map<
+    string,
+    {
+      latSum: number;
+      lngSum: number;
+      poiCount: number;
+      activityCount: number;
+      restaurantCount: number;
+    }
+  >();
+
+  for (const poi of HOME_POIS) {
+    if (poi.country !== country) continue;
+    const current = byName.get(poi.city) ?? {
+      latSum: 0,
+      lngSum: 0,
+      poiCount: 0,
+      activityCount: 0,
+      restaurantCount: 0,
+    };
+    current.latSum += poi.lat;
+    current.lngSum += poi.lng;
+    current.poiCount += 1;
+    if (poi.itemType === "restaurant") current.restaurantCount += 1;
+    else current.activityCount += 1;
+    byName.set(poi.city, current);
+  }
+
+  return [...byName.entries()].map(([name, city]) => ({
+    id: cityId(country, name),
+    country,
+    name,
+    nameZh: HOME_CITY_NAME_ZH[country][name] ?? name,
+    lat: city.latSum / city.poiCount,
+    lng: city.lngSum / city.poiCount,
+    poiCount: city.poiCount,
+    activityCount: city.activityCount,
+    restaurantCount: city.restaurantCount,
+  }));
+}
+
+export function getHomeCity(country: HomeCountryCode, cityName: string): HomeCity | null {
+  return getHomeCities(country).find((city) => city.name === cityName) ?? null;
+}
+
+export function getHomePois(country: HomeCountryCode, city?: string): HomePoi[] {
+  return HOME_POIS.filter((p) => p.country === country && (!city || p.city === city));
 }
 
 export function getHomePoi(id: string): HomePoi | null {
   return HOME_POIS.find((p) => p.id === id) ?? null;
+}
+
+/**
+ * Categories actually represented in a POI set, in catalog order, each with a
+ * live count. Powers the filter chips so only relevant buckets are offered.
+ */
+export function getHomePoiCategories(pois: HomePoi[]): Array<HomeCategoryMeta & { count: number }> {
+  const counts = new Map<HomePoiCategory, number>();
+  for (const poi of pois) counts.set(poi.category, (counts.get(poi.category) ?? 0) + 1);
+  return HOME_POI_CATEGORIES.filter((c) => counts.has(c.id)).map((c) => ({ ...c, count: counts.get(c.id) ?? 0 }));
+}
+
+/**
+ * Case-insensitive keyword match across a POI's name, city, blurb, category
+ * and tags. Multi-word queries are AND-matched (every term must appear), so
+ * "free hike" narrows to spots tagged both. An empty query matches everything.
+ */
+export function matchesHomePoiQuery(poi: HomePoi, query: string): boolean {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return true;
+  const haystack = [
+    poi.name,
+    poi.nameZh,
+    poi.city,
+    poi.blurb,
+    poi.blurbZh,
+    poi.category,
+    ...poi.tags,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return terms.every((term) => haystack.includes(term));
 }
 
 // ─── Itinerary result types (built server-side, rendered client-side) ────────

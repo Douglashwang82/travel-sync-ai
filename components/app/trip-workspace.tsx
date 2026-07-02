@@ -2,11 +2,11 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { TripBentoPage } from "@/components/app/trip-bento-page";
+import { TripCanvasPage } from "@/components/app/canvas/trip-canvas-page";
 import { TripOrchestratorMode } from "@/components/app/trip-orchestrator-mode";
 import { TripOrchestratorPulse } from "@/components/app/trip-orchestrator-pulse";
 
-type WorkspaceMode = "bento" | "orchestrator";
+type WorkspaceMode = "canvas" | "orchestrator";
 
 const STORAGE_PREFIX = "trip-workspace-mode:";
 const STORAGE_EVENT = "trip-workspace-mode:change";
@@ -16,17 +16,23 @@ function storageKey(tripId: string) {
 }
 
 function readMode(tripId: string): WorkspaceMode {
-  if (typeof window === "undefined") return "bento";
+  if (typeof window === "undefined") return "canvas";
   try {
     const v = window.localStorage.getItem(storageKey(tripId));
-    return v === "orchestrator" ? "orchestrator" : "bento";
+    return v === "orchestrator" ? "orchestrator" : "canvas";
   } catch {
-    return "bento";
+    return "canvas";
   }
 }
 
+/**
+ * Accepts the legacy `bento` value and maps it to `canvas` so old
+ * deep-links / stored preferences still land on the workspace.
+ */
 function parseUrlMode(raw: string | undefined | null): WorkspaceMode | null {
-  return raw === "bento" || raw === "orchestrator" ? raw : null;
+  if (raw === "orchestrator") return "orchestrator";
+  if (raw === "canvas" || raw === "bento") return "canvas";
+  return null;
 }
 
 function subscribeToStorage(callback: () => void) {
@@ -40,21 +46,18 @@ function subscribeToStorage(callback: () => void) {
 }
 
 /**
- * Trip workspace shell. Renders a mode toggle between the bento grid (the
- * panoramic, every-feature view) and Orchestrator mode (single-goal +
- * structural plan). Mode persists per trip in localStorage; a `?mode=` query
- * param wins over storage so deep-links from Orchestrator-task outcome chips
- * land in the right view.
+ * Trip workspace shell. Toggles between the Canvas (a free-form pan & zoom
+ * board of every feature) and Orchestrator mode (single-goal + structural
+ * plan). Mode persists per trip in localStorage; a `?mode=` query param wins
+ * over storage so deep-links from Orchestrator-task outcome chips land in the
+ * right view.
  */
 export function TripWorkspace({ tripId }: { tripId: string }) {
   const searchParams = useSearchParams();
   const urlMode = parseUrlMode(searchParams?.get("mode"));
 
-  // `?mode=` (if present) wins over storage so deep-links land where they
-  // should. Storage is the user's previous toggle choice; we read it through
-  // `useSyncExternalStore` so changes from the toggle propagate immediately.
   const getSnapshot = useCallback(() => readMode(tripId), [tripId]);
-  const getServerSnapshot = useCallback<() => WorkspaceMode>(() => "bento", []);
+  const getServerSnapshot = useCallback<() => WorkspaceMode>(() => "canvas", []);
   const storedMode = useSyncExternalStore(subscribeToStorage, getSnapshot, getServerSnapshot);
   const mode: WorkspaceMode = urlMode ?? storedMode;
 
@@ -79,9 +82,9 @@ export function TripWorkspace({ tripId }: { tripId: string }) {
             className="inline-flex rounded-full border border-[var(--border-hairline)] bg-[var(--surface-base)] p-0.5 text-[10px] font-semibold uppercase tracking-wide"
           >
             <ModeButton
-              label="Bento"
-              active={mode === "bento"}
-              onClick={() => switchMode("bento")}
+              label="Canvas"
+              active={mode === "canvas"}
+              onClick={() => switchMode("canvas")}
             />
             <ModeButton
               label="Orchestrator"
@@ -92,8 +95,8 @@ export function TripWorkspace({ tripId }: { tripId: string }) {
         </div>
       </div>
 
-      {mode === "bento" ? (
-        <TripBentoPage tripId={tripId} />
+      {mode === "canvas" ? (
+        <TripCanvasPage tripId={tripId} />
       ) : (
         <TripOrchestratorMode tripId={tripId} />
       )}

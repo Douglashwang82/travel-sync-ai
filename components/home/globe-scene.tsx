@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef } from "react";
-import { HOME_COUNTRIES, type HomeCountryCode } from "@/lib/home-survey";
+import { HOME_COUNTRIES, getHomeCities, type HomeCity, type HomeCountryCode } from "@/lib/home-survey";
 
 type LngLat = [number, number];
 
@@ -56,9 +56,9 @@ const LANDMASSES: LngLat[][] = [
   [[44, -12], [50, -16], [47, -25], [44, -20]],
 ];
 
-interface LandDot { cosPhi: number; sinPhi: number; lambda: number }
+export interface LandDot { cosPhi: number; sinPhi: number; lambda: number }
 
-let landDotsCache: LandDot[] | null = null;
+const landDotsCache = new Map<number, LandDot[]>();
 
 function pointInPolygon(lng: number, lat: number, poly: LngLat[]): boolean {
   let inside = false;
@@ -72,10 +72,12 @@ function pointInPolygon(lng: number, lat: number, poly: LngLat[]): boolean {
   return inside;
 }
 
-function buildLandDots(): LandDot[] {
-  if (landDotsCache) return landDotsCache;
+export function buildLandDots(latStep = 1.15): LandDot[] {
+  const cached = landDotsCache.get(latStep);
+  if (cached) return cached;
   const dots: LandDot[] = [];
-  const latStep = 1.7; // denser sampling so continents read clearly at hero size
+  // Smaller steps are used by zoomed-in scenes where the same geography spans
+  // more pixels and needs extra texture to avoid looking sparse.
   for (let lat = -58; lat <= 80; lat += latStep) {
     const cos = Math.cos((lat * Math.PI) / 180);
     const lngStep = latStep / Math.max(0.18, cos);
@@ -89,8 +91,76 @@ function buildLandDots(): LandDot[] {
       });
     }
   }
-  landDotsCache = dots;
+  landDotsCache.set(latStep, dots);
   return dots;
+}
+
+function toRad(deg: number): number {
+  return (deg * Math.PI) / 180;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function toDeg(rad: number): number {
+  return (rad * 180) / Math.PI;
+}
+
+function angularDelta(from: number, to: number): number {
+  const tau = Math.PI * 2;
+  return ((((to - from + Math.PI) % tau) + tau) % tau) - Math.PI;
+}
+
+/** Mean position of a country's cities (circular mean for longitude). Shared by
+ *  GlobeScene's dive and CityScene so both resolve the same focus point. */
+export function focusCenter(cities: HomeCity[]): { lat: number; lng: number } {
+  if (cities.length === 0) return { lat: 0, lng: 0 };
+  let lat = 0;
+  let sin = 0;
+  let cos = 0;
+  for (const city of cities) {
+    lat += city.lat;
+    const lng = toRad(city.lng);
+    sin += Math.sin(lng);
+    cos += Math.cos(lng);
+  }
+  return {
+    lat: lat / cities.length,
+    lng: toDeg(Math.atan2(sin / cities.length, cos / cities.length)),
+  };
+}
+
+/** Radius that frames all of a country's cities once centred. Shared so the
+ *  globe dive lands on the identical radius CityScene uses. */
+export function computeFocusRadius(
+  cities: HomeCity[],
+  baseR: number,
+  width: number,
+  height: number,
+  projectAt: (lat: number, lng: number, rotY: number, tilt: number) => { x: number; y: number; z: number },
+  rotY: number,
+  tilt: number,
+): number {
+  if (cities.length <= 1) return Math.min(baseR * 2.4, Math.max(width, height) * 1.55);
+
+  const projected = cities.map((city) => projectAt(city.lat, city.lng, rotY, tilt));
+  const xs = projected.map((p) => p.x);
+  const ys = projected.map((p) => p.y);
+  const spreadX = Math.max(0.12, Math.max(...xs) - Math.min(...xs));
+  const spreadY = Math.max(0.08, Math.max(...ys) - Math.min(...ys));
+  const fitR = Math.min((width * 0.64) / spreadX, (height * 0.45) / spreadY);
+  const floor = baseR * 1.55;
+  const ceiling = Math.min(baseR * 3.45, Math.max(width, height) * 1.85);
+  return Math.max(floor, Math.min(fitR, ceiling));
 }
 
 interface GlobeSceneProps {
@@ -100,11 +170,37 @@ interface GlobeSceneProps {
   onSelect: (code: HomeCountryCode) => void;
 }
 
+// How long the camera takes to dive from the world view all the way into the
+// picked country's city focus. This single canvas does the *entire* zoom as one
+// easing curve; CityScene then mounts already at focus, so there's no second
+// animation to stitch. Kept in lockstep with the parent's hand-off timeout.
+const ZOOM_MS = 1000;
+
 export default function GlobeScene({ locale, selected, onSelect }: GlobeSceneProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glassRef = useRef<HTMLDivElement | null>(null);
   const markerRefs = useRef<Map<HomeCountryCode, HTMLButtonElement>>(new Map());
+  // Drives the in-canvas "dive into country" zoom. The RAF loop reads these
+  // refs so the same earth can scale toward the selection instead of a second
+  // globe being spun up by CityScene.
+  const selectedCodeRef = useRef<HomeCountryCode | null>(selected);
+  const zoomStartRef = useRef<number | null>(null);
+  const zoomFromRef = useRef<{ rotY: number; tilt: number; R: number; cy: number; targetRotY: number; targetTilt: number; targetR: number } | null>(null);
+
+  useEffect(() => {
+    if (selected) {
+      if (selectedCodeRef.current !== selected || zoomStartRef.current === null) {
+        selectedCodeRef.current = selected;
+        zoomStartRef.current = performance.now();
+        zoomFromRef.current = null;
+      }
+    } else {
+      selectedCodeRef.current = null;
+      zoomStartRef.current = null;
+      zoomFromRef.current = null;
+    }
+  }, [selected]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -145,12 +241,11 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
-      // The sphere targets 90% of the stage width. On short viewports it
-      // outgrows the wrapper and rises like a planet over the fold — the
-      // height*1.1 cap keeps the marker band (lat 20–45°N) on screen.
-      R = Math.min(width * 0.45, height * 1.1);
+      // The sphere targets 90% of the stage width, then grows on narrow/tall
+      // screens so the lower edge reaches the fold instead of leaving a blank band.
+      R = Math.min(Math.max(width * 0.45, (height - 24) / 2), width * 1.35, height * 1.1);
       cx = width / 2;
-      cy = height >= 2 * R + 48 ? height / 2 : 24 + R;
+      cy = height >= 2 * R + 48 ? height - R : 24 + R;
 
       const glass = glassRef.current;
       if (glass) {
@@ -164,24 +259,63 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    const project = (lat: number, lng: number) => {
+    const projectAt = (lat: number, lng: number, nextRotY: number, nextTilt: number) => {
       const phi = (lat * Math.PI) / 180;
-      const lambda = (lng * Math.PI) / 180 + rotY;
+      const lambda = (lng * Math.PI) / 180 + nextRotY;
       const x = Math.cos(phi) * Math.sin(lambda);
       const y0 = Math.sin(phi);
       const z0 = Math.cos(phi) * Math.cos(lambda);
-      const y = y0 * Math.cos(tilt) - z0 * Math.sin(tilt);
-      const z = y0 * Math.sin(tilt) + z0 * Math.cos(tilt);
+      const y = y0 * Math.cos(nextTilt) - z0 * Math.sin(nextTilt);
+      const z = y0 * Math.sin(nextTilt) + z0 * Math.cos(nextTilt);
       return { x, y, z };
     };
+    const project = (lat: number, lng: number) => projectAt(lat, lng, rotY, tilt);
 
     let lastTime = performance.now();
     const frame = (now: number) => {
       const dt = Math.min(64, now - lastTime) / 1000;
       lastTime = now;
 
-      // Auto-rotate when idle; carry drag inertia with decay.
-      if (!dragging) {
+      // Dive all the way into the picked country's city focus in one easing
+      // curve: rotate the focus to face front, tilt to its latitude, grow the
+      // radius to the city framing and slide the centre up. CityScene then mounts
+      // already at this exact state, so the whole motion is one smooth zoom.
+      const zoomT = zoomStartRef.current != null ? clamp((now - zoomStartRef.current) / ZOOM_MS, 0, 1) : null;
+      if (zoomT != null && selectedCodeRef.current) {
+        if (!zoomFromRef.current) {
+          // Resolve CityScene's exact end framing (centroid + fitted radius) so
+          // the hand-off is a seamless cut at the end of this single curve.
+          const cities = getHomeCities(selectedCodeRef.current);
+          const focus = focusCenter(cities);
+          const targetRotY = -toRad(focus.lng);
+          const targetTilt = clamp(toRad(focus.lat), -0.72, 0.72);
+          zoomFromRef.current = {
+            rotY,
+            tilt,
+            R,
+            cy,
+            targetRotY,
+            targetTilt,
+            targetR: computeFocusRadius(cities, R, width, height, projectAt, targetRotY, targetTilt),
+          };
+        }
+        {
+          const from = zoomFromRef.current;
+          const e = easeInOutCubic(zoomT);
+          rotY = from.rotY + angularDelta(from.rotY, from.targetRotY) * e;
+          tilt = from.tilt + (from.targetTilt - from.tilt) * e;
+          R = from.R + (from.targetR - from.R) * e;
+          cy = from.cy + (height * 0.54 - from.cy) * e;
+          const glass = glassRef.current;
+          if (glass) {
+            glass.style.left = `${cx - R}px`;
+            glass.style.top = `${cy - R}px`;
+            glass.style.width = `${2 * R}px`;
+            glass.style.height = `${2 * R}px`;
+          }
+        }
+      } else if (!dragging) {
+        // Auto-rotate when idle; carry drag inertia with decay.
         const idleFor = now - lastInteraction;
         const auto = reduceMotion ? 0 : 0.07;
         if (Math.abs(velY) > 0.0001) {
@@ -191,6 +325,8 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
           rotY += auto * dt;
         }
       }
+      // Fade the markers out as the camera dives so they don't smear past.
+      const markerFade = zoomT != null ? 1 - easeOutCubic(zoomT) : 1;
 
       const dark = isDark();
 
@@ -230,7 +366,7 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
         const py = cy - y * R;
         if (py < -6 || py > height + 6) continue; // skip dots cropped by the wrapper
         const alpha = 0.46 + 0.5 * z;
-        const size = (1 + 1.05 * z) * (R / 300);
+        const size = (0.58 + 0.68 * z) * (R / 360);
         ctx.beginPath();
         ctx.arc(cx + x * R, py, size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${dotBase},${alpha.toFixed(3)})`;
@@ -268,8 +404,8 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
           // Anchor the pin dot on the projected point with the label floating
           // above it, so labels never clip against the cropped lower limb.
           btn.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) translate(-50%, -100%) translateY(8px) scale(${(0.82 + 0.26 * Math.max(0, p.z)).toFixed(3)})`;
-          btn.style.opacity = visible ? "1" : "0";
-          btn.style.pointerEvents = visible ? "auto" : "none";
+          btn.style.opacity = visible ? markerFade.toFixed(3) : "0";
+          btn.style.pointerEvents = visible && markerFade > 0.5 ? "auto" : "none";
           btn.style.zIndex = visible ? "5" : "0";
         }
       }
@@ -323,8 +459,7 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
     <div
       id="home-globe"
       ref={wrapRef}
-      className="relative mx-auto h-[420px] w-full cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
-      style={{ height: "clamp(380px, calc(100svh - 300px), 820px)" }}
+      className="relative mx-auto h-full min-h-[420px] w-full flex-1 cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
     >
       {/* Frosted glass sphere — sized/positioned by the canvas resize handler
           so it always hugs the projected globe exactly. */}
@@ -336,13 +471,6 @@ export default function GlobeScene({ locale, selected, onSelect }: GlobeScenePro
       />
 
       <canvas id="home-globe-canvas" ref={canvasRef} className="absolute inset-0" aria-hidden />
-
-      {/* Horizon fade — blends the cropped lower limb into the page surface. */}
-      <div
-        id="home-globe-fade"
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[4] h-[20%] bg-gradient-to-t from-[var(--surface-base)] to-transparent"
-      />
 
       {HOME_COUNTRIES.map((country) => {
         const isSelected = selected === country.code;

@@ -4,7 +4,8 @@
 // Index page — a single interactive survey pipeline, nothing else.
 //
 //   globe      → spinning dotted earth; pick a country marker
-//   pois       → that country's POIs take the stage as a media wall
+//   cities     → zoomed earth; pick an available city marker
+//   pois       → that city's POIs take the stage as a media wall
 //   reasoning  → the AI agent visibly plans (SSE from /api/home/itinerary)
 //   itinerary  → animated map + dated, timed, costed plan
 //
@@ -19,18 +20,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Languages } from "lucide-react";
+import CityScene from "@/components/home/city-scene";
 import GlobeScene from "@/components/home/globe-scene";
 import PoiScene from "@/components/home/poi-scene";
 import ReasoningScene from "@/components/home/reasoning-scene";
 import ItineraryScene from "@/components/home/itinerary-scene";
 import { easeConfirm } from "@/components/motion/variants";
-import { getHomeCountry, type HomeCountryCode, type HomeItinerary } from "@/lib/home-survey";
+import { getHomeCity, getHomeCountry, type HomeCity, type HomeCountryCode, type HomeItinerary } from "@/lib/home-survey";
 
 type Locale = "en" | "zh-TW";
-type Phase = "globe" | "pois" | "reasoning" | "itinerary";
+type Phase = "globe" | "cities" | "pois" | "reasoning" | "itinerary";
 
 const LANGUAGE_STORAGE_KEY = "travelsync-home-locale";
-const PHASE_ORDER: Phase[] = ["globe", "pois", "reasoning", "itinerary"];
+const PHASE_ORDER: Phase[] = ["globe", "cities", "pois", "reasoning", "itinerary"];
 const GLOBE_QUESTION_ROTATE_MS = 2600;
 
 const GLOBE_ROTATING_QUESTIONS: Record<Locale, string[]> = {
@@ -47,9 +49,11 @@ const COPY = {
     brand: "TravelSync AI",
     logIn: "Log in",
     languageLabel: "Language",
-    steps: ["Destination", "Spots", "AI plan", "Itinerary"],
+    steps: ["Destination", "City", "Spots", "AI plan", "Itinerary"],
     globeTitle: "Where do you want to go?",
     globeSub: "Spin the globe — tap a marker to begin.",
+    citiesTitle: "Which city should we zoom into?",
+    citiesSub: (name: string) => `Available cities in ${name}.`,
     poisTitle: "What catches your eye?",
     poisSub: (name: string) => `Tap everything you'd love to see in ${name}.`,
     reasoningTitle: "Your AI agent is planning…",
@@ -60,9 +64,11 @@ const COPY = {
     brand: "TravelSync AI",
     logIn: "登入",
     languageLabel: "語言",
-    steps: ["目的地", "景點", "AI 規劃", "行程"],
+    steps: ["目的地", "城市", "景點", "AI 規劃", "行程"],
     globeTitle: "你想去哪裡？",
     globeSub: "轉動地球，點選圖釘開始。",
+    citiesTitle: "想先放大哪座城市？",
+    citiesSub: (name: string) => `${name}目前可選的城市。`,
     poisTitle: "哪些地方吸引你？",
     poisSub: (name: string) => `點選所有你想在${name}造訪的地方。`,
     reasoningTitle: "AI 旅遊代理規劃中…",
@@ -76,6 +82,7 @@ export default function HomePageClient() {
   const [phase, setPhase] = useState<Phase>("globe");
   const [globeQuestionIndex, setGlobeQuestionIndex] = useState(0);
   const [country, setCountry] = useState<HomeCountryCode | null>(null);
+  const [cityName, setCityName] = useState<string | null>(null);
   const [diving, setDiving] = useState(false);
   const [selectedPoiIds, setSelectedPoiIds] = useState<ReadonlySet<string>>(new Set());
   const [itinerary, setItinerary] = useState<HomeItinerary | null>(null);
@@ -83,6 +90,7 @@ export default function HomePageClient() {
   const copy = COPY[locale];
   const zh = locale === "zh-TW";
   const activeCountry = country ? getHomeCountry(country) : null;
+  const activeCity = activeCountry && cityName ? getHomeCity(activeCountry.code, cityName) : null;
 
   // Hydrate persisted locale after mount (avoids SSR mismatch).
   useEffect(() => {
@@ -99,7 +107,6 @@ export default function HomePageClient() {
   }, [locale]);
 
   useEffect(() => {
-    setGlobeQuestionIndex(0);
     if (phase !== "globe") return;
 
     const questions = GLOBE_ROTATING_QUESTIONS[locale];
@@ -112,15 +119,28 @@ export default function HomePageClient() {
     return () => window.clearInterval(timer);
   }, [phase, locale]);
 
+  const handleLocaleChange = useCallback((nextLocale: Locale) => {
+    setLocale(nextLocale);
+    setGlobeQuestionIndex(0);
+  }, []);
+
   const handleCountrySelect = useCallback((code: HomeCountryCode) => {
     setCountry(code);
+    setCityName(null);
+    setSelectedPoiIds(new Set());
     setDiving(true);
-    // Let the dive animation play before swapping scenes.
+    // Let the globe's full dive-zoom play out before handing off to CityScene
+    // (which mounts already at focus). Matches ZOOM_MS in globe-scene.
     window.setTimeout(() => {
       setDiving(false);
-      setSelectedPoiIds(new Set());
-      setPhase("pois");
-    }, 620);
+      setPhase("cities");
+    }, 1000);
+  }, []);
+
+  const handleCitySelect = useCallback((city: HomeCity) => {
+    setCityName(city.name);
+    setSelectedPoiIds(new Set());
+    setPhase("pois");
   }, []);
 
   const togglePoi = useCallback((id: string) => {
@@ -136,6 +156,8 @@ export default function HomePageClient() {
     setItinerary(null);
     setSelectedPoiIds(new Set());
     setCountry(null);
+    setCityName(null);
+    setGlobeQuestionIndex(0);
     setPhase("globe");
   }, []);
 
@@ -144,17 +166,23 @@ export default function HomePageClient() {
       // The rail only travels backwards: forward progress comes from the scenes.
       if (PHASE_ORDER.indexOf(target) >= PHASE_ORDER.indexOf(phase)) return;
       if (target === "globe") restart();
-      else if (target === "pois" && country) {
+      else if (target === "cities" && country) {
+        setItinerary(null);
+        setSelectedPoiIds(new Set());
+        setPhase("cities");
+      } else if (target === "pois" && country && cityName) {
         setItinerary(null);
         setPhase("pois");
       }
     },
-    [phase, country, restart],
+    [phase, country, cityName, restart],
   );
 
   const heroTitle =
     phase === "globe"
       ? (GLOBE_ROTATING_QUESTIONS[locale][globeQuestionIndex] ?? copy.globeTitle)
+      : phase === "cities"
+        ? copy.citiesTitle
       : phase === "pois"
         ? copy.poisTitle
         : phase === "reasoning"
@@ -163,15 +191,16 @@ export default function HomePageClient() {
   const heroSub =
     phase === "globe"
       ? copy.globeSub
-      : phase === "pois" && activeCountry
-        ? copy.poisSub(zh ? activeCountry.nameZh : activeCountry.name)
-        : phase === "reasoning"
-          ? copy.reasoningSub
+      : phase === "cities" && activeCountry
+        ? copy.citiesSub(zh ? activeCountry.nameZh : activeCountry.name)
+      : phase === "pois" && activeCity
+        ? copy.poisSub(zh ? activeCity.nameZh : activeCity.name)
+      : phase === "reasoning"
+        ? copy.reasoningSub
           : "";
 
   return (
     <div id="home-root" className="relative min-h-screen overflow-x-clip bg-[var(--surface-base)] text-[var(--text-primary)] antialiased selection:bg-[var(--accent-line)] selection:text-white">
-      <div id="home-ambient" aria-hidden className="ambient-mesh opacity-35" />
 
       {/* ─── Minimal header ─────────────────────────────────────────────── */}
       <header id="home-header" className="surface-glass fixed inset-x-0 top-0 z-50">
@@ -188,8 +217,8 @@ export default function HomePageClient() {
               className="flex h-8 items-center rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)]/60 p-0.5"
             >
               <Languages id="home-locale-icon" className="ml-1.5 hidden h-3.5 w-3.5 text-[var(--text-muted)] sm:block" aria-hidden />
-              <LangButton id="home-locale-en" active={locale === "en"} onClick={() => setLocale("en")} label="EN" />
-              <LangButton id="home-locale-zh" active={locale === "zh-TW"} onClick={() => setLocale("zh-TW")} label="繁中" />
+              <LangButton id="home-locale-en" active={locale === "en"} onClick={() => handleLocaleChange("en")} label="EN" />
+              <LangButton id="home-locale-zh" active={locale === "zh-TW"} onClick={() => handleLocaleChange("zh-TW")} label="繁中" />
             </div>
             <Link
               id="home-login"
@@ -202,7 +231,7 @@ export default function HomePageClient() {
         </div>
       </header>
 
-      <main id="home-main" className="relative z-10 flex min-h-screen flex-col pt-20">
+      <main id="home-main" className="relative z-10 flex min-h-[100dvh] flex-col pt-20">
         {/* ─── Hero line + progress rail (middle top) ────────────────────── */}
         <div id="home-hero" className="mx-auto w-full max-w-4xl px-5 pb-6 text-center sm:px-8">
           <ol id="home-progress" className="mb-6 flex items-center justify-center gap-2" aria-label={zh ? "進度" : "Progress"}>
@@ -255,26 +284,51 @@ export default function HomePageClient() {
         </div>
 
         {/* ─── The stage: one scene at a time ────────────────────────────── */}
-        <div id="home-stage" className="flex-1 pb-10">
+        <div id="home-stage" className={`flex-1 ${phase === "globe" || phase === "cities" ? "flex min-h-0 flex-col pb-0" : "pb-10"}`}>
           <AnimatePresence mode="wait">
             {phase === "globe" && (
               <motion.section
                 key="scene-globe"
                 id="home-scene-globe"
+                className="flex min-h-0 flex-1 flex-col"
                 initial={{ opacity: 0, scale: 0.96, filter: "blur(8px)" }}
                 animate={
+                  // The dive happens entirely on the canvas (the earth scales
+                  // toward the country). Keep the section fully visible the whole
+                  // time so there is no fade — CityScene then continues the zoom.
                   diving
-                    ? { opacity: 0, scale: 2.1, filter: "blur(10px)" }
-                    : { opacity: 1, scale: 1, filter: "blur(0px)" }
+                    ? { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0 } }
+                    : { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.45, ease: easeConfirm } }
                 }
-                exit={{ opacity: 0, scale: 1.06, filter: "blur(8px)" }}
-                transition={{ duration: diving ? 0.62 : 0.45, ease: easeConfirm }}
+                // Instant unmount — CityScene mounts on the identical frame.
+                exit={{ opacity: 1, transition: { duration: 0 } }}
               >
                 <GlobeScene locale={locale} selected={country} onSelect={handleCountrySelect} />
               </motion.section>
             )}
 
-            {phase === "pois" && activeCountry && (
+            {phase === "cities" && activeCountry && (
+              <motion.section
+                key="scene-cities"
+                id="home-scene-cities"
+                className="flex min-h-0 flex-1 flex-col"
+                // Mounts on the identical frame the globe left off — no fade in,
+                // the remaining zoom into focus is driven inside CityScene.
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1, transition: { duration: 0 } }}
+                exit={{ opacity: 0, scale: 1.06, filter: "blur(8px)", transition: { duration: 0.4, ease: easeConfirm } }}
+              >
+                <CityScene
+                  country={activeCountry}
+                  locale={locale}
+                  selected={cityName}
+                  onSelect={handleCitySelect}
+                  onBack={restart}
+                />
+              </motion.section>
+            )}
+
+            {phase === "pois" && activeCountry && activeCity && (
               <motion.section
                 key="scene-pois"
                 id="home-scene-pois"
@@ -284,12 +338,14 @@ export default function HomePageClient() {
                 transition={{ duration: 0.45, ease: easeConfirm }}
               >
                 <PoiScene
+                  key={`${activeCountry.code}-${activeCity.name}`}
                   country={activeCountry}
+                  city={activeCity}
                   locale={locale}
                   selectedIds={selectedPoiIds}
                   onToggle={togglePoi}
                   onSubmit={() => setPhase("reasoning")}
-                  onBack={restart}
+                  onBack={() => setPhase("cities")}
                 />
               </motion.section>
             )}

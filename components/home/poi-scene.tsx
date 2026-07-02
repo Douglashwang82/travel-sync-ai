@@ -8,19 +8,35 @@
 // posts. Real photos stream in from /api/home/poi-photo (Google Places via a
 // keyless proxy); every card is born with a deterministic gradient + emoji
 // placeholder so the wall looks designed even with zero connectivity.
-// Visitors multi-select cards, then submit to wake the AI planner.
+//
+// Before picking, visitors can narrow the wall: a keyword search box matches
+// names, blurbs and tags, and category chips (Landmarks, Food, Nature, …)
+// filter by bucket. Selection persists across filters — hidden picks still
+// count toward the minimum. Visitors multi-select cards, then submit to wake
+// the AI planner.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
-import { motion } from "motion/react";
-import { ArrowRight, Bookmark, Check, ChevronLeft, Heart, MessageCircle, Play, Send } from "lucide-react";
-import { getHomePois, type HomeCountry, type HomePoi } from "@/lib/home-survey";
+import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowRight, Bookmark, Check, ChevronLeft, Heart, MessageCircle, Play, Search, Send, X } from "lucide-react";
+import {
+  getHomeCategoryMeta,
+  getHomePoiCategories,
+  getHomePois,
+  matchesHomePoiQuery,
+  type HomeCategoryMeta,
+  type HomeCity,
+  type HomeCountry,
+  type HomePoi,
+  type HomePoiCategory,
+} from "@/lib/home-survey";
 import { fadeUp, springSnappy, staggerContainer } from "@/components/motion/variants";
 
 export const MIN_POI_PICKS = 3;
 
 interface PoiSceneProps {
   country: HomeCountry;
+  city?: HomeCity;
   locale: "en" | "zh-TW";
   selectedIds: ReadonlySet<string>;
   onToggle: (id: string) => void;
@@ -28,15 +44,44 @@ interface PoiSceneProps {
   onBack: () => void;
 }
 
-export default function PoiScene({ country, locale, selectedIds, onToggle, onSubmit, onBack }: PoiSceneProps) {
+export default function PoiScene({ country, city, locale, selectedIds, onToggle, onSubmit, onBack }: PoiSceneProps) {
   const zh = locale === "zh-TW";
-  const pois = getHomePois(country.code);
+  const pois = useMemo(() => getHomePois(country.code, city?.name), [country.code, city?.name]);
+  const categories = useMemo(() => getHomePoiCategories(pois), [pois]);
+
+  // Filter state is reset on a new POI set by remounting via `key` from the parent.
+  const [query, setQuery] = useState("");
+  const [activeCats, setActiveCats] = useState<ReadonlySet<HomePoiCategory>>(new Set());
+
+  const visiblePois = useMemo(
+    () =>
+      pois.filter(
+        (poi) => (activeCats.size === 0 || activeCats.has(poi.category)) && matchesHomePoiQuery(poi, query),
+      ),
+    [pois, activeCats, query],
+  );
+
   const count = selectedIds.size;
-  const ready = count >= MIN_POI_PICKS;
+  const minPicks = Math.min(MIN_POI_PICKS, pois.length);
+  const ready = count >= minPicks;
+
+  const toggleCat = (id: HomePoiCategory) => {
+    setActiveCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearFilters = () => {
+    setQuery("");
+    setActiveCats(new Set());
+  };
 
   return (
     <div id="home-poi-scene" className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-      <div id="home-poi-toolbar" className="mb-5 flex items-center justify-between gap-3">
+      <div id="home-poi-toolbar" className="mb-4 flex items-center justify-between gap-3">
         <button
           id="home-poi-back"
           type="button"
@@ -44,27 +89,106 @@ export default function PoiScene({ country, locale, selectedIds, onToggle, onSub
           className="inline-flex h-9 items-center gap-1 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-3.5 text-[13px] font-semibold text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
-          {zh ? "重選國家" : "Change country"}
+          {city ? (zh ? "重選城市" : "Change city") : zh ? "重選國家" : "Change country"}
         </button>
         <p id="home-poi-counter" className="text-mono text-[13px] font-semibold text-[var(--text-muted)]">
           <span id="home-poi-counter-count" className={count > 0 ? "text-[var(--accent-line)]" : ""}>{count}</span>
-          {zh ? ` 個已選 · 至少 ${MIN_POI_PICKS} 個` : ` picked · at least ${MIN_POI_PICKS}`}
+          {zh ? ` 個已選 · 至少 ${minPicks} 個` : ` picked · at least ${minPicks}`}
         </p>
       </div>
 
-      <motion.div
-        id="home-poi-grid"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="show"
-        className="columns-2 gap-3 pb-32 sm:gap-4 md:columns-3 xl:columns-4 [&>*]:mb-3 sm:[&>*]:mb-4"
-      >
-        {pois.map((poi) => (
-          <motion.div key={poi.id} variants={fadeUp}>
-            <PoiCard poi={poi} zh={zh} selected={selectedIds.has(poi.id)} onToggle={() => onToggle(poi.id)} />
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* ─── Filter bar: keyword search + category chips ───────────────────── */}
+      <div id="home-poi-filters" className="mb-5 space-y-3">
+        <div id="home-poi-search" className="relative">
+          <Search
+            id="home-poi-search-icon"
+            aria-hidden
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]"
+          />
+          <input
+            id="home-poi-search-input"
+            type="search"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={zh ? "搜尋關鍵字：寺廟、夜市、免費、看夕陽…" : "Search keywords — temple, market, free, sunset…"}
+            aria-label={zh ? "以關鍵字搜尋景點" : "Search spots by keyword"}
+            className="h-11 w-full rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] pl-10 pr-10 text-[14px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-faint)] focus-visible:border-[var(--accent-line)] focus-visible:ring-2 focus-visible:ring-[var(--accent-line-soft)]"
+          />
+          {query && (
+            <button
+              id="home-poi-search-clear"
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label={zh ? "清除搜尋" : "Clear search"}
+              className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[var(--text-muted)] transition hover:bg-[var(--surface-base)] hover:text-[var(--text-primary)]"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          )}
+        </div>
+
+        {categories.length > 1 && (
+          <div
+            id="home-poi-chips"
+            role="group"
+            aria-label={zh ? "依類別篩選" : "Filter by category"}
+            className="-mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible"
+          >
+            <FilterChip
+              id="home-poi-chip-all"
+              active={activeCats.size === 0}
+              onClick={() => setActiveCats(new Set())}
+              label={zh ? "全部" : "All"}
+              count={pois.length}
+            />
+            {categories.map((cat) => (
+              <FilterChip
+                key={cat.id}
+                id={`home-poi-chip-${cat.id}`}
+                active={activeCats.has(cat.id)}
+                onClick={() => toggleCat(cat.id)}
+                emoji={cat.emoji}
+                label={zh ? cat.labelZh : cat.label}
+                count={cat.count}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {visiblePois.length > 0 ? (
+        <motion.div
+          id="home-poi-grid"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+          className="columns-2 gap-3 pb-32 sm:gap-4 md:columns-3 xl:columns-4 [&>*]:mb-3 sm:[&>*]:mb-4"
+        >
+          <AnimatePresence initial={false}>
+            {visiblePois.map((poi) => (
+              <motion.div key={poi.id} layout variants={fadeUp} exit={{ opacity: 0, scale: 0.96 }}>
+                <PoiCard poi={poi} zh={zh} selected={selectedIds.has(poi.id)} onToggle={() => onToggle(poi.id)} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      ) : (
+        <div id="home-poi-empty" className="flex flex-col items-center gap-3 py-20 text-center">
+          <span id="home-poi-empty-emoji" aria-hidden className="text-4xl">🔍</span>
+          <p id="home-poi-empty-text" className="text-[15px] font-semibold text-[var(--text-muted)]">
+            {zh ? "找不到符合的景點" : "No spots match those filters"}
+          </p>
+          <button
+            id="home-poi-empty-clear"
+            type="button"
+            onClick={clearFilters}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-4 text-[13px] font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-line)]"
+          >
+            {zh ? "清除篩選" : "Clear filters"}
+          </button>
+        </div>
+      )}
 
       {/* Floating submit dock */}
       <div id="home-poi-dock" className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-5">
@@ -79,8 +203,8 @@ export default function PoiScene({ country, locale, selectedIds, onToggle, onSub
             {ready
               ? zh ? "準備好了！" : "Ready when you are."
               : zh
-                ? `再選 ${MIN_POI_PICKS - count} 個`
-                : `Pick ${MIN_POI_PICKS - count} more`}
+                ? `再選 ${minPicks - count} 個`
+                : `Pick ${minPicks - count} more`}
           </p>
           <button
             id="home-poi-submit"
@@ -98,10 +222,47 @@ export default function PoiScene({ country, locale, selectedIds, onToggle, onSub
   );
 }
 
+// ─── Filter chip ───────────────────────────────────────────────────────────────
+
+function FilterChip({
+  id,
+  active,
+  onClick,
+  label,
+  count,
+  emoji,
+}: {
+  id: string;
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  emoji?: string;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition ${
+        active
+          ? "border-[var(--accent-line)] bg-[var(--accent-line)] text-white shadow-[var(--accent-line-glow)]"
+          : "border-[var(--border-hairline)] bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+      }`}
+    >
+      {emoji && <span aria-hidden>{emoji}</span>}
+      {label}
+      <span className={`text-[11px] font-bold ${active ? "text-white/80" : "text-[var(--text-faint)]"}`}>{count}</span>
+    </button>
+  );
+}
+
 // ─── Cards ───────────────────────────────────────────────────────────────────
 
 function PoiCard({ poi, zh, selected, onToggle }: { poi: HomePoi; zh: boolean; selected: boolean; onToggle: () => void }) {
   const name = zh ? poi.nameZh : poi.name;
+  const categoryMeta = getHomeCategoryMeta(poi.category);
   return (
     <button
       id={`home-poi-card-${poi.id}`}
@@ -132,8 +293,26 @@ function PoiCard({ poi, zh, selected, onToggle }: { poi: HomePoi; zh: boolean; s
         <Check className="h-4 w-4" strokeWidth={3} />
       </motion.span>
 
-      {poi.media === "insta" ? <InstaCard poi={poi} name={name} zh={zh} /> : poi.media === "video" ? <VideoCard poi={poi} name={name} /> : <PhotoCard poi={poi} name={name} />}
+      {poi.media === "insta" ? (
+        <InstaCard poi={poi} name={name} zh={zh} categoryMeta={categoryMeta} />
+      ) : poi.media === "video" ? (
+        <VideoCard poi={poi} name={name} zh={zh} categoryMeta={categoryMeta} />
+      ) : (
+        <PhotoCard poi={poi} name={name} zh={zh} categoryMeta={categoryMeta} />
+      )}
     </button>
+  );
+}
+
+function CategoryTag({ meta, zh, id }: { meta: HomeCategoryMeta; zh: boolean; id: string }) {
+  return (
+    <span
+      id={id}
+      className="inline-flex items-center gap-1 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm"
+    >
+      <span aria-hidden>{meta.emoji}</span>
+      {zh ? meta.labelZh : meta.label}
+    </span>
   );
 }
 
@@ -169,20 +348,23 @@ function MediaImage({ poi, className, kenburns = false }: { poi: HomePoi; classN
   );
 }
 
-function PhotoCard({ poi, name }: { poi: HomePoi; name: string }) {
+function PhotoCard({ poi, name, zh, categoryMeta }: { poi: HomePoi; name: string; zh: boolean; categoryMeta: HomeCategoryMeta }) {
   return (
     <span id={`home-poi-photo-${poi.id}`} className="relative block">
       <MediaImage poi={poi} className="aspect-[4/5] w-full" />
       <span id={`home-poi-photo-scrim-${poi.id}`} aria-hidden className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
       <span id={`home-poi-photo-caption-${poi.id}`} className="absolute inset-x-0 bottom-0 p-3">
         <span id={`home-poi-photo-name-${poi.id}`} className="block text-[14px] font-bold leading-tight text-white">{name}</span>
-        <span id={`home-poi-photo-city-${poi.id}`} className="mt-0.5 block text-[11px] font-medium text-white/75">📍 {poi.city}</span>
+        <span id={`home-poi-photo-meta-${poi.id}`} className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span id={`home-poi-photo-city-${poi.id}`} className="text-[11px] font-medium text-white/75">📍 {poi.city}</span>
+          <CategoryTag id={`home-poi-photo-cat-${poi.id}`} meta={categoryMeta} zh={zh} />
+        </span>
       </span>
     </span>
   );
 }
 
-function VideoCard({ poi, name }: { poi: HomePoi; name: string }) {
+function VideoCard({ poi, name, zh, categoryMeta }: { poi: HomePoi; name: string; zh: boolean; categoryMeta: HomeCategoryMeta }) {
   const secs = poi.videoSeconds ?? 30;
   return (
     <span id={`home-poi-video-${poi.id}`} className="relative block">
@@ -201,13 +383,16 @@ function VideoCard({ poi, name }: { poi: HomePoi; name: string }) {
       </span>
       <span id={`home-poi-video-caption-${poi.id}`} className="absolute inset-x-0 bottom-0 p-3">
         <span id={`home-poi-video-name-${poi.id}`} className="block text-[14px] font-bold leading-tight text-white">{name}</span>
-        <span id={`home-poi-video-city-${poi.id}`} className="mt-0.5 block text-[11px] font-medium text-white/75">🎬 {poi.city}</span>
+        <span id={`home-poi-video-meta-${poi.id}`} className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span id={`home-poi-video-city-${poi.id}`} className="text-[11px] font-medium text-white/75">🎬 {poi.city}</span>
+          <CategoryTag id={`home-poi-video-cat-${poi.id}`} meta={categoryMeta} zh={zh} />
+        </span>
       </span>
     </span>
   );
 }
 
-function InstaCard({ poi, name, zh }: { poi: HomePoi; name: string; zh: boolean }) {
+function InstaCard({ poi, name, zh, categoryMeta }: { poi: HomePoi; name: string; zh: boolean; categoryMeta: HomeCategoryMeta }) {
   return (
     <span id={`home-poi-insta-${poi.id}`} className="block bg-[var(--surface-raised)]">
       <span id={`home-poi-insta-head-${poi.id}`} className="flex items-center gap-2 px-2.5 py-2">
@@ -221,7 +406,12 @@ function InstaCard({ poi, name, zh }: { poi: HomePoi; name: string; zh: boolean 
         <span id={`home-poi-insta-handle-${poi.id}`} className="min-w-0 flex-1 truncate text-[12px] font-bold">@{poi.handle}</span>
         <span id={`home-poi-insta-more-${poi.id}`} aria-hidden className="text-[var(--text-muted)]">···</span>
       </span>
-      <MediaImage poi={poi} className="aspect-square w-full" />
+      <span id={`home-poi-insta-media-wrap-${poi.id}`} className="relative block">
+        <MediaImage poi={poi} className="aspect-square w-full" />
+        <span id={`home-poi-insta-cat-${poi.id}`} className="absolute left-2 top-2">
+          <CategoryTag id={`home-poi-insta-cat-tag-${poi.id}`} meta={categoryMeta} zh={zh} />
+        </span>
+      </span>
       <span id={`home-poi-insta-actions-${poi.id}`} className="flex items-center gap-3 px-2.5 pt-2 text-[var(--text-primary)]">
         <Heart id={`home-poi-insta-like-${poi.id}`} className="h-[18px] w-[18px] fill-[#ff3040] text-[#ff3040]" aria-hidden />
         <MessageCircle className="h-[18px] w-[18px]" aria-hidden />
