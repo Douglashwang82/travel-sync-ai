@@ -3,25 +3,34 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // ItineraryScene — phase 4 of the index-page survey pipeline.
 //
-// The generated plan takes over the stage: an animated map on the left (a
-// real Google Map when NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY is configured,
-// otherwise a hand-rolled animated SVG map with day routes drawing themselves
-// in) and the day-by-day plan on the right with dates, arrive/depart times
-// and expected costs per stop, per day and per trip. Days auto-cycle on the
-// map; hovering or tapping a day card focuses it.
+// "Field Journal" layout (claude.ai/design project "Itinerary showing page",
+// option 1a): an editorial print-style page. A ruled masthead and photo strip
+// up top, then the full timeline visible at once — serif day headings over a
+// `time | detail | cost` grid with travel legs between stops — and a bordered
+// sidebar holding the live map (Google map when a browser key is configured,
+// animated SVG otherwise), the per-day budget and a social feed pulled from
+// the trip's Instagram-style POIs. Days auto-cycle on the map; hovering a day
+// section or using the sidebar day index focuses it. Colors ride the site's
+// CSS tokens so the editorial look survives dark mode.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Instrument_Serif } from "next/font/google";
 import { motion } from "motion/react";
 import { APIProvider, Map as GoogleMap, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
-import { ArrowRight, CalendarDays, MapPin, RotateCcw, Wallet } from "lucide-react";
-import type { HomeCountry, HomeItinerary, HomeItineraryDay } from "@/lib/home-survey";
+import { ArrowRight, RotateCcw } from "lucide-react";
+import { getHomePoi, type HomeCountry, type HomeItinerary, type HomeItineraryDay, type HomeItineraryStop } from "@/lib/home-survey";
 import { fadeUp, staggerContainer } from "@/components/motion/variants";
 
 const DAY_COLORS = ["#00b900", "#1fb6c9", "#7c5cff", "#ff5d5d", "#e08c00", "#d62976"];
 
 const MAPS_BROWSER_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_API_KEY ?? "";
+
+const editorialSerif = Instrument_Serif({ weight: "400", subsets: ["latin"], variable: "--font-editorial", display: "swap" });
+
+/** Editorial display face with a CJK serif fallback for zh-TW. */
+const SERIF = { fontFamily: "var(--font-editorial), 'Noto Serif TC', Georgia, serif" } as const;
 
 interface ItinerarySceneProps {
   itinerary: HomeItinerary;
@@ -47,6 +56,7 @@ export default function ItineraryScene({ itinerary, country, locale, onRestart }
   }, [itinerary.days.length]);
 
   const focusDay = (day: number) => {
+    // eslint-disable-next-line react-hooks/purity -- event handler only; pauses the auto-tour relative to the click instant
     pauseUntilRef.current = Date.now() + 12_000;
     setActiveDay(day);
   };
@@ -58,185 +68,350 @@ export default function ItineraryScene({ itinerary, country, locale, onRestart }
     return `${fmt.format(first)} – ${fmt.format(last)}`;
   }, [itinerary.days, zh]);
 
+  // Header photo strip: three stops spread across the trip.
+  const heroStops = useMemo(() => {
+    const all = itinerary.days.flatMap((d) => d.stops);
+    if (all.length <= 3) return all;
+    return [all[0], all[Math.floor(all.length / 2)], all[all.length - 1]];
+  }, [itinerary.days]);
+
+  // "From the feed": the trip's Instagram-styled POIs.
+  const feedPois = useMemo(() => {
+    const seen = new Set<string>();
+    return itinerary.days
+      .flatMap((d) => d.stops)
+      .map((s) => getHomePoi(s.poiId))
+      .filter((p) => {
+        if (!p || p.media !== "insta" || seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .slice(0, 2);
+  }, [itinerary.days]);
+
   return (
-    <div id="home-itinerary-scene" className="mx-auto w-full max-w-6xl px-5 pb-24 sm:px-8">
-      {/* Trip header */}
-      <motion.header
-        id="home-itinerary-header"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6 text-center"
-      >
-        <p id="home-itinerary-summary" className="mx-auto mt-2 max-w-2xl text-[14.5px] leading-7 text-[var(--text-muted)]">
+    <div id="home-itinerary-scene" className={`mx-auto w-full max-w-6xl px-5 pb-24 sm:px-8 ${editorialSerif.variable}`}>
+      {/* ─── Masthead: ruled meta line, summary, photo strip ──────────────── */}
+      <motion.header id="home-itinerary-header" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+        <div
+          id="home-itinerary-rule"
+          className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--text-primary)] pb-3 text-[11px] font-semibold uppercase tracking-[0.14em]"
+        >
+          <span id="home-itinerary-rule-no">{zh ? "行程紀錄 Nº 01" : "Itinerary Nº 01"}</span>
+          <span id="home-itinerary-rule-meta">
+            {dateRange} · {itinerary.days.length} {zh ? "天" : itinerary.days.length === 1 ? "day" : "days"} ·{" "}
+            {zh ? country.nameZh : country.name} {country.flag}
+          </span>
+        </div>
+        <p id="home-itinerary-summary" className="mt-5 max-w-[580px] text-[15px] leading-7 text-[var(--text-muted)]">
           {itinerary.summary}
         </p>
-        <div id="home-itinerary-meta" className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <span id="home-itinerary-meta-dates" className="chip-gradient inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold">
-            <CalendarDays className="h-3.5 w-3.5 text-[var(--accent-line)]" aria-hidden />
-            {dateRange} · {itinerary.days.length} {zh ? "天" : itinerary.days.length === 1 ? "day" : "days"}
-          </span>
-          <span id="home-itinerary-meta-cost" className="chip-gradient inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold">
-            <Wallet className="h-3.5 w-3.5 text-[var(--accent-line)]" aria-hidden />
-            {zh ? "預估" : "est."} {itinerary.totalCostLocal}
-            {country.currency.code !== "USD" && (
-              <span id="home-itinerary-meta-cost-usd" className="text-[var(--text-muted)]">≈ ${itinerary.totalCostUsd.toLocaleString("en-US")}</span>
-            )}
-          </span>
-          <span id="home-itinerary-meta-country" className="chip-gradient inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold">
-            <span aria-hidden>{country.flag}</span>
-            {zh ? country.nameZh : country.name}
-          </span>
+
+        <div id="home-itinerary-photo-strip" className="mt-7 flex h-[180px] gap-2.5 sm:h-[220px]">
+          {heroStops.map((stop, i) => (
+            <PhotoTile key={stop.poiId} stop={stop} zh={zh} wide={i === 0} hiddenOnMobile={i === 2} />
+          ))}
         </div>
       </motion.header>
 
-      <div id="home-itinerary-body" className="grid items-start gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-        {/* Map panel */}
-        <motion.div
-          id="home-itinerary-map-panel"
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.45 }}
-          className="surface-tile-raised sticky top-20 overflow-hidden p-0"
-        >
-          <div id="home-itinerary-map-frame" className="relative aspect-[5/4] w-full sm:aspect-[16/11]">
-            {MAPS_BROWSER_KEY ? (
-              <GoogleItineraryMap days={itinerary.days} activeDay={activeDay} />
-            ) : (
-              <SvgItineraryMap days={itinerary.days} activeDay={activeDay} onSelectDay={focusDay} />
-            )}
-          </div>
-          <div id="home-itinerary-day-chips" className="flex flex-wrap gap-1.5 border-t border-[var(--border-hairline)] p-3">
-            {itinerary.days.map((day) => {
-              const color = DAY_COLORS[(day.dayNumber - 1) % DAY_COLORS.length];
-              const active = activeDay === day.dayNumber;
-              return (
-                <button
-                  key={day.dayNumber}
-                  id={`home-itinerary-day-chip-${day.dayNumber}`}
-                  type="button"
-                  onClick={() => focusDay(day.dayNumber)}
-                  aria-pressed={active}
-                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-all duration-200"
-                  style={{
-                    borderColor: active ? color : "var(--border-hairline)",
-                    background: active ? `color-mix(in oklab, ${color} 14%, transparent)` : "transparent",
-                    color: active ? color : "var(--text-muted)",
-                  }}
-                >
-                  <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: color }} />
-                  {zh ? `第 ${day.dayNumber} 天` : `Day ${day.dayNumber}`}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Plan panel */}
-        <motion.div id="home-itinerary-plan" variants={staggerContainer} initial="hidden" animate="show" className="space-y-4">
+      {/* ─── Body: full timeline + bordered sidebar ───────────────────────── */}
+      <div id="home-itinerary-body" className="mt-10 grid items-start gap-10 lg:grid-cols-[1fr_330px] xl:gap-12">
+        <motion.div id="home-itinerary-days" variants={staggerContainer} initial="hidden" animate="show">
           {itinerary.days.map((day) => (
-            <DayCard
-              key={day.dayNumber}
-              day={day}
-              zh={zh}
-              active={activeDay === day.dayNumber}
-              color={DAY_COLORS[(day.dayNumber - 1) % DAY_COLORS.length]}
-              onFocus={() => focusDay(day.dayNumber)}
-            />
+            <DaySection key={day.dayNumber} day={day} zh={zh} active={activeDay === day.dayNumber} onFocus={() => focusDay(day.dayNumber)} />
           ))}
-
-          <motion.div id="home-itinerary-ctas" variants={fadeUp} className="flex flex-wrap items-center gap-3 pt-2">
-            <Link id="home-itinerary-cta-app" href="/app" className="btn-tactile h-12 rounded-full px-6 text-[14.5px]">
-              {zh ? "在 TravelSync 開始規劃" : "Plan it for real in TravelSync"}
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-            <button
-              id="home-itinerary-cta-restart"
-              type="button"
-              onClick={onRestart}
-              className="inline-flex h-12 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-5 text-[13.5px] font-semibold text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
-            >
-              <RotateCcw className="h-4 w-4" aria-hidden />
-              {zh ? "重新開始" : "Start over"}
-            </button>
-          </motion.div>
         </motion.div>
+
+        <motion.aside
+          id="home-itinerary-sidebar"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-col gap-6 lg:sticky lg:top-20"
+        >
+          {/* Map box */}
+          <div id="home-itinerary-map-box" className="rounded-sm border border-[var(--text-primary)] p-4">
+            <p id="home-itinerary-map-label" className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em]">
+              {zh ? `地圖 — ${country.nameZh}` : `Map — ${country.name}`}
+            </p>
+            <div id="home-itinerary-map-frame" className="relative h-[260px] overflow-hidden rounded-sm">
+              {MAPS_BROWSER_KEY ? (
+                <GoogleItineraryMap days={itinerary.days} activeDay={activeDay} />
+              ) : (
+                <SvgItineraryMap days={itinerary.days} activeDay={activeDay} onSelectDay={focusDay} />
+              )}
+            </div>
+            <div id="home-itinerary-day-index" className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+              {itinerary.days.map((day) => {
+                const active = activeDay === day.dayNumber;
+                return (
+                  <button
+                    key={day.dayNumber}
+                    id={`home-itinerary-day-chip-${day.dayNumber}`}
+                    type="button"
+                    onClick={() => focusDay(day.dayNumber)}
+                    aria-pressed={active}
+                    className={`text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
+                      active
+                        ? "text-[var(--text-primary)] underline underline-offset-4"
+                        : "text-[var(--text-faint)] hover:text-[var(--text-muted)]"
+                    }`}
+                  >
+                    {zh ? `第 ${day.dayNumber} 天` : `Day ${day.dayNumber}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Budget box */}
+          <div id="home-itinerary-budget-box" className="rounded-sm border border-[var(--text-primary)] p-4">
+            <p id="home-itinerary-budget-label" className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em]">
+              {zh ? "旅費預估" : "Trip budget"}
+            </p>
+            <div id="home-itinerary-budget-rows" className="flex flex-col gap-2 text-[13px]">
+              {itinerary.days.map((day) => (
+                <div key={day.dayNumber} id={`home-itinerary-budget-day-${day.dayNumber}`} className="flex justify-between gap-3">
+                  <span className="text-[var(--text-muted)]">
+                    {zh ? `第 ${day.dayNumber} 天` : `Day ${day.dayNumber}`}
+                    <span className="text-[var(--text-faint)]"> · {day.stops.length} {zh ? "站" : day.stops.length === 1 ? "stop" : "stops"}</span>
+                  </span>
+                  <span className="text-mono font-semibold">${day.dayCostUsd.toLocaleString("en-US")}</span>
+                </div>
+              ))}
+              <div id="home-itinerary-budget-total" className="mt-1 flex justify-between gap-3 border-t border-[var(--text-primary)] pt-2 text-[14px]">
+                <span className="font-semibold">{zh ? "預估總計" : "Total est."}</span>
+                <span className="text-mono font-bold">
+                  {itinerary.totalCostLocal}
+                  {country.currency.code !== "USD" && (
+                    <span className="ml-1.5 font-medium text-[var(--text-muted)]">≈ ${itinerary.totalCostUsd.toLocaleString("en-US")}</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* From the feed */}
+          {feedPois.length > 0 && (
+            <div id="home-itinerary-feed">
+              <p id="home-itinerary-feed-label" className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em]">
+                {zh ? "旅人動態" : "From the feed"}
+              </p>
+              <div id="home-itinerary-feed-rows" className="flex flex-col gap-2.5">
+                {feedPois.map((poi) => (
+                  <div
+                    key={poi!.id}
+                    id={`home-itinerary-feed-${poi!.id}`}
+                    className="flex items-center gap-2.5 rounded-sm border border-[var(--border-hairline)] p-2.5"
+                  >
+                    <FeedThumb poiId={poi!.id} emoji={poi!.emoji} hue={poi!.hue} />
+                    <p className="min-w-0 text-[12px] leading-normal">
+                      <span className="font-bold">@{poi!.handle}</span>
+                      <span className="text-[var(--text-faint)]"> · IG</span>
+                      <span className="line-clamp-2 block text-[var(--text-muted)]">“{zh ? poi!.blurbZh : poi!.blurb}”</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.aside>
       </div>
+
+      <motion.div
+        id="home-itinerary-ctas"
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        className="mt-12 flex flex-wrap items-center justify-center gap-3"
+      >
+        <Link id="home-itinerary-cta-app" href="/app" className="btn-tactile h-12 rounded-full px-6 text-[14.5px]">
+          {zh ? "在 TravelSync 開始規劃" : "Plan it for real in TravelSync"}
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+        <button
+          id="home-itinerary-cta-restart"
+          type="button"
+          onClick={onRestart}
+          className="inline-flex h-12 items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-5 text-[13.5px] font-semibold text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden />
+          {zh ? "重新開始" : "Start over"}
+        </button>
+      </motion.div>
     </div>
   );
 }
 
-// ─── Day card ────────────────────────────────────────────────────────────────
+// ─── Day section: serif heading over a time | detail | cost grid ─────────────
 
-function DayCard({ day, zh, active, color, onFocus }: { day: HomeItineraryDay; zh: boolean; active: boolean; color: string; onFocus: () => void }) {
+function DaySection({ day, zh, active, onFocus }: { day: HomeItineraryDay; zh: boolean; active: boolean; onFocus: () => void }) {
+  const color = DAY_COLORS[(day.dayNumber - 1) % DAY_COLORS.length];
   const fmt = new Intl.DateTimeFormat(zh ? "zh-TW" : "en-US", { weekday: "short", month: "short", day: "numeric" });
   const date = fmt.format(new Date(`${day.date}T00:00:00`));
   return (
-    <motion.article
+    <motion.section
       id={`home-itinerary-day-${day.dayNumber}`}
       variants={fadeUp}
       onMouseEnter={onFocus}
       onClick={onFocus}
-      className="surface-tile-raised cursor-pointer p-4 transition-shadow duration-300 sm:p-5"
-      style={active ? { boxShadow: `var(--shadow-raise), 0 0 0 2px ${color}` } : undefined}
+      className="cursor-pointer"
     >
-      <header id={`home-itinerary-day-head-${day.dayNumber}`} className="mb-3 flex items-baseline justify-between gap-3">
-        <div id={`home-itinerary-day-title-wrap-${day.dayNumber}`} className="flex items-baseline gap-2.5">
+      <header
+        id={`home-itinerary-day-head-${day.dayNumber}`}
+        className="mb-5 flex flex-wrap items-baseline gap-x-3.5 gap-y-1 border-t border-[var(--text-primary)] pt-3.5"
+      >
+        <span id={`home-itinerary-day-num-${day.dayNumber}`} className="text-[26px] leading-none sm:text-[30px]" style={SERIF}>
+          {zh ? `第 ${day.dayNumber} 天` : `Day ${day.dayNumber}`}
+          {/* Route-colored tick tying the heading to the map. */}
           <span
-            id={`home-itinerary-day-num-${day.dayNumber}`}
-            className="text-display text-[22px]"
-            style={{ color }}
-          >
-            {zh ? `第${day.dayNumber}天` : `Day ${day.dayNumber}`}
-          </span>
-          <span id={`home-itinerary-day-date-${day.dayNumber}`} className="text-mono text-[12px] font-semibold text-[var(--text-muted)]">{date}</span>
-        </div>
-        <span id={`home-itinerary-day-cost-${day.dayNumber}`} className="text-mono shrink-0 text-[12.5px] font-bold text-[var(--text-secondary)]">
-          ${day.dayCostUsd.toLocaleString("en-US")}
+            aria-hidden
+            className="ml-2 inline-block h-2 w-2 rounded-full align-[0.35em] transition-opacity duration-300"
+            style={{ background: color, opacity: active ? 1 : 0.25 }}
+          />
+        </span>
+        <span
+          id={`home-itinerary-day-date-${day.dayNumber}`}
+          className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"
+        >
+          {date} — {day.theme}
         </span>
       </header>
-      <p id={`home-itinerary-day-theme-${day.dayNumber}`} className="mb-3 text-[13px] font-medium text-[var(--text-muted)]">{day.theme}</p>
 
-      <ol id={`home-itinerary-day-stops-${day.dayNumber}`} className="relative space-y-0">
+      <div
+        id={`home-itinerary-day-stops-${day.dayNumber}`}
+        className="grid grid-cols-[64px_1fr_auto] gap-x-4 gap-y-5 pb-9 sm:grid-cols-[80px_1fr_auto] sm:gap-x-5"
+      >
         {day.stops.map((stop, i) => (
-          <li key={stop.poiId} id={`home-itinerary-stop-${stop.poiId}`} className="relative flex gap-3 pb-4 last:pb-0">
+          <Fragment key={stop.poiId}>
+            <div id={`home-itinerary-stop-time-${stop.poiId}`} className="pt-0.5">
+              <span className="text-mono block text-[13px] font-semibold leading-tight">{stop.arrive}</span>
+              <span className="text-mono block text-[11px] leading-tight text-[var(--text-faint)]">{durationLabel(stop, zh)}</span>
+            </div>
+            <div id={`home-itinerary-stop-body-${stop.poiId}`} className="min-w-0">
+              <p id={`home-itinerary-stop-name-${stop.poiId}`} className="text-[15.5px] font-semibold leading-snug">
+                {zh ? stop.nameZh : stop.name}
+              </p>
+              <p id={`home-itinerary-stop-sub-${stop.poiId}`} className="mt-0.5 line-clamp-1 text-[13px] text-[var(--text-muted)]">
+                {stop.city}
+                {stop.itemType === "restaurant" && ` · ${zh ? "用餐" : "meal"}`}
+                {(() => {
+                  const blurb = getHomePoi(stop.poiId);
+                  return blurb ? ` · ${zh ? blurb.blurbZh : blurb.blurb}` : "";
+                })()}
+              </p>
+            </div>
+            <div id={`home-itinerary-stop-cost-${stop.poiId}`} className="text-right">
+              <span className="text-mono block text-[13px] font-semibold leading-tight">
+                {stop.costUsd === 0 ? (zh ? "免費" : "free") : stop.costLocal}
+              </span>
+              {stop.costUsd > 0 && (
+                <span className="text-mono block text-[11px] leading-tight text-[var(--text-faint)]">≈ ${stop.costUsd}</span>
+              )}
+            </div>
             {i < day.stops.length - 1 && (
-              <span
-                aria-hidden
-                className="absolute left-[13px] top-7 h-[calc(100%-22px)] w-px border-l border-dashed"
-                style={{ borderColor: `color-mix(in oklab, ${color} 45%, transparent)` }}
-              />
+              <p
+                id={`home-itinerary-leg-${stop.poiId}`}
+                className="col-span-2 col-start-2 -my-2.5 text-[11px] font-medium tracking-[0.06em] text-[var(--text-faint)]"
+              >
+                ↳ {legLabel(stop, day.stops[i + 1], zh)}
+              </p>
             )}
-            <span
-              id={`home-itinerary-stop-dot-${stop.poiId}`}
-              className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-bold text-white"
-              style={{ background: color }}
-            >
-              {i + 1}
-            </span>
-            <span id={`home-itinerary-stop-body-${stop.poiId}`} className="min-w-0 flex-1">
-              <span id={`home-itinerary-stop-name-${stop.poiId}`} className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-[14px] font-semibold">
-                  <span aria-hidden className="mr-1">{stop.emoji}</span>
-                  {zh ? stop.nameZh : stop.name}
-                </span>
-                <span id={`home-itinerary-stop-cost-${stop.poiId}`} className="text-mono shrink-0 text-[12px] font-semibold text-[var(--text-muted)]">
-                  {stop.costUsd === 0 ? (zh ? "免費" : "free") : stop.costLocal}
-                </span>
-              </span>
-              <span id={`home-itinerary-stop-times-${stop.poiId}`} className="text-mono mt-0.5 block text-[11.5px] text-[var(--text-muted)]">
-                {stop.arrive} – {stop.depart} · {stop.city}
-              </span>
-            </span>
-          </li>
+          </Fragment>
         ))}
-      </ol>
-
-      <footer id={`home-itinerary-day-foot-${day.dayNumber}`} className="mt-3 flex items-center gap-2 border-t border-[var(--border-hairline)] pt-2.5 text-[11.5px] font-medium text-[var(--text-faint)]">
-        <MapPin className="h-3.5 w-3.5" aria-hidden />
-        {zh ? `當日移動約 ${day.travelKm} 公里` : `~${day.travelKm} km on the move`}
-      </footer>
-    </motion.article>
+      </div>
+    </motion.section>
   );
+}
+
+// ─── Editorial photo tiles ───────────────────────────────────────────────────
+
+function PhotoTile({ stop, zh, wide, hiddenOnMobile }: { stop: HomeItineraryStop; zh: boolean; wide?: boolean; hiddenOnMobile?: boolean }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const hue = getHomePoi(stop.poiId)?.hue ?? 150;
+  return (
+    <span
+      id={`home-itinerary-photo-${stop.poiId}`}
+      className={`relative h-full overflow-hidden rounded-sm ${wide ? "flex-[2]" : "flex-1"} ${hiddenOnMobile ? "hidden sm:block" : "block"}`}
+      style={{ background: `linear-gradient(160deg, hsl(${hue} 45% 62%), hsl(${(hue + 42) % 360} 40% 34%))` }}
+    >
+      {!failed && (
+        // eslint-disable-next-line @next/next/no-img-element -- proxied, lazily streamed photo with a designed fallback underneath
+        <img
+          src={`/api/home/poi-photo?id=${encodeURIComponent(stop.poiId)}&w=640`}
+          alt={zh ? stop.nameZh : stop.name}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
+      <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent" />
+      <span className="absolute bottom-3 left-3.5 right-3 truncate text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/90">
+        {zh ? "" : "Photo — "}
+        {zh ? stop.nameZh : stop.name}
+      </span>
+    </span>
+  );
+}
+
+function FeedThumb({ poiId, emoji, hue }: { poiId: string; emoji: string; hue: number }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span
+      id={`home-itinerary-feed-thumb-${poiId}`}
+      className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-sm"
+      style={{ background: `linear-gradient(140deg, hsl(${hue} 45% 60%), hsl(${(hue + 42) % 360} 40% 34%))` }}
+      aria-hidden
+    >
+      <span className="absolute inset-0 grid place-items-center text-[18px] opacity-80">{emoji}</span>
+      {!failed && (
+        // eslint-disable-next-line @next/next/no-img-element -- proxied, lazily streamed photo with a designed fallback underneath
+        <img
+          src={`/api/home/poi-photo?id=${encodeURIComponent(poiId)}&w=160`}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+    </span>
+  );
+}
+
+// ─── Formatting helpers ──────────────────────────────────────────────────────
+
+/** Length of the stay derived from "HH:MM" arrive/depart. */
+function durationLabel(stop: HomeItineraryStop, zh: boolean): string {
+  const [ah, am] = stop.arrive.split(":").map(Number);
+  const [dh, dm] = stop.depart.split(":").map(Number);
+  const mins = dh * 60 + dm - (ah * 60 + am);
+  if (!Number.isFinite(mins) || mins <= 0) return "";
+  if (mins < 60) return zh ? `${mins} 分` : `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return zh ? `${h} 小時${m > 0 ? ` ${m} 分` : ""}` : `${h}h${m > 0 ? ` ${m}m` : ""}`;
+}
+
+/** Travel note between stops — heuristics only: 4.5 km/h walking, ~24 km/h
+ *  door-to-door transit plus wait. */
+function legLabel(from: HomeItineraryStop, to: HomeItineraryStop, zh: boolean): string {
+  const km = haversineKm(from, to);
+  const walk = km <= 1.9;
+  const mins = walk ? Math.max(3, Math.round((km / 4.5) * 60)) : Math.max(8, Math.round((km / 24) * 60) + 8);
+  const kmLabel = km < 10 ? km.toFixed(1) : String(Math.round(km));
+  return zh
+    ? `${kmLabel} 公里 · ${walk ? "步行" : "車程"}約 ${mins} 分`
+    : `${kmLabel} km · ~${mins} min ${walk ? "walk" : "transit"}`;
+}
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 // ─── SVG fallback map ────────────────────────────────────────────────────────
@@ -290,6 +465,7 @@ function SvgItineraryMap({ days, activeDay, onSelectDay }: { days: HomeItinerary
       className="h-full w-full bg-[var(--surface-sunken)]"
       role="img"
       aria-label="Itinerary map"
+      preserveAspectRatio="xMidYMid slice"
     >
       <defs>
         <pattern id="home-map-grid" width="46" height="46" patternUnits="userSpaceOnUse">

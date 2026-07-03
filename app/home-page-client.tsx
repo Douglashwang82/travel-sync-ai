@@ -5,14 +5,17 @@
 //
 //   globe      → spinning dotted earth; pick a country marker
 //   cities     → zoomed earth; pick an available city marker
+//   dates      → seasonality-aware calendar; pick the travel window
 //   pois       → that city's POIs take the stage as a media wall
 //   reasoning  → the AI agent visibly plans (SSE from /api/home/itinerary)
 //   itinerary  → animated map + dated, timed, costed plan
 //
-// Scene hand-offs are choreographed with AnimatePresence (scale + blur
-// cross-morphs, plus a camera "dive" into the globe on country select). The
-// hero line at the top-middle re-types itself per phase. Bilingual (EN /
-// zh-TW) with the locale persisted under the same key the old page used.
+// The globe and cities phases share ONE persistent earth canvas (EarthScene):
+// the camera dives in/out on the same object and only the marks change. Later
+// scene hand-offs are choreographed with AnimatePresence (scale + blur
+// cross-morphs). The hero line at the top-middle re-types itself per phase.
+// Bilingual (EN / zh-TW) with the locale persisted under the same key the old
+// page used.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useState } from "react";
@@ -20,19 +23,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Languages } from "lucide-react";
-import CityScene from "@/components/home/city-scene";
-import GlobeScene from "@/components/home/globe-scene";
+import EarthScene from "@/components/home/earth-scene";
+import DatesScene, { type HomeDateRange } from "@/components/home/dates-scene";
 import PoiScene from "@/components/home/poi-scene";
 import ReasoningScene from "@/components/home/reasoning-scene";
 import ItineraryScene from "@/components/home/itinerary-scene";
 import { easeConfirm } from "@/components/motion/variants";
+import { isoDiffDays } from "@/lib/home-seasons";
 import { getHomeCity, getHomeCountry, type HomeCity, type HomeCountryCode, type HomeItinerary } from "@/lib/home-survey";
 
 type Locale = "en" | "zh-TW";
-type Phase = "globe" | "cities" | "pois" | "reasoning" | "itinerary";
+type Phase = "globe" | "cities" | "dates" | "pois" | "reasoning" | "itinerary";
 
 const LANGUAGE_STORAGE_KEY = "travelsync-home-locale";
-const PHASE_ORDER: Phase[] = ["globe", "cities", "pois", "reasoning", "itinerary"];
+const PHASE_ORDER: Phase[] = ["globe", "cities", "dates", "pois", "reasoning", "itinerary"];
 const GLOBE_QUESTION_ROTATE_MS = 2600;
 
 const GLOBE_ROTATING_QUESTIONS: Record<Locale, string[]> = {
@@ -49,11 +53,13 @@ const COPY = {
     brand: "TravelSync AI",
     logIn: "Log in",
     languageLabel: "Language",
-    steps: ["Destination", "City", "Spots", "AI plan", "Itinerary"],
+    steps: ["Destination", "City", "Dates", "Spots", "AI plan", "Itinerary"],
     globeTitle: "Where do you want to go?",
     globeSub: "Spin the globe — tap a marker to begin.",
     citiesTitle: "Which city should we zoom into?",
     citiesSub: (name: string) => `Available cities in ${name}.`,
+    datesTitle: "When do you want to go?",
+    datesSub: (name: string) => `Weather, crowds, prices and festivals in ${name} — all in view.`,
     poisTitle: "What catches your eye?",
     poisSub: (name: string) => `Tap everything you'd love to see in ${name}.`,
     reasoningTitle: "Your AI agent is planning…",
@@ -64,11 +70,13 @@ const COPY = {
     brand: "TravelSync AI",
     logIn: "登入",
     languageLabel: "語言",
-    steps: ["目的地", "城市", "景點", "AI 規劃", "行程"],
+    steps: ["目的地", "城市", "日期", "景點", "AI 規劃", "行程"],
     globeTitle: "你想去哪裡？",
     globeSub: "轉動地球，點選圖釘開始。",
     citiesTitle: "想先放大哪座城市？",
     citiesSub: (name: string) => `${name}目前可選的城市。`,
+    datesTitle: "你想什麼時候出發？",
+    datesSub: (name: string) => `${name}的天氣、人潮、價格與節慶，一次看清楚。`,
     poisTitle: "哪些地方吸引你？",
     poisSub: (name: string) => `點選所有你想在${name}造訪的地方。`,
     reasoningTitle: "AI 旅遊代理規劃中…",
@@ -83,7 +91,7 @@ export default function HomePageClient() {
   const [globeQuestionIndex, setGlobeQuestionIndex] = useState(0);
   const [country, setCountry] = useState<HomeCountryCode | null>(null);
   const [cityName, setCityName] = useState<string | null>(null);
-  const [diving, setDiving] = useState(false);
+  const [dateRange, setDateRange] = useState<HomeDateRange | null>(null);
   const [selectedPoiIds, setSelectedPoiIds] = useState<ReadonlySet<string>>(new Set());
   const [itinerary, setItinerary] = useState<HomeItinerary | null>(null);
 
@@ -127,19 +135,20 @@ export default function HomePageClient() {
   const handleCountrySelect = useCallback((code: HomeCountryCode) => {
     setCountry(code);
     setCityName(null);
+    setDateRange(null);
     setSelectedPoiIds(new Set());
-    setDiving(true);
-    // Let the globe's full dive-zoom play out before handing off to CityScene
-    // (which mounts already at focus). Matches ZOOM_MS in globe-scene.
-    window.setTimeout(() => {
-      setDiving(false);
-      setPhase("cities");
-    }, 1000);
+    // EarthScene stays mounted and dives its own camera; no hand-off delay.
+    setPhase("cities");
   }, []);
 
   const handleCitySelect = useCallback((city: HomeCity) => {
     setCityName(city.name);
     setSelectedPoiIds(new Set());
+    setPhase("dates");
+  }, []);
+
+  const handleDatesConfirm = useCallback((range: HomeDateRange) => {
+    setDateRange(range);
     setPhase("pois");
   }, []);
 
@@ -155,6 +164,7 @@ export default function HomePageClient() {
   const restart = useCallback(() => {
     setItinerary(null);
     setSelectedPoiIds(new Set());
+    setDateRange(null);
     setCountry(null);
     setCityName(null);
     setGlobeQuestionIndex(0);
@@ -170,12 +180,16 @@ export default function HomePageClient() {
         setItinerary(null);
         setSelectedPoiIds(new Set());
         setPhase("cities");
-      } else if (target === "pois" && country && cityName) {
+      } else if (target === "dates" && country && cityName) {
+        // Picks survive a date rethink; only the generated plan is stale.
+        setItinerary(null);
+        setPhase("dates");
+      } else if (target === "pois" && country && cityName && dateRange) {
         setItinerary(null);
         setPhase("pois");
       }
     },
-    [phase, country, cityName, restart],
+    [phase, country, cityName, dateRange, restart],
   );
 
   const heroTitle =
@@ -183,6 +197,8 @@ export default function HomePageClient() {
       ? (GLOBE_ROTATING_QUESTIONS[locale][globeQuestionIndex] ?? copy.globeTitle)
       : phase === "cities"
         ? copy.citiesTitle
+      : phase === "dates"
+        ? copy.datesTitle
       : phase === "pois"
         ? copy.poisTitle
         : phase === "reasoning"
@@ -193,6 +209,8 @@ export default function HomePageClient() {
       ? copy.globeSub
       : phase === "cities" && activeCountry
         ? copy.citiesSub(zh ? activeCountry.nameZh : activeCountry.name)
+      : phase === "dates" && activeCity
+        ? copy.datesSub(zh ? activeCity.nameZh : activeCity.name)
       : phase === "pois" && activeCity
         ? copy.poisSub(zh ? activeCity.nameZh : activeCity.name)
       : phase === "reasoning"
@@ -247,9 +265,9 @@ export default function HomePageClient() {
                     disabled={state !== "done"}
                     className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors duration-300 ${
                       state === "current"
-                        ? "bg-[var(--accent-line)] text-white shadow-[var(--accent-line-glow)]"
+                        ? "bg-[var(--text-primary)] text-[var(--surface-base)]"
                         : state === "done"
-                          ? "text-[var(--accent-line)] hover:bg-[var(--accent-line-soft)]"
+                          ? "text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
                           : "text-[var(--text-faint)]"
                     }`}
                   >
@@ -260,7 +278,7 @@ export default function HomePageClient() {
                     <span
                       id={`home-progress-sep-${p}`}
                       aria-hidden
-                      className={`h-px w-5 transition-colors duration-300 ${i < currentIdx ? "bg-[var(--accent-line)]" : "bg-[var(--border-strong)]"}`}
+                      className={`h-px w-5 transition-colors duration-300 ${i < currentIdx ? "bg-[var(--text-primary)]" : "bg-[var(--border-strong)]"}`}
                     />
                   )}
                 </li>
@@ -268,7 +286,11 @@ export default function HomePageClient() {
             })}
           </ol>
 
-          <HeroTitle key={`${phase}-${locale}`} text={heroTitle} locale={locale} />
+          {/* Keyed by the text itself so rotating questions lift out through the
+              same baseline mask the next one rises from. */}
+          <AnimatePresence mode="wait">
+            <HeroTitle key={`${heroTitle}-${locale}`} text={heroTitle} locale={locale} />
+          </AnimatePresence>
           {heroSub && (
             <motion.p
               key={`sub-${phase}-${locale}`}
@@ -286,44 +308,47 @@ export default function HomePageClient() {
         {/* ─── The stage: one scene at a time ────────────────────────────── */}
         <div id="home-stage" className={`flex-1 ${phase === "globe" || phase === "cities" ? "flex min-h-0 flex-col pb-0" : "pb-10"}`}>
           <AnimatePresence mode="wait">
-            {phase === "globe" && (
+            {(phase === "globe" || phase === "cities") && (
               <motion.section
-                key="scene-globe"
-                id="home-scene-globe"
+                // One key for both phases: AnimatePresence never unmounts the
+                // earth between them, so the dive/zoom-out is a single canvas.
+                key="scene-earth"
+                id="home-scene-earth"
                 className="flex min-h-0 flex-1 flex-col"
                 initial={{ opacity: 0, scale: 0.96, filter: "blur(8px)" }}
-                animate={
-                  // The dive happens entirely on the canvas (the earth scales
-                  // toward the country). Keep the section fully visible the whole
-                  // time so there is no fade — CityScene then continues the zoom.
-                  diving
-                    ? { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0 } }
-                    : { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.45, ease: easeConfirm } }
-                }
-                // Instant unmount — CityScene mounts on the identical frame.
-                exit={{ opacity: 1, transition: { duration: 0 } }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.45, ease: easeConfirm } }}
+                // Exit continues the camera plunge EarthScene starts on city
+                // click: the whole stage flies past the viewer while the canvas
+                // underneath keeps diving toward the picked city.
+                exit={{ opacity: 0, scale: 1.14, filter: "blur(10px)", transition: { duration: 0.35, ease: easeConfirm } }}
               >
-                <GlobeScene locale={locale} selected={country} onSelect={handleCountrySelect} />
+                <EarthScene
+                  locale={locale}
+                  country={activeCountry}
+                  selectedCity={cityName}
+                  onSelectCountry={handleCountrySelect}
+                  onSelectCity={handleCitySelect}
+                  onBack={restart}
+                />
               </motion.section>
             )}
 
-            {phase === "cities" && activeCountry && (
+            {phase === "dates" && activeCountry && activeCity && (
               <motion.section
-                key="scene-cities"
-                id="home-scene-cities"
-                className="flex min-h-0 flex-1 flex-col"
-                // Mounts on the identical frame the globe left off — no fade in,
-                // the remaining zoom into focus is driven inside CityScene.
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1, transition: { duration: 0 } }}
-                exit={{ opacity: 0, scale: 1.06, filter: "blur(8px)", transition: { duration: 0.4, ease: easeConfirm } }}
+                key="scene-dates"
+                id="home-scene-dates"
+                initial={{ opacity: 0, scale: 0.97, filter: "blur(8px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.35, ease: easeConfirm } }}
+                exit={{ opacity: 0, scale: 1.04, filter: "blur(8px)", transition: { duration: 0.45, ease: easeConfirm } }}
               >
-                <CityScene
+                <DatesScene
+                  key={`${activeCountry.code}-${activeCity.name}-dates`}
                   country={activeCountry}
+                  city={activeCity}
                   locale={locale}
-                  selected={cityName}
-                  onSelect={handleCitySelect}
-                  onBack={restart}
+                  value={dateRange}
+                  onConfirm={handleDatesConfirm}
+                  onBack={() => setPhase("cities")}
                 />
               </motion.section>
             )}
@@ -332,10 +357,12 @@ export default function HomePageClient() {
               <motion.section
                 key="scene-pois"
                 id="home-scene-pois"
+                // Arrives out of the dive: slightly small and soft, sharpening
+                // quickly — the inner toolbar/filters/cards cascade carries the
+                // rest of the entrance.
                 initial={{ opacity: 0, scale: 0.97, filter: "blur(8px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 1.04, filter: "blur(8px)" }}
-                transition={{ duration: 0.45, ease: easeConfirm }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.35, ease: easeConfirm } }}
+                exit={{ opacity: 0, scale: 1.04, filter: "blur(8px)", transition: { duration: 0.45, ease: easeConfirm } }}
               >
                 <PoiScene
                   key={`${activeCountry.code}-${activeCity.name}`}
@@ -363,6 +390,8 @@ export default function HomePageClient() {
                   country={activeCountry}
                   locale={locale}
                   poiIds={[...selectedPoiIds]}
+                  startDate={dateRange?.start}
+                  tripDays={dateRange ? isoDiffDays(dateRange.start, dateRange.end) + 1 : undefined}
                   onComplete={(result) => {
                     setItinerary(result);
                     setPhase("itinerary");
@@ -393,9 +422,39 @@ export default function HomePageClient() {
 
 // ─── Pieces ──────────────────────────────────────────────────────────────────
 
-/** Word-staggered (character-staggered for zh) hero headline. */
+interface HeroUnit {
+  text: string;
+  /** Rendered flush against the previous unit (trailing punctuation). */
+  glue: boolean;
+}
+
+/** Splits the headline into animated units — words for EN, characters for
+ *  zh — splitting any trailing punctuation into its own flush unit. */
+function buildHeroUnits(text: string, zh: boolean): HeroUnit[] {
+  const raw = zh ? Array.from(text) : text.split(" ").filter(Boolean);
+  const units: HeroUnit[] = [];
+  raw.forEach((u) => {
+    if (!zh) {
+      const tail = u.match(/[?？!！.。…，,、]+$/);
+      if (tail && tail.index && tail.index > 0) {
+        units.push({ text: u.slice(0, tail.index), glue: false });
+        units.push({ text: u.slice(tail.index), glue: true });
+        return;
+      }
+    }
+    units.push({ text: u, glue: false });
+  });
+  return units;
+}
+
+/** Masked rise-and-settle headline: each word (character for zh) climbs out of
+ *  an invisible baseline slot with a slight straightening tilt, overshoots a
+ *  touch and settles. On re-type (rotating globe questions, phase changes) the
+ *  old line lifts back out through the same mask before the next rises in. */
 function HeroTitle({ text, locale }: { text: string; locale: Locale }) {
-  const units = locale === "zh-TW" ? Array.from(text) : text.split(" ");
+  const zh = locale === "zh-TW";
+  const units = buildHeroUnits(text, zh);
+  const stagger = zh ? 0.05 : 0.07;
   return (
     <h1
       id="home-hero-title"
@@ -403,18 +462,33 @@ function HeroTitle({ text, locale }: { text: string; locale: Locale }) {
       aria-label={text}
     >
       {units.map((unit, i) => (
-        <motion.span
-          key={`${i}-${unit}`}
-          initial={{ opacity: 0, y: "0.4em", filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ delay: 0.05 + i * 0.07, duration: 0.5, ease: easeConfirm }}
-          className={`inline-block ${i === units.length - 1 ? "text-gradient-aurora" : ""} ${
-            locale === "en" && i < units.length - 1 ? "mr-[0.28em]" : ""
+        <span
+          key={`${i}-${unit.text}`}
+          id={`home-hero-unit-${i}`}
+          // The mask: clips the unit while it travels, with a little padding
+          // headroom (negated by margins) so overshoot and descenders survive.
+          className={`inline-block overflow-hidden py-[0.14em] -my-[0.14em] align-baseline ${
+            !zh && i < units.length - 1 && !units[i + 1].glue ? "mr-[0.28em]" : ""
           }`}
           aria-hidden
         >
-          {unit}
-        </motion.span>
+          <motion.span
+            initial={{ y: "120%", rotate: 6 }}
+            animate={{
+              y: "0%",
+              rotate: 0,
+              transition: { delay: 0.06 + i * stagger, duration: 0.65, ease: [0.33, 1.4, 0.42, 1] },
+            }}
+            exit={{
+              y: "-120%",
+              rotate: -4,
+              transition: { delay: i * 0.025, duration: 0.28, ease: [0.55, 0, 0.8, 0.4] },
+            }}
+            className="inline-block origin-bottom-left will-change-transform"
+          >
+            {unit.text}
+          </motion.span>
+        </span>
       ))}
     </h1>
   );

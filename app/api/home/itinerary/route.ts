@@ -52,6 +52,8 @@ const Body = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  /** Preferred trip length from the dates phase; clamped to what the POI count allows. */
+  days: z.number().int().min(1).max(8).optional(),
 });
 
 const LLM_TIMEOUT_MS = 18_000;
@@ -134,7 +136,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
         // 2 — geographic clustering
         step("cluster", "start", zh ? "依地理位置分配天數" : "Clustering spots into days");
-        const clusters = clusterPoisIntoDays(pois);
+        const clusters = clusterPoisIntoDays(pois, MAX_STOPS_PER_DAY, body.days);
         thought(
           zh
             ? `分成 ${clusters.length} 天，每天最多 ${MAX_STOPS_PER_DAY} 站，相近的地點排在同一天。`
