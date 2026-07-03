@@ -17,6 +17,7 @@
  * Flags:
  *   --scenario <id>   Run a single scenario instead of all.
  *   --no-history      Print reports only; skip the history.jsonl append.
+ *   --no-judge        Skip the LLM-as-judge pass (deterministic metrics only).
  *
  * Costs real Gemini calls and writes real (private) trip_templates authored
  * by `benchmark-runner`, so this is an on-demand tool, not a cron.
@@ -34,6 +35,7 @@ import {
   formatBenchmarkReport,
   type TemplateItemRow,
 } from "@/services/trip-generation/benchmark";
+import { judgeItinerary } from "@/services/trip-generation/benchmark-judge";
 
 const BENCHMARK_AUTHOR = "benchmark-runner";
 const SCENARIOS_PATH = path.join(process.cwd(), "benchmarks", "scenarios.json");
@@ -80,11 +82,25 @@ async function loadTemplateItems(versionId: string): Promise<TemplateItemRow[]> 
   return (data ?? []) as TemplateItemRow[];
 }
 
+async function loadTemplateVersion(
+  versionId: string
+): Promise<{ title: string | null; summary: string | null }> {
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("trip_template_versions")
+    .select("title, summary")
+    .eq("id", versionId)
+    .single();
+  if (error || !data) return { title: null, summary: null };
+  return { title: data.title as string | null, summary: data.summary as string | null };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const onlyIdx = args.indexOf("--scenario");
   const onlyId = onlyIdx >= 0 ? args[onlyIdx + 1] : null;
   const writeHistory = !args.includes("--no-history");
+  const runJudge = !args.includes("--no-judge");
 
   const all = await loadScenarios();
   const scenarios = onlyId ? all.filter((s) => s.id === onlyId) : all;
@@ -108,10 +124,42 @@ async function main() {
         startDate: scenario.startDate,
       });
       const items = await loadTemplateItems(out.versionId);
-      const report = scoreItinerary(
-        benchmarkInputFromTemplateItems(scenario.answers, items)
-      );
+      const benchmarkInput = benchmarkInputFromTemplateItems(scenario.answers, items);
+      const report = scoreItinerary(benchmarkInput);
       console.log(formatBenchmarkReport(report));
+
+      // Subjective quality pass — non-fatal: a judge outage shouldn't lose
+      // the deterministic row.
+      let verdict: Record<string, unknown> | null = null;
+      if (runJudge) {
+        try {
+          const { title, summary } = await loadTemplateVersion(out.versionId);
+          const j = await judgeItinerary({
+            input: benchmarkInput,
+            title,
+            summary,
+            destination: scenario.answers.destination,
+          });
+          verdict = {
+            pass: j.pass,
+            score: Math.round(j.score * 100) / 100,
+            aspects: Object.fromEntries(
+              Object.entries(j.aspects).map(([k, v]) => [k, Math.round(v * 100) / 100])
+            ),
+            reasoning: j.reasoning,
+          };
+          console.log(
+            `  judge: ${j.pass ? "PASS" : "FAIL"} ${(j.score * 100).toFixed(0)}/100 ` +
+              `(coherence=${(j.aspects.day_coherence * 100).toFixed(0)} ` +
+              `personalization=${(j.aspects.personalization * 100).toFixed(0)} ` +
+              `realism=${(j.aspects.realism * 100).toFixed(0)} ` +
+              `title=${(j.aspects.title_summary_quality * 100).toFixed(0)}) — ${j.reasoning}`
+          );
+        } catch (err) {
+          console.warn(`  judge skipped (error): ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+
       console.log(`  templateId=${out.templateId} versionId=${out.versionId} elapsed=${((Date.now() - t0) / 1000).toFixed(1)}s`);
       rows.push({
         ran_at: ranAt,
@@ -120,6 +168,7 @@ async function main() {
         ok: true,
         total: report.total,
         metrics: Object.fromEntries(report.metrics.map((m) => [m.id, Math.round(m.score * 100) / 100])),
+        judge: verdict,
         stats: report.stats,
         template_id: out.templateId,
         version_id: out.versionId,

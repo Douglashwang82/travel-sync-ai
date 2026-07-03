@@ -8,18 +8,25 @@
  * well); flawed fixtures assert `max_score` (the scorer must keep catching
  * the planted defects).
  *
- * Live end-to-end runs (real pipeline → real score) live in
+ * With RUN_LIVE_EVALS=1 golden fixtures additionally go through the
+ * LLM-as-judge (services/trip-generation/benchmark-judge.ts) for the
+ * subjective qualities rules can't measure — day coherence,
+ * personalization, realism.
+ *
+ * Live end-to-end runs (real pipeline → real score + judge) live in
  * scripts/benchmark-itinerary.ts, which appends to benchmarks/history.jsonl.
  */
 
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isLive } from "./harness";
 import {
   scoreItinerary,
   METRIC_WEIGHTS,
   type BenchmarkInput,
 } from "@/services/trip-generation/benchmark";
+import { judgeItinerary } from "@/services/trip-generation/benchmark-judge";
 
 interface ItineraryFixture {
   id: string;
@@ -52,7 +59,7 @@ describe("evals/itinerary", () => {
   });
 
   for (const fx of fixtures) {
-    it(fx.id, () => {
+    it(fx.id, async () => {
       expect(fx.task_class).toBe("itinerary");
       expect(
         fx.expect.min_score != null || fx.expect.max_score != null,
@@ -75,6 +82,14 @@ describe("evals/itinerary", () => {
         expect(report.total, `score ${report.total} above ceiling — ${summary}`).toBeLessThanOrEqual(
           fx.expect.max_score
         );
+      }
+
+      // Subjective pass — golden fixtures only, live mode only. Flawed
+      // fixtures stay the deterministic scorer's job; asking an LLM to
+      // grade a deliberately broken plan invites flaky thresholds.
+      if (isLive() && fx.expect.min_score != null) {
+        const verdict = await judgeItinerary({ input: fx.input });
+        expect(verdict.pass, `judge failed golden fixture: ${verdict.reasoning}`).toBe(true);
       }
     });
   }

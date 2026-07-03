@@ -13,6 +13,13 @@ Quality tracking for the trip-generation pipeline (`services/trip-generation/`).
   each scenario in `scenarios.json` (real Gemini calls, persists private
   templates authored by `benchmark-runner`), scores the persisted result, and
   appends one JSON row per scenario to `history.jsonl`.
+- **LLM-as-judge** — `services/trip-generation/benchmark-judge.ts` grades what
+  rules can't: day coherence, personalization, realism and title/summary
+  quality (each 0–1, plus an overall verdict). Live runs judge by default
+  (`--no-judge` to skip; the verdict lands in `history.jsonl` next to the
+  deterministic metrics). With `RUN_LIVE_EVALS=1`, `npm test` also judges the
+  golden fixtures. Routed through `lib/llm`; Anthropic is preferred when
+  `ANTHROPIC_API_KEY` is set.
 
 ## Tracking improvement over time
 
