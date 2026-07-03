@@ -35,6 +35,9 @@ npm run delete:rich-menu
 
 # Route synthesis (uses .env.local via tsx --env-file)
 npm run synth:routes
+
+# Itinerary quality benchmark — live pipeline runs scored + logged to benchmarks/history.jsonl
+npm run benchmark:itinerary
 ```
 
 There is no `typecheck` script — `next build` is the type gate. Tests are isolated per file (`vitest.config.ts`) to reset module-level state (rate limiter, etc.).

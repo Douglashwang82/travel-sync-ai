@@ -1,0 +1,44 @@
+[
+  {
+    "id": "niseko-4d-friends-powder",
+    "startDate": "2027-01-21",
+    "answers": {
+      "destination": "Niseko, Japan",
+      "duration_days": 4,
+      "party": "friends",
+      "party_size": 4,
+      "budget_tier": "mid",
+      "vibe": ["adventure", "foodie"],
+      "pace": "balanced",
+      "must_haves": "onsen"
+    }
+  },
+  {
+    "id": "hakuba-3d-couple-chill",
+    "startDate": "2027-02-05",
+    "answers": {
+      "destination": "Hakuba, Japan",
+      "duration_days": 3,
+      "party": "couple",
+      "party_size": 2,
+      "budget_tier": "luxury",
+      "vibe": ["relaxed", "nature"],
+      "pace": "chill",
+      "must_haves": null
+    }
+  },
+  {
+    "id": "nozawa-5d-family",
+    "startDate": "2027-01-08",
+    "answers": {
+      "destination": "Nozawa Onsen, Japan",
+      "duration_days": 5,
+      "party": "family",
+      "party_size": 5,
+      "budget_tier": "mid",
+      "vibe": ["relaxed", "culture", "foodie"],
+      "pace": "balanced",
+      "must_haves": "onsen、ski school"
+    }
+  }
+]

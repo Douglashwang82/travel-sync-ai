@@ -1,0 +1,46 @@
+{
+  "id": "itinerary.tokyo-3d-balanced",
+  "task_class": "itinerary",
+  "input": {
+    "answers": {
+      "duration_days": 3,
+      "pace": "balanced",
+      "party": "couple",
+      "budget_tier": "mid",
+      "vibe": ["culture", "foodie"],
+      "must_haves": "teamLab"
+    },
+    "days": [
+      {
+        "dayNumber": 1,
+        "stops": [
+          { "placeId": "poi-sensoji", "name": "Senso-ji Temple", "itemType": "activity", "tags": ["temple", "culture", "historic"], "lat": 35.7148, "lng": 139.7967, "arriveMinutes": 540, "departMinutes": 630 },
+          { "placeId": "poi-tnm", "name": "Tokyo National Museum", "itemType": "activity", "tags": ["museum", "culture"], "lat": 35.7188, "lng": 139.7765, "arriveMinutes": 645, "departMinutes": 735 },
+          { "placeId": "poi-unagi", "name": "Izuei Honten Unagi", "itemType": "restaurant", "tags": ["foodie", "unagi"], "lat": 35.712, "lng": 139.7745, "arriveMinutes": 750, "departMinutes": 825 },
+          { "placeId": "poi-ueno", "name": "Ueno Park", "itemType": "activity", "tags": ["park", "nature"], "lat": 35.7156, "lng": 139.7745, "arriveMinutes": 840, "departMinutes": 930 }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "stops": [
+          { "placeId": "poi-meiji", "name": "Meiji Shrine", "itemType": "activity", "tags": ["shrine", "culture", "nature"], "lat": 35.6764, "lng": 139.6993, "arriveMinutes": 540, "departMinutes": 630 },
+          { "placeId": "poi-takeshita", "name": "Takeshita Street", "itemType": "activity", "tags": ["shopping", "street"], "lat": 35.6702, "lng": 139.7026, "arriveMinutes": 645, "departMinutes": 735 },
+          { "placeId": "poi-afuri", "name": "Afuri Ramen Harajuku", "itemType": "restaurant", "tags": ["ramen", "foodie"], "lat": 35.6685, "lng": 139.7038, "arriveMinutes": 750, "departMinutes": 825 },
+          { "placeId": "poi-shibuya", "name": "Shibuya Crossing", "itemType": "activity", "tags": ["landmark", "city"], "lat": 35.6595, "lng": 139.7005, "arriveMinutes": 840, "departMinutes": 930 }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "stops": [
+          { "placeId": "poi-teamlab", "name": "teamLab Planets TOKYO", "itemType": "activity", "tags": ["art", "museum", "digital"], "lat": 35.6494, "lng": 139.7899, "arriveMinutes": 570, "departMinutes": 660 },
+          { "placeId": "poi-tsukiji", "name": "Tsukiji Outer Market", "itemType": "restaurant", "tags": ["market", "foodie", "sushi"], "lat": 35.6654, "lng": 139.7707, "arriveMinutes": 735, "departMinutes": 810 },
+          { "placeId": "poi-ginza", "name": "Ginza District", "itemType": "activity", "tags": ["shopping", "city"], "lat": 35.6717, "lng": 139.765, "arriveMinutes": 825, "departMinutes": 915 },
+          { "placeId": "poi-hamarikyu", "name": "Hamarikyu Gardens", "itemType": "activity", "tags": ["garden", "nature"], "lat": 35.6597, "lng": 139.7634, "arriveMinutes": 930, "departMinutes": 1020 }
+        ]
+      }
+    ]
+  },
+  "expect": {
+    "min_score": 85
+  }
+}

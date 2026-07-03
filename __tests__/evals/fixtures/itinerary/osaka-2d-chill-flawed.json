@@ -1,0 +1,34 @@
+{
+  "id": "itinerary.osaka-2d-chill-flawed",
+  "task_class": "itinerary",
+  "comment": "Deliberately bad plan — proves the scorer penalizes: empty day 2, 5 stops on a chill pace, no restaurant, a duplicated place, Osaka↔Kyoto ping-pong travel, no vibe/must-have match. If this ever scores above max_score the benchmark has gone soft.",
+  "input": {
+    "answers": {
+      "duration_days": 2,
+      "pace": "chill",
+      "party": "family",
+      "budget_tier": "mid",
+      "vibe": ["relaxed"],
+      "must_haves": "onsen"
+    },
+    "days": [
+      {
+        "dayNumber": 1,
+        "stops": [
+          { "placeId": "poi-castle", "name": "Osaka Castle", "itemType": "activity", "tags": [], "lat": 34.6873, "lng": 135.5262, "arriveMinutes": 540, "departMinutes": 630 },
+          { "placeId": "poi-fushimi", "name": "Fushimi Inari Taisha", "itemType": "activity", "tags": [], "lat": 34.9671, "lng": 135.7727, "arriveMinutes": 780, "departMinutes": 870 },
+          { "placeId": "poi-umeda", "name": "Umeda Sky Building", "itemType": "activity", "tags": [], "lat": 34.7053, "lng": 135.4903, "arriveMinutes": 1020, "departMinutes": 1110 },
+          { "placeId": "poi-arashiyama", "name": "Arashiyama Bamboo Grove", "itemType": "activity", "tags": [], "lat": 35.0094, "lng": 135.6668, "arriveMinutes": 1150, "departMinutes": 1240 },
+          { "placeId": "poi-castle", "name": "Osaka Castle", "itemType": "activity", "tags": [], "lat": 34.6873, "lng": 135.5262, "arriveMinutes": 1250, "departMinutes": 1340 }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "stops": []
+      }
+    ]
+  },
+  "expect": {
+    "max_score": 40
+  }
+}

@@ -113,7 +113,8 @@ function deriveGroup(pattern: string): { slug: string; label: string; order: num
     if (sub === "places") return { slug: "api-app-places", label: "App API · Places", order: 4 };
     if (sub === "notifications") return { slug: "api-app-notifications", label: "App API · Notifications", order: 5 };
     if (sub === "chat") return { slug: "api-app-chat", label: "App API · Chat", order: 6 };
-    return { slug: "api-app-other", label: "App API · Other", order: 7 };
+    if (sub === "benchmark") return { slug: "api-app-benchmark", label: "App API · Benchmark", order: 7 };
+    return { slug: "api-app-other", label: "App API · Other", order: 7.5 };
   }
   if (top === "home") return { slug: "api-home", label: "Home survey demo", order: 8 };
   if (top === "cron") return { slug: "api-cron", label: "Cron jobs", order: 10 };
