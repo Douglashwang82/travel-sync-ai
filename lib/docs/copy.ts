@@ -145,6 +145,15 @@ const EN: DocsCopy = {
         ],
       },
       {
+        id: "guide-benchmark",
+        title: "Itinerary benchmark console",
+        body: [
+          "Benchmark (/app/benchmark, signed-in users) is the quality lab for the trip generator. Preset scenarios — the same set the CLI uses — appear as cards; hit Run to generate a real itinerary through the production pipeline and score it on seven deterministic metrics (coverage, pace fit, meals, travel efficiency, diversity, vibe match, must-haves) plus an optional LLM judge for day coherence, personalization, realism and title quality.",
+          "Custom run lets you define a one-off scenario (destination, days, party, budget, pace, vibes, must-haves) and benchmark it immediately; it is recorded as “adhoc”.",
+          "The score-trend chart plots each scenario's deterministic total over time, and the history table below shows every run — web and CLI — with expandable per-metric bars, the judge verdict and reasoning. Runs cost real LLM calls and take 30–120 seconds; each one also creates a private trip template authored by benchmark-runner.",
+        ],
+      },
+      {
         id: "guide-voting",
         title: "Voting and decisions",
         body: [
@@ -257,7 +266,7 @@ const EN: DocsCopy = {
           "Repair loop — When the solver reports an infeasibility (for example, 'Day 2 stop X opens at 10am, can't fit'), the LLM gets the structured report and swaps from the remaining shortlist. After two failed repair rounds the run terminates with GenerationFailedError(\"irreparable\").",
           "Output and fork — Generation always produces a private trip_template first. On the web, POST /api/app/trips/generate immediately forks the template into a real trip and returns the trip id, because the canvas workspace is itself the preview. On LINE the same flow is two postbacks (generate → preview → fork) so the group can confirm before commit.",
           "Failure modes — GenerationFailedError carries a reason (gemini_unavailable, schema_invalid, persist_failed, invalid_answers, no_candidates, irreparable). Gemini calls are wrapped by the global circuit-breaker in lib/gemini.ts.",
-          "Quality benchmark — services/trip-generation/benchmark.ts scores any itinerary deterministically (no LLM) on seven weighted metrics: coverage, pace fit, meal coverage, travel efficiency, diversity, vibe alignment and must-haves, aggregated to a 0–100 total. Golden/flawed fixtures under __tests__/evals/fixtures/itinerary/ gate every test run, and `npm run benchmark:itinerary` runs the live pipeline against benchmarks/scenarios.json, scores the persisted template and appends per-metric history to benchmarks/history.jsonl so generator changes can be compared over time. A complementary LLM-as-judge layer (benchmark-judge.ts, routed through lib/llm) grades the subjective qualities rules can't — day coherence, personalization, realism, title/summary quality — on live benchmark runs and, behind RUN_LIVE_EVALS=1, on the golden fixtures.",
+          "Quality benchmark — services/trip-generation/benchmark.ts scores any itinerary deterministically (no LLM) on seven weighted metrics: coverage, pace fit, meal coverage, travel efficiency, diversity, vibe alignment and must-haves, aggregated to a 0–100 total. Golden/flawed fixtures under __tests__/evals/fixtures/itinerary/ gate every test run, and `npm run benchmark:itinerary` runs the live pipeline against benchmarks/scenarios.json, scores the persisted template and appends per-metric history to benchmarks/history.jsonl so generator changes can be compared over time. A complementary LLM-as-judge layer (benchmark-judge.ts, routed through lib/llm) grades the subjective qualities rules can't — day coherence, personalization, realism, title/summary quality — on live benchmark runs and, behind RUN_LIVE_EVALS=1, on the golden fixtures. Live runs go through the shared runner (benchmark-runner.ts), which records every run — pass or fail — in the benchmark_runs table; the /app/benchmark page (App API · Benchmark routes: GET scenarios, GET/POST runs, DELETE runs/[id]) lets any signed-in user trigger preset or ad-hoc runs from the browser and charts the score trend from that table.",
         ],
         diagram: [
           "Survey answers (8 keys)",
@@ -400,6 +409,15 @@ const ZH_TW: DocsCopy = {
         ],
       },
       {
+        id: "guide-benchmark",
+        title: "行程基準測試主控台",
+        body: [
+          "基準測試（/app/benchmark，需登入）是旅程生成器的品質實驗室。預設情境（與 CLI 使用同一組）以卡片呈現；按「執行」即透過正式管線生成真實行程，並以七項確定性指標（天數覆蓋、節奏契合、用餐安排、移動效率、多樣性、氛圍契合、必備項目）打分，可另啟用 LLM 評審評估每日連貫性、個人化、可執行性與標題品質。",
+          "「自訂執行」可定義一次性情境（目的地、天數、同行類型、預算、節奏、氛圍、必備項目）並立即測試，紀錄會標為「adhoc」。",
+          "分數趨勢圖繪出各情境確定性總分的時間變化；下方歷史表列出所有執行（Web 與 CLI），可展開查看逐指標長條、評審結果與評語。每次執行都會呼叫真實 LLM、約需 30–120 秒，並會產生一個由 benchmark-runner 建立的私人旅程範本。",
+        ],
+      },
+      {
         id: "guide-voting",
         title: "投票與決策",
         body: [
@@ -512,7 +530,7 @@ const ZH_TW: DocsCopy = {
           "Repair 迴圈 — 當 solver 回報不可行（例如 'Day 2 X 點 10am 才開門，塞不下'），LLM 會拿到結構化報告並從候補清單中替換。連續兩次仍不可行時以 GenerationFailedError(\"irreparable\") 結束。",
           "輸出與 Fork — 生成永遠先產出一個 private trip_template。Web 端的 POST /api/app/trips/generate 會立即把 template fork 成正式 trip 並回傳 trip id，因為畫布工作區本身就是預覽；LINE 端則拆成兩個 postback（generate → preview → fork），讓群組先確認再寫入。",
           "失敗類別 — GenerationFailedError 帶有 reason（gemini_unavailable、schema_invalid、persist_failed、invalid_answers、no_candidates、irreparable）。所有 Gemini 呼叫都包在 lib/gemini.ts 的全域 circuit-breaker 之中。",
-          "品質基準測試 — services/trip-generation/benchmark.ts 以確定性方式（不呼叫 LLM）對任何行程打分：coverage、pace fit、meal coverage、travel efficiency、diversity、vibe alignment、must-haves 七項加權指標，彙總為 0–100 總分。__tests__/evals/fixtures/itinerary/ 下的黃金／瑕疵 fixture 在每次測試都會把關；`npm run benchmark:itinerary` 則以 benchmarks/scenarios.json 跑真實管線、對持久化後的 template 打分，並將逐指標歷史寫入 benchmarks/history.jsonl，讓生成器的改動可以跨時間比較。另有互補的 LLM 評審層（benchmark-judge.ts，經由 lib/llm 路由），評分規則量不到的主觀品質 — 每日連貫性、個人化程度、可執行性、標題／摘要品質 — 於 live benchmark 執行時預設啟用，並在 RUN_LIVE_EVALS=1 時對黃金 fixture 把關。",
+          "品質基準測試 — services/trip-generation/benchmark.ts 以確定性方式（不呼叫 LLM）對任何行程打分：coverage、pace fit、meal coverage、travel efficiency、diversity、vibe alignment、must-haves 七項加權指標，彙總為 0–100 總分。__tests__/evals/fixtures/itinerary/ 下的黃金／瑕疵 fixture 在每次測試都會把關；`npm run benchmark:itinerary` 則以 benchmarks/scenarios.json 跑真實管線、對持久化後的 template 打分，並將逐指標歷史寫入 benchmarks/history.jsonl，讓生成器的改動可以跨時間比較。另有互補的 LLM 評審層（benchmark-judge.ts，經由 lib/llm 路由），評分規則量不到的主觀品質 — 每日連貫性、個人化程度、可執行性、標題／摘要品質 — 於 live benchmark 執行時預設啟用，並在 RUN_LIVE_EVALS=1 時對黃金 fixture 把關。Live 執行統一走共用 runner（benchmark-runner.ts），每次執行（無論成敗）都記錄到 benchmark_runs 資料表；/app/benchmark 頁面（App API · Benchmark 路由：GET scenarios、GET/POST runs、DELETE runs/[id]）讓登入使用者直接在瀏覽器觸發預設或自訂執行，並以該表繪製分數趨勢。",
         ],
         diagram: [
           "問卷答案 (8 個欄位)",

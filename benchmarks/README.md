@@ -11,8 +11,15 @@ Quality tracking for the trip-generation pipeline (`services/trip-generation/`).
   ceiling, so the scorer can't silently go soft.
 - **Live runs** — `npm run benchmark:itinerary` executes the real pipeline for
   each scenario in `scenarios.json` (real Gemini calls, persists private
-  templates authored by `benchmark-runner`), scores the persisted result, and
-  appends one JSON row per scenario to `history.jsonl`.
+  templates authored by `benchmark-runner`), scores the persisted result,
+  records each run in the `benchmark_runs` table, and appends one JSON row per
+  scenario to `history.jsonl` as a local copy.
+- **Web console** — `/app/benchmark` (signed-in users) runs presets or ad-hoc
+  scenarios from the browser via `POST /api/app/benchmark/runs`, charts the
+  per-scenario score trend from `benchmark_runs`, and shows expandable run
+  details (metrics, judge verdict, template ids). CLI and web runs share the
+  same runner (`services/trip-generation/benchmark-runner.ts`) and the same
+  history table.
 - **LLM-as-judge** — `services/trip-generation/benchmark-judge.ts` grades what
   rules can't: day coherence, personalization, realism and title/summary
   quality (each 0–1, plus an overall verdict). Live runs judge by default
