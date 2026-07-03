@@ -60,9 +60,20 @@ function travelMinutes(km: number): number {
  * from every already-clustered POI, then pull in its nearest unclustered
  * neighbors up to `maxPerDay`. Keeps each day walkable/transit-sized even
  * when the selection spans several cities (Tokyo + Kyoto, NYC + LA, …).
+ *
+ * `targetDays` (the visitor's picked trip length) is honored when feasible:
+ * it is clamped to [ceil(n / maxPerDay), n], the fill size shrinks so no day
+ * hogs stops another day needs, and oversized days are split until the count
+ * matches — so a 6-day window with 8 picks yields six lighter days, not two
+ * packed ones.
  */
-export function clusterPoisIntoDays(pois: HomePoi[], maxPerDay = MAX_STOPS_PER_DAY): HomePoi[][] {
+export function clusterPoisIntoDays(pois: HomePoi[], maxPerDay = MAX_STOPS_PER_DAY, targetDays?: number): HomePoi[][] {
   if (pois.length === 0) return [];
+  const target =
+    targetDays == null
+      ? null
+      : Math.min(Math.max(targetDays, Math.ceil(pois.length / maxPerDay)), pois.length);
+  if (target != null) maxPerDay = Math.min(maxPerDay, Math.ceil(pois.length / target));
   const remaining = [...pois];
   const clusters: HomePoi[][] = [];
 
@@ -102,6 +113,36 @@ export function clusterPoisIntoDays(pois: HomePoi[], maxPerDay = MAX_STOPS_PER_D
       day.push(remaining.splice(bestIdx, 1)[0]);
     }
     clusters.push(day);
+  }
+
+  // Split the largest days until the visitor's day count is reached: peel off
+  // the stop farthest from its day's centroid into a day of its own.
+  if (target != null) {
+    while (clusters.length < target) {
+      let splitIdx = -1;
+      let splitSize = 1;
+      for (let i = 0; i < clusters.length; i++) {
+        if (clusters[i].length > splitSize) {
+          splitSize = clusters[i].length;
+          splitIdx = i;
+        }
+      }
+      if (splitIdx === -1) break;
+      const cluster = clusters[splitIdx];
+      const centroidLat = cluster.reduce((s, p) => s + p.lat, 0) / cluster.length;
+      const centroidLng = cluster.reduce((s, p) => s + p.lng, 0) / cluster.length;
+      let farIdx = 0;
+      let farDist = -1;
+      for (let i = 0; i < cluster.length; i++) {
+        const d = haversineKm(cluster[i].lat, cluster[i].lng, centroidLat, centroidLng);
+        if (d > farDist) {
+          farDist = d;
+          farIdx = i;
+        }
+      }
+      clusters[splitIdx] = cluster.filter((_, i) => i !== farIdx);
+      clusters.push([cluster[farIdx]]);
+    }
   }
 
   return orderClustersByProximity(clusters);

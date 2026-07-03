@@ -99,8 +99,8 @@ const EN: DocsCopy = {
         id: "guide-home-survey",
         title: "The landing-page trip survey",
         body: [
-          "The index page is an interactive survey pipeline. Spin the globe and tap a country marker (Japan, Taiwan or the United States today), then pick the spots that catch your eye from a wall of photos, video tiles and social posts.",
-          "Submit your picks and the AI agent plans live on screen: it clusters spots into days, asks the LLM to theme and order them, runs the real route solver for timings, and estimates costs.",
+          "The index page is an interactive survey pipeline. Spin the globe and tap a country marker (Japan, Taiwan or the United States today), zoom into a city, then pick your travel dates on a seasonality-aware calendar: monthly weather, rain days, crowd and price levels, festival windows, quick length presets and a best-window suggestion help you decide when to go. Finally, pick the spots that catch your eye from a wall of photos, video tiles and social posts.",
+          "Submit your picks and the AI agent plans live on screen: it clusters spots into days shaped to your chosen dates, asks the LLM to theme and order them, runs the real route solver for timings, and estimates costs.",
           "The finished itinerary appears on an animated map with dates, arrive/depart times and expected costs per stop, day and trip. No account is needed; the demo is rate-limited per visitor and nothing is saved.",
         ],
       },
@@ -253,7 +253,7 @@ const EN: DocsCopy = {
           "Agents — Background agents (services/agents/) for scheduled, autonomous work.",
           "Web workspace — /app/* pages backed by /api/app/* JSON endpoints, with LINE Login and email/password auth. The trip workspace is a shared group chat room (trip_chat_threads kind='group'); posting a message wakes the per-trip orchestrator, which can propose an agent grid via the propose-only grids.add_agent action. Proposals surface as confirm/dismiss cards in the chat and, once confirmed, become custom_grids shown in the right rail. A message can also be classified on demand (POST /api/app/trips/[tripId]/chat/classify, LLM over the agent registry) and, if it maps to an agent, dragged from the chat onto the grids rail (native HTML5 DnD, MIME application/x-chat-task) to create the custom_grid directly — falling back to the prefilled Add-grid dialog when required config is missing.",
           "Trip overview canvas — /app/trips/[tripId]/overview is a free-form pan & zoom canvas (components/app/canvas/). Every feature — hero, itinerary, calendar, budget, tasks, ideas, votes, map, pack, members, and any custom_grids — is a free-floating tile that can be dragged, resized and stacked on an infinite board; the toolbar offers zoom in/out, Fit and Reset. Layout is per-user, per-trip: tile positions/sizes plus the pan/zoom viewport persist to trip_canvas_layouts via GET/PUT /api/app/trips/[tripId]/canvas-layout (upsert on (trip_id, app_user_id)), so a member's board follows them across devices. This replaced the earlier fixed bento grid. The Orchestrator mode toggle (single-goal + structural plan) lives alongside it in components/app/trip-workspace.",
-          "Landing survey demo — The public index page is a four-phase survey pipeline (globe → POI media wall → live AI reasoning → animated itinerary map). It is backed by two unauthenticated, per-IP rate-limited routes: POST /api/home/itinerary streams SSE reasoning steps and reuses the production trip-generation solver plus lib/llm for day theming, and GET /api/home/poi-photo proxies Google Places photos for the static POI catalog in lib/home-survey.ts. Nothing is persisted.",
+          "Landing survey demo — The public index page is a survey pipeline (globe → city → travel dates → POI media wall → live AI reasoning → animated itinerary map). It is backed by two unauthenticated, per-IP rate-limited routes: POST /api/home/itinerary streams SSE reasoning steps and reuses the production trip-generation solver plus lib/llm for day theming (honoring the picked start date and day count), and GET /api/home/poi-photo proxies Google Places photos for the static POI catalog in lib/home-survey.ts. The dates phase is driven by a static seasonal catalog in lib/home-seasons.ts (monthly climate normals, crowd/price levels, festival windows, best-window scoring). Nothing is persisted.",
         ],
       },
       {
@@ -363,8 +363,8 @@ const ZH_TW: DocsCopy = {
         id: "guide-home-survey",
         title: "首頁互動式行程問卷",
         body: [
-          "首頁本身就是一條互動式問卷流程。轉動地球並點選國家圖釘（目前提供日本、台灣與美國），接著從照片、影片與社群貼文牆中挑選吸引你的景點。",
-          "送出選擇後，AI 代理會在畫面上即時規劃：把景點依地理位置分天、請 LLM 命名與排序每一天、用正式的路線求解器模擬時間，最後估算花費。",
+          "首頁本身就是一條互動式問卷流程。轉動地球並點選國家圖釘（目前提供日本、台灣與美國），放大到城市後，先在懂季節的月曆上挑選旅遊日期：每月天氣、降雨天數、人潮與價格等級、節慶時段、快速天數選項與最佳時段建議，幫你決定何時出發。最後再從照片、影片與社群貼文牆中挑選吸引你的景點。",
+          "送出選擇後，AI 代理會在畫面上即時規劃：把景點依你選的日期分天、請 LLM 命名與排序每一天、用正式的路線求解器模擬時間，最後估算花費。",
           "完成的行程會呈現在動態地圖上，包含日期、抵達/離開時間，以及每站、每日與整趟旅程的預估花費。不需註冊帳號；此示範依訪客限流且不會儲存任何資料。",
         ],
       },
@@ -517,7 +517,7 @@ const ZH_TW: DocsCopy = {
           "Agents — services/agents/ 底下的常駐型自動代理人。",
           "Web 工作區 — /app/* 頁面背後是 /api/app/* JSON 端點，支援 LINE Login 與 Email/Password 登入。旅程工作區是一個共用的群組聊天室（trip_chat_threads kind='group'）；發送訊息會喚醒該旅程的 orchestrator，它可透過 propose-only 的 grids.add_agent 動作建議一個代理人格子。建議會以確認／忽略卡片的形式出現在聊天中，確認後即成為顯示在右側欄的 custom_grids。訊息也可以即時分類（POST /api/app/trips/[tripId]/chat/classify，以 LLM 比對代理人清單）；若對應到某個代理人，便可從聊天直接拖曳到右側欄格子區（原生 HTML5 拖放，MIME application/x-chat-task）以直接建立 custom_grid，若缺少必填設定則退回預先填好的新增格子對話框。",
           "旅程總覽畫布 — /app/trips/[tripId]/overview 是一個自由平移縮放的畫布（components/app/canvas/）。每個功能 — hero、行程、行事曆、預算、任務、點子、投票、地圖、打包、成員，以及任何 custom_grids — 都是可在無限畫布上拖曳、調整大小與堆疊的浮動格子；工具列提供放大／縮小、Fit 與 Reset。版面是「每位使用者、每趟旅程」獨立：格子的位置／大小與平移縮放 viewport 會透過 GET/PUT /api/app/trips/[tripId]/canvas-layout 存到 trip_canvas_layouts（以 (trip_id, app_user_id) upsert），因此成員的畫布會在各裝置間同步。此設計取代了先前固定的 bento 格線。Orchestrator 模式（單一目標＋結構化計畫）的切換位於 components/app/trip-workspace，與其並列。",
-          "首頁問卷示範 — 公開首頁是一條四階段問卷流程（地球 → 景點媒體牆 → AI 即時推理 → 動態行程地圖）。背後是兩個免登入、依 IP 限流的端點：POST /api/home/itinerary 以 SSE 串流推理步驟，重用正式的 trip-generation 求解器並透過 lib/llm 為每日命名；GET /api/home/poi-photo 為 lib/home-survey.ts 的靜態景點目錄代理 Google Places 照片。不儲存任何資料。",
+          "首頁問卷示範 — 公開首頁是一條問卷流程（地球 → 城市 → 旅遊日期 → 景點媒體牆 → AI 即時推理 → 動態行程地圖）。背後是兩個免登入、依 IP 限流的端點：POST /api/home/itinerary 以 SSE 串流推理步驟，重用正式的 trip-generation 求解器並透過 lib/llm 為每日命名（並尊重所選的出發日與天數）；GET /api/home/poi-photo 為 lib/home-survey.ts 的靜態景點目錄代理 Google Places 照片。日期階段由 lib/home-seasons.ts 的靜態季節目錄驅動（每月氣候常態、人潮/價格等級、節慶時段與最佳時段評分）。不儲存任何資料。",
         ],
       },
       {

@@ -4,11 +4,13 @@
 // ReasoningScene — phase 3 of the index-page survey pipeline.
 //
 // Opens the SSE stream from POST /api/home/itinerary and performs the agent's
-// reasoning live: a breathing aurora core, the visitor's picks orbiting in as
-// chips, a five-step pipeline checklist and a streaming thought console. The
-// server streams faster than a human can read, so events are buffered and
-// played back with a minimum dwell per beat; the finished itinerary is handed
-// to the parent once the choreography catches up.
+// reasoning live in ONE chronological stream: pipeline milestones and thought
+// lines interleave in the order they happen (like a modern AI thinking trace),
+// under a slim five-step progress rail and a breathing aurora core fed by a
+// compact stack of the visitor's picks. The server streams faster than a human
+// can read, so events are buffered and played back with a minimum dwell per
+// beat; the finished itinerary is handed to the parent once the choreography
+// catches up.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
@@ -21,7 +23,7 @@ import {
   type HomeReasoningStepEvent,
   type HomeReasoningStepId,
 } from "@/lib/home-survey";
-import { springSnappy } from "@/components/motion/variants";
+import { easeConfirm, springSnappy } from "@/components/motion/variants";
 
 type StreamEvent =
   | { kind: "step"; step: HomeReasoningStepEvent }
@@ -30,10 +32,13 @@ type StreamEvent =
   | { kind: "error"; message: string }
   | { kind: "done" };
 
-interface StepState {
-  status: "pending" | "running" | "done" | "fallback";
-  detail: string;
-}
+type StepStatus = "pending" | "running" | "done" | "fallback";
+
+/** One entry in the unified reasoning stream. Milestones are updated in place
+ *  when their step completes; thoughts are append-only. */
+type FeedItem =
+  | { kind: "milestone"; stepId: HomeReasoningStepId; status: StepStatus; detail: string }
+  | { kind: "thought"; text: string };
 
 const STEP_ORDER: HomeReasoningStepId[] = ["analyze", "cluster", "plan", "solve", "cost"];
 
@@ -45,23 +50,29 @@ const STEP_META: Record<HomeReasoningStepId, { icon: typeof Search; en: string; 
   cost: { icon: Wallet, en: "Cost estimate", zh: "花費估算" },
 };
 
+const MAX_PICK_AVATARS = 8;
+
 interface ReasoningSceneProps {
   country: HomeCountry;
   locale: "en" | "zh-TW";
   poiIds: string[];
+  /** ISO YYYY-MM-DD chosen in the dates phase; server default when absent. */
+  startDate?: string;
+  /** Trip length from the dates phase; the planner shapes days toward it. */
+  tripDays?: number;
   onComplete: (itinerary: HomeItinerary) => void;
   onBack: () => void;
 }
 
-export default function ReasoningScene({ country, locale, poiIds, onComplete, onBack }: ReasoningSceneProps) {
+export default function ReasoningScene({ country, locale, poiIds, startDate, tripDays, onComplete, onBack }: ReasoningSceneProps) {
   const zh = locale === "zh-TW";
-  const [steps, setSteps] = useState<Record<HomeReasoningStepId, StepState>>(() =>
-    Object.fromEntries(STEP_ORDER.map((id) => [id, { status: "pending", detail: "" }])) as Record<HomeReasoningStepId, StepState>,
+  const [steps, setSteps] = useState<Record<HomeReasoningStepId, StepStatus>>(() =>
+    Object.fromEntries(STEP_ORDER.map((id) => [id, "pending"])) as Record<HomeReasoningStepId, StepStatus>,
   );
-  const [thoughts, setThoughts] = useState<string[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const consoleRef = useRef<HTMLDivElement | null>(null);
+  const streamRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -72,21 +83,31 @@ export default function ReasoningScene({ country, locale, poiIds, onComplete, on
     let cancelled = false;
 
     // Reset visual state for retries.
-    setSteps(Object.fromEntries(STEP_ORDER.map((id) => [id, { status: "pending", detail: "" }])) as Record<HomeReasoningStepId, StepState>);
-    setThoughts([]);
+    setSteps(Object.fromEntries(STEP_ORDER.map((id) => [id, "pending"])) as Record<HomeReasoningStepId, StepStatus>);
+    setFeed([]);
     setError(null);
 
     const apply = (ev: StreamEvent) => {
       if (ev.kind === "step") {
-        setSteps((prev) => ({
-          ...prev,
-          [ev.step.id]: {
-            status: ev.step.status === "start" ? "running" : ev.step.status,
-            detail: ev.step.detail,
-          },
-        }));
+        const status: StepStatus = ev.step.status === "start" ? "running" : ev.step.status;
+        setSteps((prev) => ({ ...prev, [ev.step.id]: status }));
+        setFeed((prev) => {
+          if (status === "running") {
+            return [...prev, { kind: "milestone", stepId: ev.step.id, status, detail: ev.step.detail }];
+          }
+          // Completion updates the existing milestone row in place.
+          let patched = false;
+          const next = prev.map((item) => {
+            if (item.kind === "milestone" && item.stepId === ev.step.id) {
+              patched = true;
+              return { ...item, status, detail: ev.step.detail };
+            }
+            return item;
+          });
+          return patched ? next : [...next, { kind: "milestone", stepId: ev.step.id, status, detail: ev.step.detail }];
+        });
       } else if (ev.kind === "thought") {
-        setThoughts((prev) => [...prev, ev.text]);
+        setFeed((prev) => [...prev, { kind: "thought", text: ev.text }]);
       } else if (ev.kind === "itinerary") {
         itinerary = ev.itinerary;
       } else if (ev.kind === "error" && !itinerary) {
@@ -120,7 +141,13 @@ export default function ReasoningScene({ country, locale, poiIds, onComplete, on
         const res = await fetch("/api/home/itinerary", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ country: country.code, poiIds, locale }),
+          body: JSON.stringify({
+            country: country.code,
+            poiIds,
+            locale,
+            ...(startDate ? { startDate } : {}),
+            ...(tripDays ? { days: tripDays } : {}),
+          }),
           signal: controller.signal,
         });
         if (!res.ok || !res.body) {
@@ -173,131 +200,190 @@ export default function ReasoningScene({ country, locale, poiIds, onComplete, on
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rerun only on explicit retry
   }, [attempt]);
 
-  // Keep the thought console pinned to the latest line.
+  // Keep the stream pinned to the latest entry.
   useEffect(() => {
-    consoleRef.current?.scrollTo({ top: consoleRef.current.scrollHeight, behavior: "smooth" });
-  }, [thoughts]);
+    streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: "smooth" });
+  }, [feed]);
+
+  const doneCount = STEP_ORDER.filter((id) => steps[id] === "done" || steps[id] === "fallback").length;
+  const pickPois = poiIds.map((id) => getHomePoi(id)).filter((p) => p != null);
 
   return (
-    <div id="home-reasoning-scene" className="mx-auto w-full max-w-3xl px-5 sm:px-8">
-      {/* Agent core + the visitor's picks feeding into it */}
-      <div id="home-reasoning-core" className="relative mx-auto mb-8 flex flex-col items-center">
-        <div id="home-reasoning-orb-wrap" className="relative grid h-24 w-24 place-items-center">
+    <div id="home-reasoning-scene" className="mx-auto w-full max-w-2xl px-5 sm:px-8">
+      {/* ─── Agent core + a compact stack of the picks feeding it ─────────── */}
+      <div id="home-reasoning-core" className="relative mx-auto mb-7 flex flex-col items-center">
+        <div id="home-reasoning-orb-wrap" className="relative grid h-20 w-20 place-items-center">
           <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-[var(--accent-line)]/15 [animation-duration:2.2s]" />
-          <span aria-hidden className="absolute inset-3 animate-ping rounded-full bg-[var(--accent-cool)]/15 [animation-duration:2.2s] [animation-delay:0.5s]" />
+          <span aria-hidden className="absolute inset-2.5 animate-ping rounded-full bg-[var(--accent-cool)]/15 [animation-duration:2.2s] [animation-delay:0.5s]" />
           <span
             id="home-reasoning-orb"
-            className="gc-orb relative !h-14 !w-14"
-            style={{ flexBasis: "3.5rem" }}
+            className="gc-orb relative !h-12 !w-12"
+            style={{ flexBasis: "3rem" }}
             aria-hidden
           />
         </div>
-        <div id="home-reasoning-chips" className="mt-4 flex max-w-md flex-wrap justify-center gap-1.5">
-          {poiIds.map((id, i) => {
-            const poi = getHomePoi(id);
-            if (!poi) return null;
-            return (
+
+        <div id="home-reasoning-picks" className="mt-4 flex items-center gap-2.5">
+          <div id="home-reasoning-pick-stack" className="flex -space-x-2">
+            {pickPois.slice(0, MAX_PICK_AVATARS).map((poi, i) => (
               <motion.span
-                key={id}
-                id={`home-reasoning-chip-${id}`}
-                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                animate={{ opacity: [0.45, 1, 0.45], y: 0, scale: 1 }}
-                transition={{
-                  opacity: { repeat: Infinity, duration: 2.4, delay: i * 0.25 },
-                  y: springSnappy,
-                  scale: springSnappy,
-                }}
-                className="inline-flex items-center gap-1 rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] px-2.5 py-1 text-[11px] font-semibold"
+                key={poi.id}
+                id={`home-reasoning-pick-${poi.id}`}
+                initial={{ opacity: 0, scale: 0.5, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ ...springSnappy, delay: 0.1 + i * 0.06 }}
+                title={zh ? poi.nameZh : poi.name}
+                className="grid h-8 w-8 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--surface-raised)] text-[14px] ring-2 ring-[var(--surface-base)]"
               >
                 <span aria-hidden>{poi.emoji}</span>
-                {zh ? poi.nameZh : poi.name}
               </motion.span>
-            );
-          })}
+            ))}
+            {pickPois.length > MAX_PICK_AVATARS && (
+              <motion.span
+                id="home-reasoning-pick-overflow"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ ...springSnappy, delay: 0.1 + MAX_PICK_AVATARS * 0.06 }}
+                className="grid h-8 min-w-8 place-items-center rounded-full border border-[var(--border-hairline)] bg-[var(--text-primary)] px-1.5 text-[11px] font-bold text-[var(--surface-base)] ring-2 ring-[var(--surface-base)]"
+              >
+                +{pickPois.length - MAX_PICK_AVATARS}
+              </motion.span>
+            )}
+          </div>
+          <p id="home-reasoning-pick-count" className="text-[12.5px] font-semibold text-[var(--text-muted)]">
+            {zh ? `${pickPois.length} 個選點交給 AI` : `${pickPois.length} picks handed to the agent`}
+          </p>
         </div>
       </div>
 
-      <div id="home-reasoning-panels" className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-        {/* Pipeline checklist */}
-        <ol id="home-reasoning-steps" className="surface-tile-raised space-y-1 p-3">
-          {STEP_ORDER.map((id) => {
+      {/* ─── Slim five-step progress rail ─────────────────────────────────── */}
+      <div id="home-reasoning-stepper" className="mb-4" role="group" aria-label={zh ? "規劃進度" : "Planning progress"}>
+        <div id="home-reasoning-stepper-row" className="flex items-center">
+          {STEP_ORDER.map((id, i) => {
             const meta = STEP_META[id];
-            const state = steps[id];
+            const status = steps[id];
             const Icon = meta.icon;
             return (
-              <li
-                key={id}
-                id={`home-reasoning-step-${id}`}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-300 ${
-                  state.status === "running" ? "bg-[var(--accent-line-soft)]" : ""
-                }`}
-              >
+              <div key={id} id={`home-reasoning-step-${id}`} className={`flex items-center ${i > 0 ? "flex-1" : ""}`}>
+                {i > 0 && (
+                  <span
+                    id={`home-reasoning-step-link-${id}`}
+                    aria-hidden
+                    className={`mx-1.5 h-px flex-1 transition-colors duration-500 ${
+                      status !== "pending" ? "bg-[var(--text-primary)]" : "bg-[var(--border-strong)]"
+                    }`}
+                  />
+                )}
                 <span
                   id={`home-reasoning-step-icon-${id}`}
-                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition-colors duration-300 ${
-                    state.status === "done"
-                      ? "border-transparent bg-[var(--accent-line)] text-white"
-                      : state.status === "fallback"
+                  title={zh ? meta.zh : meta.en}
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border transition-colors duration-300 ${
+                    status === "done"
+                      ? "border-transparent bg-[var(--text-primary)] text-[var(--surface-base)]"
+                      : status === "fallback"
                         ? "border-transparent bg-[var(--status-needs-decision)] text-white"
-                        : state.status === "running"
-                          ? "border-[var(--accent-line)] text-[var(--accent-line)]"
-                          : "border-[var(--border-hairline)] text-[var(--text-faint)]"
+                        : status === "running"
+                          ? "border-[var(--accent-line)] bg-[var(--accent-line-soft)] text-[var(--accent-line)]"
+                          : "border-[var(--border-hairline)] bg-[var(--surface-raised)] text-[var(--text-faint)]"
                   }`}
                 >
-                  {state.status === "done" || state.status === "fallback" ? (
+                  {status === "done" || status === "fallback" ? (
                     <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
-                  ) : state.status === "running" ? (
+                  ) : status === "running" ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   ) : (
                     <Icon className="h-4 w-4" aria-hidden />
                   )}
                 </span>
-                <span id={`home-reasoning-step-text-${id}`} className="min-w-0">
-                  <span
-                    id={`home-reasoning-step-title-${id}`}
-                    className={`block text-[13.5px] font-semibold ${state.status === "pending" ? "text-[var(--text-faint)]" : ""}`}
-                  >
-                    {zh ? meta.zh : meta.en}
-                  </span>
-                  {state.detail && (
-                    <span id={`home-reasoning-step-detail-${id}`} className="block truncate text-[11.5px] text-[var(--text-muted)]">
-                      {state.detail}
-                    </span>
-                  )}
-                </span>
-              </li>
+              </div>
             );
           })}
-        </ol>
+        </div>
+        <p id="home-reasoning-stepper-label" className="text-mono mt-2 text-center text-[11.5px] font-semibold text-[var(--text-faint)]">
+          {doneCount}/{STEP_ORDER.length}
+          {" · "}
+          {(() => {
+            const running = STEP_ORDER.find((id) => steps[id] === "running");
+            if (running) return zh ? STEP_META[running].zh : STEP_META[running].en;
+            return doneCount === STEP_ORDER.length ? (zh ? "完成" : "Complete") : zh ? "準備中" : "Warming up";
+          })()}
+        </p>
+      </div>
 
-        {/* Thought console */}
-        <div id="home-reasoning-console" className="surface-tile-raised flex min-h-[260px] flex-col p-4">
-          <p id="home-reasoning-console-title" className="text-caps mb-3">
-            {zh ? "AI 思考過程" : "Agent reasoning"}
-          </p>
-          <div ref={consoleRef} id="home-reasoning-console-lines" className="max-h-64 flex-1 space-y-2.5 overflow-y-auto pr-1">
-            {thoughts.map((text, i) => (
+      {/* ─── The reasoning stream: milestones + thoughts, chronological ───── */}
+      <motion.div
+        id="home-reasoning-stream-panel"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.38, ease: easeConfirm, delay: 0.1 }}
+        className="surface-glass rounded-[1.4rem] border border-[var(--border-hairline)] p-2 shadow-[var(--shadow-raise)]"
+      >
+        <div
+          ref={streamRef}
+          id="home-reasoning-stream"
+          className="max-h-[340px] min-h-[260px] space-y-1 overflow-y-auto p-2 [mask-image:linear-gradient(to_bottom,transparent,black_14%)]"
+        >
+          {feed.map((item, i) =>
+            item.kind === "milestone" ? (
+              <motion.div
+                key={`m-${item.stepId}`}
+                id={`home-reasoning-milestone-${item.stepId}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.32, ease: easeConfirm }}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors duration-300 ${
+                  item.status === "running" ? "bg-[var(--accent-line-soft)]" : ""
+                }`}
+              >
+                <span
+                  id={`home-reasoning-milestone-icon-${item.stepId}`}
+                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors duration-300 ${
+                    item.status === "done"
+                      ? "bg-[var(--text-primary)] text-[var(--surface-base)]"
+                      : item.status === "fallback"
+                        ? "bg-[var(--status-needs-decision)] text-white"
+                        : "border border-[var(--accent-line)] text-[var(--accent-line)]"
+                  }`}
+                >
+                  {item.status === "running" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                  )}
+                </span>
+                <span id={`home-reasoning-milestone-text-${item.stepId}`} className="min-w-0">
+                  <span className="block text-[13px] font-bold leading-tight">
+                    {zh ? STEP_META[item.stepId].zh : STEP_META[item.stepId].en}
+                  </span>
+                  {item.detail && (
+                    <span className="block truncate text-[11.5px] text-[var(--text-muted)]">{item.detail}</span>
+                  )}
+                </span>
+              </motion.div>
+            ) : (
               <motion.p
-                key={`${i}-${text.slice(0, 12)}`}
+                key={`t-${i}`}
                 id={`home-reasoning-thought-${i}`}
                 initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: i === thoughts.length - 1 ? 1 : 0.55, y: 0 }}
-                className="text-mono flex gap-2 text-[12.5px] leading-relaxed"
+                animate={{ opacity: i === feed.length - 1 ? 1 : 0.55, y: 0 }}
+                transition={{ duration: 0.3, ease: easeConfirm }}
+                className="text-mono ml-[26px] flex gap-2 border-l border-[var(--border-hairline)] py-1 pl-4 text-[12.5px] leading-relaxed"
               >
                 <span aria-hidden className="shrink-0 text-[var(--accent-line)]">›</span>
-                {text}
+                {item.text}
               </motion.p>
-            ))}
-            {!error && (
-              <p id="home-reasoning-cursor-line" className="text-mono flex gap-2 text-[12.5px]">
-                <span aria-hidden className="shrink-0 text-[var(--accent-line)]">›</span>
-                <span className="hero-cursor" aria-hidden />
-              </p>
-            )}
-          </div>
+            ),
+          )}
+
+          {!error && (
+            <p id="home-reasoning-cursor-line" className="text-mono ml-[26px] flex gap-2 border-l border-[var(--border-hairline)] py-1 pl-4 text-[12.5px]">
+              <span aria-hidden className="shrink-0 text-[var(--accent-line)]">›</span>
+              <span className="hero-cursor" aria-hidden />
+            </p>
+          )}
 
           {error && (
-            <div id="home-reasoning-error" className="mt-3 rounded-xl border border-[var(--status-blocked)]/30 bg-[var(--status-blocked-soft)] p-3">
+            <div id="home-reasoning-error" className="mt-2 rounded-xl border border-[var(--status-blocked)]/30 bg-[var(--status-blocked-soft)] p-3">
               <p id="home-reasoning-error-text" className="flex items-center gap-2 text-[12.5px] font-semibold text-[var(--status-blocked)]">
                 <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
                 {zh ? "規劃中斷了。" : "Planning was interrupted."}
@@ -325,9 +411,9 @@ export default function ReasoningScene({ country, locale, poiIds, onComplete, on
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
-      <p id="home-reasoning-footnote" className="mt-6 text-center text-[12px] text-[var(--text-faint)]">
+      <p id="home-reasoning-footnote" className="mt-5 text-center text-[12px] text-[var(--text-faint)]">
         {zh
           ? `正在為 ${country.nameZh} 之旅排出最順的動線與預算…`
           : `Charting the smoothest routes and budget for your ${country.name} trip…`}
