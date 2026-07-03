@@ -257,6 +257,7 @@ const EN: DocsCopy = {
           "Repair loop — When the solver reports an infeasibility (for example, 'Day 2 stop X opens at 10am, can't fit'), the LLM gets the structured report and swaps from the remaining shortlist. After two failed repair rounds the run terminates with GenerationFailedError(\"irreparable\").",
           "Output and fork — Generation always produces a private trip_template first. On the web, POST /api/app/trips/generate immediately forks the template into a real trip and returns the trip id, because the canvas workspace is itself the preview. On LINE the same flow is two postbacks (generate → preview → fork) so the group can confirm before commit.",
           "Failure modes — GenerationFailedError carries a reason (gemini_unavailable, schema_invalid, persist_failed, invalid_answers, no_candidates, irreparable). Gemini calls are wrapped by the global circuit-breaker in lib/gemini.ts.",
+          "Quality benchmark — services/trip-generation/benchmark.ts scores any itinerary deterministically (no LLM) on seven weighted metrics: coverage, pace fit, meal coverage, travel efficiency, diversity, vibe alignment and must-haves, aggregated to a 0–100 total. Golden/flawed fixtures under __tests__/evals/fixtures/itinerary/ gate every test run, and `npm run benchmark:itinerary` runs the live pipeline against benchmarks/scenarios.json, scores the persisted template and appends per-metric history to benchmarks/history.jsonl so generator changes can be compared over time.",
         ],
         diagram: [
           "Survey answers (8 keys)",
@@ -511,6 +512,7 @@ const ZH_TW: DocsCopy = {
           "Repair 迴圈 — 當 solver 回報不可行（例如 'Day 2 X 點 10am 才開門，塞不下'），LLM 會拿到結構化報告並從候補清單中替換。連續兩次仍不可行時以 GenerationFailedError(\"irreparable\") 結束。",
           "輸出與 Fork — 生成永遠先產出一個 private trip_template。Web 端的 POST /api/app/trips/generate 會立即把 template fork 成正式 trip 並回傳 trip id，因為畫布工作區本身就是預覽；LINE 端則拆成兩個 postback（generate → preview → fork），讓群組先確認再寫入。",
           "失敗類別 — GenerationFailedError 帶有 reason（gemini_unavailable、schema_invalid、persist_failed、invalid_answers、no_candidates、irreparable）。所有 Gemini 呼叫都包在 lib/gemini.ts 的全域 circuit-breaker 之中。",
+          "品質基準測試 — services/trip-generation/benchmark.ts 以確定性方式（不呼叫 LLM）對任何行程打分：coverage、pace fit、meal coverage、travel efficiency、diversity、vibe alignment、must-haves 七項加權指標，彙總為 0–100 總分。__tests__/evals/fixtures/itinerary/ 下的黃金／瑕疵 fixture 在每次測試都會把關；`npm run benchmark:itinerary` 則以 benchmarks/scenarios.json 跑真實管線、對持久化後的 template 打分，並將逐指標歷史寫入 benchmarks/history.jsonl，讓生成器的改動可以跨時間比較。",
         ],
         diagram: [
           "問卷答案 (8 個欄位)",
