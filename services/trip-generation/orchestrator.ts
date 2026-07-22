@@ -33,6 +33,7 @@ import {
   type PoiCandidate,
 } from "./poi-engine";
 import { rerankCandidates, recordFeedback } from "./reranker";
+import { blendTrendingSignals } from "@/services/trending/signals";
 import {
   searchRoutesByVibe,
   composeFromRoutes,
@@ -149,7 +150,10 @@ export async function runGenerationPipeline(input: GenerateInput): Promise<Gener
   });
   // Re-rank using the trained MLP when weights are available. Falls back to
   // original similarity order when the model file is absent (cold start).
-  const rankedPoiCandidates = await rerankCandidates(queryEmbedding, poiCandidates, genId);
+  const rerankedPoiCandidates = await rerankCandidates(queryEmbedding, poiCandidates, genId);
+  // Blend social-media trending signals: boost candidates with live buzz and
+  // inject hot places the vibe search missed. No-op when no signals exist.
+  const rankedPoiCandidates = await blendTrendingSignals(destination, rerankedPoiCandidates, genId);
 
   // 3. Materialize route place_ids as PoiCandidates and union with POI search.
   const routePois = await loadPoisByIds(Array.from(compose.usedPlaceIds), genId);
@@ -399,6 +403,7 @@ async function llmPickAssignment(
     "3) 每天請至少安排一家餐廳(會被排到午餐 12-14 或晚餐 18-20 時段)。",
     "4) 不要重複使用同一個 place_id。",
     "5) title、summary、tags 用繁體中文。",
+    "6) tags 含 trending 的地點目前在社群媒體(Instagram / TikTok 等)上很熱門;在同樣符合氛圍與節奏的前提下優先納入,但不要為了熱門而犧牲行程合理性。",
     'JSON 結構:{ title, summary, tags[], days: [{ day_number, place_ids: ["..."] }] }',
   ]
     .filter(Boolean)

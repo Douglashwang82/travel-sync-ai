@@ -7,6 +7,7 @@ import {
   type PoiInput,
   type PoiItemType,
 } from "@/services/admin/poi-upsert";
+import { validateCurationPatch } from "@/services/admin/poi-curation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,9 @@ export async function GET(_req: NextRequest, ctx: RouteContext): Promise<NextRes
   const db = createAdminClient();
   const { data, error } = await db
     .from("poi_embeddings")
-    .select("place_id, destination_name, destination_aliases, name, item_type, tags, description, lat, lng, source, last_seen_at")
+    .select(
+      "place_id, destination_name, destination_aliases, name, item_type, tags, description, lat, lng, source, last_seen_at, category, labels, curation_status, quality_score, curation_notes, curated_at"
+    )
     .eq("place_id", placeId)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -55,6 +58,16 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     .maybeSingle();
   if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  // Curation fields (category / labels / status / quality / notes) are
+  // metadata-only — validated up front, applied in both branches below,
+  // never a reason to re-embed.
+  const curation = validateCurationPatch(body);
+  if (!curation.ok) return NextResponse.json({ error: curation.error }, { status: 400 });
+  const curationPatch: Record<string, unknown> = { ...curation.value };
+  if (Object.keys(curationPatch).length > 0) {
+    curationPatch.curated_at = new Date().toISOString();
+  }
 
   const descriptionChanged =
     typeof body.description === "string" && body.description !== (existing.description as string);
@@ -89,11 +102,15 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
     }
     const result = await upsertPoi(validated.value);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 });
+    if (Object.keys(curationPatch).length > 0) {
+      const { error } = await db.from("poi_embeddings").update(curationPatch).eq("place_id", placeId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return NextResponse.json({ ok: true, re_embedded: true });
   }
 
-  // Metadata-only patch (lat/lng/aliases/source) — no re-embedding.
-  const patch: Record<string, unknown> = {};
+  // Metadata-only patch (lat/lng/aliases/source/curation) — no re-embedding.
+  const patch: Record<string, unknown> = { ...curationPatch };
   if (body.lat !== undefined) patch.lat = body.lat;
   if (body.lng !== undefined) patch.lng = body.lng;
   if (Array.isArray(body.destination_aliases)) {

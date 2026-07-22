@@ -10,6 +10,7 @@ export const metadata = {
 const NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/pois", label: "POIs" },
+  { href: "/admin/pois/analytics", label: "Analytics" },
   { href: "/admin/pois/new", label: "Add POI" },
   { href: "/admin/pois/upload", label: "Bulk upload" },
 ];

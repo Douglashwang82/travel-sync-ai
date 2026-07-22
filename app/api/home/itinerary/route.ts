@@ -11,9 +11,10 @@
  *   event: error      data: {"message":"…"}
  *
  * Pipeline: geographic clustering → LLM day-assignment via lib/llm
- * (validated against the static catalog) → the real trip-generation solver →
- * cost roll-up. Every LLM-dependent stage has a deterministic fallback, so an
- * anonymous visitor always receives a complete plan.
+ * (validated against the static catalog plus server-resolved trend:<place_id>
+ * trending POIs) → the real trip-generation solver → cost roll-up. Every
+ * LLM-dependent stage has a deterministic fallback, so an anonymous visitor
+ * always receives a complete plan.
  */
 
 import { NextRequest } from "next/server";
@@ -27,6 +28,7 @@ import {
   type HomePoi,
   type HomeReasoningStepEvent,
 } from "@/lib/home-survey";
+import { getHomeTrendingPoi, isTrendingPoiId } from "@/services/home-demo/trending-pois";
 import {
   MAX_STOPS_PER_DAY,
   buildHomeItinerary,
@@ -103,7 +105,10 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const pois: HomePoi[] = [];
   for (const id of new Set(body.poiIds)) {
-    const poi = getHomePoi(id);
+    // Catalog ids resolve statically; trend:<place_id> ids re-resolve against
+    // the trending corpus with a country check — client payloads stay untrusted.
+    const poi =
+      getHomePoi(id) ?? (isTrendingPoiId(id) ? await getHomeTrendingPoi(id, body.country) : null);
     if (!poi || poi.country !== body.country) {
       return Response.json({ error: `Unknown POI: ${id}`, code: "UNKNOWN_POI" }, { status: 400 });
     }

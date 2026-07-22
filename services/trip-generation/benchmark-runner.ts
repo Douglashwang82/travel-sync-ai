@@ -228,6 +228,21 @@ export interface ListBenchmarkRunsOptions {
   limit?: number;
 }
 
+interface PostgrestLikeError {
+  code?: string | null;
+  message?: string | null;
+}
+
+function isMissingBenchmarkRunsTableError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as PostgrestLikeError;
+  return (
+    maybeError.code === "PGRST205" &&
+    typeof maybeError.message === "string" &&
+    maybeError.message.includes("public.benchmark_runs")
+  );
+}
+
 export async function listBenchmarkRuns(
   opts: ListBenchmarkRunsOptions = {}
 ): Promise<BenchmarkRunRecord[]> {
@@ -239,6 +254,12 @@ export async function listBenchmarkRuns(
     .limit(Math.min(Math.max(opts.limit ?? 50, 1), 200));
   if (opts.scenarioId) query = query.eq("scenario_id", opts.scenarioId);
   const { data, error } = await query;
+  if (isMissingBenchmarkRunsTableError(error)) {
+    logger.warn("[benchmark] benchmark_runs table missing; returning empty history", {
+      error: error?.message,
+    });
+    return [];
+  }
   if (error) throw new Error(`failed to list benchmark runs: ${error.message}`);
   return (data ?? []) as unknown as BenchmarkRunRecord[];
 }
@@ -250,6 +271,13 @@ export async function deleteBenchmarkRun(id: string): Promise<boolean> {
     .delete()
     .eq("id", id)
     .select("id");
+  if (isMissingBenchmarkRunsTableError(error)) {
+    logger.warn("[benchmark] benchmark_runs table missing; delete treated as not found", {
+      error: error?.message,
+      id,
+    });
+    return false;
+  }
   if (error) throw new Error(`failed to delete benchmark run: ${error.message}`);
   return (data ?? []).length > 0;
 }

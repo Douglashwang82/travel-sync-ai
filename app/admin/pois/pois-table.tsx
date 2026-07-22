@@ -3,6 +3,18 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PoiItemType } from "@/services/admin/poi-upsert";
+import {
+  CURATION_STATUSES,
+  POI_CATEGORIES,
+  type CurationStatus,
+  type PoiCategory,
+} from "@/services/admin/poi-curation";
+
+export interface PoiRowStats {
+  exposures: number;
+  selections: number;
+  selection_rate: number;
+}
 
 export interface PoiRow {
   place_id: string;
@@ -16,6 +28,14 @@ export interface PoiRow {
   lng: number | null;
   source: string;
   last_seen_at: string;
+  category: PoiCategory | null;
+  labels: string[] | null;
+  curation_status: CurationStatus;
+  quality_score: number | null;
+  /** itinerary_feedback aggregates; null when the POI never hit a shortlist. */
+  stats?: PoiRowStats | null;
+  /** Recency-decayed social trend score (0–1); 0 when no live signal. */
+  trend_score?: number;
 }
 
 const ITEM_TYPES: PoiItemType[] = ["hotel", "restaurant", "activity", "transport", "other"];
@@ -29,7 +49,17 @@ interface DraftPatch {
   destination_aliases?: string[];
   lat?: number | null;
   lng?: number | null;
+  category?: PoiCategory | null;
+  labels?: string[];
+  curation_status?: CurationStatus;
+  quality_score?: number | null;
 }
+
+const STATUS_STYLES: Record<CurationStatus, string> = {
+  unreviewed: "bg-[var(--secondary)] text-[var(--muted-foreground)]",
+  approved: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  hidden: "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300",
+};
 
 export function PoisTable({ rows }: { rows: PoiRow[] }) {
   const router = useRouter();
@@ -57,6 +87,10 @@ export function PoisTable({ rows }: { rows: PoiRow[] }) {
       destination_aliases: row.destination_aliases ?? [],
       lat: row.lat,
       lng: row.lng,
+      category: row.category,
+      labels: row.labels ?? [],
+      curation_status: row.curation_status,
+      quality_score: row.quality_score,
     });
     setError(null);
   }
@@ -110,13 +144,15 @@ export function PoisTable({ rows }: { rows: PoiRow[] }) {
         </div>
       )}
       <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
-        <table className="w-full min-w-[1000px] text-sm">
+        <table className="w-full min-w-[1280px] text-sm">
           <thead className="border-b border-[var(--border)] bg-[var(--secondary)]/40 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
             <tr>
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">Destination</th>
               <th className="px-3 py-2">Type</th>
               <th className="px-3 py-2">Tags</th>
+              <th className="px-3 py-2">Curation</th>
+              <th className="px-3 py-2">Signals</th>
               <th className="px-3 py-2">place_id</th>
               <th className="px-3 py-2 text-right">Actions</th>
             </tr>
@@ -228,6 +264,119 @@ export function PoisTable({ rows }: { rows: PoiRow[] }) {
                           <span className="text-[10px] text-[var(--muted-foreground)]">+{row.tags!.length - 4}</span>
                         )}
                       </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    {isEditing ? (
+                      <div className="flex w-44 flex-col gap-1">
+                        <select
+                          className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                          value={draft.category ?? ""}
+                          onChange={(e) =>
+                            setDraft((d) => ({ ...d, category: (e.target.value || null) as PoiCategory | null }))
+                          }
+                        >
+                          <option value="">(no category)</option>
+                          {POI_CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                          value={draft.curation_status ?? row.curation_status}
+                          onChange={(e) => setDraft((d) => ({ ...d, curation_status: e.target.value as CurationStatus }))}
+                        >
+                          {CURATION_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                          value={(draft.labels ?? []).join(", ")}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              labels: e.target.value
+                                .split(",")
+                                .map((s) => s.trim().toLowerCase().replace(/\s+/g, "_"))
+                                .filter(Boolean),
+                            }))
+                          }
+                          placeholder="labels (comma)"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                          value={draft.quality_score ?? ""}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              quality_score: e.target.value === "" ? null : Number(e.target.value),
+                            }))
+                          }
+                          placeholder="quality 0–1"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[row.curation_status]}`}>
+                            {row.curation_status}
+                          </span>
+                          {row.category ? (
+                            <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px]">{row.category}</span>
+                          ) : (
+                            <span className="text-[10px] text-[var(--muted-foreground)]">no category</span>
+                          )}
+                          {row.quality_score != null && (
+                            <span className="rounded-full bg-[var(--secondary)] px-2 py-0.5 text-[10px]">
+                              q={row.quality_score.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                        {(row.labels?.length ?? 0) > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {row.labels!.slice(0, 3).map((l) => (
+                              <span key={l} className="rounded-full border border-dashed border-[var(--border)] px-2 py-0.5 text-[10px]">
+                                {l}
+                              </span>
+                            ))}
+                            {row.labels!.length > 3 && (
+                              <span className="text-[10px] text-[var(--muted-foreground)]">+{row.labels!.length - 3}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    {row.stats ? (
+                      <div className="space-y-0.5">
+                        <div>
+                          <span className="font-medium">{Math.round(row.stats.selection_rate * 100)}%</span>{" "}
+                          <span className="text-[var(--muted-foreground)]">
+                            picked ({row.stats.selections}/{row.stats.exposures})
+                          </span>
+                        </div>
+                        {(row.trend_score ?? 0) > 0 && (
+                          <div className="text-[10px] text-orange-600 dark:text-orange-400">
+                            🔥 trend {(row.trend_score ?? 0).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (row.trend_score ?? 0) > 0 ? (
+                      <div className="text-[10px] text-orange-600 dark:text-orange-400">
+                        🔥 trend {(row.trend_score ?? 0).toFixed(2)} · never shortlisted
+                      </div>
+                    ) : (
+                      <span className="text-[var(--muted-foreground)]">—</span>
                     )}
                   </td>
                   <td className="px-3 py-2 font-mono text-[11px] text-[var(--muted-foreground)]">

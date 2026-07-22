@@ -92,6 +92,16 @@ export interface HomePoi {
   likes: number;
   /** Pseudo runtime for video-styled cards, seconds. */
   videoSeconds?: number;
+  /**
+   * Present on live trending cards synthesized server-side from
+   * poi_trending_signals (services/home-demo/trending-pois.ts); absent on
+   * static catalog entries. `score` is the recency-decayed trend score (0–1)
+   * at fetch time.
+   */
+  trending?: {
+    platforms: string[];
+    score: number;
+  };
 }
 
 export const HOME_COUNTRIES: HomeCountry[] = [

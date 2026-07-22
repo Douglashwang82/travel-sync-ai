@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getHomePoi } from "@/lib/home-survey";
+import { getTrendingPoiPhotoQuery, isTrendingPoiId } from "@/services/home-demo/trending-pois";
 import { buildPlacePhotoUrl, findPlacePhotoName } from "@/services/decisions/places";
 
 export const runtime = "nodejs";
@@ -29,15 +30,18 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id") ?? "";
-  const poi = getHomePoi(id);
-  if (!poi) {
+  // Catalog ids resolve statically; trend:<place_id> ids resolve against the
+  // trending corpus — either way only server-known places drive the Google key.
+  const photoQuery =
+    getHomePoi(id)?.photoQuery ?? (isTrendingPoiId(id) ? await getTrendingPoiPhotoQuery(id) : null);
+  if (!photoQuery) {
     return NextResponse.json({ error: "Unknown POI", code: "UNKNOWN_POI" }, { status: 404 });
   }
   const w = clampInt(searchParams.get("w"), 1200, 640);
 
   let cached = photoNameCache.get(id);
   if (!cached || Date.now() - cached.at > PHOTO_NAME_TTL_MS) {
-    cached = { name: await findPlacePhotoName(poi.photoQuery), at: Date.now() };
+    cached = { name: await findPlacePhotoName(photoQuery), at: Date.now() };
     photoNameCache.set(id, cached);
   }
   if (!cached.name) {

@@ -30,7 +30,14 @@ import ReasoningScene from "@/components/home/reasoning-scene";
 import ItineraryScene from "@/components/home/itinerary-scene";
 import { easeConfirm } from "@/components/motion/variants";
 import { isoDiffDays } from "@/lib/home-seasons";
-import { getHomeCity, getHomeCountry, type HomeCity, type HomeCountryCode, type HomeItinerary } from "@/lib/home-survey";
+import {
+  getHomeCity,
+  getHomeCountry,
+  type HomeCity,
+  type HomeCountryCode,
+  type HomeItinerary,
+  type HomePoi,
+} from "@/lib/home-survey";
 
 type Locale = "en" | "zh-TW";
 type Phase = "globe" | "cities" | "dates" | "pois" | "reasoning" | "itinerary";
@@ -93,6 +100,7 @@ export default function HomePageClient() {
   const [cityName, setCityName] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<HomeDateRange | null>(null);
   const [selectedPoiIds, setSelectedPoiIds] = useState<ReadonlySet<string>>(new Set());
+  const [trendingPois, setTrendingPois] = useState<HomePoi[]>([]);
   const [itinerary, setItinerary] = useState<HomeItinerary | null>(null);
 
   const copy = COPY[locale];
@@ -127,6 +135,26 @@ export default function HomePageClient() {
     return () => window.clearInterval(timer);
   }, [phase, locale]);
 
+  // Warm the live trending cards as soon as a city is picked (during the
+  // dates phase) so the POI wall arrives already merged. Fire-and-forget:
+  // any failure just leaves the static catalog, which is the baseline anyway.
+  useEffect(() => {
+    // Selection handlers reset trendingPois; this effect only fetches.
+    if (!country || !cityName) return;
+    const ctrl = new AbortController();
+    fetch(
+      `/api/home/trending-pois?country=${country}&city=${encodeURIComponent(cityName)}`,
+      { signal: ctrl.signal },
+    )
+      .then((res) => (res.ok ? res.json() : { pois: [] }))
+      .then((data: { pois?: HomePoi[] }) => setTrendingPois(Array.isArray(data.pois) ? data.pois : []))
+      .catch(() => {
+        // Aborted fetches (city changed) must not clobber the newer request's state.
+        if (!ctrl.signal.aborted) setTrendingPois([]);
+      });
+    return () => ctrl.abort();
+  }, [country, cityName]);
+
   const handleLocaleChange = useCallback((nextLocale: Locale) => {
     setLocale(nextLocale);
     setGlobeQuestionIndex(0);
@@ -137,6 +165,7 @@ export default function HomePageClient() {
     setCityName(null);
     setDateRange(null);
     setSelectedPoiIds(new Set());
+    setTrendingPois([]);
     // EarthScene stays mounted and dives its own camera; no hand-off delay.
     setPhase("cities");
   }, []);
@@ -144,6 +173,7 @@ export default function HomePageClient() {
   const handleCitySelect = useCallback((city: HomeCity) => {
     setCityName(city.name);
     setSelectedPoiIds(new Set());
+    setTrendingPois([]);
     setPhase("dates");
   }, []);
 
@@ -164,6 +194,7 @@ export default function HomePageClient() {
   const restart = useCallback(() => {
     setItinerary(null);
     setSelectedPoiIds(new Set());
+    setTrendingPois([]);
     setDateRange(null);
     setCountry(null);
     setCityName(null);
@@ -370,6 +401,7 @@ export default function HomePageClient() {
                   city={activeCity}
                   locale={locale}
                   selectedIds={selectedPoiIds}
+                  trendingPois={trendingPois}
                   onToggle={togglePoi}
                   onSubmit={() => setPhase("reasoning")}
                   onBack={() => setPhase("cities")}

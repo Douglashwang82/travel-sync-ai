@@ -256,6 +256,80 @@ export async function generateTextWithImageSearch(
   }
 }
 
+export interface GroundedWebSource {
+  uri: string;
+  title: string;
+  domain: string;
+}
+
+export interface GroundedTextResult {
+  text: string;
+  sources: GroundedWebSource[];
+}
+
+/**
+ * Call Gemini with the built-in Google Search tool in web-search mode. The
+ * model issues live searches and answers from current results; grounding
+ * chunks carry the source web pages.
+ *
+ * Used by services/trending/ to discover POIs currently trending on social
+ * media for a destination without any third-party scraping API. Note: search
+ * grounding cannot be combined with JSON response mode — callers needing
+ * structured output should follow up with a generateJson extraction pass.
+ */
+export async function generateTextWithSearch(
+  systemPrompt: string,
+  userMessage: string,
+): Promise<GroundedTextResult> {
+  if (!isCircuitAllowing()) {
+    throw new GeminiUnavailableError("Gemini circuit breaker is OPEN");
+  }
+
+  const client = getClient();
+  const model = getModel();
+  try {
+    const response = await client.models.generateContent({
+      model,
+      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+      config: {
+        systemInstruction: systemPrompt,
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    const text = response.text ?? "";
+    const chunks =
+      response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+    const sources: GroundedWebSource[] = [];
+    for (const c of chunks) {
+      const web = c.web;
+      if (!web?.uri) continue;
+      sources.push({
+        uri: web.uri,
+        title: web.title ?? "",
+        domain: web.domain ?? safeHostname(web.uri),
+      });
+    }
+    recordSuccess();
+    return { text, sources };
+  } catch (err) {
+    if (err instanceof GeminiUnavailableError) throw err;
+    recordFailure();
+    console.error(
+      `[gemini] web-search call failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    throw err;
+  }
+}
+
+function safeHostname(uri: string): string {
+  try {
+    return new URL(uri).hostname;
+  } catch {
+    return "";
+  }
+}
+
 // ─── Embeddings ──────────────────────────────────────────────────────────────
 
 const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2";

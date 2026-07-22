@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-12T12:06:20.739Z",
+  "projectRoot": "E:\\Projects\\travel-sync-ai",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1783857980739
+}
